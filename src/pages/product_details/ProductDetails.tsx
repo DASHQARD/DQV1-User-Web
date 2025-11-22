@@ -1,7 +1,7 @@
 import { ROUTES } from '@/utils/constants/shared'
 
 import { Link } from 'react-router-dom'
-import MelcomPlusLogo from '@/assets/images/dashgo.png'
+import MelcomPlusLogo from '@/assets/images/DashGo.png'
 import { Button, Input, Text } from '@/components'
 import { Icon } from '@/libs'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
