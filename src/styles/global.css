@@ -1,0 +1,86 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-metropolis:
+    'Metropolis', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* brand colors */
+  --color-primary-500: var(--color-primary-500);
+  --color-primary-400: var(--color-primary-400);
+  --color-primary-700: var(--color-primary-700);
+
+  --color-black-50: var(--color-black-50);
+
+  --color-yellow-500: var(--color-yellow-500);
+
+  --color-grey-500: var(--color-grey-500);
+}
+
+:root {
+  --color-primary-500: #402d87;
+  --color-primary-400: #66579f;
+  --color-primary-700: #2d2060;
+
+  --color-black-50: #e8e8e8;
+
+  --color-yellow-500: #ffc70a;
+
+  --color-grey-500: #666;
+}
+
+@font-face {
+  font-family: 'Metropolis';
+  src: url('../assets/fonts/Metropolis-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Metropolis';
+  src: url('../assets/fonts/Metropolis-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Metropolis';
+  src: url('../assets/fonts/Metropolis-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Metropolis';
+  src: url('../assets/fonts/Metropolis-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Metropolis';
+  src: url('../assets/fonts/Metropolis-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.wrapper {
+  width: 91.11%;
+  margin: auto;
+  max-width: 1440px;
+}
+
+body {
+  font-family:
+    var(--font-metropolis),
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  margin: 0;
+}

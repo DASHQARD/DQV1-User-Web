@@ -1,0 +1,17 @@
+.input {
+  // autofill shouldn't change color
+  &:-internal-autofill-selected,
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover,
+  &:-webkit-autofill:focus,
+  &:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+    -webkit-background-clip: text !important;
+    // -webkit-text-fill-color: transparent;
+    background: unset;
+  }
+
+  & {
+    background: transparent !important;
+  }
+}
