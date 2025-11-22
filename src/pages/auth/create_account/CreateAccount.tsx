@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import CreateAccountMan from '../../../assets/images/create-account-man.png'
 import LogoWhite from '../../../assets/svgs/logo-white.svg?react'
 import { ROUTES } from '@/utils/constants'
-import { UserCreateAccountForm } from '../components'
+import { CreateAccountForm } from '../components'
 export default function CreateAccount() {
   return (
     <div className="flex relative min-h-screen overflow-hidden">
@@ -21,7 +21,7 @@ export default function CreateAccount() {
       </div>
 
       <div className="flex-1 flex items-center justify-center">
-        <UserCreateAccountForm />
+        <CreateAccountForm />
       </div>
     </div>
   )

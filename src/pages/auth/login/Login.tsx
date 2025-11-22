@@ -6,7 +6,7 @@ import LoginForm from '../components/LoginForm'
 export default function Login() {
   return (
     <div className="flex relative min-h-screen overflow-hidden">
-      <div className="bg-primary-500 rounded-tr-[220px] min-w-[623.34px] relative">
+      <div className="bg-primary-500 rounded-tr-[220px] min-w-[623.34px] relative hidden lg:block">
         <Link
           to={ROUTES.IN_APP.HOME}
           className="absolute top-[80px] left-1/2 -translate-x-1/2 z-10"

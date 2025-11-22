@@ -26,6 +26,7 @@ export function useAuth() {
         data: { user: { id: string; email: string; user_type: string; verificationToken: string } }
       }) => {
         toast.success(response.message)
+        navigate(ROUTES.IN_APP.AUTH.LOGIN)
       },
       onError: (error: any) => {
         const errorMessage = error?.message || 'Create account failed. Please try again.'
@@ -55,7 +56,7 @@ export function useAuth() {
             token: response.token,
           })
 
-          navigate(ROUTES.IN_APP.DASHBOARD.ROOT)
+          navigate(ROUTES.IN_APP.HOME)
         }
       },
       onError: (error: any) => {

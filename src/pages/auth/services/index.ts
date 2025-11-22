@@ -1,5 +1,5 @@
 import { axiosClient } from '@/libs'
-import type { CreateAccountData } from '@/types'
+import type { CreateAccountData, LoginData } from '@/types'
 
 const login = async (data: LoginData) => {
   const response = await axiosClient.post(`/auth/login`, data)
@@ -8,7 +8,7 @@ const login = async (data: LoginData) => {
 
 const createAccount = async (data: CreateAccountData) => {
   const response = await axiosClient.post(`/auth/sign-up`, data)
-  return response
+  return response.data
 }
 
 export { login, createAccount }

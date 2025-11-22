@@ -10,7 +10,7 @@ import { z } from 'zod'
 import { AccountType } from '.'
 import { useAuth } from '@/pages/auth'
 
-export default function UserCreateAccountForm() {
+export default function CreateAccountForm() {
   const { useCreateAccountMutation } = useAuth()
   const { mutate, isPending } = useCreateAccountMutation()
   const form = useForm<z.infer<typeof CreateAccountSchema>>({
@@ -29,7 +29,6 @@ export default function UserCreateAccountForm() {
     mutate(payload)
   }
 
-  console.log('error', form.formState.errors)
   return (
     <form
       onSubmit={form.handleSubmit(onSubmit)}

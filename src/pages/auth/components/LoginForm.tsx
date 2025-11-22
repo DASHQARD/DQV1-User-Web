@@ -7,13 +7,20 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LoginSchema } from '@/utils/schemas'
 import { z } from 'zod'
+import { useAuth } from '../hooks/auth'
 
 export default function LoginForm() {
+  const { useLoginMutation } = useAuth()
+  const { mutate, isPending } = useLoginMutation()
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
   })
   const onSubmit = (data: z.infer<typeof LoginSchema>) => {
-    console.log(data)
+    const payload = {
+      email: data.email,
+      password: data.password,
+    }
+    mutate(payload)
   }
   return (
     <form
@@ -46,7 +53,13 @@ export default function LoginForm() {
           error={form.formState.errors.password?.message}
         />
 
-        <Button type="submit" variant="secondary" className="w-full">
+        <Button
+          disabled={!form.formState.isValid || isPending}
+          loading={isPending}
+          type="submit"
+          variant="secondary"
+          className="w-full"
+        >
           Sign In
         </Button>
         <Link
