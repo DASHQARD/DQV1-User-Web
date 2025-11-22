@@ -42,7 +42,7 @@ export default function Navbar() {
             ))}
           </ul>
           <button
-            onClick={() => navigate(ROUTES.IN_APP.PRODUCTS)}
+            onClick={() => navigate(ROUTES.IN_APP.DASHQARDS)}
             className="bg-black-50 py-[18px] px-[18px] flex items-center justify-center rounded-full"
           >
             <Icon icon="hugeicons:search-02" className="size-5 text-primary-500" />

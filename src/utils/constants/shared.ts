@@ -1,6 +1,6 @@
 export const ROUTES = {
   IN_APP: {
-    PRODUCTS: '/products',
+    DASHQARDS: '/dashqards',
     AUTH: {
       LOGIN: '/auth/login',
       REGISTER: '/auth/register',

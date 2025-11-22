@@ -1,5 +1,4 @@
 export * from './home'
 export * from './auth'
-export * from './products'
-export * from './product_details'
+export * from './dashqards'
 export * from './vendor'

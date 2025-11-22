@@ -32,7 +32,7 @@ const priceRanges = [
 type SortOption = 'popular' | 'price-low' | 'price-high' | 'newest' | 'rating'
 type ViewMode = 'grid' | 'list'
 
-export default function Products() {
+export default function DashQards() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = React.useState<'dashx' | 'dashgo' | 'dashpro'>('dashx')
   const [sortBy, setSortBy] = React.useState<SortOption>('popular')

@@ -1,6 +1,6 @@
 import { type RouteObject } from 'react-router'
 
-import { CreateAccount, Home, Login, ProductDetails, Products, ResetPassword } from '../pages'
+import { CreateAccount, DashQards, Home, Login, ResetPassword } from '../pages'
 import { WebsiteLayout } from '../layout'
 import Vendor from '@/pages/vendor/Vendor'
 
@@ -14,12 +14,8 @@ export const routes: RouteObject[] = [
         element: <Home />,
       },
       {
-        path: 'products',
-        element: <Products />,
-      },
-      {
-        path: 'products/:id',
-        element: <ProductDetails />,
+        path: 'dashqards',
+        element: <DashQards />,
       },
       {
         path: 'vendor/:id',
