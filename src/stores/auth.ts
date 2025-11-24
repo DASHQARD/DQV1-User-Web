@@ -33,14 +33,19 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
       isAuthenticated: true,
     })
   },
-  logout: () => set({ isAuthenticated: false }),
+  logout: () =>
+    set({
+      token: null,
+      user: null,
+      isAuthenticated: false,
+    }),
   getToken: () => get().token,
   setToken: (newToken: string) => set({ token: newToken }),
 })
 
 const useAuthStore = create(
   persist(authStore, {
-    name: 'afri-transfer-auth-store',
+    name: 'dashqard-auth-store',
   }),
 )
 

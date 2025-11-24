@@ -14,6 +14,9 @@
   --color-yellow-500: var(--color-yellow-500);
 
   --color-grey-500: var(--color-grey-500);
+
+  --color-error-50: var(--color-error-50);
+  --color-error-500: var(--color-error-500);
 }
 
 :root {
@@ -26,6 +29,9 @@
   --color-yellow-500: #ffc70a;
 
   --color-grey-500: #666;
+
+  --color-error-50: #fef3f2;
+  --color-error-500: #f04438;
 }
 
 @font-face {

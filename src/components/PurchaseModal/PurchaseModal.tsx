@@ -31,10 +31,26 @@ type RecipientData = {
 type PurchaseModalProps = {
   initialData?: Partial<RecipientData> | null
   onSave?: (data: RecipientData) => void
+  isOpen?: boolean
+  onClose?: () => void
+  showTrigger?: boolean
 }
 
-export default function PurchaseModal({ initialData = null, onSave }: PurchaseModalProps) {
-  const [isOpen, setIsOpen] = React.useState(false)
+export default function PurchaseModal({
+  initialData = null,
+  onSave,
+  isOpen: controlledIsOpen,
+  onClose,
+  showTrigger = true,
+}: PurchaseModalProps) {
+  const [internalIsOpen, setInternalIsOpen] = React.useState(false)
+  const isControlled = controlledIsOpen !== undefined
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen
+  const setIsOpen = isControlled
+    ? (value: boolean) => {
+        if (!value && onClose) onClose()
+      }
+    : setInternalIsOpen
   const [isCardFlipped, setIsCardFlipped] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
   const [assignToSelf, setAssignToSelf] = React.useState(false)
@@ -75,6 +91,22 @@ export default function PurchaseModal({ initialData = null, onSave }: PurchaseMo
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  React.useEffect(() => {
+    if (initialData) {
+      setAmount(initialData.amount?.toString() ?? '')
+      setName(initialData.name ?? '')
+      setPhone(initialData.phone ?? '')
+      setEmail(initialData.email ?? '')
+      setMessage(initialData.message ?? '')
+    } else {
+      setAmount('')
+      setName('')
+      setPhone('')
+      setEmail('')
+      setMessage('')
+    }
+  }, [initialData, isOpen])
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!isFormValid) return
@@ -91,9 +123,11 @@ export default function PurchaseModal({ initialData = null, onSave }: PurchaseMo
 
   return (
     <div>
-      <Button variant="secondary" onClick={() => setIsOpen(true)}>
-        🎁 Gift
-      </Button>
+      {showTrigger && (
+        <Button variant="secondary" onClick={() => setIsOpen(true)}>
+          🎁 Gift
+        </Button>
+      )}
 
       <Modal isOpen={isOpen} setIsOpen={setIsOpen} panelClass="!max-w-[900px] md:!w-full">
         {/* Modal Header */}
