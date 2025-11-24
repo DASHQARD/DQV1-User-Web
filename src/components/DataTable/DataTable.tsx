@@ -64,8 +64,9 @@ export function DataTable<TData, TValue>({
   showPageSizeSelect = true,
   stickyHeader = true,
 }: DataTableProps<TData, TValue>) {
-  const preparedPageOptions = useMemo(() => {
-    if (!Array.isArray(pageSizeOptions)) return [initialPageSize]
+  const preparedPageOptions = useMemo((): Array<{ label: string; value: number }> => {
+    if (!Array.isArray(pageSizeOptions))
+      return [{ label: `${initialPageSize} / page`, value: initialPageSize }]
     return pageSizeOptions.map((option) =>
       typeof option === 'number' ? { label: `${option} / page`, value: option } : option,
     )
