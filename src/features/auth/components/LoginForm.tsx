@@ -2,7 +2,7 @@ import { Input, Modal, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LoginSchema } from '@/utils/schemas'
@@ -12,9 +12,13 @@ import { OtpLoginModal } from '.'
 import React from 'react'
 
 export default function LoginForm() {
-  const { useLoginMutation } = useAuth()
+  const { useLoginMutation, useVerifyEmailMutation } = useAuth()
   const [steps, setSteps] = React.useState(1)
   const { mutate, isPending } = useLoginMutation()
+  const { mutate: verifyEmail, isPending: isVerifyEmailPending } = useVerifyEmailMutation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const token = searchParams.get('vtoken')
+  console.log(token)
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
   })
@@ -23,11 +27,28 @@ export default function LoginForm() {
       email: data.email,
       password: data.password,
     }
-    mutate(payload, {
-      onSuccess: () => {
-        setSteps(2)
-      },
-    })
+    if (token) {
+      verifyEmail(token, {
+        onSuccess: () => {
+          // Remove vtoken from URL
+          const newSearchParams = new URLSearchParams(searchParams)
+          newSearchParams.delete('vtoken')
+          setSearchParams(newSearchParams, { replace: true })
+
+          mutate(payload, {
+            onSuccess: () => {
+              setSteps(2)
+            },
+          })
+        },
+      })
+    } else {
+      mutate(payload, {
+        onSuccess: () => {
+          setSteps(2)
+        },
+      })
+    }
   }
   return (
     <>
@@ -65,7 +86,7 @@ export default function LoginForm() {
 
               <Button
                 disabled={!form.formState.isValid || isPending}
-                loading={isPending}
+                loading={isPending || isVerifyEmailPending}
                 type="submit"
                 variant="secondary"
                 className="w-full"
@@ -105,7 +126,7 @@ export default function LoginForm() {
       )}
       {steps === 2 && (
         <>
-          <Modal isOpen={true} setIsOpen={() => setSteps(1)} panelClass="max-w-[480px] p-8">
+          <Modal isOpen={true} setIsOpen={() => setSteps(1)} panelClass="max-w-[546px] p-8">
             <OtpLoginModal />
           </Modal>
         </>

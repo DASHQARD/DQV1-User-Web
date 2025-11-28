@@ -36,15 +36,39 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref,
   ) => {
-    const code = useMemo(() => {
-      const value = selectedVal?.split('-')[0]
-      return value
-    }, [selectedVal])
+    const { code, number } = useMemo(() => {
+      const normalizedValue =
+        typeof selectedVal === 'string' ? selectedVal.trim() : (selectedVal ?? '')
 
-    const number = useMemo(() => {
-      const value = selectedVal?.split('-')[1]
-      return value || ''
-    }, [selectedVal])
+      if (!normalizedValue) {
+        return { code: '', number: '' }
+      }
+
+      if (normalizedValue.includes('-')) {
+        const [countryCode, localNumber = ''] = normalizedValue.split('-')
+        return { code: countryCode, number: localNumber }
+      }
+
+      const dialCodeMatch = normalizedValue.match(/^(\+\d{1,4})(\d*)$/)
+      if (dialCodeMatch) {
+        return {
+          code: dialCodeMatch[1],
+          number: dialCodeMatch[2],
+        }
+      }
+
+      if (options?.length) {
+        const matchedOption = options.find((option: any) => normalizedValue.startsWith(option.code))
+        if (matchedOption) {
+          return {
+            code: matchedOption.code,
+            number: normalizedValue.slice(matchedOption.code.length),
+          }
+        }
+      }
+
+      return { code: '', number: normalizedValue }
+    }, [selectedVal, options])
 
     const [isOpen, setIsOpen] = useState(false)
     const [displayImage, setDisplayImage] = useState('')
@@ -70,6 +94,17 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
         }
       }
     }, [options, countryCode])
+
+    // Keep local state in sync when parsed code/number changes (e.g. options load late)
+    useEffect(() => {
+      if (code && code !== countryCode) {
+        setCountryCode(code)
+      }
+      if (number !== undefined && number !== value) {
+        setValue(number)
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [code, number])
 
     // Sync state with props when selectedVal changes externally (but don't trigger handleChange)
     useEffect(() => {

@@ -154,10 +154,12 @@ export default function AboutUs() {
             </div>
             <div className="w-full lg:w-1/2 relative pl-8">
               <div className="relative">
-                <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#402D87] to-[#5bd7dc]"></div>
+                <div className="absolute left-[-20px] top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-[#402D87] to-[#5bd7dc]"></div>
                 <div className="space-y-8">
                   <div className="relative">
-                    <div className="absolute -left-7 top-0 w-4 h-4 bg-white border-4 border-[#402D87] rounded-full"></div>
+                    <div className="absolute -left-[28px] top-0 w-4 h-4 bg-white border-2 border-[#402D87] rounded-full flex items-center justify-center z-10">
+                      <div className="w-1.5 h-1.5 bg-[#402D87] rounded-full"></div>
+                    </div>
                     <div>
                       <h4 className="text-[#2d2060] font-semibold mb-2">2024 - The Beginning</h4>
                       <p className="text-gray-600">
@@ -167,14 +169,18 @@ export default function AboutUs() {
                     </div>
                   </div>
                   <div className="relative">
-                    <div className="absolute -left-7 top-0 w-4 h-4 bg-white border-4 border-[#402D87] rounded-full"></div>
+                    <div className="absolute -left-[28px] top-0 w-4 h-4 bg-white border-2 border-[#402D87] rounded-full flex items-center justify-center z-10">
+                      <div className="w-1.5 h-1.5 bg-[#402D87] rounded-full"></div>
+                    </div>
                     <div>
                       <h4 className="text-[#2d2060] font-semibold mb-2">Platform Launch</h4>
                       <p className="text-gray-600">Launched our first digital gift card in 2025,</p>
                     </div>
                   </div>
                   <div className="relative">
-                    <div className="absolute -left-7 top-0 w-4 h-4 bg-white border-4 border-[#402D87] rounded-full"></div>
+                    <div className="absolute -left-[28px] top-0 w-4 h-4 bg-white border-2 border-[#402D87] rounded-full flex items-center justify-center z-10">
+                      <div className="w-1.5 h-1.5 bg-[#402D87] rounded-full"></div>
+                    </div>
                     <div>
                       <h4 className="text-[#2d2060] font-semibold mb-2">Growing Community</h4>
                       <p className="text-gray-600">
@@ -183,7 +189,7 @@ export default function AboutUs() {
                     </div>
                   </div>
                   <div className="relative">
-                    <div className="absolute -left-7 top-0 w-4 h-4 bg-[#402D87] border-4 border-[#402D87] rounded-full shadow-[0_0_0_4px_rgba(64,45,135,0.2)]"></div>
+                    <div className="absolute -left-[28px] top-0 w-4 h-4 bg-[#402D87] rounded-full z-10"></div>
                     <div>
                       <h4 className="text-[#2d2060] font-semibold mb-2">Today & Beyond</h4>
                       <p className="text-gray-600">

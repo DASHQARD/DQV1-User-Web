@@ -100,7 +100,7 @@ export const Input = React.forwardRef(
           <InputLabel
             htmlFor={props?.id ?? props.name}
             onClick={handleLabelClick}
-            className="flex gap-1 items-center text-primary-500 font-bold"
+            className="flex gap-1 items-center text-[#151819] text-sm"
           >
             {label} {labelChild}
           </InputLabel>
@@ -109,7 +109,7 @@ export const Input = React.forwardRef(
         {/* INNER */}
         <div
           className={cn(
-            'flex items-center p-2 px-4 rounded-xl border-2 border-[#402d871a] bg-[#402d8705]',
+            'flex gap-4 border border-gray-300 rounded-lg h-12 items-center px-3 relative',
             'focus-within:border-primary-400',
             { 'border-red-500': !!error },
             { 'min-h-12': !isTextarea },

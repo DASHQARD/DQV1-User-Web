@@ -17,6 +17,8 @@
 
   --color-error-50: var(--color-error-50);
   --color-error-500: var(--color-error-500);
+
+  --color-success: var(--color-success);
 }
 
 :root {
@@ -32,6 +34,8 @@
 
   --color-error-50: #fef3f2;
   --color-error-500: #f04438;
+
+  --color-success: #4fc749;
 }
 
 @font-face {

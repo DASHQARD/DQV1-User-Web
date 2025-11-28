@@ -1,2 +1,8 @@
 export { default as Sidebar } from './Sidebar'
 export { default as RedemptionSummary } from './RedemptionSummary'
+export { default as PaymentInfoForm } from './PaymentInfoForm'
+export { default as OnboardingForm } from './OnboardingForm'
+export { default as UserUploadIDForm } from './UserUploadIDForm'
+export { default as BusinessDetailsForm } from './BusinessDetailsForm'
+export { default as BusinessUploadIDForm } from './BusinessUploadIDForm'
+export { default as AddBranchForm } from './AddBranchForm'

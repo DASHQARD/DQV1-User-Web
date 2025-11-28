@@ -1,0 +1,4 @@
+export { default as UploadID } from './upload_id/UploadID'
+export { default as ProfileInformation } from './profile/ProfileInformation'
+export { default as Compliance } from './Compliance'
+export { default as AddBranch } from './branches/AddBranch'

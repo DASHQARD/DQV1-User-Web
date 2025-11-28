@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
-import { ROUTES } from '@/utils/constants'
-import LogoWhite from '@/assets/svgs/logo-white.svg?react'
 import CreateAccountMan from '@/assets/images/create-account-man.png'
-import { UserUploadIDForm } from '../../components'
+import LogoWhite from '@/assets/svgs/logo-white.svg?react'
+import { ROUTES } from '@/utils/constants'
+import AdminLoginForm from '../../components/AdminLoginForm'
 
-export default function UploadID() {
+export default function AdminLogin() {
   return (
     <div className="flex relative min-h-screen overflow-hidden">
       <div className="bg-primary-500 rounded-tr-[220px] min-w-[623.34px] relative hidden lg:block">
@@ -22,7 +22,7 @@ export default function UploadID() {
       </div>
 
       <div className="flex-1 flex items-center justify-center">
-        <UserUploadIDForm />
+        <AdminLoginForm />
       </div>
     </div>
   )

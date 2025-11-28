@@ -1,21 +1,26 @@
 import React from 'react'
 import { useNavigate } from 'react-router'
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { useToast } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 
 import {
-  login,
+  addBranch,
+  businessUploadID,
+  businessDetails,
   createAccount,
-  verifyEmail,
-  onboarding,
-  uploadUserID,
-  verifyLoginOTP,
+  refreshToken,
   forgotPassword,
+  login,
+  onboarding,
+  getCountries,
   resetPassword,
+  uploadUserID,
+  verifyEmail,
+  verifyLoginOTP,
 } from '../services'
 
 export function useAuth() {
@@ -64,6 +69,7 @@ export function useAuth() {
       }) => {
         useAuthStore.getState().authenticate({
           token: response.tokens.accessToken,
+          refreshToken: response.tokens.refreshToken,
         })
       },
       onError: (error: { status: number; message: string }) => {
@@ -92,6 +98,34 @@ export function useAuth() {
     })
   }
 
+  function useRefreshTokenService() {
+    return useMutation({
+      mutationFn: refreshToken,
+      onSuccess: (response: {
+        message?: string
+        tokens?: { accessToken: string; refreshToken: string }
+        accessToken?: string
+        refreshToken?: string
+      }) => {
+        const accessToken = response?.tokens?.accessToken ?? response?.accessToken ?? null
+        const nextRefreshToken = response?.tokens?.refreshToken ?? response?.refreshToken ?? null
+        if (accessToken) {
+          useAuthStore.getState().authenticate({
+            token: accessToken,
+            refreshToken: nextRefreshToken ?? useAuthStore.getState().getRefreshToken(),
+          })
+        }
+        if (response?.message) {
+          toast.success(response.message)
+        }
+        navigate(ROUTES.IN_APP.DASHBOARD.HOME)
+      },
+      onError: (error: { status: number; message: string }) => {
+        toast.error(error.message)
+      },
+    })
+  }
+
   function useOnboardingService() {
     return useMutation({
       mutationFn: onboarding,
@@ -108,6 +142,19 @@ export function useAuth() {
   function useUploadUserIDService() {
     return useMutation({
       mutationFn: uploadUserID,
+      onSuccess: (response: { status: string; statusCode: number; message: string }) => {
+        toast.success(response.message || 'Identification photos added successfully')
+      },
+      onError: (error: { status: number; message: string }) => {
+        const errorMessage = error?.message || 'Onboarding failed. Please try again.'
+        toast.error(errorMessage)
+      },
+    })
+  }
+
+  function useBusinessUploadIDService() {
+    return useMutation({
+      mutationFn: businessUploadID,
       onSuccess: (response: { status: string; statusCode: number; message: string }) => {
         toast.success(response.message || 'Identification photos added successfully')
       },
@@ -169,6 +216,7 @@ export function useAuth() {
       }) => {
         useAuthStore.getState().authenticate({
           token: response.tokens.accessToken,
+          refreshToken: response.tokens.refreshToken,
         })
         toast.success('Login successful')
         navigate(ROUTES.IN_APP.DASHBOARD.HOME)
@@ -177,6 +225,40 @@ export function useAuth() {
         const errorMessage = error?.message || 'Verify login OTP failed. Please try again.'
         toast.error(errorMessage)
       },
+    })
+  }
+
+  function useBusinessDetailsService() {
+    return useMutation({
+      mutationFn: businessDetails,
+      onSuccess: () => {
+        toast.success('Business details updated successfully')
+      },
+      onError: (error: { status: number; message: string }) => {
+        const errorMessage = error?.message || 'Business details update failed. Please try again.'
+        toast.error(errorMessage)
+      },
+    })
+  }
+
+  function useAddBranchService() {
+    return useMutation({
+      mutationFn: addBranch,
+      onSuccess: () => {
+        toast.success('Branch added successfully')
+      },
+      onError: (error: { status: number; message: string }) => {
+        const errorMessage = error?.message || 'Failed to add branch. Please try again.'
+        toast.error(errorMessage)
+      },
+    })
+  }
+
+  function useGetCountriesService() {
+    return useQuery({
+      queryKey: ['countries'],
+      queryFn: getCountries,
+      // select: (response) => response.data,
     })
   }
 
@@ -191,5 +273,10 @@ export function useAuth() {
     useVerifyLoginOTPService,
     useForgotPasswordService,
     useResetPasswordService,
+    useBusinessDetailsService,
+    useBusinessUploadIDService,
+    useRefreshTokenService,
+    useAddBranchService,
+    useGetCountriesService,
   }
 }

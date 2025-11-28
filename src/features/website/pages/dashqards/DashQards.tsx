@@ -8,6 +8,9 @@ import DashXImage from '@/assets/images/DashX.png'
 import DashGoImage from '@/assets/images/DashGo.png'
 import DashProImage from '@/assets/images/DashPro.png'
 import { CardItems } from '../../components'
+import { useCards } from '../../hooks'
+import { DEFAULT_QUERY } from '@/utils/constants/shared'
+import { useReducerSpread } from '@/hooks'
 
 const heroImages = {
   pro: DashProImage,
@@ -38,7 +41,16 @@ export default function DashQards() {
   const [sortBy, setSortBy] = React.useState<SortOption>('popular')
   const [viewMode, setViewMode] = React.useState<ViewMode>('grid')
   const [displayedItems, setDisplayedItems] = React.useState(8)
+  const [query, setQuery] = useReducerSpread(DEFAULT_QUERY)
 
+  const { useCardsService } = useCards()
+  const { data: cards } = useCardsService({ ...query })
+  console.log(cards)
+
+  React.useEffect(() => {
+    setQuery({ ...query, page: 1 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setQuery])
   const [sectionStates, setSectionStates] = React.useState({
     cardType: true,
     filterOptions: true,

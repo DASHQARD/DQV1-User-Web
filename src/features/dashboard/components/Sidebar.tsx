@@ -4,16 +4,19 @@ import { Icon } from '@/libs'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
+import { useUserProfile } from '@/hooks'
 
 export default function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
   const [isCollapsed, setIsCollapsed] = useState(false)
-
+  const { data: userProfile } = useUserProfile()
+  console.log(userProfile)
   // Get user name from JWT decoded user or default
   const userName =
     (user as any)?.name || (user as any)?.fullname || (user as any)?.email?.split('@')[0] || 'User'
+  const displayName = userProfile?.fullname || userName
 
   const toggleSidebar = () => {
     const newState = !isCollapsed
@@ -47,10 +50,85 @@ export default function Sidebar() {
     if (path === '/dashboard') {
       return location.pathname === path
     }
-    return location.pathname === path || location.pathname.startsWith(path)
+    // For exact matches
+    if (location.pathname === path) {
+      return true
+    }
+    // For prefix matches, but exclude child routes that have their own menu items
+    if (location.pathname.startsWith(path + '/')) {
+      // If this is the compliance route, don't mark it active for add-branch
+      if (path === ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT) {
+        return !location.pathname.startsWith(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ADD_BRANCH)
+      }
+      return true
+    }
+    return false
   }
 
-  const navItems = [
+  // Check user type
+  const isVendor = (user as any)?.user_type === 'vendor'
+  const isCorporate = (user as any)?.user_type === 'corporate'
+
+  // Vendor-specific navigation items
+  const vendorNavItems = [
+    {
+      section: 'Overview',
+      items: [{ path: ROUTES.IN_APP.DASHBOARD.HOME, label: 'Dashboard', icon: 'bi:speedometer2' }],
+    },
+    {
+      section: 'Onboarding',
+      items: [
+        {
+          path: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT,
+          label: 'Compliance',
+          icon: 'bi:shield-check',
+        },
+      ],
+    },
+    {
+      section: 'Experience',
+      items: [
+        {
+          path: ROUTES.IN_APP.DASHBOARD.EXPERIENCE,
+          label: 'My Experience',
+          icon: 'bi:briefcase-fill',
+        },
+      ],
+    },
+    {
+      section: 'Transactions',
+      items: [{ path: '/dashboard/transactions', label: 'Transactions', icon: 'bi:receipt' }],
+    },
+    {
+      section: 'Subscriptions',
+      items: [
+        {
+          path: '/dashboard/subscriptions',
+          label: 'Subscriptions',
+          icon: 'bi:credit-card-2-front',
+        },
+      ],
+    },
+    {
+      section: 'Settings & Support',
+      items: [
+        { path: '/dashboard/settings', label: 'Settings', icon: 'bi:gear-fill' },
+        {
+          path: ROUTES.IN_APP.DASHBOARD.PAYMENT_METHODS,
+          label: 'Payment Methods',
+          icon: 'bi:credit-card-fill',
+        },
+        {
+          path: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ADD_BRANCH,
+          label: 'Branches',
+          icon: 'bi:geo-alt-fill',
+        },
+      ],
+    },
+  ]
+
+  // Regular user navigation items
+  const regularNavItems = [
     {
       section: 'Overview',
       items: [{ path: ROUTES.IN_APP.DASHBOARD.HOME, label: 'Dashboard', icon: 'bi:speedometer2' }],
@@ -64,6 +142,21 @@ export default function Sidebar() {
         { path: '/dashboard/recipients', label: 'Recipients', icon: 'bi:person-lines-fill' },
       ],
     },
+    // Conditionally add Experience section for corporate users
+    ...(isCorporate
+      ? [
+          {
+            section: 'Experience',
+            items: [
+              {
+                path: ROUTES.IN_APP.DASHBOARD.EXPERIENCE,
+                label: 'My Experience',
+                icon: 'bi:briefcase-fill',
+              },
+            ],
+          },
+        ]
+      : []),
     {
       section: 'Account',
       items: [{ path: '/dashboard/notifications', label: 'Notifications', icon: 'bi:bell-fill' }],
@@ -73,6 +166,8 @@ export default function Sidebar() {
       items: [{ path: '/dashboard/settings', label: 'Settings', icon: 'bi:gear-fill' }],
     },
   ]
+
+  const navItems = isVendor ? vendorNavItems : regularNavItems
 
   return (
     <aside
@@ -96,11 +191,17 @@ export default function Sidebar() {
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <h4 className="text-lg font-semibold text-[#2c3e50] m-0 mb-1 whitespace-nowrap overflow-hidden text-ellipsis leading-tight">
-                  {userName}
+                  {displayName}
                 </h4>
                 <div className="flex items-center gap-2 text-xs text-[#6c757d] font-medium bg-[#f8f9fa] px-3 py-1 rounded-full border border-[#e9ecef] w-fit">
                   <Icon icon="bi:person-badge" className="text-xs text-[#402D87]" />
-                  <span>Personal Account</span>
+                  <span>
+                    {(user as any)?.user_type === 'vendor'
+                      ? 'Vendor Account'
+                      : (user as any)?.user_type === 'corporate'
+                        ? 'Corporate Account'
+                        : 'Personal Account'}
+                  </span>
                 </div>
               </div>
             )}

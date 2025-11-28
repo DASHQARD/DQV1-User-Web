@@ -1,13 +1,5 @@
 import type { RouteObject } from 'react-router'
-import {
-  BusinessDetails,
-  CreateAccount,
-  ForgotPassword,
-  Login,
-  Onboarding,
-  ResetPassword,
-  UploadID,
-} from '../pages'
+import { CreateAccount, ForgotPassword, Login, Onboarding, ResetPassword } from '../pages'
 
 export const authRoutes: RouteObject[] = [
   {
@@ -29,13 +21,5 @@ export const authRoutes: RouteObject[] = [
   {
     path: 'onboarding',
     element: <Onboarding />,
-  },
-  {
-    path: 'business-details',
-    element: <BusinessDetails />,
-  },
-  {
-    path: 'upload-id',
-    element: <UploadID />,
   },
 ]

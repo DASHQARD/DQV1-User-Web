@@ -1,7 +1,19 @@
-import type { RouteObject } from 'react-router'
+import { type RouteObject, Outlet } from 'react-router'
 import { Home } from '../pages/home'
 import { Purchase } from '../pages/purchase'
-import { Redeem, Settings, Transactions } from '../pages'
+import {
+  AddBranch,
+  BusinessDetails,
+  BusinessIdentificationCards,
+  Compliance,
+  PaymentInfo,
+  ProfileInformation,
+  Redeem,
+  Settings,
+  Transactions,
+  UploadID,
+} from '../pages'
+import ExperiencePage from '../pages/experience'
 
 export const dashboardRoutes: RouteObject[] = [
   {
@@ -21,7 +33,45 @@ export const dashboardRoutes: RouteObject[] = [
     element: <Transactions />,
   },
   {
+    path: 'experience',
+    element: <ExperiencePage />,
+  },
+  {
     path: 'settings',
     element: <Settings />,
+  },
+  {
+    path: 'payment-methods',
+    element: <PaymentInfo />,
+  },
+  {
+    path: 'compliance',
+    element: <Outlet />,
+    children: [
+      {
+        index: true,
+        element: <Compliance />,
+      },
+      {
+        path: 'profile',
+        element: <ProfileInformation />,
+      },
+      {
+        path: 'upload-id',
+        element: <UploadID />,
+      },
+      {
+        path: 'business-details',
+        element: <BusinessDetails />,
+      },
+      {
+        path: 'business-identification-cards',
+        element: <BusinessIdentificationCards />,
+      },
+      {
+        path: 'add-branch',
+        element: <AddBranch />,
+      },
+    ],
   },
 ]

@@ -1,10 +1,24 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Logo from '../../assets/images/logo-placeholder.png'
 import { ROUTES } from '../../utils/constants'
 import { Icon } from '@/libs'
+import { useCartStore } from '@/stores/cart'
+// import { useCart } from '@/features/website/hooks/useCart'
+import { useAuthStore } from '@/stores'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
+import { CartPopoverContent } from '@/components/CartModal'
 
 export default function Navbar() {
   const navigate = useNavigate()
+  const { isOpen: isCartOpen, openCart, closeCart } = useCartStore()
+  // const { cartItems } = useCart()
+  const { isAuthenticated, user, logout } = useAuthStore()
+  const [accountPopoverOpen, setAccountPopoverOpen] = useState(false)
+  // const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0)
+  const displayName =
+    user?.fullname || user?.name || user?.email?.split('@')[0] || user?.username || 'there'
+
   const navItems = [
     {
       label: 'About',
@@ -36,7 +50,11 @@ export default function Navbar() {
         <section className="flex justify-between items-center gap-4">
           <ul className="flex justify-between items-center gap-5 bg-black-50 py-[18px] px-6 rounded-full text-sm">
             {navItems.map((item) => (
-              <Link to={item.path} className="flex items-center gap-2 text-primary-500 font-medium">
+              <Link
+                key={item.label}
+                to={item.path}
+                className="flex items-center gap-2 text-primary-500 font-medium"
+              >
                 {item.label}
               </Link>
             ))}
@@ -47,14 +65,109 @@ export default function Navbar() {
           >
             <Icon icon="hugeicons:search-02" className="size-5 text-primary-500" />
           </button>
-          <ul className="flex justify-between items-center gap-5 bg-black-50 py-[18px] px-6 rounded-full text-sm">
-            <Link to={ROUTES.IN_APP.AUTH.LOGIN} className="text-primary-500 font-medium">
-              Login
-            </Link>
-            <Link to={ROUTES.IN_APP.AUTH.REGISTER} className="text-primary-500 font-medium">
-              Register
-            </Link>
-          </ul>
+          <Popover open={isCartOpen} onOpenChange={(open) => (open ? openCart() : closeCart())}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="bg-black-50 py-[18px] px-[18px] flex items-center justify-center rounded-full relative"
+              >
+                <Icon icon="bi:bag" className="size-5 text-primary-500" />
+                {/* {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {cartItemCount > 9 ? '9+' : cartItemCount}
+                  </span>
+                )} */}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              sideOffset={12}
+              className="w-[360px] p-0 border border-gray-200 shadow-2xl rounded-2xl bg-white"
+            >
+              <CartPopoverContent />
+            </PopoverContent>
+          </Popover>
+          {isAuthenticated && (
+            <Popover open={accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="bg-black-50 py-[18px] px-[18px] flex items-center justify-center rounded-full"
+                >
+                  <Icon icon="bi:person-circle" className="size-5 text-primary-500" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                sideOffset={12}
+                className="w-64 p-0 border border-gray-200 rounded-2xl shadow-xl bg-white"
+              >
+                <div className="p-4 border-b border-gray-100">
+                  <p className="text-sm text-gray-500 mb-1">Hi,</p>
+                  <p className="text-xl font-semibold text-gray-900">{displayName}</p>
+                </div>
+                <div className="flex flex-col p-4 gap-3 text-sm text-gray-800">
+                  {[
+                    {
+                      label: 'Dashboard',
+                      icon: 'bi:speedometer2',
+                      path: ROUTES.IN_APP.DASHBOARD.HOME,
+                    },
+                    { label: 'My orders', icon: 'bi:box', path: ROUTES.IN_APP.DASHBOARD.PURCHASE },
+                    {
+                      label: 'My Info',
+                      icon: 'bi:pencil-square',
+                      path: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.PROFILE_INFORMATION,
+                    },
+                    { label: 'Notifications', icon: 'bi:bell', path: '/dashboard/notifications' },
+                    { label: 'Notify Me List', icon: 'bi:star', path: '/dashboard/notify-me' },
+                    {
+                      label: 'Gift Cards',
+                      icon: 'bi:gift',
+                      path: ROUTES.IN_APP.DASHBOARD.PURCHASE,
+                    },
+                  ].map((item) => (
+                    <button
+                      type="button"
+                      key={item.label}
+                      onClick={() => {
+                        navigate(item.path)
+                        setAccountPopoverOpen(false)
+                      }}
+                      className="flex items-center gap-3 text-left hover:text-primary-600 transition-colors"
+                    >
+                      <Icon icon={item.icon} className="text-lg" />
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="border-t border-gray-100 p-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout()
+                      setAccountPopoverOpen(false)
+                      navigate(ROUTES.IN_APP.HOME)
+                    }}
+                    className="flex items-center gap-3 text-red-600 font-semibold hover:text-red-700"
+                  >
+                    <Icon icon="bi:box-arrow-right" className="text-lg" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+          {!isAuthenticated && (
+            <ul className="flex justify-between items-center gap-5 bg-black-50 py-[18px] px-6 rounded-full text-sm">
+              <Link to={ROUTES.IN_APP.AUTH.LOGIN} className="text-primary-500 font-medium">
+                Login
+              </Link>
+              <Link to={ROUTES.IN_APP.AUTH.REGISTER} className="text-primary-500 font-medium">
+                Register
+              </Link>
+            </ul>
+          )}
         </section>
       </div>
     </nav>

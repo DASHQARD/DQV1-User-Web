@@ -1,25 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
-import { Modal, OTPInput, Input, BasePhoneInput } from '@/components'
-import { useUserInfo } from '../../hooks/useUserInfo'
+import { Modal, OTPInput, Input, BasePhoneInput, Button } from '@/components'
 import { useAuthStore } from '@/stores'
 import { axiosClient } from '@/libs/axios'
 import LoaderGif from '@/assets/gifs/loader.gif'
 import { ROUTES } from '@/utils/constants'
 import { cn } from '@/libs/clsx'
-
-interface Profile {
-  fullName: string
-  phone: string
-  email: string
-}
-
-interface PasswordForm {
-  old: string
-  new: string
-  confirm: string
-}
+import { useCountriesData, useUserProfile } from '@/hooks'
+import { Controller } from 'react-hook-form'
+import { SettingsSchema } from '@/utils/schemas'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 
 interface PinCodeForm {
   old: string
@@ -49,37 +42,19 @@ interface EmailModal {
   error: string
 }
 
-interface NameChangeForm {
-  currentName: string
-  requestedName: string
-  reason: string
-}
-
 export default function Settings() {
   const navigate = useNavigate()
-  const { name, phone, email } = useUserInfo()
+  const { data: userProfile } = useUserProfile()
   const { logout, reset } = useAuthStore()
+  const { countries } = useCountriesData()
 
+  const form = useForm<z.infer<typeof SettingsSchema>>({
+    resolver: zodResolver(SettingsSchema),
+  })
   const [isLoading] = useState(false)
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertType, setAlertType] = useState<'success' | 'danger'>('success')
-  const [profile, setProfile] = useState<Profile>({
-    fullName: name || '',
-    phone: phone || '',
-    email: email || '',
-  })
 
-  // Password states
-  const [password, setPassword] = useState<PasswordForm>({
-    old: '',
-    new: '',
-    confirm: '',
-  })
-  const [passwordVisibility, setPasswordVisibility] = useState({
-    old: false,
-    new: false,
-    confirm: false,
-  })
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
@@ -89,11 +64,7 @@ export default function Settings() {
     new: '',
     confirm: '',
   })
-  const [pinVisibility, setPinVisibility] = useState({
-    old: false,
-    new: false,
-    confirm: false,
-  })
+
   const [pinLoading, setPinLoading] = useState(false)
   const [pinError, setPinError] = useState<string | null>(null)
   const [pinSuccess, setPinSuccess] = useState(false)
@@ -101,11 +72,7 @@ export default function Settings() {
 
   // Name change modal states
   const [showNameChangeModal, setShowNameChangeModal] = useState(false)
-  const [nameChangeForm, setNameChangeForm] = useState<NameChangeForm>({
-    currentName: name || '',
-    requestedName: '',
-    reason: '',
-  })
+
   const [submittingNameRequest, setSubmittingNameRequest] = useState(false)
   const [nameRequestError, setNameRequestError] = useState<string | null>(null)
   const [nameRequestSuccess, setNameRequestSuccess] = useState(false)
@@ -114,7 +81,7 @@ export default function Settings() {
   const [phoneModal, setPhoneModal] = useState<PhoneModal>({
     show: false,
     step: 'confirm-current',
-    current: phone || '',
+    current: userProfile?.phonenumber || '',
     otpOld: '',
     newValue: '',
     otpNew: '',
@@ -126,7 +93,7 @@ export default function Settings() {
   const [emailModal, setEmailModal] = useState<EmailModal>({
     show: false,
     step: 'confirm-current',
-    current: email || '',
+    current: userProfile?.email || '',
     otpOld: '',
     newValue: '',
     otpNew: '',
@@ -136,34 +103,27 @@ export default function Settings() {
 
   // Update profile when user info changes
   useEffect(() => {
-    setProfile({
-      fullName: name || '',
-      phone: phone || '',
-      email: email || '',
-    })
-    setNameChangeForm((prev) => ({ ...prev, currentName: name || '' }))
-  }, [name, phone, email])
-
-  // Password change handlers
-  const togglePasswordVisibility = (field: keyof typeof passwordVisibility) => {
-    setPasswordVisibility((prev) => ({ ...prev, [field]: !prev[field] }))
-  }
-
-  const confirmMismatch = password.new !== password.confirm && password.confirm.length > 0
+    if (userProfile) {
+      form.reset({
+        fullname: userProfile?.fullname || '',
+        phonenumber: userProfile?.phonenumber || '',
+        email: userProfile?.email || '',
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile])
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (confirmMismatch) return
+    if (form.formState.errors.newPassword) return
 
     setPasswordLoading(true)
     try {
       await axiosClient.post('/auth/change-password', {
-        currentPassword: password.old,
-        newPassword: password.new,
+        currentPassword: form.getValues('oldPassword'),
+        newPassword: form.getValues('password'),
       })
 
-      setPassword({ old: '', new: '', confirm: '' })
-      setPasswordVisibility({ old: false, new: false, confirm: false })
       setShowLogoutModal(true)
     } catch (error: any) {
       setAlertMessage(error?.message || 'Failed to change password')
@@ -180,16 +140,9 @@ export default function Settings() {
     navigate(ROUTES.IN_APP.AUTH.LOGIN)
   }
 
-  // PIN code handlers
-  const togglePinVisibility = (field: keyof typeof pinVisibility) => {
-    setPinVisibility((prev) => ({ ...prev, [field]: !prev[field] }))
-  }
-
-  const pinConfirmMismatch = pinCode.new !== pinCode.confirm && pinCode.confirm.length > 0
-
   const handlePinCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (pinConfirmMismatch) return
+    if (form.formState.errors.newPin?.message) return
 
     setPinLoading(true)
     setPinError(null)
@@ -201,7 +154,6 @@ export default function Settings() {
       })
 
       setPinCode({ old: '', new: '', confirm: '' })
-      setPinVisibility({ old: false, new: false, confirm: false })
       setPinSuccess(true)
       setPinError(null)
       setTimeout(() => {
@@ -214,18 +166,6 @@ export default function Settings() {
     } finally {
       setPinLoading(false)
     }
-  }
-
-  // Name change modal handlers
-  const openNameChangeModal = () => {
-    setShowNameChangeModal(true)
-    setNameChangeForm({
-      currentName: profile.fullName,
-      requestedName: '',
-      reason: '',
-    })
-    setNameRequestError(null)
-    setNameRequestSuccess(false)
   }
 
   const closeNameChangeModal = () => {
@@ -241,9 +181,9 @@ export default function Settings() {
 
     try {
       await axiosClient.post('/auth/name-change-request', {
-        currentName: nameChangeForm.currentName,
-        requestedName: nameChangeForm.requestedName,
-        reason: nameChangeForm.reason || undefined,
+        currentName: userProfile?.fullname || '',
+        requestedName: '',
+        reason: '',
       })
 
       setNameRequestSuccess(true)
@@ -261,31 +201,6 @@ export default function Settings() {
   }
 
   // Phone change modal handlers
-  const openPhoneChangeModal = async () => {
-    setPhoneModal({
-      show: true,
-      step: 'confirm-current',
-      current: profile.phone,
-      otpOld: '',
-      newValue: '',
-      otpNew: '',
-      loading: true,
-      error: '',
-    })
-
-    try {
-      await axiosClient.post('/auth/change-phone/request', {
-        currentPhone: profile.phone,
-      })
-      setPhoneModal((prev) => ({ ...prev, loading: false, error: '' }))
-    } catch (error: any) {
-      setPhoneModal((prev) => ({
-        ...prev,
-        loading: false,
-        error: error?.message || 'Failed to send OTP to current phone number',
-      }))
-    }
-  }
 
   const closePhoneModal = () => {
     setPhoneModal({
@@ -300,6 +215,35 @@ export default function Settings() {
     })
   }
 
+  const onSubmit = async (data: z.infer<typeof SettingsSchema>) => {
+    try {
+      await axiosClient.post('/auth/update-profile', {
+        fullname: data.fullname,
+        phonenumber: data.phonenumber,
+      })
+      setAlertMessage('Profile updated successfully!')
+      setAlertType('success')
+      setTimeout(() => setAlertMessage(null), 5000)
+    } catch (error: any) {
+      setAlertMessage(error?.message || 'Failed to update profile')
+      setAlertType('danger')
+      setTimeout(() => setAlertMessage(null), 5000)
+    }
+  }
+
+  // Calculate PIN mismatch
+  const pinConfirmMismatch = pinCode.new !== pinCode.confirm || !pinCode.new || !pinCode.confirm
+
+  // Mask email function
+  const maskEmail = (email: string) => {
+    if (!email) return ''
+    const [local, domain] = email.split('@')
+    if (!domain) return email
+    const maskedLocal = local.length > 2 ? local.slice(0, 2) + '*'.repeat(local.length - 2) : local
+    return `${maskedLocal}@${domain}`
+  }
+
+  // Phone modal handlers
   const handlePhoneNextStep = async () => {
     const modal = phoneModal
     setPhoneModal((prev) => ({ ...prev, error: '', loading: true }))
@@ -312,7 +256,7 @@ export default function Settings() {
         })
         setPhoneModal((prev) => ({ ...prev, step: 'enter-new', otpOld: '', loading: false }))
       } else if (modal.step === 'enter-new') {
-        if (!modal.newValue || modal.newValue.length < 10) {
+        if (!modal.newValue) {
           throw new Error('Please enter a valid phone number.')
         }
         if (modal.newValue === modal.current) {
@@ -331,7 +275,6 @@ export default function Settings() {
           newPhoneOtp: modal.otpNew,
         })
 
-        setProfile((prev) => ({ ...prev, phone: modal.newValue }))
         closePhoneModal()
         setAlertMessage('Phone number changed successfully!')
         setAlertType('success')
@@ -346,97 +289,53 @@ export default function Settings() {
     }
   }
 
-  const goBackPhone = () => {
-    if (phoneModal.step === 'confirm-new') {
-      setPhoneModal((prev) => ({ ...prev, step: 'enter-new' }))
-    } else if (phoneModal.step === 'enter-new') {
-      setPhoneModal((prev) => ({ ...prev, step: 'confirm-current' }))
-    }
-  }
-
-  const resendCurrentPhoneOtp = async () => {
-    setPhoneModal((prev) => ({ ...prev, loading: true }))
-    try {
-      await axiosClient.post('/auth/change-phone/resend-current-otp', {
-        currentPhone: phoneModal.current,
-      })
-      setPhoneModal((prev) => ({ ...prev, loading: false, error: '' }))
-    } catch (error: any) {
-      setPhoneModal((prev) => ({
-        ...prev,
-        loading: false,
-        error: error?.message || 'Failed to resend OTP',
-      }))
-    }
-  }
-
   const resendNewPhoneOtp = async () => {
-    setPhoneModal((prev) => ({ ...prev, loading: true }))
     try {
-      await axiosClient.post('/auth/change-phone/resend-new-otp', {
+      setPhoneModal((prev) => ({ ...prev, loading: true, error: '' }))
+      await axiosClient.post('/auth/change-phone/send-new-otp', {
         currentPhone: phoneModal.current,
         newPhone: phoneModal.newValue,
       })
-      setPhoneModal((prev) => ({ ...prev, loading: false, error: '' }))
+      setPhoneModal((prev) => ({ ...prev, loading: false }))
     } catch (error: any) {
       setPhoneModal((prev) => ({
         ...prev,
         loading: false,
-        error: error?.message || 'Failed to resend OTP',
+        error: error?.message || 'Failed to resend code. Please try again.',
       }))
     }
   }
 
-  const isPhoneStepValid = () => {
-    switch (phoneModal.step) {
-      case 'confirm-current':
-        return phoneModal.otpOld.length === 4
-      case 'enter-new':
-        return phoneModal.newValue.length >= 10
-      case 'confirm-new':
-        return phoneModal.otpNew.length === 4
-      default:
-        return false
+  const goBackPhone = () => {
+    if (phoneModal.step === 'enter-new') {
+      setPhoneModal((prev) => ({ ...prev, step: 'confirm-current', newValue: '', error: '' }))
+    } else if (phoneModal.step === 'confirm-new') {
+      setPhoneModal((prev) => ({ ...prev, step: 'enter-new', otpNew: '', error: '' }))
     }
   }
 
-  const getPhoneButtonText = () => {
-    switch (phoneModal.step) {
-      case 'confirm-current':
-        return phoneModal.otpOld.length === 4 ? 'Verify Current Phone' : 'Enter Code'
-      case 'enter-new':
-        return 'Send Code to New Phone'
-      case 'confirm-new':
-        return phoneModal.otpNew.length === 4 ? 'Complete Phone Change' : 'Enter Code'
-      default:
-        return 'Next'
-    }
-  }
-
-  // Email change modal handlers
-  const openEmailChangeModal = async () => {
-    setEmailModal({
-      show: true,
-      step: 'confirm-current',
-      current: profile.email,
-      otpOld: '',
-      newValue: '',
-      otpNew: '',
-      loading: true,
-      error: '',
-    })
-
+  const resendNewEmailOtp = async () => {
     try {
-      await axiosClient.post('/auth/change-email/request', {
-        currentEmail: profile.email,
+      setEmailModal((prev) => ({ ...prev, loading: true, error: '' }))
+      await axiosClient.post('/auth/change-email/send-new-otp', {
+        currentEmail: emailModal.current,
+        newEmail: emailModal.newValue,
       })
-      setEmailModal((prev) => ({ ...prev, loading: false, error: '' }))
+      setEmailModal((prev) => ({ ...prev, loading: false }))
     } catch (error: any) {
       setEmailModal((prev) => ({
         ...prev,
         loading: false,
-        error: error?.message || 'Failed to send OTP to current email address',
+        error: error?.message || 'Failed to resend code. Please try again.',
       }))
+    }
+  }
+
+  const goBackEmail = () => {
+    if (emailModal.step === 'enter-new') {
+      setEmailModal((prev) => ({ ...prev, step: 'confirm-current', newValue: '', error: '' }))
+    } else if (emailModal.step === 'confirm-new') {
+      setEmailModal((prev) => ({ ...prev, step: 'enter-new', otpNew: '', error: '' }))
     }
   }
 
@@ -484,7 +383,6 @@ export default function Settings() {
           newEmailOtp: modal.otpNew,
         })
 
-        setProfile((prev) => ({ ...prev, email: modal.newValue }))
         closeEmailModal()
         setAlertMessage('Email address changed successfully!')
         setAlertType('success')
@@ -497,90 +395,6 @@ export default function Settings() {
         error: error?.message || 'An error occurred. Please try again.',
       }))
     }
-  }
-
-  const goBackEmail = () => {
-    if (emailModal.step === 'confirm-new') {
-      setEmailModal((prev) => ({ ...prev, step: 'enter-new' }))
-    } else if (emailModal.step === 'enter-new') {
-      setEmailModal((prev) => ({ ...prev, step: 'confirm-current' }))
-    }
-  }
-
-  const resendCurrentEmailOtp = async () => {
-    setEmailModal((prev) => ({ ...prev, loading: true }))
-    try {
-      await axiosClient.post('/auth/change-email/resend-current-otp', {
-        currentEmail: emailModal.current,
-      })
-      setEmailModal((prev) => ({ ...prev, loading: false, error: '' }))
-    } catch (error: any) {
-      setEmailModal((prev) => ({
-        ...prev,
-        loading: false,
-        error: error?.message || 'Failed to resend OTP',
-      }))
-    }
-  }
-
-  const resendNewEmailOtp = async () => {
-    setEmailModal((prev) => ({ ...prev, loading: true }))
-    try {
-      await axiosClient.post('/auth/change-email/resend-new-otp', {
-        currentEmail: emailModal.current,
-        newEmail: emailModal.newValue,
-      })
-      setEmailModal((prev) => ({ ...prev, loading: false, error: '' }))
-    } catch (error: any) {
-      setEmailModal((prev) => ({
-        ...prev,
-        loading: false,
-        error: error?.message || 'Failed to resend OTP',
-      }))
-    }
-  }
-
-  const isEmailStepValid = () => {
-    switch (emailModal.step) {
-      case 'confirm-current':
-        return emailModal.otpOld.length === 4
-      case 'enter-new':
-        return emailModal.newValue && isValidEmail(emailModal.newValue)
-      case 'confirm-new':
-        return emailModal.otpNew.length === 4
-      default:
-        return false
-    }
-  }
-
-  const getEmailButtonText = () => {
-    switch (emailModal.step) {
-      case 'confirm-current':
-        return emailModal.otpOld.length === 4 ? 'Verify Current Email' : 'Enter Code'
-      case 'enter-new':
-        return 'Send Code to New Email'
-      case 'confirm-new':
-        return emailModal.otpNew.length === 4 ? 'Complete Email Change' : 'Enter Code'
-      default:
-        return 'Next'
-    }
-  }
-
-  // Utility functions
-  const formatPhoneForDisplay = (phone: string) => {
-    if (!phone || phone.length < 8) return phone
-    const start = phone.slice(0, 3)
-    const end = phone.slice(-2)
-    const middle = '*'.repeat(phone.length - 5)
-    return `${start}${middle}${end}`
-  }
-
-  const maskEmail = (email: string) => {
-    if (!email) return email
-    const [username, domain] = email.split('@')
-    if (username.length <= 2) return email
-    const maskedUsername = username[0] + '*'.repeat(username.length - 2) + username.slice(-1)
-    return `${maskedUsername}@${domain}`
   }
 
   const isValidEmail = (email: string) => {
@@ -661,96 +475,56 @@ export default function Settings() {
               </div>
 
               <div className="p-6">
-                <form onSubmit={(e) => e.preventDefault()}>
-                  <div className="mb-8">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-4">
                     <h6 className="text-base font-semibold text-gray-700 mb-5 pb-2 border-b-2 border-gray-200 flex items-center">
                       <span className="w-1 h-4 bg-[#402D87] mr-2"></span>
                       Basic Information
                     </h6>
 
-                    {/* Full Name */}
-                    <div className="mb-5">
-                      <label className="block font-semibold text-gray-700 mb-2 text-sm flex items-center">
-                        <Icon icon="bi:person" className="mr-1 text-[#402D87] text-xs" />
-                        Full Name
-                      </label>
-                      <div className="relative">
-                        <Input
-                          value={profile.fullName}
-                          disabled
-                          placeholder="Enter your full name"
-                          className="w-full"
-                          innerClassName="pr-12"
-                        />
-                        <button
-                          type="button"
-                          onClick={openNameChangeModal}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[#402D87]/60 hover:text-[#402D87] p-2 rounded-md transition-all hover:bg-[#402D87]/10"
-                          title="Edit name"
-                        >
-                          <Icon icon="bi:pencil" className="text-sm" />
-                        </button>
-                      </div>
-                      <small className="text-xs text-gray-500 mt-1 block">
-                        Contact support to change your name
-                      </small>
-                    </div>
+                    <Input
+                      {...form.register('fullname')}
+                      disabled
+                      readOnly
+                      placeholder="Enter your full name"
+                      className="w-full"
+                    />
 
-                    {/* Email Address */}
-                    <div className="mb-5">
-                      <label className="block font-semibold text-gray-700 mb-2 text-sm flex items-center">
-                        <Icon icon="bi:envelope" className="mr-1 text-[#402D87] text-xs" />
-                        Email Address
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type="email"
-                          value={profile.email}
-                          disabled
-                          placeholder="Enter your email"
-                          className="w-full"
-                          innerClassName="pr-12"
-                        />
-                        <button
-                          type="button"
-                          onClick={openEmailChangeModal}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[#402D87]/60 hover:text-[#402D87] p-2 rounded-md transition-all hover:bg-[#402D87]/10"
-                          title="Edit email"
-                        >
-                          <Icon icon="bi:pencil" className="text-sm" />
-                        </button>
-                      </div>
-                      <small className="text-xs text-gray-500 mt-1 block">
-                        Your email is used for account notifications
-                      </small>
-                    </div>
+                    <Input
+                      type="email"
+                      {...form.register('email')}
+                      disabled
+                      readOnly
+                      placeholder="Enter your email"
+                      className="w-full"
+                      innerClassName="pr-12"
+                    />
 
-                    {/* Phone Number */}
-                    <div className="mb-5">
-                      <label className="block font-semibold text-gray-700 mb-2 text-sm flex items-center">
-                        <Icon icon="bi:telephone" className="mr-1 text-[#402D87] text-xs" />
-                        Phone Number
-                      </label>
-                      <div className="relative">
-                        <BasePhoneInput
-                          selectedVal={profile.phone}
-                          disabled
-                          placeholder="Enter phone number..."
-                          label=""
-                        />
-                        <button
-                          type="button"
-                          onClick={openPhoneChangeModal}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[#402D87]/60 hover:text-[#402D87] p-2 rounded-md transition-all hover:bg-[#402D87]/10 z-10"
-                          title="Edit phone"
-                        >
-                          <Icon icon="bi:pencil" className="text-sm" />
-                        </button>
-                      </div>
-                      <small className="text-xs text-gray-500 mt-1 block">
-                        Your phone number for account verification
-                      </small>
-                    </div>
+                    <Controller
+                      control={form.control}
+                      name="phonenumber"
+                      render={({ field: { value, onChange } }) => {
+                        return (
+                          <BasePhoneInput
+                            placeholder="Enter number eg. 5512345678"
+                            options={countries}
+                            selectedVal={value}
+                            maxLength={10}
+                            handleChange={onChange}
+                            label="Phone Number"
+                            error={form.formState.errors.phonenumber?.message}
+                          />
+                        )
+                      }}
+                    />
+                  </div>
+                  <div className="flex gap-2 py-4 border-t border-gray-200">
+                    <Button type="submit" variant="secondary">
+                      Save
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => form.reset()}>
+                      Cancel
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -776,97 +550,39 @@ export default function Settings() {
                 </div>
 
                 <div className="p-6">
-                  <form onSubmit={handlePasswordSubmit}>
-                    <div className="mb-5">
-                      <label className="block font-semibold text-gray-700 mb-2 text-sm">
-                        Current Password
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type={passwordVisibility.old ? 'text' : 'password'}
-                          value={password.old}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setPassword((prev) => ({ ...prev, old: e.target.value }))
-                          }
-                          placeholder="Enter current password"
-                          className="w-full"
-                          innerClassName="pr-12"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => togglePasswordVisibility('old')}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[#402D87]/60 hover:text-[#402D87] p-2 rounded-md transition-all hover:bg-[#402D87]/10"
-                        >
-                          <Icon
-                            icon={passwordVisibility.old ? 'bi:eye-slash' : 'bi:eye'}
-                            className="text-sm"
-                          />
-                        </button>
-                      </div>
-                    </div>
+                  <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
+                    <Input
+                      label="Current Password"
+                      type="password"
+                      placeholder="Enter current password"
+                      {...form.register('oldPassword')}
+                      error={form.formState.errors.oldPassword?.message}
+                      className="w-full"
+                    />
 
-                    <div className="mb-5">
-                      <label className="block font-semibold text-gray-700 mb-2 text-sm">
-                        New Password
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type={passwordVisibility.new ? 'text' : 'password'}
-                          value={password.new}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setPassword((prev) => ({ ...prev, new: e.target.value }))
-                          }
-                          placeholder="Enter new password"
-                          className="w-full"
-                          innerClassName="pr-12"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => togglePasswordVisibility('new')}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[#402D87]/60 hover:text-[#402D87] p-2 rounded-md transition-all hover:bg-[#402D87]/10"
-                        >
-                          <Icon
-                            icon={passwordVisibility.new ? 'bi:eye-slash' : 'bi:eye'}
-                            className="text-sm"
-                          />
-                        </button>
-                      </div>
-                    </div>
+                    <Input
+                      label="New Password"
+                      type="password"
+                      placeholder="Enter new password"
+                      {...form.register('password')}
+                      error={form.formState.errors.password?.message}
+                      className="w-full"
+                    />
 
-                    <div className="mb-5">
-                      <label className="block font-semibold text-gray-700 mb-2 text-sm">
-                        Confirm New Password
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type={passwordVisibility.confirm ? 'text' : 'password'}
-                          value={password.confirm}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setPassword((prev) => ({ ...prev, confirm: e.target.value }))
-                          }
-                          placeholder="Confirm new password"
-                          className="w-full"
-                          innerClassName={cn('pr-12', confirmMismatch && 'border-red-500')}
-                          error={confirmMismatch ? 'Passwords do not match.' : undefined}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => togglePasswordVisibility('confirm')}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[#402D87]/60 hover:text-[#402D87] p-2 rounded-md transition-all hover:bg-[#402D87]/10"
-                        >
-                          <Icon
-                            icon={passwordVisibility.confirm ? 'bi:eye-slash' : 'bi:eye'}
-                            className="text-sm"
-                          />
-                        </button>
-                      </div>
-                    </div>
+                    <Input
+                      label="Confirm New Password"
+                      type="password"
+                      placeholder="Confirm new password"
+                      {...form.register('newPassword')}
+                      error={form.formState.errors.newPassword?.message}
+                      className="w-full"
+                    />
 
                     <div className="mt-8 pt-5 border-t border-gray-200">
                       <button
                         type="submit"
                         className="w-full bg-gradient-to-br from-[#402D87] to-[#5a4fcf] text-white px-6 py-3 rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
-                        disabled={passwordLoading || confirmMismatch}
+                        disabled={passwordLoading || !!form.formState.errors.newPassword?.message}
                       >
                         {passwordLoading ? (
                           <span className="flex items-center justify-center">
@@ -910,100 +626,40 @@ export default function Settings() {
                     </div>
                   )}
 
-                  <form onSubmit={handlePinCodeSubmit}>
-                    <div className="mb-5">
-                      <label className="block font-semibold text-gray-700 mb-2 text-sm">
-                        Current PIN Code
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type={pinVisibility.old ? 'text' : 'password'}
-                          value={pinCode.old}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setPinCode((prev) => ({ ...prev, old: e.target.value }))
-                          }
-                          placeholder="Enter current PIN code"
-                          maxLength={4}
-                          pattern="[0-9]*"
-                          inputMode="numeric"
-                          className="w-full"
-                          innerClassName="pr-12"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => togglePinVisibility('old')}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[#402D87]/60 hover:text-[#402D87] p-2 rounded-md transition-all hover:bg-[#402D87]/10"
-                        >
-                          <Icon
-                            icon={pinVisibility.old ? 'bi:eye-slash' : 'bi:eye'}
-                            className="text-sm"
-                          />
-                        </button>
-                      </div>
-                    </div>
+                  <form onSubmit={handlePinCodeSubmit} className="flex flex-col gap-4">
+                    <Input
+                      label="Current PIN Code"
+                      type="password"
+                      placeholder="Enter current PIN code"
+                      value={pinCode.old}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setPinCode((prev) => ({ ...prev, old: e.target.value }))
+                      }
+                      className="w-full"
+                    />
 
-                    <div className="mb-5">
-                      <label className="block font-semibold text-gray-700 mb-2 text-sm">
-                        New PIN Code
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type={pinVisibility.new ? 'text' : 'password'}
-                          value={pinCode.new}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setPinCode((prev) => ({ ...prev, new: e.target.value }))
-                          }
-                          placeholder="Enter new PIN code"
-                          maxLength={4}
-                          pattern="[0-9]*"
-                          inputMode="numeric"
-                          className="w-full"
-                          innerClassName="pr-12"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => togglePinVisibility('new')}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[#402D87]/60 hover:text-[#402D87] p-2 rounded-md transition-all hover:bg-[#402D87]/10"
-                        >
-                          <Icon
-                            icon={pinVisibility.new ? 'bi:eye-slash' : 'bi:eye'}
-                            className="text-sm"
-                          />
-                        </button>
-                      </div>
-                    </div>
+                    <Input
+                      label="New PIN Code"
+                      type="password"
+                      placeholder="Enter new PIN code"
+                      value={pinCode.new}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setPinCode((prev) => ({ ...prev, new: e.target.value }))
+                      }
+                      className="w-full"
+                    />
 
-                    <div className="mb-5">
-                      <label className="block font-semibold text-gray-700 mb-2 text-sm">
-                        Confirm New PIN Code
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type={pinVisibility.confirm ? 'text' : 'password'}
-                          value={pinCode.confirm}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setPinCode((prev) => ({ ...prev, confirm: e.target.value }))
-                          }
-                          placeholder="Confirm new PIN code"
-                          maxLength={4}
-                          pattern="[0-9]*"
-                          inputMode="numeric"
-                          className="w-full"
-                          innerClassName={cn('pr-12', pinConfirmMismatch && 'border-red-500')}
-                          error={pinConfirmMismatch ? 'PIN codes do not match.' : undefined}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => togglePinVisibility('confirm')}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[#402D87]/60 hover:text-[#402D87] p-2 rounded-md transition-all hover:bg-[#402D87]/10"
-                        >
-                          <Icon
-                            icon={pinVisibility.confirm ? 'bi:eye-slash' : 'bi:eye'}
-                            className="text-sm"
-                          />
-                        </button>
-                      </div>
-                    </div>
+                    <Input
+                      label="Confirm New PIN Code"
+                      type="password"
+                      placeholder="Confirm new PIN code"
+                      value={pinCode.confirm}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setPinCode((prev) => ({ ...prev, confirm: e.target.value }))
+                      }
+                      error={pinConfirmMismatch ? 'PIN codes do not match' : undefined}
+                      className="w-full"
+                    />
 
                     <div className="mt-8 pt-5 border-t border-gray-200">
                       <button
@@ -1124,7 +780,7 @@ export default function Settings() {
                       Current Name
                     </label>
                     <Input
-                      value={nameChangeForm.currentName}
+                      value={userProfile?.fullname || ''}
                       disabled
                       readOnly
                       className="w-full"
@@ -1138,10 +794,7 @@ export default function Settings() {
                       New Name <span className="text-red-600 ml-1">*</span>
                     </label>
                     <Input
-                      value={nameChangeForm.requestedName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setNameChangeForm((prev) => ({ ...prev, requestedName: e.target.value }))
-                      }
+                      {...form.register('name')}
                       placeholder="Enter your new name"
                       disabled={submittingNameRequest}
                       required
@@ -1158,10 +811,7 @@ export default function Settings() {
                   </label>
                   <Input
                     type="textarea"
-                    value={nameChangeForm.reason}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                      setNameChangeForm((prev) => ({ ...prev, reason: e.target.value }))
-                    }
+                    {...form.register('reason')}
                     placeholder="Please explain why you want to change your name (optional)"
                     disabled={submittingNameRequest}
                     className="w-full"
@@ -1184,7 +834,7 @@ export default function Settings() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingNameRequest || !nameChangeForm.requestedName.trim()}
+                  disabled={submittingNameRequest || !form.formState.isValid}
                   className="bg-gradient-to-br from-[#402D87] to-[#5a4fcf] text-white px-8 py-3 rounded-xl font-semibold text-base transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {submittingNameRequest ? (
@@ -1247,7 +897,7 @@ export default function Settings() {
                     Current Phone Number
                   </span>
                   <span className="font-mono text-base font-medium text-gray-800">
-                    {formatPhoneForDisplay(phoneModal.current)}
+                    {userProfile?.phonenumber}
                   </span>
                 </div>
 
@@ -1270,7 +920,7 @@ export default function Settings() {
                     Didn't receive the code?{' '}
                     <button
                       type="button"
-                      onClick={resendCurrentPhoneOtp}
+                      onClick={() => {}}
                       disabled={phoneModal.loading}
                       className="text-[#402D87] font-semibold underline hover:text-[#2d2060] disabled:text-gray-400 disabled:no-underline"
                     >
@@ -1316,7 +966,7 @@ export default function Settings() {
                     New Phone Number
                   </span>
                   <span className="font-mono text-base font-medium text-gray-800">
-                    {formatPhoneForDisplay(phoneModal.newValue)}
+                    {phoneModal.newValue || ''}
                   </span>
                 </div>
 
@@ -1364,13 +1014,18 @@ export default function Settings() {
             )}
             <button
               onClick={handlePhoneNextStep}
-              disabled={phoneModal.loading || !isPhoneStepValid()}
+              disabled={
+                phoneModal.loading ||
+                (phoneModal.step === 'confirm-current' && phoneModal.otpOld.length !== 4) ||
+                (phoneModal.step === 'enter-new' && !phoneModal.newValue) ||
+                (phoneModal.step === 'confirm-new' && phoneModal.otpNew.length !== 4)
+              }
               className="flex-1 bg-gradient-to-br from-[#402D87] to-[#5a4fcf] text-white px-6 py-3 rounded-xl font-semibold text-base transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
             >
               {phoneModal.loading ? (
                 <Icon icon="mdi:loading" className="animate-spin mr-2" />
               ) : null}
-              {getPhoneButtonText()}
+              {phoneModal.step === 'confirm-new' ? 'Save' : 'Next'}
               {!phoneModal.loading && phoneModal.step !== 'confirm-new' && (
                 <Icon icon="bi:arrow-right" className="ml-2" />
               )}
@@ -1424,7 +1079,7 @@ export default function Settings() {
                     Current Email Address
                   </span>
                   <span className="font-mono text-sm font-medium text-gray-800">
-                    {maskEmail(emailModal.current)}
+                    {userProfile?.email}
                   </span>
                 </div>
 
@@ -1447,7 +1102,7 @@ export default function Settings() {
                     Didn't receive the code?{' '}
                     <button
                       type="button"
-                      onClick={resendCurrentEmailOtp}
+                      onClick={() => {}}
                       disabled={emailModal.loading}
                       className="text-[#402D87] font-semibold underline hover:text-[#2d2060] disabled:text-gray-400 disabled:no-underline"
                     >
@@ -1541,13 +1196,13 @@ export default function Settings() {
             )}
             <button
               onClick={handleEmailNextStep}
-              disabled={emailModal.loading || !isEmailStepValid()}
+              disabled={emailModal.loading || !form.formState.isValid}
               className="flex-1 bg-gradient-to-br from-[#402D87] to-[#5a4fcf] text-white px-6 py-3 rounded-xl font-semibold text-base transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
             >
               {emailModal.loading ? (
                 <Icon icon="mdi:loading" className="animate-spin mr-2" />
               ) : null}
-              {getEmailButtonText()}
+              Save
               {!emailModal.loading && emailModal.step !== 'confirm-new' && (
                 <Icon icon="bi:arrow-right" className="ml-2" />
               )}

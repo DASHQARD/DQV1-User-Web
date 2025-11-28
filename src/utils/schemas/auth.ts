@@ -2,12 +2,19 @@ import { z } from 'zod'
 import {
   getRequiredAlphaNumericStringSchema,
   getRequiredEmailSchema,
+  getRequiredNumberSchema,
   getRequiredStringSchema,
 } from './shared'
 
 export const LoginSchema = z.object({
   email: getRequiredEmailSchema('Email'),
   password: getRequiredStringSchema('Password'),
+})
+
+export const AdminOnboardingSchema = z.object({
+  verification_code: getRequiredStringSchema('Verification Code'),
+  phone_number: getRequiredStringSchema('Phone Number'),
+  password: getRequiredAlphaNumericStringSchema('Password'),
 })
 
 export const CreateAccountSchema = z
@@ -37,7 +44,8 @@ export const ResetPasswordSchema = z
   })
 
 export const OnboardingSchema = z.object({
-  full_name: getRequiredStringSchema('Full Name'),
+  first_name: getRequiredStringSchema('First Name'),
+  last_name: getRequiredStringSchema('Last Name'),
   phone_number: getRequiredStringSchema('Phone Number'),
   street_address: getRequiredStringSchema('Street Address'),
   dob: getRequiredStringSchema('Date of Birth'),
@@ -65,3 +73,55 @@ export const VerifyLoginOTPSchema = z
     message: 'OTP must be 4 digits',
     path: ['otp'],
   })
+
+export const BusinessDetailsSchema = z.object({
+  name: getRequiredStringSchema('Name'),
+  type: z.enum(['llc', 'sole_proprietor', 'partnership']),
+  phone: getRequiredStringSchema('Phone'),
+  email: getRequiredEmailSchema('Email'),
+  street_address: getRequiredStringSchema('Street Address'),
+  digital_address: getRequiredStringSchema('Digital Address'),
+  registration_number: getRequiredStringSchema('Registration Number'),
+})
+
+export const UploadBusinessIDSchema = z.object({
+  employer_identification_number: getRequiredStringSchema('Employer Identification Number'),
+  business_industry: getRequiredStringSchema('Business Industry'),
+  certificate_of_incorporation: z
+    .instanceof(File, { message: 'Certificate of Incorporation is required' })
+    .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB'),
+  business_license: z
+    .instanceof(File, { message: 'Business License is required' })
+    .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB'),
+  articles_of_incorporation: z
+    .instanceof(File, { message: 'Articles of Incorporation is required' })
+    .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB')
+    .optional(),
+  utility_bill: z
+    .instanceof(File, { message: 'Utility Bill is required' })
+    .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB'),
+  logo: z
+    .instanceof(File, { message: 'Logo is required' })
+    .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB')
+    .optional(),
+})
+
+const BranchManagerSchema = z.object({
+  branch_manager_name: getRequiredStringSchema('Branch Manager Name'),
+  branch_manager_email: getRequiredEmailSchema('Branch Manager Email'),
+})
+
+export const AddBranchSchema = z.object({
+  country: getRequiredNumberSchema('Country'),
+  country_code: getRequiredStringSchema('Country Code'),
+  main_branch: z.boolean(),
+  is_single_branch: z.boolean(),
+  branch_name: getRequiredStringSchema('Branch Name'),
+  branch_location: getRequiredStringSchema('Branch Location'),
+  branches: z
+    .array(BranchManagerSchema)
+    .min(1, 'At least one branch manager is required')
+    .refine((branches) => branches.length > 0, {
+      message: 'At least one branch manager is required',
+    }),
+})

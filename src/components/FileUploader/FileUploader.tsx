@@ -53,7 +53,7 @@ export default function FileUploader({
       )}
       <div
         className={cn(
-          'border-2 border-dashed rounded-lg p-4 transition-colors',
+          'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center',
           error ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400',
           value && 'border-primary-500 bg-primary-50/30',
         )}
