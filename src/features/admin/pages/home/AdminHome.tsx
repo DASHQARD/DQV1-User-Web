@@ -46,7 +46,6 @@ export default function AdminHome() {
           })
         }
       } catch {
-        console.log('Could not fetch location data')
         setLocationInfo({
           city: 'Accra',
           country: 'Ghana',

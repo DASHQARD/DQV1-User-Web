@@ -34,7 +34,6 @@ export function useAuth() {
     return useMutation({
       mutationFn: verifyLoginToken,
       onSuccess: (response: { accessToken: string; refreshToken: string }) => {
-        console.log('response', response)
         useAuthStore.getState().authenticate({
           token: response.accessToken,
           refreshToken: response.refreshToken,
