@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Icon } from '@/libs'
-import { DataTable, Input, Loader, Dropdown, Button, Modal } from '@/components'
+import { DataTable, Input, Loader, Button } from '@/components'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Admin } from '@/types/admin'
 import { cn } from '@/libs'
@@ -13,17 +13,11 @@ export default function Admins() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [limit, setLimit] = useState(10)
-  const [after, setAfter] = useState<string | undefined>(undefined)
   const [showInviteModal, setShowInviteModal] = useState(false)
 
   // TODO: Replace with actual hook when API is available
   const isLoading = false
   const admins = mockAdmins
-  const pagination = {
-    limit: 10,
-    hasNextPage: false,
-    next: null,
-  }
 
   const columns: ColumnDef<Admin>[] = useMemo(
     () => [
@@ -47,9 +41,7 @@ export default function Admins() {
       {
         accessorKey: 'last_name',
         header: 'Last Name',
-        cell: ({ row }) => (
-          <span className="text-gray-900">{row.original.last_name || 'N/A'}</span>
-        ),
+        cell: ({ row }) => <span className="text-gray-900">{row.original.last_name || 'N/A'}</span>,
       },
       {
         accessorKey: 'type',
@@ -178,14 +170,14 @@ export default function Admins() {
               <Input
                 placeholder="Search by email or name..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
                 className="w-full"
               />
             </div>
             <div className="w-[200px]">
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value)}
                 className="w-full border-2 border-gray-300 rounded-lg py-2.5 px-4 text-sm bg-white text-gray-900 cursor-pointer transition-colors focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25 hover:border-gray-400"
               >
                 <option value="">All Status</option>
@@ -198,7 +190,9 @@ export default function Admins() {
             <div className="w-[150px]">
               <select
                 value={limit}
-                onChange={(e) => setLimit(Number(e.target.value))}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setLimit(Number(e.target.value))
+                }
                 className="w-full border-2 border-gray-300 rounded-lg py-2.5 px-4 text-sm bg-white text-gray-900 cursor-pointer transition-colors focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25 hover:border-gray-400"
               >
                 <option value="10">10 per page</option>
@@ -223,11 +217,7 @@ export default function Admins() {
       </div>
 
       {/* Invite Admin Modal */}
-      <InviteAdminModal
-        isOpen={showInviteModal}
-        onClose={() => setShowInviteModal(false)}
-      />
+      <InviteAdminModal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} />
     </div>
   )
 }
-

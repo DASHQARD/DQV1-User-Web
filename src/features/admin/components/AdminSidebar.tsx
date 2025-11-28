@@ -61,9 +61,7 @@ export default function AdminSidebar() {
   const adminNavItems = [
     {
       section: 'Overview',
-      items: [
-        { path: ROUTES.IN_APP.ADMIN.HOME, label: 'Dashboard', icon: 'bi:speedometer2' },
-      ],
+      items: [{ path: ROUTES.IN_APP.ADMIN.HOME, label: 'Dashboard', icon: 'bi:speedometer2' }],
     },
     {
       section: 'User Management',
@@ -281,4 +279,3 @@ export default function AdminSidebar() {
     </aside>
   )
 }
-

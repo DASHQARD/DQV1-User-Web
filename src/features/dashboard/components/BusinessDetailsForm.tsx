@@ -33,6 +33,7 @@ export default function BusinessDetailsForm() {
         registration_number: userProfile?.business_details[0]?.registration_number,
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userProfile])
 
   const onSubmit = (data: z.infer<typeof BusinessDetailsSchema>) => {

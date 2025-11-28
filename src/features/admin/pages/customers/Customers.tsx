@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Icon } from '@/libs'
-import { DataTable, Input, Loader, Dropdown } from '@/components'
+import { DataTable, Input, Dropdown } from '@/components'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useCustomers } from '../../hooks/useCustomers'
 import type { Customer } from '@/types/customer'
@@ -33,10 +33,7 @@ export default function Customers() {
     after,
   })
 
-  console.log('customers', data)
-
-  const customers = data?.data || []
-  const pagination = data?.pagination
+  const customers = data || []
 
   const handleViewDetails = (customer: Customer) => {
     setSelectedCustomerId(customer.id)
@@ -146,16 +143,6 @@ export default function Customers() {
     [],
   )
 
-  const handleNextPage = () => {
-    if (pagination?.next) {
-      setAfter(pagination.next)
-    }
-  }
-
-  const handlePreviousPage = () => {
-    setAfter(undefined)
-  }
-
   if (error) {
     return (
       <div className="flex items-center justify-center h-64 bg-white rounded-xl border border-gray-200">
@@ -200,7 +187,7 @@ export default function Customers() {
                   type="text"
                   placeholder="Search by email, name, or phone..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -209,7 +196,7 @@ export default function Customers() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg py-2.5 px-4 text-sm bg-white text-gray-900 cursor-pointer focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25"
               >
                 {statusOptions.map((option) => (
@@ -242,9 +229,7 @@ export default function Customers() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
             <div className="text-sm text-gray-600 mb-1">Total Customers</div>
-            <div className="text-2xl font-bold text-[#402D87]">
-              {pagination ? customers.length + (pagination.hasNextPage ? '+' : '') : '-'}
-            </div>
+            <div className="text-2xl font-bold text-[#402D87]">{customers.length}</div>
           </div>
           <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
             <div className="text-sm text-gray-600 mb-1">Suspended</div>
@@ -287,39 +272,10 @@ export default function Customers() {
           />
 
           {/* Pagination */}
-          {pagination && customers.length > 0 && (
+          {customers.length > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                Showing {customers.length} of {pagination.hasNextPage ? 'many' : customers.length}{' '}
-                customers
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handlePreviousPage}
-                  disabled={!after}
-                  className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-lg border transition-colors',
-                    after
-                      ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                      : 'border-gray-200 text-gray-400 cursor-not-allowed',
-                  )}
-                >
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextPage}
-                  disabled={!pagination.hasNextPage}
-                  className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-lg border transition-colors',
-                    pagination.hasNextPage
-                      ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                      : 'border-gray-200 text-gray-400 cursor-not-allowed',
-                  )}
-                >
-                  Next
-                </button>
+                Showing {customers.length} customer{customers.length !== 1 ? 's' : ''}
               </div>
             </div>
           )}

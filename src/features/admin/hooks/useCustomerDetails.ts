@@ -8,4 +8,3 @@ export function useCustomerDetails(id: number | null) {
     enabled: !!id,
   })
 }
-

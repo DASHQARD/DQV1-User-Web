@@ -17,7 +17,7 @@ interface DeviceInfo {
 }
 
 export default function AdminHome() {
-  const [isLoading, setIsLoading] = useState(false)
+  const isLoading = false
   const [selectedPeriod, setSelectedPeriod] = useState('30')
   const [locationInfo, setLocationInfo] = useState<LocationInfo>({
     city: 'Accra',
@@ -306,4 +306,3 @@ export default function AdminHome() {
     </div>
   )
 }
-

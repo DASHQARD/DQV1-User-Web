@@ -8,4 +8,3 @@ export function useVendors(queryParams?: VendorsQueryParams) {
     queryFn: () => getVendors(queryParams),
   })
 }
-

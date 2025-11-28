@@ -1,4 +1,4 @@
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/Button'
@@ -75,7 +75,10 @@ export default function PaymentInfoForm() {
     }
   }, [userProfile, form])
 
-  const paymentMethod = form.watch('payment_method')
+  const paymentMethod = useWatch({
+    control: form.control,
+    name: 'payment_method',
+  })
 
   const mobileMoneyProviders = [
     { label: 'MTN Mobile Money', value: 'mtn' },

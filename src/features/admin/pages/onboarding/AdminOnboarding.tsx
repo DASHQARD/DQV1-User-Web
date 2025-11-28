@@ -108,10 +108,7 @@ export default function AdminOnboarding() {
             <div className="flex items-center gap-2">
               <p>
                 Already have an account?{' '}
-                <Link
-                  to={ROUTES.IN_APP.ADMIN.AUTH.LOGIN}
-                  className="text-primary-500 underline"
-                >
+                <Link to={ROUTES.IN_APP.ADMIN.AUTH.LOGIN} className="text-primary-500 underline">
                   Sign in
                 </Link>
               </p>
@@ -122,4 +119,3 @@ export default function AdminOnboarding() {
     </div>
   )
 }
-

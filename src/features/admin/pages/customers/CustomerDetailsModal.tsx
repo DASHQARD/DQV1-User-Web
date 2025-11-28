@@ -159,4 +159,3 @@ export function CustomerDetailsModal({ customerId, isOpen, onClose }: CustomerDe
     </Modal>
   )
 }
-

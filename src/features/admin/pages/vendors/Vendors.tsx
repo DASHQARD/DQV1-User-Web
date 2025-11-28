@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Icon } from '@/libs'
-import { DataTable, Input, Loader, Dropdown } from '@/components'
+import { DataTable, Input, Dropdown } from '@/components'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useVendors } from '../../hooks/useVendors'
 import type { Vendor } from '@/types/vendor'
@@ -40,23 +40,26 @@ export default function Vendors() {
   const vendors = data?.data || []
   const pagination = data?.pagination
 
-  const handleViewDetails = (vendor: Vendor) => {
+  const handleViewDetails = useCallback((vendor: Vendor) => {
     setSelectedVendorId(vendor.id)
     setShowDetailsModal(true)
-  }
+  }, [])
 
-  const handleUpdateStatus = (vendor: Vendor) => {
+  const handleUpdateStatus = useCallback((vendor: Vendor) => {
     setSelectedVendor(vendor)
     setShowStatusModal(true)
-  }
+  }, [])
 
-  const handleAddBranch = (vendor: Vendor) => {
-    // Navigate to add branch page with vendor context
-    // You may want to pass vendor info via state or query params
-    navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ADD_BRANCH, {
-      state: { vendorId: vendor.id },
-    })
-  }
+  const handleAddBranch = useCallback(
+    (vendor: Vendor) => {
+      // Navigate to add branch page with vendor context
+      // You may want to pass vendor info via state or query params
+      navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ADD_BRANCH, {
+        state: { vendorId: vendor.id },
+      })
+    },
+    [navigate],
+  )
 
   const columns: ColumnDef<Vendor>[] = useMemo(
     () => [
@@ -159,7 +162,7 @@ export default function Vendors() {
         },
       },
     ],
-    [],
+    [handleViewDetails, handleUpdateStatus, handleAddBranch],
   )
 
   const handleNextPage = () => {
@@ -218,7 +221,7 @@ export default function Vendors() {
                   type="text"
                   placeholder="Search by email, phone, or branch..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
