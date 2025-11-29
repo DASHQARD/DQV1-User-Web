@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Icon } from '@/libs'
 import { formatCurrency, formatDate, formatFullDate } from '@/utils/format'
 import { Loader, Modal } from '@/components'
@@ -53,7 +53,7 @@ export default function Transactions() {
   const [purchasesData, setPurchasesData] = useState<Transaction[]>([])
   const [redemptionsData, setRedemptionsData] = useState<Transaction[]>([])
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Simulate API call
     const fetchTransactions = async () => {
       setIsLoading(true)
@@ -203,12 +203,11 @@ export default function Transactions() {
   }, [pageCount, currentPage])
 
   // Reset pagination when filters or tab changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (currentPage !== 1) {
       setCurrentPage(1)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, JSON.stringify(filters)])
+  }, [activeTab, filters])
 
   const switchToPurchases = () => {
     setActiveTab('purchases')

@@ -49,8 +49,7 @@ export default function DashQards() {
 
   React.useEffect(() => {
     setQuery({ ...query, page: 1 })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setQuery])
+  }, [setQuery, query])
   const [sectionStates, setSectionStates] = React.useState({
     cardType: true,
     filterOptions: true,

@@ -33,8 +33,7 @@ export default function OnboardingForm() {
         id_number: userProfile?.id_number,
       })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile])
+  }, [userProfile, form])
 
   const onSubmit = (data: z.infer<typeof OnboardingSchema>) => {
     const phoneNumber = data.phone_number.replace('-', '')

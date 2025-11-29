@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { Modal, OTPInput, Input, BasePhoneInput, Button } from '@/components'
@@ -102,7 +102,7 @@ export default function Settings() {
   })
 
   // Update profile when user info changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (userProfile) {
       form.reset({
         fullname: userProfile?.fullname || '',
@@ -110,8 +110,7 @@ export default function Settings() {
         email: userProfile?.email || '',
       })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile])
+  }, [userProfile, form])
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

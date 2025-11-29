@@ -86,6 +86,7 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
     // Initialize with default option on mount
     useEffect(() => {
       if (options && !countryCode) {
+        // eslint-disable-next-line react-hooks/immutability
         const option = setDefault(options)
         if (option?.code) {
           setCountryCode(option.code)
@@ -103,7 +104,6 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
       if (number !== undefined && number !== value) {
         setValue(number)
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [code, number])
 
     // Sync state with props when selectedVal changes externally (but don't trigger handleChange)
@@ -129,7 +129,6 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
           setValue(newNumber)
         }
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedVal])
 
     // Helper function to notify parent of changes (only on user interaction)
