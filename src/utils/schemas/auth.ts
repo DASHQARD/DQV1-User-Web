@@ -22,12 +22,45 @@ export const CreateAccountSchema = z
     email: getRequiredEmailSchema('Email'),
     password: getRequiredAlphaNumericStringSchema('Password'),
     confirmPassword: getRequiredAlphaNumericStringSchema('Confirm Password'),
-    user_type: z.enum(['user', 'vendor', 'corporate']),
+    user_type: z.enum(['user', 'corporate']),
+    country: z.number().optional(),
+    country_code: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   })
+  .refine(
+    (data) => {
+      if (data.user_type === 'corporate') {
+        return (
+          data.country !== undefined && data.country !== null && typeof data.country === 'number'
+        )
+      }
+      return true
+    },
+    {
+      message: 'Country is required',
+      path: ['country'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.user_type === 'corporate') {
+        return (
+          data.country_code !== undefined &&
+          data.country_code !== null &&
+          typeof data.country_code === 'string' &&
+          data.country_code.length > 0
+        )
+      }
+      return true
+    },
+    {
+      message: 'Country code is required',
+      path: ['country_code'],
+    },
+  )
 
 export const ForgotPasswordSchema = z.object({
   email: getRequiredEmailSchema('Email'),
@@ -59,9 +92,6 @@ export const UploadUserIDSchema = z.object({
     .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB'),
   back_id: z
     .instanceof(File, { message: 'Back ID photo is required' })
-    .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB'),
-  selfie_id: z
-    .instanceof(File, { message: 'Selfie with ID photo is required' })
     .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB'),
 })
 

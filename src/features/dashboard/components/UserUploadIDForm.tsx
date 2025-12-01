@@ -21,9 +21,6 @@ export default function UserUploadIDForm() {
   const { mutateAsync: fetchPresignedURL, isPending: isFetchingPresignedURL } = usePresignedURL()
   const [frontOfIdentification, setFrontOfIdentification] = React.useState<string | null>(null)
   const [backOfIdentification, setBackOfIdentification] = React.useState<string | null>(null)
-  const [selfieWithIdentification, setSelfieWithIdentification] = React.useState<string | null>(
-    null,
-  )
   const toast = useToast()
   const form = useForm<z.infer<typeof UploadUserIDSchema>>({
     resolver: zodResolver(UploadUserIDSchema),
@@ -38,17 +35,15 @@ export default function UserUploadIDForm() {
 
     const loadImages = async () => {
       try {
-        const [frontUrl, backUrl, selfieUrl] = await Promise.all([
+        const [frontUrl, backUrl] = await Promise.all([
           userProfile.id_images[0] ? fetchPresignedURL(userProfile.id_images[0].file_url) : null,
           userProfile.id_images[1] ? fetchPresignedURL(userProfile.id_images[1].file_url) : null,
-          userProfile.id_images[2] ? fetchPresignedURL(userProfile.id_images[2].file_url) : null,
         ])
 
         if (cancelled) return
 
         setFrontOfIdentification(frontUrl)
         setBackOfIdentification(backUrl)
-        setSelfieWithIdentification(selfieUrl)
       } catch (error) {
         console.error('Failed to fetch identification images', error)
         if (!cancelled) {
@@ -68,7 +63,7 @@ export default function UserUploadIDForm() {
 
   const onSubmit = async (data: z.infer<typeof UploadUserIDSchema>) => {
     try {
-      const files = [data.front_id, data.back_id, data.selfie_id]
+      const files = [data.front_id, data.back_id]
       const uploadPromises = files.map((file) => uploadFiles([file]))
       const responses = await Promise.all(uploadPromises)
 
@@ -111,12 +106,12 @@ export default function UserUploadIDForm() {
       ) : (
         <>
           {userProfile?.id_images?.length && userProfile?.id_images?.length > 0 && (
-            <section className="grid grid-cols-3 gap-4">
-              <div>
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-w-0">
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-700">Front of Identification</p>
                 <div
                   className={cn(
-                    'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center',
+                    'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
                   )}
                 >
                   <img
@@ -126,30 +121,16 @@ export default function UserUploadIDForm() {
                   />
                 </div>
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-700">Back of Identification</p>
                 <div
                   className={cn(
-                    'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center',
+                    'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
                   )}
                 >
                   <img
                     src={backOfIdentification ?? ''}
                     alt="Back of Identification"
-                    className="max-h-48 w-full object-contain"
-                  />
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-700">Selfie with Identification</p>
-                <div
-                  className={cn(
-                    'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center',
-                  )}
-                >
-                  <img
-                    src={selfieWithIdentification ?? ''}
-                    alt="Selfie with Identification"
                     className="max-h-48 w-full object-contain"
                   />
                 </div>
@@ -160,13 +141,16 @@ export default function UserUploadIDForm() {
       )}
     </>
   ) : (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="w-full flex flex-col gap-10">
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="w-full max-w-full flex flex-col gap-10 min-w-0"
+    >
       <p className="text-sm text-gray-500">
         Upload your pictures of your identification (front and back)
       </p>
 
       {!userProfile?.id_images && (
-        <section className="grid grid-cols-3 gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4 min-w-0">
           <Controller
             control={form.control}
             name="front_id"
@@ -191,20 +175,6 @@ export default function UserUploadIDForm() {
                 onChange={onChange}
                 error={error?.message}
                 id="back_id"
-              />
-            )}
-          />
-
-          <Controller
-            control={form.control}
-            name="selfie_id"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <FileUploader
-                label="Upload Picture of Selfie with Identification"
-                value={value}
-                onChange={onChange}
-                error={error?.message}
-                id="selfie_id"
               />
             )}
           />

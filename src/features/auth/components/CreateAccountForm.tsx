@@ -1,18 +1,21 @@
-import { Input, Text } from '@/components'
+import { Combobox, Input, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
 import { Link } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CreateAccountSchema } from '@/utils/schemas'
 import { z } from 'zod'
 import { AccountType } from '.'
 import { useAuth } from '../hooks'
+import React from 'react'
 
 export default function CreateAccountForm() {
-  const { useCreateAccountMutation } = useAuth()
+  const { useCreateAccountMutation, useGetCountriesService } = useAuth()
   const { mutate, isPending } = useCreateAccountMutation()
+  const { data: countries } = useGetCountriesService()
+  console.log('countries', countries)
   const form = useForm<z.infer<typeof CreateAccountSchema>>({
     resolver: zodResolver(CreateAccountSchema),
     mode: 'onChange',
@@ -20,12 +23,34 @@ export default function CreateAccountForm() {
       user_type: 'user',
     },
   })
+
+  const selectedCountryId = form.watch('country')
+
+  // Update country_code when country changes
+  React.useEffect(() => {
+    if (selectedCountryId && countries) {
+      const selectedCountry = countries.find((c) => c.id === selectedCountryId)
+      if (selectedCountry) {
+        const countryCode = selectedCountry.code || selectedCountry.iso_code || ''
+        form.setValue('country_code', countryCode, { shouldValidate: true })
+      }
+    } else if (!selectedCountryId) {
+      form.setValue('country_code', '', { shouldValidate: true })
+    }
+  }, [selectedCountryId, countries, form])
+
   const onSubmit = (data: z.infer<typeof CreateAccountSchema>) => {
-    const payload = {
+    const payload: any = {
       user_type: data.user_type,
       email: data.email,
       password: data.password,
     }
+
+    if (data.user_type === 'corporate') {
+      payload.country = String(data.country)
+      payload.country_code = data.country_code
+    }
+
     mutate(payload)
   }
 
@@ -50,6 +75,49 @@ export default function CreateAccountForm() {
         onChange={(value) => form.setValue('user_type', value)}
       />
       <section className="flex flex-col gap-4">
+        {form.watch('user_type') === 'corporate' && (
+          <>
+            <Controller
+              control={form.control}
+              name="country"
+              render={({ field, fieldState: { error } }) => (
+                <Combobox
+                  label="Country"
+                  options={
+                    countries?.map((country) => ({
+                      label: country.name,
+                      value: String(country.id),
+                    })) || []
+                  }
+                  value={field.value ? String(field.value) : undefined}
+                  onChange={(e: { target: { value: string } }) => {
+                    const value = e.target.value ? Number(e.target.value) : undefined
+                    field.onChange(value)
+
+                    // Set country_code synchronously when country changes
+                    if (value && countries) {
+                      const selectedCountry = countries.find((c) => c.id === value)
+                      if (selectedCountry) {
+                        const countryCode = selectedCountry.code || selectedCountry.iso_code || ''
+                        form.setValue('country_code', countryCode, { shouldValidate: true })
+                      }
+                    } else {
+                      form.setValue('country_code', '', { shouldValidate: true })
+                    }
+                  }}
+                  error={error?.message}
+                  placeholder="Select country"
+                  isSearchable={true}
+                />
+              )}
+            />
+            <Controller
+              control={form.control}
+              name="country_code"
+              render={({ field }) => <input type="hidden" {...field} />}
+            />
+          </>
+        )}
         <Input
           label="Email"
           placeholder="Enter your email"

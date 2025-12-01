@@ -22,15 +22,16 @@ export default function BusinessDetailsForm() {
   })
 
   React.useEffect(() => {
-    if (userProfile) {
+    if (userProfile?.business_details && Array.isArray(userProfile.business_details) && userProfile.business_details.length > 0) {
+      const businessDetail = userProfile.business_details[0]
       form.reset({
-        name: userProfile?.business_details[0]?.name,
-        type: userProfile?.business_details[0]?.type,
-        phone: userProfile?.business_details[0]?.phone,
-        email: userProfile?.business_details[0]?.email,
-        street_address: userProfile?.business_details[0]?.street_address,
-        digital_address: userProfile?.business_details[0]?.digital_address,
-        registration_number: userProfile?.business_details[0]?.registration_number,
+        name: businessDetail?.name || '',
+        type: businessDetail?.type,
+        phone: businessDetail?.phone || '',
+        email: businessDetail?.email || '',
+        street_address: businessDetail?.street_address || '',
+        digital_address: businessDetail?.digital_address || '',
+        registration_number: businessDetail?.registration_number || '',
       })
     }
   }, [userProfile, form])

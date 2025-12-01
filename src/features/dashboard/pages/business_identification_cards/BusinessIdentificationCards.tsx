@@ -32,11 +32,11 @@ export default function BusinessIdentificationCards() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Business Identification Cards</BreadcrumbPage>
+              <BreadcrumbPage>Business Identification Documents</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <h1 className="text-2xl font-bold">Business Identification Cards</h1>
+        <h1 className="text-2xl font-bold">Business Identification Documents</h1>
       </div>
       <Banner currentProgress={progress} />
       <div className="bg-white border border-[#CDD3D3] rounded-xl p-8">

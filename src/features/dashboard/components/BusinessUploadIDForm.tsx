@@ -161,7 +161,7 @@ export default function BusinessUploadIDForm() {
             <Loader />
           </div>
         ) : (
-          <section className="grid grid-cols-2 gap-4">
+          <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
             {userProfile.business_documents.map((doc) => (
               <div key={doc.id}>
                 <p className="text-sm font-medium text-gray-700 mb-2">
@@ -194,7 +194,7 @@ export default function BusinessUploadIDForm() {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="w-full flex flex-col gap-10">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-full flex flex-col gap-10 min-w-0">
       <div className="p-4 bg-[#EAEBEF]">
         <p className="text-sm text-gray-500">
           Submit the following documents to help us verify your business.
@@ -210,7 +210,7 @@ export default function BusinessUploadIDForm() {
         </div>
       </div>
 
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-4 min-w-0">
         <Input
           label="Employer Identification Number"
           placeholder="Enter your employer identification number"
@@ -234,7 +234,7 @@ export default function BusinessUploadIDForm() {
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
           <Controller
             control={form.control}
             name="certificate_of_incorporation"

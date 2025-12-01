@@ -66,11 +66,10 @@ export default function Sidebar() {
   }
 
   // Check user type
-  const isVendor = (user as any)?.user_type === 'vendor'
   const isCorporate = (user as any)?.user_type === 'corporate'
 
   // Vendor-specific navigation items
-  const vendorNavItems = [
+  const corporateNavItems = [
     {
       section: 'Overview',
       items: [{ path: ROUTES.IN_APP.DASHBOARD.HOME, label: 'Dashboard', icon: 'bi:speedometer2' }],
@@ -167,7 +166,7 @@ export default function Sidebar() {
     },
   ]
 
-  const navItems = isVendor ? vendorNavItems : regularNavItems
+  const navItems = isCorporate ? corporateNavItems : regularNavItems
 
   return (
     <aside
