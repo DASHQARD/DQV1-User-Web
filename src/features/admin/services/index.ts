@@ -85,11 +85,7 @@ const refreshAdminToken = async (
   return response as unknown as AdminRefreshTokenResponse
 }
 
-const onboardAdmin = async (data: {
-  verification_code: string
-  phone_number: string
-  password: string
-}) => {
+const onboardAdmin = async (data: { verification_code: string; password: string }) => {
   const response = await axiosClient.post('/admin/onboard', data)
   return response.data
 }

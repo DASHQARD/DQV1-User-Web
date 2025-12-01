@@ -14,7 +14,6 @@ export default function Admins() {
   const [cursor, setCursor] = useState<string | null>(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
 
-  // Fetch admins with filters
   const { data, isLoading, error } = useAdmins({
     limit,
     search: search || undefined,
@@ -29,7 +28,11 @@ export default function Admins() {
       {
         accessorKey: 'id',
         header: 'ID',
-        cell: ({ row }) => <span className="font-medium text-gray-900">#{row.original.id}</span>,
+        cell: ({ row }) => (
+          <span className="font-medium text-gray-900">
+            {String(row.original.id).padStart(3, '0')}
+          </span>
+        ),
       },
       {
         accessorKey: 'email',
@@ -99,13 +102,11 @@ export default function Admins() {
     [],
   )
 
-  // Statistics
   const totalAdmins = admins.length
   const activeAdmins = admins.filter((a) => a.status === 'active').length
   const pendingAdmins = admins.filter((a) => a.status === 'pending').length
-  const inactiveAdmins = admins.filter((a) => a.status === 'inactive').length
+  const inactiveAdmins = admins.filter((a) => a.status === 'deactivated').length
 
-  // Handle pagination
   const handleNextPage = () => {
     if (data?.pagination.next) {
       setCursor(data.pagination.next)
@@ -113,7 +114,7 @@ export default function Admins() {
   }
 
   const handlePreviousPage = () => {
-    setCursor(null) // Reset to first page
+    setCursor(null)
   }
 
   return (
@@ -188,7 +189,7 @@ export default function Admins() {
                 value={search}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setSearch(e.target.value)
-                  setCursor(null) // Reset pagination on search
+                  setCursor(null)
                 }}
                 className="w-full"
               />
@@ -198,7 +199,7 @@ export default function Admins() {
                 value={status}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                   setStatus(e.target.value)
-                  setCursor(null) // Reset pagination on filter change
+                  setCursor(null)
                 }}
                 className="w-full border-2 border-gray-300 rounded-lg py-2.5 px-4 text-sm bg-white text-gray-900 cursor-pointer transition-colors focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25 hover:border-gray-400"
               >
@@ -213,7 +214,7 @@ export default function Admins() {
                 value={limit}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                   setLimit(Number(e.target.value))
-                  setCursor(null) // Reset pagination on limit change
+                  setCursor(null)
                 }}
                 className="w-full border-2 border-gray-300 rounded-lg py-2.5 px-4 text-sm bg-white text-gray-900 cursor-pointer transition-colors focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25 hover:border-gray-400"
               >

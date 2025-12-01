@@ -104,7 +104,7 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
       if (number !== undefined && number !== value) {
         setValue(number)
       }
-    }, [code, number])
+    }, [code, number, countryCode, value])
 
     // Sync state with props when selectedVal changes externally (but don't trigger handleChange)
     useEffect(() => {
@@ -129,7 +129,7 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
           setValue(newNumber)
         }
       }
-    }, [selectedVal])
+    }, [selectedVal, countryCode, value])
 
     // Helper function to notify parent of changes (only on user interaction)
     const notifyChange = React.useCallback(
