@@ -18,6 +18,8 @@ import type {
   InviteAdminResponse,
   AdminRefreshTokenPayload,
   AdminRefreshTokenResponse,
+  AdminsQueryParams,
+  AdminsListResponse,
 } from '@/types/admin'
 import type { RolesListResponse, PermissionsListResponse } from '@/types/role'
 
@@ -102,6 +104,11 @@ const getPermissions = async (): Promise<PermissionsListResponse> => {
   return response as unknown as PermissionsListResponse
 }
 
+const getAdmins = async (params?: AdminsQueryParams): Promise<AdminsListResponse> => {
+  const response = await axiosClient.get('/admins', { params })
+  return response as unknown as AdminsListResponse
+}
+
 export {
   adminLogin,
   verifyLoginToken,
@@ -116,4 +123,5 @@ export {
   onboardAdmin,
   getRoles,
   getPermissions,
+  getAdmins,
 }

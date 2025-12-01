@@ -90,10 +90,17 @@ export const ROUTES = {
   EXTERNAL: {},
 }
 
-export const ENV_VARS = {
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+export const ENVIRONMENT = import.meta.env.VITE_NODE_ENV as string
+
+const API_URLS: { [key: string]: string } = {
+  development: import.meta.env.VITE_DEVELOPMENT_BASE_URL,
+  staging: import.meta.env.VITE_STAGING_BASE_URL,
+  production: import.meta.env.VITE_PRODUCTION_BASE_URL,
 }
-export const ENVIRONMENT = import.meta.env.VITE_NODE_ENV
+
+export const ENV_VARS = {
+  API_BASE_URL: API_URLS[ENVIRONMENT] || API_URLS.development,
+}
 
 export const isTesting = ENVIRONMENT === 'test'
 

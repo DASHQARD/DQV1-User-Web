@@ -5,19 +5,24 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { Admin } from '@/types/admin'
 import { cn } from '@/libs'
 import { InviteAdminModal } from './InviteAdminModal'
-
-// TODO: Replace with actual API call when available
-const mockAdmins: Admin[] = []
+import { useAdmins } from '@/features/admin/hooks/useGetAdmins'
 
 export default function Admins() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [limit, setLimit] = useState(10)
+  const [cursor, setCursor] = useState<string | null>(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
 
-  // TODO: Replace with actual hook when API is available
-  const isLoading = false
-  const admins = mockAdmins
+  // Fetch admins with filters
+  const { data, isLoading, error } = useAdmins({
+    limit,
+    search: search || undefined,
+    status: status || undefined,
+    after: cursor || undefined,
+  })
+
+  const admins = data?.data || []
 
   const columns: ColumnDef<Admin>[] = useMemo(
     () => [
@@ -100,6 +105,17 @@ export default function Admins() {
   const pendingAdmins = admins.filter((a) => a.status === 'pending').length
   const inactiveAdmins = admins.filter((a) => a.status === 'inactive').length
 
+  // Handle pagination
+  const handleNextPage = () => {
+    if (data?.pagination.next) {
+      setCursor(data.pagination.next)
+    }
+  }
+
+  const handlePreviousPage = () => {
+    setCursor(null) // Reset to first page
+  }
+
   return (
     <div className="w-full min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -170,29 +186,35 @@ export default function Admins() {
               <Input
                 placeholder="Search by email or name..."
                 value={search}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setSearch(e.target.value)
+                  setCursor(null) // Reset pagination on search
+                }}
                 className="w-full"
               />
             </div>
             <div className="w-[200px]">
               <select
                 value={status}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  setStatus(e.target.value)
+                  setCursor(null) // Reset pagination on filter change
+                }}
                 className="w-full border-2 border-gray-300 rounded-lg py-2.5 px-4 text-sm bg-white text-gray-900 cursor-pointer transition-colors focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25 hover:border-gray-400"
               >
                 <option value="">All Status</option>
                 <option value="active">Active</option>
                 <option value="pending">Pending</option>
-                <option value="inactive">Inactive</option>
-                <option value="suspended">Suspended</option>
+                <option value="deactivated">Suspended</option>
               </select>
             </div>
             <div className="w-[150px]">
               <select
                 value={limit}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                   setLimit(Number(e.target.value))
-                }
+                  setCursor(null) // Reset pagination on limit change
+                }}
                 className="w-full border-2 border-gray-300 rounded-lg py-2.5 px-4 text-sm bg-white text-gray-900 cursor-pointer transition-colors focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25 hover:border-gray-400"
               >
                 <option value="10">10 per page</option>
@@ -210,8 +232,37 @@ export default function Admins() {
             <div className="flex items-center justify-center py-16">
               <Loader />
             </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-16">
+              <p className="text-red-600">Error loading admins. Please try again.</p>
+            </div>
+          ) : admins.length === 0 ? (
+            <div className="flex items-center justify-center py-16">
+              <p className="text-gray-600">No admins found.</p>
+            </div>
           ) : (
-            <DataTable columns={columns} data={admins} />
+            <>
+              <DataTable columns={columns} data={admins} />
+
+              {/* Pagination Controls */}
+              {(cursor || data?.pagination.hasNextPage) && (
+                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+                  <Button variant="outline" onClick={handlePreviousPage} disabled={!cursor}>
+                    Previous
+                  </Button>
+
+                  <span className="text-sm text-gray-600">Showing {admins.length} admins</span>
+
+                  <Button
+                    variant="outline"
+                    onClick={handleNextPage}
+                    disabled={!data?.pagination.hasNextPage}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

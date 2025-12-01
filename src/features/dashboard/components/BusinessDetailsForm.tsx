@@ -22,7 +22,11 @@ export default function BusinessDetailsForm() {
   })
 
   React.useEffect(() => {
-    if (userProfile?.business_details && Array.isArray(userProfile.business_details) && userProfile.business_details.length > 0) {
+    if (
+      userProfile?.business_details &&
+      Array.isArray(userProfile.business_details) &&
+      userProfile.business_details.length > 0
+    ) {
       const businessDetail = userProfile.business_details[0]
       form.reset({
         name: businessDetail?.name || '',
