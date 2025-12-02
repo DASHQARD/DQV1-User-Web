@@ -1,5 +1,4 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { AddBranchForm } from '@/features/dashboard/components'
 import { ROUTES } from '@/utils/constants'
 import {
   Breadcrumb,
@@ -10,10 +9,12 @@ import {
   BreadcrumbPage,
   Text,
   Button,
+  Loader,
 } from '@/components'
 import { Icon } from '@/libs'
 import { useAuth } from '@/features/auth/hooks'
-import { useToast } from '@/hooks'
+import { useToast, useUserProfile } from '@/hooks'
+import { AddMainBranchForm } from '@/features/dashboard/components'
 import React from 'react'
 
 export default function AddBranch() {
@@ -21,7 +22,11 @@ export default function AddBranch() {
   const toast = useToast()
   const { useUploadBranchesService } = useAuth()
   const { mutateAsync: uploadBranches, isPending: isUploading } = useUploadBranchesService()
+  const { data: userProfile, isLoading, refetch } = useUserProfile()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  // Check if user has any branches (main branch exists)
+  const hasBranches = Array.isArray(userProfile?.branches) && userProfile?.branches?.length > 0
 
   const handleImportClick = () => {
     fileInputRef.current?.click()
@@ -50,12 +55,26 @@ export default function AddBranch() {
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
+      // Refresh branches after successful upload
+      await refetch()
       // Optionally navigate or refresh the page
       navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT)
     } catch (error) {
       console.error('Failed to upload branches:', error)
       // Error is already handled by the hook's onError
     }
+  }
+
+  const handleMainBranchSuccess = () => {
+    refetch()
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader />
+      </div>
+    )
   }
 
   return (
@@ -92,7 +111,11 @@ export default function AddBranch() {
               </Text>
             </div>
             <div className="flex gap-2">
-              <Button className="w-fit !bg-black !text-white !rounded-none" size="small">
+              <Button
+                className="w-fit !bg-black !text-white !rounded-none"
+                size="small"
+                onClick={() => navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.CREATE_BRANCH)}
+              >
                 <Icon icon="bi:plus" className="size-6" />
                 Add Branch
               </Button>
@@ -101,8 +124,11 @@ export default function AddBranch() {
                 className="w-fit !rounded-none"
                 size="small"
                 onClick={handleImportClick}
-                disabled={isUploading}
+                disabled={isUploading || !hasBranches}
                 loading={isUploading}
+                title={
+                  !hasBranches ? 'Please add a main branch first' : 'Import branches from Excel'
+                }
               >
                 <Icon icon="bi:plus" className="size-6" />
                 Import
@@ -120,8 +146,17 @@ export default function AddBranch() {
         <div></div>
       </div>
 
+      {/* Add Main Branch Form */}
       <div className="bg-white border border-[#CDD3D3] rounded-xl p-8">
-        <AddBranchForm />
+        <div className="flex flex-col gap-4 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Add Main Branch</h3>
+          <Text variant="span" className="text-gray-600">
+            {!hasBranches
+              ? 'You need to add a main branch before you can import additional branches or add more branches manually.'
+              : 'Update your main branch details or add additional branches.'}
+          </Text>
+        </div>
+        <AddMainBranchForm onSuccess={handleMainBranchSuccess} />
       </div>
     </section>
   )

@@ -21,6 +21,7 @@ export const CreateAccountSchema = z
     email: getRequiredEmailSchema('Email'),
     password: getRequiredAlphaNumericStringSchema('Password'),
     confirmPassword: getRequiredAlphaNumericStringSchema('Confirm Password'),
+    phone_number: getRequiredStringSchema('Phone Number'),
     user_type: z.enum(['user', 'corporate']),
     country: z.number().optional(),
     country_code: z.string().optional(),
@@ -153,4 +154,14 @@ export const AddBranchSchema = z.object({
     .refine((branches) => branches.length > 0, {
       message: 'At least one branch manager is required',
     }),
+})
+
+export const AddMainBranchSchema = z.object({
+  country: getRequiredStringSchema('Country'),
+  country_code: getRequiredStringSchema('Country Code'),
+  is_single_branch: z.boolean(),
+  branch_name: getRequiredStringSchema('Branch Name'),
+  branch_location: getRequiredStringSchema('Branch Location'),
+  branch_manager_name: getRequiredStringSchema('Branch Manager Name'),
+  branch_manager_email: getRequiredEmailSchema('Branch Manager Email'),
 })

@@ -1,4 +1,4 @@
-import { Combobox, Input, Text } from '@/components'
+import { BasePhoneInput, Combobox, Input, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
@@ -40,15 +40,24 @@ export default function CreateAccountForm() {
   }, [selectedCountryId, countries, form])
 
   const onSubmit = (data: z.infer<typeof CreateAccountSchema>) => {
+    // BasePhoneInput returns format: "+233-559617908"
+    // Format it to: "+233559617908" (remove dash and ensure country code is included)
+    let formattedPhoneNumber = data.phone_number || ''
+
+    // Remove all dashes
+    formattedPhoneNumber = formattedPhoneNumber.replace(/-/g, '')
+
+    // If phone number doesn't start with +, try to add country code from selected country
+
+    formattedPhoneNumber = `+233${formattedPhoneNumber}`
+
     const payload: any = {
       user_type: data.user_type,
       email: data.email,
+      phone_number: formattedPhoneNumber,
       password: data.password,
-    }
-
-    if (data.user_type === 'corporate') {
-      payload.country = String(data.country)
-      payload.country_code = data.country_code
+      country: String(data.country),
+      country_code: data.country_code,
     }
 
     mutate(payload)
@@ -75,54 +84,69 @@ export default function CreateAccountForm() {
         onChange={(value) => form.setValue('user_type', value)}
       />
       <section className="flex flex-col gap-4">
-        {form.watch('user_type') === 'corporate' && (
-          <>
-            <Controller
-              control={form.control}
-              name="country"
-              render={({ field, fieldState: { error } }) => (
-                <Combobox
-                  label="Country"
-                  options={
-                    countries?.map((country) => ({
-                      label: country.name,
-                      value: String(country.id),
-                    })) || []
-                  }
-                  value={field.value ? String(field.value) : undefined}
-                  onChange={(e: { target: { value: string } }) => {
-                    const value = e.target.value ? Number(e.target.value) : undefined
-                    field.onChange(value)
+        <Controller
+          control={form.control}
+          name="country"
+          render={({ field, fieldState: { error } }) => (
+            <Combobox
+              label="Country"
+              options={
+                countries?.map((country) => ({
+                  label: country.name,
+                  value: String(country.id),
+                })) || []
+              }
+              value={field.value ? String(field.value) : undefined}
+              onChange={(e: { target: { value: string } }) => {
+                const value = e.target.value ? Number(e.target.value) : undefined
+                field.onChange(value)
 
-                    // Set country_code synchronously when country changes
-                    if (value && countries) {
-                      const selectedCountry = countries.find((c) => c.id === value)
-                      if (selectedCountry) {
-                        const countryCode = selectedCountry.code || selectedCountry.iso_code || ''
-                        form.setValue('country_code', countryCode, { shouldValidate: true })
-                      }
-                    } else {
-                      form.setValue('country_code', '', { shouldValidate: true })
-                    }
-                  }}
-                  error={error?.message}
-                  placeholder="Select country"
-                  isSearchable={true}
-                />
-              )}
+                // Set country_code synchronously when country changes
+                if (value && countries) {
+                  const selectedCountry = countries.find((c) => c.id === value)
+                  if (selectedCountry) {
+                    const countryCode = selectedCountry.code || selectedCountry.iso_code || ''
+                    form.setValue('country_code', countryCode, { shouldValidate: true })
+                  }
+                } else {
+                  form.setValue('country_code', '', { shouldValidate: true })
+                }
+              }}
+              error={error?.message}
+              placeholder="Select country"
+              isSearchable={true}
             />
-            <Controller
-              control={form.control}
-              name="country_code"
-              render={({ field }) => <input type="hidden" {...field} />}
-            />
-          </>
-        )}
+          )}
+        />
+        <Controller
+          control={form.control}
+          name="country_code"
+          render={({ field }) => <input type="hidden" {...field} />}
+        />
+
         <Input
           label="Email"
           placeholder="Enter your email"
           {...form.register('email')}
           error={form.formState.errors.email?.message}
+        />
+
+        <Controller
+          control={form.control}
+          name="phone_number"
+          render={({ field: { value, onChange } }) => {
+            return (
+              <BasePhoneInput
+                placeholder="Enter number eg. 5512345678"
+                options={countries}
+                selectedVal={value}
+                maxLength={10}
+                handleChange={onChange}
+                label="Phone Number"
+                error={form.formState.errors.phone_number?.message}
+              />
+            )
+          }}
         />
         <Input
           label="Password"

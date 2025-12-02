@@ -1,22 +1,70 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import React, { useEffect, useState, useMemo } from 'react'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
 import { useUserProfile } from '@/hooks'
+import ProfileSwitcher from './ProfileSwitcher'
 
 export default function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user, logout } = useAuthStore()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { data: userProfile } = useUserProfile()
+
+  // Check if user can switch profiles (show switcher for vendor/corporate users)
+  const userType = (user as any)?.user_type
+  const canSwitchProfiles = userType === 'vendor' || userType === 'corporate'
+
+  // Determine profile from URL, localStorage, or user type
+  const currentProfile = useMemo((): 'vendor' | 'corporate' => {
+    // Check URL first
+    const urlAccount = searchParams.get('account')
+    if (urlAccount === 'vendor' || urlAccount === 'corporate') {
+      return urlAccount
+    }
+    // Fallback to localStorage
+    const savedProfile = localStorage.getItem('selectedProfile') as 'vendor' | 'corporate' | null
+    if (savedProfile === 'vendor' || savedProfile === 'corporate') {
+      return savedProfile
+    }
+    // Fallback to user type
+    return userType === 'corporate' ? 'corporate' : 'vendor'
+  }, [searchParams, userType])
+
+  // Use currentProfile directly (it's already computed from URL/localStorage/user type)
+  const selectedProfile = currentProfile
+
   console.log(userProfile)
   // Get user name from JWT decoded user or default
   const userName =
     (user as any)?.name || (user as any)?.fullname || (user as any)?.email?.split('@')[0] || 'User'
   const displayName = userProfile?.fullname || userName
+
+  // Handle profile change
+  const handleProfileChange = (profile: 'vendor' | 'corporate') => {
+    localStorage.setItem('selectedProfile', profile)
+
+    // Update URL with account parameter
+    const newSearchParams = new URLSearchParams(searchParams.toString())
+    newSearchParams.set('account', profile)
+
+    // Navigate to home when switching profiles with updated URL
+    navigate(`${ROUTES.IN_APP.DASHBOARD.HOME}?${newSearchParams.toString()}`)
+  }
+
+  // Update URL if account param is missing but we have a profile
+  useEffect(() => {
+    const urlAccount = searchParams.get('account')
+    if (!urlAccount && canSwitchProfiles && currentProfile) {
+      const newSearchParams = new URLSearchParams(searchParams.toString())
+      newSearchParams.set('account', currentProfile)
+      navigate(`${location.pathname}?${newSearchParams.toString()}`, { replace: true })
+    }
+  }, [searchParams, currentProfile, canSwitchProfiles, location.pathname, navigate])
 
   const toggleSidebar = () => {
     const newState = !isCollapsed
@@ -65,8 +113,15 @@ export default function Sidebar() {
     return false
   }
 
-  // Check user type
-  const isCorporate = (user as any)?.user_type === 'corporate'
+  // Check user type - use selected profile for navigation
+  const isCorporate = selectedProfile === 'corporate'
+
+  // Helper function to add account parameter to URLs
+  const addAccountParam = (path: string): string => {
+    if (!canSwitchProfiles) return path
+    const separator = path.includes('?') ? '&' : '?'
+    return `${path}${separator}account=${selectedProfile}`
+  }
 
   // Vendor-specific navigation items
   const corporateNavItems = [
@@ -96,7 +151,10 @@ export default function Sidebar() {
     },
     {
       section: 'Transactions',
-      items: [{ path: '/dashboard/transactions', label: 'Transactions', icon: 'bi:receipt' }],
+      items: [
+        { path: '/dashboard/transactions', label: 'Transactions', icon: 'bi:receipt' },
+        { path: ROUTES.IN_APP.DASHBOARD.PURCHASE, label: 'Purchase', icon: 'bi:gift' },
+      ],
     },
     {
       section: 'Subscriptions',
@@ -118,7 +176,7 @@ export default function Sidebar() {
           icon: 'bi:credit-card-fill',
         },
         {
-          path: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ADD_BRANCH,
+          path: ROUTES.IN_APP.DASHBOARD.BRANCHES,
           label: 'Branches',
           icon: 'bi:geo-alt-fill',
         },
@@ -138,7 +196,11 @@ export default function Sidebar() {
         { path: ROUTES.IN_APP.DASHBOARD.PURCHASE, label: 'Purchase', icon: 'bi:gift' },
         { path: ROUTES.IN_APP.DASHBOARD.REDEEM, label: 'Redeem', icon: 'bi:card-checklist' },
         { path: '/dashboard/transactions', label: 'Transactions', icon: 'bi:receipt' },
-        { path: '/dashboard/recipients', label: 'Recipients', icon: 'bi:person-lines-fill' },
+        {
+          path: ROUTES.IN_APP.DASHBOARD.EXPERIENCE,
+          label: 'My Experience',
+          icon: 'bi:person-lines-fill',
+        },
       ],
     },
     // Conditionally add Experience section for corporate users
@@ -178,7 +240,7 @@ export default function Sidebar() {
         isCollapsed && 'w-[90px] flex-shrink-0',
       )}
     >
-      <div className="flex flex-col flex-grow min-h-full h-full overflow-hidden relative z-[2] p-0">
+      <div className="flex flex-col grow min-h-full h-full overflow-hidden relative z-[2] p-0">
         {/* Top Bar */}
         <div className="flex items-center justify-between p-6 mb-6 border-b border-black/6 bg-white relative z-[1]">
           <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -195,9 +257,9 @@ export default function Sidebar() {
                 <div className="flex items-center gap-2 text-xs text-[#6c757d] font-medium bg-[#f8f9fa] px-3 py-1 rounded-full border border-[#e9ecef] w-fit">
                   <Icon icon="bi:person-badge" className="text-xs text-[#402D87]" />
                   <span>
-                    {(user as any)?.user_type === 'vendor'
+                    {selectedProfile === 'vendor'
                       ? 'Vendor Account'
-                      : (user as any)?.user_type === 'corporate'
+                      : selectedProfile === 'corporate'
                         ? 'Corporate Account'
                         : 'Personal Account'}
                   </span>
@@ -221,8 +283,15 @@ export default function Sidebar() {
           </button>
         </div>
 
+        {/* Profile Switcher */}
+        {!isCollapsed && canSwitchProfiles && (
+          <div className="px-6 mb-4">
+            <ProfileSwitcher value={selectedProfile} onChange={handleProfileChange} />
+          </div>
+        )}
+
         {/* Navigation */}
-        <nav className="flex-grow relative z-[1]">
+        <nav className="grow relative z-1">
           <ul className="list-none p-0 m-0 px-5">
             {navItems.map((section) => (
               <React.Fragment key={section.section}>
@@ -241,7 +310,7 @@ export default function Sidebar() {
                       isActive(item.path) &&
                         'bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
                       !isActive(item.path) &&
-                        'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-[1px]',
+                        'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-px',
                       isCollapsed && 'justify-center mb-3',
                     )}
                   >
@@ -252,9 +321,9 @@ export default function Sidebar() {
                       </>
                     )}
                     <Link
-                      to={item.path}
+                      to={addAccountParam(item.path)}
                       className={cn(
-                        'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-[2]',
+                        'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
                         isActive(item.path) &&
                           'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
                         !isActive(item.path) && 'hover:text-[#402D87]',
@@ -292,14 +361,14 @@ export default function Sidebar() {
             <li
               className={cn(
                 'flex items-center mb-2 rounded-[10px] transition-all duration-200 relative overflow-hidden',
-                !isCollapsed && 'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-[1px]',
+                !isCollapsed && 'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-px',
                 isCollapsed && 'justify-center mb-3',
               )}
             >
               <button
                 onClick={handleLogout}
                 className={cn(
-                  'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-[2] cursor-pointer bg-transparent border-none',
+                  'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 cursor-pointer bg-transparent border-none',
                   'hover:text-[#402D87]',
                   isCollapsed && 'justify-center py-4 px-3',
                 )}

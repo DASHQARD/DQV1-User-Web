@@ -1,5 +1,6 @@
 import { axiosClient } from '@/libs'
 import type {
+  AddMainBranchData,
   BranchData,
   BusinessDetailsData,
   CreateAccountData,
@@ -98,6 +99,11 @@ const uploadBranches = async (file: File) => {
   return response.data
 }
 
+const addMainBranch = async (data: AddMainBranchData) => {
+  const response = await axiosClient.post(`/auth/add-main-branch`, data)
+  return response.data
+}
+
 export {
   refreshToken,
   businessUploadID,
@@ -113,4 +119,5 @@ export {
   addBranch,
   getCountries,
   uploadBranches,
+  addMainBranch,
 }

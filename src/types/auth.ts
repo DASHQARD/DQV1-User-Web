@@ -62,3 +62,13 @@ export type BranchData = {
     branch_manager_email: string
   }[]
 }
+
+export type AddMainBranchData = {
+  country: string
+  country_code: string
+  is_single_branch: boolean
+  branch_name: string
+  branch_location: string
+  branch_manager_name: string
+  branch_manager_email: string
+}

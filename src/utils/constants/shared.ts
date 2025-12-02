@@ -15,6 +15,7 @@ export const ROUTES = {
       TRANSACTIONS: '/dashboard/transactions',
       EXPERIENCE: '/dashboard/experience',
       PAYMENT_METHODS: '/dashboard/payment-methods',
+      BRANCHES: '/dashboard/branches',
       COMPLIANCE: {
         ROOT: '/dashboard/compliance',
         PROFILE_INFORMATION: '/dashboard/compliance/profile',
@@ -22,6 +23,7 @@ export const ROUTES = {
         BUSINESS_DETAILS: '/dashboard/compliance/business-details',
         BUSINESS_IDENTIFICATION_CARDS: '/dashboard/compliance/business-identification-cards',
         ADD_BRANCH: '/dashboard/compliance/add-branch',
+        CREATE_BRANCH: '/dashboard/compliance/add-branch/create',
       },
     },
     ADMIN: {
