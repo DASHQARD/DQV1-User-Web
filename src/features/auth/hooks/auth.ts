@@ -18,6 +18,7 @@ import {
   onboarding,
   getCountries,
   resetPassword,
+  uploadBranches,
   uploadUserID,
   verifyEmail,
   verifyLoginOTP,
@@ -262,6 +263,19 @@ export function useAuth() {
     })
   }
 
+  function useUploadBranchesService() {
+    return useMutation({
+      mutationFn: uploadBranches,
+      onSuccess: (response: { status: string; statusCode: number; message: string }) => {
+        toast.success(response.message || 'Branches uploaded successfully')
+      },
+      onError: (error: { status: number; message: string }) => {
+        const errorMessage = error?.message || 'Failed to upload branches. Please try again.'
+        toast.error(errorMessage)
+      },
+    })
+  }
+
   return {
     useLoginMutation,
     tokenExpired,
@@ -278,5 +292,6 @@ export function useAuth() {
     useRefreshTokenService,
     useAddBranchService,
     useGetCountriesService,
+    useUploadBranchesService,
   }
 }

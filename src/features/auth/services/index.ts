@@ -87,6 +87,17 @@ const getCountries = async () => {
   return response.data
 }
 
+const uploadBranches = async (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await axiosClient.post(`/auth/upload-branches`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+  return response.data
+}
+
 export {
   refreshToken,
   businessUploadID,
@@ -101,4 +112,5 @@ export {
   businessDetails,
   addBranch,
   getCountries,
+  uploadBranches,
 }

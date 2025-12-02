@@ -194,7 +194,10 @@ export default function BusinessUploadIDForm() {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-full flex flex-col gap-10 min-w-0">
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="w-full max-w-full flex flex-col gap-10 min-w-0"
+    >
       <div className="p-4 bg-[#EAEBEF]">
         <p className="text-sm text-gray-500">
           Submit the following documents to help us verify your business.
