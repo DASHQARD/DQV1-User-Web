@@ -1,5 +1,6 @@
 import { axiosClient } from '@/libs'
 import type {
+  AddMainBranchData,
   BranchData,
   BusinessDetailsData,
   CreateAccountData,
@@ -87,6 +88,22 @@ const getCountries = async () => {
   return response.data
 }
 
+const uploadBranches = async (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await axiosClient.post(`/auth/upload-branches`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+  return response.data
+}
+
+const addMainBranch = async (data: AddMainBranchData) => {
+  const response = await axiosClient.post(`/auth/add-main-branch`, data)
+  return response.data
+}
+
 export {
   refreshToken,
   businessUploadID,
@@ -101,4 +118,6 @@ export {
   businessDetails,
   addBranch,
   getCountries,
+  uploadBranches,
+  addMainBranch,
 }

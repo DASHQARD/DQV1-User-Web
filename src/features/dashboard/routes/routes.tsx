@@ -3,9 +3,11 @@ import { Home } from '../pages/home'
 import { Purchase } from '../pages/purchase'
 import {
   AddBranch,
+  BranchPerformance,
   BusinessDetails,
   BusinessIdentificationCards,
   Compliance,
+  CreateBranch,
   PaymentInfo,
   ProfileInformation,
   Redeem,
@@ -45,6 +47,10 @@ export const dashboardRoutes: RouteObject[] = [
     element: <PaymentInfo />,
   },
   {
+    path: 'branches',
+    element: <BranchPerformance />,
+  },
+  {
     path: 'compliance',
     element: <Outlet />,
     children: [
@@ -71,6 +77,10 @@ export const dashboardRoutes: RouteObject[] = [
       {
         path: 'add-branch',
         element: <AddBranch />,
+      },
+      {
+        path: 'add-branch/create',
+        element: <CreateBranch />,
       },
     ],
   },

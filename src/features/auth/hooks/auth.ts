@@ -9,6 +9,7 @@ import { ROUTES } from '@/utils/constants'
 
 import {
   addBranch,
+  addMainBranch,
   businessUploadID,
   businessDetails,
   createAccount,
@@ -18,6 +19,7 @@ import {
   onboarding,
   getCountries,
   resetPassword,
+  uploadBranches,
   uploadUserID,
   verifyEmail,
   verifyLoginOTP,
@@ -262,6 +264,32 @@ export function useAuth() {
     })
   }
 
+  function useUploadBranchesService() {
+    return useMutation({
+      mutationFn: uploadBranches,
+      onSuccess: () => {
+        toast.success('Branches uploaded successfully')
+      },
+      onError: (error: { status: number; message: string }) => {
+        const errorMessage = error?.message || 'Failed to upload branches. Please try again.'
+        toast.error(errorMessage)
+      },
+    })
+  }
+
+  function useAddMainBranchService() {
+    return useMutation({
+      mutationFn: addMainBranch,
+      onSuccess: (response: { status: string; statusCode: number; message: string }) => {
+        toast.success(response.message || 'Main branch added successfully')
+      },
+      onError: (error: { status: number; message: string }) => {
+        const errorMessage = error?.message || 'Failed to add main branch. Please try again.'
+        toast.error(errorMessage)
+      },
+    })
+  }
+
   return {
     useLoginMutation,
     tokenExpired,
@@ -278,5 +306,7 @@ export function useAuth() {
     useRefreshTokenService,
     useAddBranchService,
     useGetCountriesService,
+    useUploadBranchesService,
+    useAddMainBranchService,
   }
 }
