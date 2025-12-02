@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import CreateAccountMan from '@/assets/images/create-account-man.png'
 import LogoWhite from '@/assets/svgs/logo-white.svg?react'
 import { ROUTES } from '@/utils/constants'
@@ -7,23 +8,53 @@ import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AdminOnboardingSchema } from '@/utils/schemas'
 import { z } from 'zod'
 import { useAdminOnboarding } from '../../hooks/useAdminOnboarding'
 
-export default function AdminOnboarding() {
-  const { mutate: onboard, isPending } = useAdminOnboarding()
-
-  const form = useForm<z.infer<typeof AdminOnboardingSchema>>({
-    resolver: zodResolver(AdminOnboardingSchema),
+const AdminOnboardingFormSchema = z
+  .object({
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirm_password: z.string(),
+  })
+  .refine((data) => data.password === data.confirm_password, {
+    message: "Passwords don't match",
+    path: ['confirm_password'],
   })
 
-  const onSubmit = (data: z.infer<typeof AdminOnboardingSchema>) => {
+export default function AdminOnboarding() {
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const vtoken = (() => {
+    const normalToken = searchParams.get('vtoken')
+    if (normalToken) return normalToken
+
+    const urlSearchString = window.location.search
+    const match = urlSearchString.match(/vtoken[%3D=]([a-f0-9-]+)/i)
+    return match ? match[1] : null
+  })()
+
+  const { mutate: onboard, isPending } = useAdminOnboarding()
+  const form = useForm<z.infer<typeof AdminOnboardingFormSchema>>({
+    resolver: zodResolver(AdminOnboardingFormSchema),
+  })
+
+  useEffect(() => {
+    if (!vtoken) {
+      navigate(ROUTES.IN_APP.ADMIN.AUTH.LOGIN)
+    }
+  }, [vtoken, navigate])
+
+  const onSubmit = (data: z.infer<typeof AdminOnboardingFormSchema>) => {
+    if (!vtoken) return
+
     onboard({
-      verification_code: data.verification_code,
-      phone_number: data.phone_number,
+      verification_code: vtoken,
       password: data.password,
     })
+  }
+
+  if (!vtoken) {
+    return null
   }
 
   return (
@@ -41,7 +72,6 @@ export default function AdminOnboarding() {
           className="absolute bottom-0 -right-15 z-10"
         />
       </div>
-
       <div className="flex-1 flex items-center justify-center">
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -58,22 +88,7 @@ export default function AdminOnboarding() {
               <p className="text-sm text-gray-500">Set up your admin account to get started</p>
             </div>
           </div>
-
           <section className="flex flex-col gap-4">
-            <Input
-              label="Verification Code"
-              placeholder="Enter verification code"
-              {...form.register('verification_code')}
-              error={form.formState.errors.verification_code?.message}
-            />
-
-            <Input
-              label="Phone Number"
-              placeholder="Enter your phone number"
-              {...form.register('phone_number')}
-              error={form.formState.errors.phone_number?.message}
-            />
-
             <Input
               label="Password"
               placeholder="Enter your password"
@@ -81,7 +96,13 @@ export default function AdminOnboarding() {
               {...form.register('password')}
               error={form.formState.errors.password?.message}
             />
-
+            <Input
+              label="Confirm Password"
+              placeholder="Re-enter your password"
+              type="password"
+              {...form.register('confirm_password')}
+              error={form.formState.errors.confirm_password?.message}
+            />
             <Button
               disabled={!form.formState.isValid || isPending}
               loading={isPending}
@@ -91,7 +112,6 @@ export default function AdminOnboarding() {
             >
               Complete Onboarding
             </Button>
-
             <p className="text-xs text-center text-gray-500">
               By continuing, you agree to our{' '}
               <a href={ROUTES.IN_APP.TERMS_OF_SERVICE} className="text-primary-500 underline">
@@ -102,9 +122,7 @@ export default function AdminOnboarding() {
                 Privacy Policy
               </a>
             </p>
-
             <hr className="border-gray-200" />
-
             <div className="flex items-center gap-2">
               <p>
                 Already have an account?{' '}

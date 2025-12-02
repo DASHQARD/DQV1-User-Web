@@ -13,7 +13,6 @@ export const LoginSchema = z.object({
 
 export const AdminOnboardingSchema = z.object({
   verification_code: getRequiredStringSchema('Verification Code'),
-  phone_number: getRequiredStringSchema('Phone Number'),
   password: getRequiredAlphaNumericStringSchema('Password'),
 })
 

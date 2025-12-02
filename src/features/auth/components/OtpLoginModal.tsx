@@ -27,7 +27,7 @@ export default function OtpLoginModal() {
             Enter Verification Code
           </Text>
           <Text variant="span" weight="normal" className="text-gray-600">
-            We've sent a 4-digit code to your email
+            We've sent a 4-digit code to your phone
           </Text>
         </div>
       </div>

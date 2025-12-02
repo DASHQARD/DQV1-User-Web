@@ -1,35 +1,3 @@
-export type Admin = {
-  id: number
-  email: string
-  first_name: string | null
-  last_name: string | null
-  role_id: number | null
-  type: string
-  status: string
-  created_at: string
-  updated_at: string
-}
-
-export type AdminsListResponse = {
-  status: string
-  statusCode: number
-  message: string
-  data: Admin[]
-  pagination: {
-    limit: number
-    hasNextPage: boolean
-    next: string | null
-  }
-  url: string
-}
-
-export type AdminsQueryParams = {
-  limit?: number
-  status?: string
-  search?: string
-  after?: string
-}
-
 export type InviteAdminPayload = {
   email: string
   first_name: string
@@ -59,4 +27,39 @@ export type AdminRefreshTokenResponse = {
   }
   accessToken?: string
   refreshToken?: string
+}
+
+export interface Admin {
+  id: number
+  email: string
+  status: string
+  type: string
+  role_id: number | null
+  first_name: string
+  last_name: string
+  phone_number: string | null
+  avatar: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminsQueryParams {
+  limit?: number
+  after?: string
+  search?: string
+  status?: string
+}
+
+export interface AdminsPaginationMeta {
+  limit: number
+  hasNextPage: boolean
+  next: string | null
+}
+
+export interface AdminsListResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: Admin[]
+  pagination: AdminsPaginationMeta
 }
