@@ -24,7 +24,8 @@ export default function Vendors() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [limit, setLimit] = useState(10)
-  const [after, setAfter] = useState<string | undefined>(undefined)
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [cursorHistory, setCursorHistory] = useState<(string | null)[]>([null])
   const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null)
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
@@ -34,7 +35,7 @@ export default function Vendors() {
     limit,
     status: status || undefined,
     search: search || undefined,
-    after,
+    after: cursor || undefined,
   })
 
   const vendors = data?.data || []
@@ -52,8 +53,6 @@ export default function Vendors() {
 
   const handleAddBranch = useCallback(
     (vendor: Vendor) => {
-      // Navigate to add branch page with vendor context
-      // You may want to pass vendor info via state or query params
       navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ADD_BRANCH, {
         state: { vendorId: vendor.id },
       })
@@ -61,12 +60,51 @@ export default function Vendors() {
     [navigate],
   )
 
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setCursor(null)
+    setCursorHistory([null])
+  }
+
+  const handleStatusChange = (value: string) => {
+    setStatus(value)
+    setCursor(null)
+    setCursorHistory([null])
+  }
+
+  const handleLimitChange = (value: number) => {
+    setLimit(value)
+    setCursor(null)
+    setCursorHistory([null])
+  }
+
+  const handleNextPage = () => {
+    if (pagination?.next) {
+      setCursorHistory((prev) => [...prev, cursor])
+      setCursor(pagination.next)
+    }
+  }
+
+  const handlePreviousPage = () => {
+    if (cursorHistory.length > 1) {
+      const newHistory = [...cursorHistory]
+      newHistory.pop()
+      setCursorHistory(newHistory)
+      setCursor(newHistory[newHistory.length - 1])
+    }
+  }
+
+  const currentPage = cursorHistory.length
+  const hasPreviousPage = cursorHistory.length > 1
+
   const columns: ColumnDef<Vendor>[] = useMemo(
     () => [
       {
         accessorKey: 'id',
-        header: 'ID',
-        cell: ({ row }) => <span className="font-medium text-gray-900">#{row.original.id}</span>,
+        header: 'GVID',
+        cell: ({ row }) => (
+          <span className="font-medium text-gray-900">{row.original.full_branch_id}</span>
+        ),
       },
       {
         accessorKey: 'email',
@@ -165,18 +203,6 @@ export default function Vendors() {
     [handleViewDetails, handleUpdateStatus, handleAddBranch],
   )
 
-  const handleNextPage = () => {
-    if (pagination?.next) {
-      setAfter(pagination.next)
-    }
-  }
-
-  const handlePreviousPage = () => {
-    // Note: The API doesn't provide a previous cursor, so we'd need to track history
-    // For now, we'll reset to the beginning
-    setAfter(undefined)
-  }
-
   if (error) {
     return (
       <div className="flex items-center justify-center h-64 bg-white rounded-xl border border-gray-200">
@@ -209,29 +235,28 @@ export default function Vendors() {
 
         {/* Filters */}
         <div className="bg-white rounded-xl p-6 border border-[#f1f3f4] shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+            {/* Search - Takes more space */}
+            <div className="md:col-span-5">
               <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-              <div className="relative">
-                <Icon
-                  icon="hugeicons:search-02"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg"
-                />
-                <Input
-                  type="text"
-                  placeholder="Search by email, phone, or branch..."
-                  value={search}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <Input
+                type="text"
+                placeholder="Search by email, phone, or branch..."
+                value={search}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  handleSearchChange(e.target.value)
+                }
+                className="h-[42px] w-full"
+              />
             </div>
-            <div>
+
+            {/* Status */}
+            <div className="md:col-span-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg py-2.5 px-4 text-sm bg-white text-gray-900 cursor-pointer focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25"
+                onChange={(e) => handleStatusChange(e.target.value)}
+                className="w-full h-[42px] border border-gray-300 rounded-lg py-2 px-4 text-sm bg-white text-gray-900 cursor-pointer focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25"
               >
                 {statusOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -240,15 +265,13 @@ export default function Vendors() {
                 ))}
               </select>
             </div>
-            <div>
+
+            <div className="md:col-span-3">
               <label className="block text-sm font-medium text-gray-700 mb-2">Items per page</label>
               <select
                 value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value))
-                  setAfter(undefined) // Reset pagination when changing limit
-                }}
-                className="w-full border border-gray-300 rounded-lg py-2.5 px-4 text-sm bg-white text-gray-900 cursor-pointer focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25"
+                onChange={(e) => handleLimitChange(Number(e.target.value))}
+                className="w-full h-[42px] border border-gray-300 rounded-lg py-2 px-4 text-sm bg-white text-gray-900 cursor-pointer focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25"
               >
                 <option value={10}>10</option>
                 <option value={20}>20</option>
@@ -270,7 +293,7 @@ export default function Vendors() {
           <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
             <div className="text-sm text-gray-600 mb-1">Pending</div>
             <div className="text-2xl font-bold text-yellow-600">
-              {vendors.filter((v) => v.status === 'suspended').length}
+              {vendors.filter((v) => v.status === 'pending').length}
             </div>
           </div>
           <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
@@ -311,21 +334,21 @@ export default function Vendors() {
           {pagination && vendors.length > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                Showing {vendors.length} of {pagination.hasNextPage ? 'many' : vendors.length}{' '}
-                vendors
+                Page {currentPage} • Showing {vendors.length} vendors
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handlePreviousPage}
-                  disabled={!after}
+                  disabled={!hasPreviousPage}
                   className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-lg border transition-colors',
-                    after
+                    'px-4 py-2 text-sm font-medium rounded-lg border transition-colors flex items-center gap-1',
+                    hasPreviousPage
                       ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
                       : 'border-gray-200 text-gray-400 cursor-not-allowed',
                   )}
                 >
+                  <Icon icon="bi:chevron-left" />
                   Previous
                 </button>
                 <button
@@ -333,13 +356,14 @@ export default function Vendors() {
                   onClick={handleNextPage}
                   disabled={!pagination.hasNextPage}
                   className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-lg border transition-colors',
+                    'px-4 py-2 text-sm font-medium rounded-lg border transition-colors flex items-center gap-1',
                     pagination.hasNextPage
                       ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
                       : 'border-gray-200 text-gray-400 cursor-not-allowed',
                   )}
                 >
                   Next
+                  <Icon icon="bi:chevron-right" />
                 </button>
               </div>
             </div>

@@ -12,6 +12,7 @@ export default function Admins() {
   const [status, setStatus] = useState('')
   const [limit, setLimit] = useState(10)
   const [cursor, setCursor] = useState<string | null>(null)
+  const [cursorHistory, setCursorHistory] = useState<(string | null)[]>([null])
   const [showInviteModal, setShowInviteModal] = useState(false)
 
   const { data, isLoading, error } = useAdmins({
@@ -68,6 +69,7 @@ export default function Admins() {
             verified: 'bg-green-100 text-green-800',
             active: 'bg-blue-100 text-blue-800',
             inactive: 'bg-gray-100 text-gray-800',
+            deactivated: 'bg-red-100 text-red-800',
             suspended: 'bg-red-100 text-red-800',
           }
           return (
@@ -107,15 +109,42 @@ export default function Admins() {
   const pendingAdmins = admins.filter((a) => a.status === 'pending').length
   const inactiveAdmins = admins.filter((a) => a.status === 'deactivated').length
 
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setCursor(null)
+    setCursorHistory([null])
+  }
+
+  const handleStatusChange = (value: string) => {
+    setStatus(value)
+    setCursor(null)
+    setCursorHistory([null])
+  }
+
+  const handleLimitChange = (value: number) => {
+    setLimit(value)
+    setCursor(null)
+    setCursorHistory([null])
+  }
+
   const handleNextPage = () => {
     if (data?.pagination.next) {
+      setCursorHistory((prev) => [...prev, cursor])
       setCursor(data.pagination.next)
     }
   }
 
   const handlePreviousPage = () => {
-    setCursor(null)
+    if (cursorHistory.length > 1) {
+      const newHistory = [...cursorHistory]
+      newHistory.pop()
+      setCursorHistory(newHistory)
+      setCursor(newHistory[newHistory.length - 1])
+    }
   }
+
+  const currentPage = cursorHistory.length
+  const hasPreviousPage = cursorHistory.length > 1
 
   return (
     <div className="w-full min-h-screen bg-gray-50 p-6">
@@ -187,35 +216,32 @@ export default function Admins() {
               <Input
                 placeholder="Search by email or name..."
                 value={search}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setSearch(e.target.value)
-                  setCursor(null)
-                }}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  handleSearchChange(e.target.value)
+                }
                 className="w-full"
               />
             </div>
             <div className="w-[200px]">
               <select
                 value={status}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                  setStatus(e.target.value)
-                  setCursor(null)
-                }}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  handleStatusChange(e.target.value)
+                }
                 className="w-full border-2 border-gray-300 rounded-lg py-2.5 px-4 text-sm bg-white text-gray-900 cursor-pointer transition-colors focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25 hover:border-gray-400"
               >
                 <option value="">All Status</option>
                 <option value="active">Active</option>
                 <option value="pending">Pending</option>
-                <option value="deactivated">Suspended</option>
+                <option value="deactivated">Deactivated</option>
               </select>
             </div>
             <div className="w-[150px]">
               <select
                 value={limit}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                  setLimit(Number(e.target.value))
-                  setCursor(null)
-                }}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  handleLimitChange(Number(e.target.value))
+                }
                 className="w-full border-2 border-gray-300 rounded-lg py-2.5 px-4 text-sm bg-white text-gray-900 cursor-pointer transition-colors focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25 hover:border-gray-400"
               >
                 <option value="10">10 per page</option>
@@ -246,13 +272,20 @@ export default function Admins() {
               <DataTable columns={columns} data={admins} />
 
               {/* Pagination Controls */}
-              {(cursor || data?.pagination.hasNextPage) && (
+              {(hasPreviousPage || data?.pagination.hasNextPage) && (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-                  <Button variant="outline" onClick={handlePreviousPage} disabled={!cursor}>
+                  <Button
+                    variant="outline"
+                    onClick={handlePreviousPage}
+                    disabled={!hasPreviousPage}
+                  >
+                    <Icon icon="bi:chevron-left" className="mr-1" />
                     Previous
                   </Button>
 
-                  <span className="text-sm text-gray-600">Showing {admins.length} admins</span>
+                  <span className="text-sm text-gray-600">
+                    Page {currentPage} • Showing {admins.length} admins
+                  </span>
 
                   <Button
                     variant="outline"
@@ -260,6 +293,7 @@ export default function Admins() {
                     disabled={!data?.pagination.hasNextPage}
                   >
                     Next
+                    <Icon icon="bi:chevron-right" className="ml-1" />
                   </Button>
                 </div>
               )}
