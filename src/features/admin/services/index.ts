@@ -18,6 +18,8 @@ import type {
   InviteAdminResponse,
   AdminRefreshTokenPayload,
   AdminRefreshTokenResponse,
+  AdminsQueryParams,
+  AdminsListResponse,
 } from '@/types/admin'
 import type { RolesListResponse, PermissionsListResponse } from '@/types/role'
 
@@ -83,11 +85,7 @@ const refreshAdminToken = async (
   return response as unknown as AdminRefreshTokenResponse
 }
 
-const onboardAdmin = async (data: {
-  verification_code: string
-  phone_number: string
-  password: string
-}) => {
+const onboardAdmin = async (data: { verification_code: string; password: string }) => {
   const response = await axiosClient.post('/admin/onboard', data)
   return response.data
 }
@@ -100,6 +98,11 @@ const getRoles = async (): Promise<RolesListResponse> => {
 const getPermissions = async (): Promise<PermissionsListResponse> => {
   const response = await axiosClient.get('/permissions/all')
   return response as unknown as PermissionsListResponse
+}
+
+const getAdmins = async (params?: AdminsQueryParams): Promise<AdminsListResponse> => {
+  const response = await axiosClient.get('/admins', { params })
+  return response as unknown as AdminsListResponse
 }
 
 export {
@@ -116,4 +119,5 @@ export {
   onboardAdmin,
   getRoles,
   getPermissions,
+  getAdmins,
 }

@@ -5,6 +5,12 @@ export type Vendor = {
   phonenumber: string | null
   status: string
   branch_name: string | null
+  vendor_id: string | null
+  gvid: string | null
+  vendor_code: string | null
+  country: string | null
+  branch_code: string | null
+  full_branch_id: string | null
   created_at: string
   updated_at: string
 }

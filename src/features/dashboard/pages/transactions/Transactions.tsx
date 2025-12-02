@@ -204,9 +204,7 @@ export default function Transactions() {
 
   // Reset pagination when filters or tab changes
   React.useEffect(() => {
-    if (currentPage !== 1) {
-      setCurrentPage(1)
-    }
+    setCurrentPage(1)
   }, [activeTab, filters])
 
   const switchToPurchases = () => {

@@ -11,7 +11,6 @@ export default function AdminSidebar() {
   const { user, logout } = useAuthStore()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
-  // Get admin name from JWT decoded user or default
   const userName =
     (user as any)?.name || (user as any)?.fullname || (user as any)?.email?.split('@')[0] || 'Admin'
 
@@ -34,6 +33,8 @@ export default function AdminSidebar() {
         const savedState = localStorage.getItem('adminSidebarCollapsed')
         if (savedState !== null) {
           setIsCollapsed(savedState === 'true')
+        } else {
+          setIsCollapsed(false)
         }
       }
     }
@@ -47,11 +48,9 @@ export default function AdminSidebar() {
     if (path === ROUTES.IN_APP.ADMIN.HOME) {
       return location.pathname === path
     }
-    // For exact matches
     if (location.pathname === path) {
       return true
     }
-    // For prefix matches
     if (location.pathname.startsWith(path + '/')) {
       return true
     }
@@ -146,9 +145,13 @@ export default function AdminSidebar() {
       )}
     >
       <div className="flex flex-col flex-grow min-h-full h-full overflow-hidden relative z-[2] p-0">
-        {/* Top Bar */}
         <div className="flex items-center justify-between p-6 mb-6 border-b border-black/6 bg-white relative z-[1]">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
+          <div
+            className={cn(
+              'flex items-center gap-4 flex-1 min-w-0',
+              isCollapsed && 'flex-col gap-3',
+            )}
+          >
             <div className="flex-shrink-0">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#402D87] to-[#2d1a72] flex items-center justify-center text-white text-xl shadow-[0_4px_12px_rgba(64,45,135,0.25)] transition-all duration-300 hover:translate-y-[-1px] hover:shadow-[0_6px_16px_rgba(64,45,135,0.35)]">
                 <Icon icon="bi:shield-check" />
@@ -165,24 +168,31 @@ export default function AdminSidebar() {
                 </div>
               </div>
             )}
-          </div>
-          <button
-            onClick={toggleSidebar}
-            className={cn(
-              'bg-transparent border-none p-2 cursor-pointer flex flex-col gap-[3px] transition-all duration-300 rounded-md',
-              'hover:bg-black/5',
-              isCollapsed &&
-                '[&>span:nth-child(1)]:rotate-45 [&>span:nth-child(1)]:translate-x-[5px] [&>span:nth-child(1)]:translate-y-[5px] [&>span:nth-child(2)]:opacity-0 [&>span:nth-child(3)]:rotate-[-45deg] [&>span:nth-child(3)]:translate-x-[5px] [&>span:nth-child(3)]:translate-y-[-5px]',
+            {isCollapsed && (
+              <button
+                onClick={toggleSidebar}
+                className="bg-transparent border-none p-2 cursor-pointer flex flex-col gap-[3px] transition-all duration-300 rounded-md hover:bg-black/5 relative z-10"
+                title="Expand sidebar"
+              >
+                <span className="w-5 h-0.5 bg-[#495057] rounded-sm transition-all duration-300 origin-center" />
+                <span className="w-5 h-0.5 bg-[#495057] rounded-sm transition-all duration-300 origin-center" />
+                <span className="w-5 h-0.5 bg-[#495057] rounded-sm transition-all duration-300 origin-center" />
+              </button>
             )}
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            <span className="w-5 h-0.5 bg-[#495057] rounded-sm transition-all duration-300 origin-center" />
-            <span className="w-5 h-0.5 bg-[#495057] rounded-sm transition-all duration-300 origin-center" />
-            <span className="w-5 h-0.5 bg-[#495057] rounded-sm transition-all duration-300 origin-center" />
-          </button>
+          </div>
+          {!isCollapsed && (
+            <button
+              onClick={toggleSidebar}
+              className="bg-transparent border-none p-2 cursor-pointer flex flex-col gap-[3px] transition-all duration-300 rounded-md hover:bg-black/5 [&>span:nth-child(1)]:rotate-45 [&>span:nth-child(1)]:translate-x-[5px] [&>span:nth-child(1)]:translate-y-[5px] [&>span:nth-child(2)]:opacity-0 [&>span:nth-child(3)]:rotate-[-45deg] [&>span:nth-child(3)]:translate-x-[5px] [&>span:nth-child(3)]:translate-y-[-5px]"
+              title="Collapse sidebar"
+            >
+              <span className="w-5 h-0.5 bg-[#495057] rounded-sm transition-all duration-300 origin-center" />
+              <span className="w-5 h-0.5 bg-[#495057] rounded-sm transition-all duration-300 origin-center" />
+              <span className="w-5 h-0.5 bg-[#495057] rounded-sm transition-all duration-300 origin-center" />
+            </button>
+          )}
         </div>
 
-        {/* Navigation */}
         <nav className="flex-grow relative z-[1]">
           <ul className="list-none p-0 m-0 px-5">
             {adminNavItems.map((section) => (
@@ -242,7 +252,6 @@ export default function AdminSidebar() {
               </React.Fragment>
             ))}
 
-            {/* Logout */}
             {!isCollapsed && (
               <li className="py-5 px-5 mt-5">
                 <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-[#6c757d]/90 relative flex items-center after:content-[''] after:absolute after:bottom-[-6px] after:left-0 after:w-5 after:h-0.5 after:bg-gradient-to-r after:from-[#402D87] after:to-[rgba(64,45,135,0.4)] after:rounded-sm after:shadow-[0_1px_2px_rgba(64,45,135,0.2)] before:content-[''] before:absolute before:top-[-0.5rem] before:left-[-1.25rem] before:right-[-1.25rem] before:h-px before:bg-gradient-to-r before:from-transparent before:via-black/6 before:to-transparent">
