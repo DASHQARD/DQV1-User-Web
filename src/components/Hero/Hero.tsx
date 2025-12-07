@@ -2,10 +2,13 @@ import { Button } from '../Button'
 import TransparentLogo from '../../assets/images/transparent-logo.png'
 
 import DashCardsBg from '../../assets/images/groupofdash.png'
+import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '@/utils/constants'
 
 // import { Text } from '../Text'
 
 export default function Hero() {
+  const navigate = useNavigate()
   return (
     <header className="bg-primary-500 min-h-[calc(100vh-80px)] flex pt-[80px]">
       <section className="flex justify-between items-center wrapper">
@@ -50,7 +53,12 @@ export default function Hero() {
                 >
                   Get Started
                 </Button>
-                <Button className="!rounded-4xl max-w-[220px] w-full">Get a Card</Button>
+                <Button
+                  onClick={() => navigate(ROUTES.IN_APP.VENDORS)}
+                  className="!rounded-4xl max-w-[220px] w-full"
+                >
+                  Get a Card
+                </Button>
               </div>
             </div>
           </div>

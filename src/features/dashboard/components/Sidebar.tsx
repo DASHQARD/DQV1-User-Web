@@ -15,12 +15,17 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { data: userProfile } = useUserProfile()
 
-  // Check if user can switch profiles (show switcher for vendor/corporate users)
+  // Check if user can switch profiles (show switcher for vendor/corporate/corporate_vendor users)
   const userType = (user as any)?.user_type
-  const canSwitchProfiles = userType === 'vendor' || userType === 'corporate'
+  const canSwitchProfiles =
+    userType === 'vendor' || userType === 'corporate' || userType === 'corporate_vendor'
 
   // Determine profile from URL, localStorage, or user type
-  const currentProfile = useMemo((): 'vendor' | 'corporate' => {
+  const currentProfile = useMemo((): 'vendor' | 'corporate' | null => {
+    // Regular users don't have profiles
+    if (!canSwitchProfiles) {
+      return null
+    }
     // Check URL first
     const urlAccount = searchParams.get('account')
     if (urlAccount === 'vendor' || urlAccount === 'corporate') {
@@ -32,8 +37,18 @@ export default function Sidebar() {
       return savedProfile
     }
     // Fallback to user type
-    return userType === 'corporate' ? 'corporate' : 'vendor'
-  }, [searchParams, userType])
+    // For corporate_vendor, default to vendor profile
+    if (userType === 'corporate_vendor') {
+      return 'vendor'
+    }
+    if (userType === 'corporate') {
+      return 'corporate'
+    }
+    if (userType === 'vendor') {
+      return 'vendor'
+    }
+    return null
+  }, [searchParams, userType, canSwitchProfiles])
 
   // Use currentProfile directly (it's already computed from URL/localStorage/user type)
   const selectedProfile = currentProfile
@@ -73,6 +88,10 @@ export default function Sidebar() {
   }
 
   const handleLogout = async () => {
+    // Clear session storage on logout
+    sessionStorage.removeItem('complianceRedirectDone')
+    sessionStorage.removeItem('dashboardManuallyAccessed')
+    sessionStorage.removeItem('previousDashboardPath')
     logout()
     navigate(ROUTES.IN_APP.AUTH.LOGIN)
   }
@@ -115,6 +134,7 @@ export default function Sidebar() {
 
   // Check user type - use selected profile for navigation
   const isCorporate = selectedProfile === 'corporate'
+  const isVendor = selectedProfile === 'vendor'
 
   // Helper function to add account parameter to URLs
   const addAccountParam = (path: string): string => {
@@ -124,20 +144,79 @@ export default function Sidebar() {
   }
 
   // Vendor-specific navigation items
-  const corporateNavItems = [
+  const vendorNavItems = [
+    {
+      section: 'Get Started',
+      items: [
+        {
+          path: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT,
+          label: 'Get Started',
+          icon: 'bi:shield-check',
+        },
+      ],
+    },
     {
       section: 'Overview',
       items: [{ path: ROUTES.IN_APP.DASHBOARD.HOME, label: 'Dashboard', icon: 'bi:speedometer2' }],
     },
     {
-      section: 'Onboarding',
+      section: 'Redemptions',
+      items: [
+        {
+          path: ROUTES.IN_APP.DASHBOARD.REDEMPTIONS,
+          label: 'Redemptions',
+          icon: 'bi:arrow-left-right',
+        },
+      ],
+    },
+    {
+      section: 'Transactions',
+      items: [
+        {
+          path: '/dashboard/transactions',
+          label: 'Redemption Transactions',
+          icon: 'bi:receipt',
+        },
+      ],
+    },
+    {
+      section: 'Experience',
+      items: [
+        {
+          path: ROUTES.IN_APP.DASHBOARD.EXPERIENCE,
+          label: 'My Experience',
+          icon: 'bi:briefcase-fill',
+        },
+      ],
+    },
+    {
+      section: 'Settings & Support',
+      items: [
+        { path: '/dashboard/settings', label: 'Settings', icon: 'bi:gear-fill' },
+        {
+          path: ROUTES.IN_APP.DASHBOARD.PAYMENT_METHODS,
+          label: 'Payment Methods',
+          icon: 'bi:credit-card-fill',
+        },
+      ],
+    },
+  ]
+
+  // Corporate-specific navigation items
+  const corporateNavItems = [
+    {
+      section: 'Get Started',
       items: [
         {
           path: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT,
-          label: 'Compliance',
+          label: 'Get Started',
           icon: 'bi:shield-check',
         },
       ],
+    },
+    {
+      section: 'Overview',
+      items: [{ path: ROUTES.IN_APP.DASHBOARD.HOME, label: 'Dashboard', icon: 'bi:speedometer2' }],
     },
     {
       section: 'Experience',
@@ -195,29 +274,10 @@ export default function Sidebar() {
       items: [
         { path: ROUTES.IN_APP.DASHBOARD.PURCHASE, label: 'Purchase', icon: 'bi:gift' },
         { path: ROUTES.IN_APP.DASHBOARD.REDEEM, label: 'Redeem', icon: 'bi:card-checklist' },
+        { path: ROUTES.IN_APP.DASHBOARD.RECIPIENTS, label: 'Recipients', icon: 'bi:people-fill' },
         { path: '/dashboard/transactions', label: 'Transactions', icon: 'bi:receipt' },
-        {
-          path: ROUTES.IN_APP.DASHBOARD.EXPERIENCE,
-          label: 'My Experience',
-          icon: 'bi:person-lines-fill',
-        },
       ],
     },
-    // Conditionally add Experience section for corporate users
-    ...(isCorporate
-      ? [
-          {
-            section: 'Experience',
-            items: [
-              {
-                path: ROUTES.IN_APP.DASHBOARD.EXPERIENCE,
-                label: 'My Experience',
-                icon: 'bi:briefcase-fill',
-              },
-            ],
-          },
-        ]
-      : []),
     {
       section: 'Account',
       items: [{ path: '/dashboard/notifications', label: 'Notifications', icon: 'bi:bell-fill' }],
@@ -228,7 +288,8 @@ export default function Sidebar() {
     },
   ]
 
-  const navItems = isCorporate ? corporateNavItems : regularNavItems
+  // Determine which navigation items to show based on profile
+  const navItems = isVendor ? vendorNavItems : isCorporate ? corporateNavItems : regularNavItems
 
   return (
     <aside
@@ -286,7 +347,7 @@ export default function Sidebar() {
         {/* Profile Switcher */}
         {!isCollapsed && canSwitchProfiles && (
           <div className="px-6 mb-4">
-            <ProfileSwitcher value={selectedProfile} onChange={handleProfileChange} />
+            <ProfileSwitcher value={selectedProfile ?? undefined} onChange={handleProfileChange} />
           </div>
         )}
 

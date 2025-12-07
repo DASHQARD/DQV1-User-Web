@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Icon } from '@/libs'
-import { useUserProfile } from '@/hooks'
 import { Loader } from '@/components'
 import { formatRelativeTime } from '@/utils/format'
+import { useBranches } from '../../hooks/useBranches'
 
 interface BranchPerformance {
-  id: number
+  id: string
   branch_name: string
   branch_location: string
   branch_manager_name: string
@@ -24,37 +24,54 @@ type SortField = 'name' | 'revenue' | 'redemptions' | 'performance'
 type SortOrder = 'asc' | 'desc'
 
 export default function BranchPerformance() {
-  const { data: userProfile, isLoading } = useUserProfile()
+  const { data: branchesResponse, isLoading } = useBranches()
   const [selectedPeriod, setSelectedPeriod] = useState('30')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortField, setSortField] = useState<SortField>('revenue')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
 
-  // Mock branch performance data - TODO: Replace with actual API call
+  // Helper function to generate stable pseudo-random values based on branch ID
+  const stableRandom = (seed: number, min: number, max: number): number => {
+    // Simple seeded random number generator
+    const x = Math.sin(seed) * 10000
+    const normalized = x - Math.floor(x)
+    return Math.floor(normalized * (max - min + 1)) + min
+  }
+
+  // Mock branch performance data - TODO: Replace with actual API call for performance metrics
   const branchPerformance: BranchPerformance[] = useMemo(() => {
-    if (!userProfile?.branches || !Array.isArray(userProfile.branches)) {
+    const branches = branchesResponse?.data || []
+    if (!Array.isArray(branches) || branches.length === 0) {
       return []
     }
 
-    return userProfile.branches.map((branch) => ({
-      id: branch.id,
-      branch_name: branch.branch_name,
-      branch_location: branch.branch_location,
-      branch_manager_name: branch.branch_manager_name || 'N/A',
-      branch_manager_email: branch.branch_manager_email || 'N/A',
-      totalRedemptions: Math.floor(Math.random() * 500) + 50,
-      totalRevenue: Math.floor(Math.random() * 50000) + 5000,
-      giftCardRedemptions: Math.floor(Math.random() * 200) + 20,
-      dashxRedeemed: Math.floor(Math.random() * 30000) + 3000,
-      dashpassRedeemed: Math.floor(Math.random() * 20000) + 2000,
-      lastActivity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-      performanceTrend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)] as
-        | 'up'
-        | 'down'
-        | 'stable',
-      performanceChange: Math.floor(Math.random() * 40) - 20,
-    }))
-  }, [userProfile])
+    // Use a fixed reference timestamp for deterministic mock data
+    const fixedTimestamp = 1704067200000 // 2024-01-01 00:00:00 UTC
+
+    return branches.map((branch) => {
+      // Convert string id to number for seed calculation
+      const seed = parseInt(branch.id, 10) || 0
+      const trends: ('up' | 'down' | 'stable')[] = ['up', 'down', 'stable']
+      const daysAgo = stableRandom(seed * 7, 0, 7)
+      const lastActivityDate = new Date(fixedTimestamp - daysAgo * 24 * 60 * 60 * 1000)
+
+      return {
+        id: branch.id,
+        branch_name: branch.branch_name,
+        branch_location: branch.branch_location,
+        branch_manager_name: branch.branch_manager_name || 'N/A',
+        branch_manager_email: branch.branch_manager_email || 'N/A',
+        totalRedemptions: stableRandom(seed * 2, 50, 550),
+        totalRevenue: stableRandom(seed * 3, 5000, 55000),
+        giftCardRedemptions: stableRandom(seed * 4, 20, 220),
+        dashxRedeemed: stableRandom(seed * 5, 3000, 33000),
+        dashpassRedeemed: stableRandom(seed * 6, 2000, 22000),
+        lastActivity: lastActivityDate.toISOString(),
+        performanceTrend: trends[stableRandom(seed * 8, 0, 2)] as 'up' | 'down' | 'stable',
+        performanceChange: stableRandom(seed * 9, -20, 20),
+      }
+    })
+  }, [branchesResponse])
 
   // Filter and sort branches
   const filteredBranches = useMemo(() => {
@@ -99,11 +116,11 @@ export default function BranchPerformance() {
       }
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue)
+        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
       } else {
-        return sortOrder === 'asc' ? (aValue as number) - (bValue as number) : (bValue as number) - (aValue as number)
+        return sortOrder === 'asc'
+          ? (aValue as number) - (bValue as number)
+          : (bValue as number) - (aValue as number)
       }
     })
 
@@ -235,7 +252,10 @@ export default function BranchPerformance() {
             <div>
               <div className="text-2xl font-bold text-gray-900">
                 {formatCurrency(
-                  filteredBranches.reduce((sum, b) => sum + b.dashxRedeemed + b.dashpassRedeemed, 0),
+                  filteredBranches.reduce(
+                    (sum, b) => sum + b.dashxRedeemed + b.dashpassRedeemed,
+                    0,
+                  ),
                 )}
               </div>
               <div className="text-sm text-gray-600">Total Cards Redeemed</div>
@@ -395,4 +415,3 @@ export default function BranchPerformance() {
     </section>
   )
 }
-

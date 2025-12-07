@@ -38,7 +38,10 @@ export default function Home() {
   const urlAccount = searchParams.get('account')
   const userType = (user as any)?.user_type
 
-  const isVendor = urlAccount === 'vendor' || (!urlAccount && userType === 'vendor')
+  // Handle corporate_vendor users - they can switch between vendor and corporate
+  const isVendor =
+    urlAccount === 'vendor' ||
+    (!urlAccount && (userType === 'vendor' || userType === 'corporate_vendor'))
   const isCorporate = urlAccount === 'corporate' || (!urlAccount && userType === 'corporate')
 
   // State declarations

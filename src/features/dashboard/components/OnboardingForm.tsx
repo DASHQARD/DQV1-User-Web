@@ -2,11 +2,11 @@ import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
-import { BasePhoneInput, Combobox, Input, Text } from '@/components'
+import { Combobox, Input, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { OnboardingSchema } from '@/utils/schemas'
 import { useAuth } from '../../auth/hooks'
-import { useCountriesData, useUserProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import React from 'react'
 
@@ -16,7 +16,7 @@ export default function OnboardingForm() {
 
   const { useOnboardingService } = useAuth()
   const { mutate, isPending } = useOnboardingService()
-  const { countries } = useCountriesData()
+
   const form = useForm<z.infer<typeof OnboardingSchema>>({
     resolver: zodResolver(OnboardingSchema),
   })
@@ -27,7 +27,6 @@ export default function OnboardingForm() {
         first_name: userProfile?.fullname?.split(' ')[0],
         last_name: userProfile?.fullname?.split(' ')[1],
         dob: userProfile?.dob,
-        phone_number: userProfile?.phonenumber,
         street_address: userProfile?.street_address,
         id_type: userProfile?.id_type,
         id_number: userProfile?.id_number,
@@ -36,10 +35,8 @@ export default function OnboardingForm() {
   }, [userProfile, form])
 
   const onSubmit = (data: z.infer<typeof OnboardingSchema>) => {
-    const phoneNumber = data.phone_number.replace('-', '')
     const payload = {
       full_name: `${data.first_name} ${data.last_name}`,
-      phone_number: phoneNumber,
       street_address: data.street_address,
       dob: data.dob,
       id_type: data.id_type,
@@ -85,25 +82,6 @@ export default function OnboardingForm() {
             {...form.register('dob')}
             error={form.formState.errors.dob?.message}
           />
-          <div className="col-span-full">
-            <Controller
-              control={form.control}
-              name="phone_number"
-              render={({ field: { value, onChange } }) => {
-                return (
-                  <BasePhoneInput
-                    placeholder="Enter number eg. 5512345678"
-                    options={countries}
-                    selectedVal={value}
-                    maxLength={10}
-                    handleChange={onChange}
-                    label="Phone number"
-                    error={form.formState.errors.phone_number?.message}
-                  />
-                )
-              }}
-            />
-          </div>
 
           <Input
             label="Street Address"

@@ -14,12 +14,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-interface PinCodeForm {
-  old: string
-  new: string
-  confirm: string
-}
-
 interface PhoneModal {
   show: boolean
   step: 'confirm-current' | 'enter-new' | 'confirm-new'
@@ -57,18 +51,6 @@ export default function Settings() {
 
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
-
-  // PIN states
-  const [pinCode, setPinCode] = useState<PinCodeForm>({
-    old: '',
-    new: '',
-    confirm: '',
-  })
-
-  const [pinLoading, setPinLoading] = useState(false)
-  const [pinError, setPinError] = useState<string | null>(null)
-  const [pinSuccess, setPinSuccess] = useState(false)
-  const [pinShowAlert, setPinShowAlert] = useState(false)
 
   // Name change modal states
   const [showNameChangeModal, setShowNameChangeModal] = useState(false)
@@ -139,33 +121,33 @@ export default function Settings() {
     navigate(ROUTES.IN_APP.AUTH.LOGIN)
   }
 
-  const handlePinCodeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (form.formState.errors.newPin?.message) return
+  // const handlePinCodeSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault()
+  //   if (form.formState.errors.newPin?.message) return
 
-    setPinLoading(true)
-    setPinError(null)
-    setPinShowAlert(true)
-    try {
-      await axiosClient.post('/auth/change-pin', {
-        currentPin: pinCode.old,
-        newPin: pinCode.new,
-      })
+  //   setPinLoading(true)
+  //   setPinError(null)
+  //   setPinShowAlert(true)
+  //   try {
+  //     await axiosClient.post('/auth/change-pin', {
+  //       currentPin: pinCode.old,
+  //       newPin: pinCode.new,
+  //     })
 
-      setPinCode({ old: '', new: '', confirm: '' })
-      setPinSuccess(true)
-      setPinError(null)
-      setTimeout(() => {
-        setPinSuccess(false)
-        setPinShowAlert(false)
-      }, 5000)
-    } catch (error: any) {
-      setPinError(error?.message || 'Failed to change PIN code')
-      setPinSuccess(false)
-    } finally {
-      setPinLoading(false)
-    }
-  }
+  //     setPinCode({ old: '', new: '', confirm: '' })
+  //     setPinSuccess(true)
+  //     setPinError(null)
+  //     setTimeout(() => {
+  //       setPinSuccess(false)
+  //       setPinShowAlert(false)
+  //     }, 5000)
+  //   } catch (error: any) {
+  //     setPinError(error?.message || 'Failed to change PIN code')
+  //     setPinSuccess(false)
+  //   } finally {
+  //     setPinLoading(false)
+  //   }
+  // }
 
   const closeNameChangeModal = () => {
     setShowNameChangeModal(false)
@@ -231,7 +213,7 @@ export default function Settings() {
   }
 
   // Calculate PIN mismatch
-  const pinConfirmMismatch = pinCode.new !== pinCode.confirm || !pinCode.new || !pinCode.confirm
+  // const pinConfirmMismatch = pinCode.new !== pinCode.confirm || !pinCode.new || !pinCode.confirm
 
   // Mask email function
   const maskEmail = (email: string) => {
@@ -598,7 +580,7 @@ export default function Settings() {
               </div>
 
               {/* PIN Code Card */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-lg border border-gray-200 border-t-4 border-t-blue-500 overflow-hidden transition-all hover:shadow-xl hover:-translate-y-0.5">
+              {/* <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-lg border border-gray-200 border-t-4 border-t-blue-500 overflow-hidden transition-all hover:shadow-xl hover:-translate-y-0.5">
                 <div className="bg-gray-50 px-6 py-6 border-b border-gray-200">
                   <h5 className="text-xl font-semibold text-gray-700 mb-2 flex items-center">
                     <Icon icon="bi:123" className="mr-2 text-[#402D87]" />
@@ -678,7 +660,7 @@ export default function Settings() {
                     </div>
                   </form>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

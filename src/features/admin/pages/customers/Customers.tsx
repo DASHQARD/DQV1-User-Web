@@ -226,7 +226,7 @@ export default function Customers() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
             <div className="text-sm text-gray-600 mb-1">Total Customers</div>
             <div className="text-2xl font-bold text-[#402D87]">{customers.length}</div>
@@ -234,22 +234,22 @@ export default function Customers() {
           <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
             <div className="text-sm text-gray-600 mb-1">Suspended</div>
             <div className="text-2xl font-bold text-red-600">
-              {customers.filter((c) => c.status === 'suspended').length}
+              {customers?.filter((c) => c.status === 'suspended').length}
             </div>
           </div>
           <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
             <div className="text-sm text-gray-600 mb-1">Verified</div>
             <div className="text-2xl font-bold text-green-600">
-              {customers.filter((c) => c.status === 'verified' || c.status === 'active').length}
+              {customers?.filter((c) => c.status === 'verified' || c.status === 'active').length}
             </div>
           </div>
           <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
             <div className="text-sm text-gray-600 mb-1">Inactive</div>
             <div className="text-2xl font-bold text-gray-600">
-              {customers.filter((c) => c.status === 'inactive').length}
+              {customers?.filter((c) => c.status === 'inactive').length}
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Table */}
         <div className="bg-white rounded-xl border border-[#f1f3f4] shadow-sm overflow-hidden">
@@ -272,7 +272,7 @@ export default function Customers() {
           />
 
           {/* Pagination */}
-          {customers.length > 0 && (
+          {customers?.length > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <div className="text-sm text-gray-600">
                 Showing {customers.length} customer{customers.length !== 1 ? 's' : ''}

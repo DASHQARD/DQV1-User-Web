@@ -7,9 +7,8 @@ export const addToCart = async (data: AddToCartPayload): Promise<CartItemRespons
   return response as unknown as CartItemResponse
 }
 
-export const getCartItems = async (limit = 20): Promise<CartListResponse> => {
-  // axiosClient interceptor returns data directly
-  const response = await axiosClient.get('/carts', { params: { limit } })
+export const getCartItems = async (query?: Record<string, any>): Promise<CartListResponse> => {
+  const response = await axiosClient.get('/carts', { params: query })
   return response as unknown as CartListResponse
 }
 

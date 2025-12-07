@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from '@/libs'
-import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import { ROUTES } from '@/utils/constants'
+import { Button } from '@/components'
+import { DashProPurchase } from '@/features/website'
 
 interface Recipient {
   name: string
@@ -26,59 +27,16 @@ export default function Purchase({
   onRecipientsUpdated,
 }: PurchaseProps) {
   const [recipients, setRecipients] = useState<Recipient[]>(initialRecipients)
-  const [showModal, setShowModal] = useState(false)
-  const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(null)
-  const [editingIndex, setEditingIndex] = useState(-1)
   const [isProcessing, setIsProcessing] = useState(false)
 
   const openAddModal = () => {
-    setEditingRecipient(null)
-    setEditingIndex(-1)
-    setShowModal(true)
+    // Modal functionality to be implemented
   }
 
-  const editRecipient = (recipient: Recipient, index: number) => {
-    setEditingRecipient({ ...recipient })
-    setEditingIndex(index)
-    setShowModal(true)
-  }
-
-  const closeModal = () => {
-    setShowModal(false)
-    setEditingRecipient(null)
-    setEditingIndex(-1)
-  }
-
-  const saveRecipient = (recipientData: Recipient) => {
-    const updatedRecipients = [...recipients]
-
-    if (editingIndex >= 0) {
-      // Edit existing recipient
-      updatedRecipients[editingIndex] = recipientData
-    } else {
-      // Add new recipient
-      if (updatedRecipients.length >= 3) {
-        alert('Maximum 3 recipients allowed for single purchase')
-        return
-      }
-      updatedRecipients.push(recipientData)
-    }
-
-    // Calculate totals
-    const totalCount = updatedRecipients.length
-    const totalAmount = updatedRecipients.reduce(
-      (sum, recipient) => sum + Number(recipient.amount),
-      0,
-    )
-
-    setRecipients(updatedRecipients)
-    onRecipientsUpdated?.({
-      totalCount,
-      totalAmount,
-      recipients: updatedRecipients,
-    })
-
-    closeModal()
+  const editRecipient = (_recipient: Recipient, _index: number) => {
+    // Edit functionality to be implemented
+    void _recipient
+    void _index
   }
 
   const removeRecipient = (index: number) => {
@@ -163,7 +121,7 @@ export default function Purchase({
           </div>
           {/* Recipients Section */}
           <div className="bg-white rounded-[20px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-[rgba(64,45,135,0.1)] mb-6 overflow-hidden">
-            <div className="bg-gradient-to-br from-[rgba(64,45,135,0.05)] to-[rgba(64,45,135,0.02)] px-8 py-6 border-b border-[rgba(64,45,135,0.1)]">
+            <div className="bg-linear-to-br from-[rgba(64,45,135,0.05)] to-[rgba(64,45,135,0.02)] px-8 py-6 border-b border-[rgba(64,45,135,0.1)]">
               <div className="flex justify-between items-center gap-5">
                 <div className="flex items-center gap-3 flex-1">
                   <Icon icon="bi:people" className="text-xl text-[#402D87]" />
@@ -175,14 +133,14 @@ export default function Purchase({
                   )}
                 </div>
                 <div className="flex gap-3">
-                  <button
-                    className="px-4 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 border-none flex items-center bg-gradient-to-br from-[#402D87] to-[#2d1a72] text-white hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(64,45,135,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  <Button
+                    className="w-full rounded-full border-2 h-11 border-primary-500 bg-white text-nowrap px-6 py-3 text-sm font-bold text-primary-500 transition-all duration-200 hover:bg-primary-50"
                     onClick={openAddModal}
                     disabled={recipients.length >= 3}
                   >
                     <Icon icon="bi:plus-circle" className="mr-2" />
                     Add Recipient
-                  </button>
+                  </Button>
                   {recipients.length > 0 && (
                     <button
                       className="px-4 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 border-none flex items-center bg-[rgba(220,38,38,0.1)] text-[#dc2626] hover:bg-[rgba(220,38,38,0.2)]"
@@ -447,14 +405,7 @@ export default function Purchase({
         </div>
       </section>
 
-      {/* Add/Edit Recipient Modal */}
-      <PurchaseModal
-        isOpen={showModal}
-        initialData={editingRecipient}
-        onSave={saveRecipient}
-        onClose={closeModal}
-        showTrigger={false}
-      />
+      <DashProPurchase />
     </div>
   )
 }

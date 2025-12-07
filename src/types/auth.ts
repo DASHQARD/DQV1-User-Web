@@ -11,7 +11,6 @@ export type LoginData = {
 
 export type OnboardingData = {
   full_name: string
-  phone_number: string
   street_address: string
   dob: string
   id_type: string

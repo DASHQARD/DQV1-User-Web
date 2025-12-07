@@ -1,0 +1,43 @@
+import { axiosClient } from '@/libs'
+
+export interface Branch {
+  id: string
+  user_id: number
+  branch_manager_name: string
+  branch_manager_email: string
+  branch_name: string
+  branch_location: string
+  is_single_branch: boolean
+  created_at: string
+  updated_at: string
+  vendor_id: number
+  full_branch_id: string
+  gvid: string
+  parent_branch_id: string | null
+  branch_code: string
+  branch_type: string
+  status: string
+}
+
+export interface BranchesListResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: Branch[]
+}
+
+export interface DeleteBranchResponse {
+  status: string
+  statusCode: number
+  message: string
+}
+
+export const getBranches = async (): Promise<BranchesListResponse> => {
+  const response = await axiosClient.get('/vendors/branches')
+  return response as unknown as BranchesListResponse
+}
+
+export const deleteBranch = async (id: string): Promise<DeleteBranchResponse> => {
+  const response = await axiosClient.delete(`/branches/${id}`)
+  return response as unknown as DeleteBranchResponse
+}

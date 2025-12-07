@@ -5,6 +5,7 @@ import type {
   VendorDetailsResponse,
   UpdateVendorStatusPayload,
   UpdateVendorStatusResponse,
+  VendorCardsResponse,
 } from '@/types/vendor'
 import type {
   CustomersListResponse,
@@ -39,10 +40,14 @@ const getVendors = async (params?: VendorsQueryParams): Promise<VendorsListRespo
   return response as unknown as VendorsListResponse
 }
 
-const getVendorInfo = async (id: number): Promise<VendorDetailsResponse> => {
-  // axiosClient interceptor returns data directly, but TypeScript needs the cast
+const getVendorInfo = async (id: string): Promise<VendorDetailsResponse> => {
   const response = await axiosClient.get(`/vendors/info/${id}`)
-  return response as unknown as VendorDetailsResponse
+  return response.data
+}
+
+const getVendorCards = async (id: string): Promise<VendorCardsResponse> => {
+  const response = await axiosClient.get(`/cards/vendor/${id}`)
+  return response.data
 }
 
 const updateVendorStatus = async (
@@ -56,7 +61,7 @@ const updateVendorStatus = async (
 const getCustomers = async (params?: CustomersQueryParams): Promise<CustomersListResponse> => {
   // axiosClient interceptor returns data directly, but TypeScript needs the cast
   const response = await axiosClient.get('/users/all', { params })
-  return response as unknown as CustomersListResponse
+  return response.data
 }
 
 const getCustomerInfo = async (id: number): Promise<CustomerDetailsResponse> => {
@@ -110,6 +115,7 @@ export {
   verifyLoginToken,
   getVendors,
   getVendorInfo,
+  getVendorCards,
   updateVendorStatus,
   getCustomers,
   getCustomerInfo,

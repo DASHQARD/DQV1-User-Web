@@ -11,6 +11,7 @@ import {
   PaymentInfo,
   ProfileInformation,
   Redeem,
+  Recipients,
   Settings,
   Transactions,
   UploadID,
@@ -33,6 +34,10 @@ export const dashboardRoutes: RouteObject[] = [
   {
     path: 'transactions',
     element: <Transactions />,
+  },
+  {
+    path: 'recipients',
+    element: <Recipients />,
   },
   {
     path: 'experience',

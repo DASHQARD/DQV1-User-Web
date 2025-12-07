@@ -9,9 +9,10 @@ import { VendorDetailsModal } from './VendorDetailsModal'
 import { UpdateStatusModal } from './UpdateStatusModal'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
+import { Select } from '@/components/Select'
 
 const statusOptions = [
-  { label: 'All', value: '' },
+  { label: 'All', value: 'all' },
   { label: 'Pending', value: 'pending' },
   { label: 'Approved', value: 'approved' },
   { label: 'Rejected', value: 'rejected' },
@@ -22,8 +23,8 @@ const statusOptions = [
 export default function Vendors() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
-  const [limit, setLimit] = useState(10)
+  const [status, setStatus] = useState('all')
+  const limit = 10
   const [cursor, setCursor] = useState<string | null>(null)
   const [cursorHistory, setCursorHistory] = useState<(string | null)[]>([null])
   const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null)
@@ -33,7 +34,7 @@ export default function Vendors() {
 
   const { data, isLoading, error } = useVendors({
     limit,
-    status: status || undefined,
+    status: status === 'all' ? undefined : status || undefined,
     search: search || undefined,
     after: cursor || undefined,
   })
@@ -72,12 +73,6 @@ export default function Vendors() {
     setCursorHistory([null])
   }
 
-  const handleLimitChange = (value: number) => {
-    setLimit(value)
-    setCursor(null)
-    setCursorHistory([null])
-  }
-
   const handleNextPage = () => {
     if (pagination?.next) {
       setCursorHistory((prev) => [...prev, cursor])
@@ -103,26 +98,26 @@ export default function Vendors() {
         accessorKey: 'id',
         header: 'GVID',
         cell: ({ row }) => (
-          <span className="font-medium text-gray-900">{row.original.full_branch_id}</span>
+          <span className="font-semibold text-[#212529]">{row.original.full_branch_id}</span>
         ),
       },
       {
         accessorKey: 'email',
         header: 'Email',
-        cell: ({ row }) => <span className="text-gray-900">{row.original.email || 'N/A'}</span>,
+        cell: ({ row }) => <span className="text-[#212529]">{row.original.email || 'N/A'}</span>,
       },
       {
         accessorKey: 'phonenumber',
         header: 'Phone Number',
         cell: ({ row }) => (
-          <span className="text-gray-600">{row.original.phonenumber || 'N/A'}</span>
+          <span className="text-grey-500">{row.original.phonenumber || 'N/A'}</span>
         ),
       },
       {
         accessorKey: 'branch_name',
         header: 'Branch Name',
         cell: ({ row }) => (
-          <span className="text-gray-600">{row.original.branch_name || 'N/A'}</span>
+          <span className="text-grey-500">{row.original.branch_name || 'N/A'}</span>
         ),
       },
       {
@@ -140,8 +135,8 @@ export default function Vendors() {
           return (
             <span
               className={cn(
-                'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                statusColors[statusValue] || 'bg-gray-100 text-gray-800',
+                'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold',
+                statusColors[statusValue] || 'bg-[#f0f0f0] text-grey-500',
               )}
             >
               {statusValue.charAt(0).toUpperCase() + statusValue.slice(1)}
@@ -155,7 +150,7 @@ export default function Vendors() {
         cell: ({ row }) => {
           const date = new Date(row.original.created_at)
           return (
-            <span className="text-gray-600">
+            <span className="text-grey-500">
               {date.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -190,7 +185,7 @@ export default function Vendors() {
             >
               <button
                 type="button"
-                className="text-gray-500 hover:text-gray-700 transition-colors p-1"
+                className="text-grey-500 hover:text-primary-500 transition-colors p-1 rounded-lg hover:bg-primary-500/10"
                 title="Actions"
               >
                 <Icon icon="bi:three-dots-vertical" className="text-xl" />
@@ -205,171 +200,141 @@ export default function Vendors() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64 bg-white rounded-xl border border-gray-200">
-        <div className="text-center">
-          <Icon icon="bi:exclamation-triangle" className="text-4xl text-red-500 mb-4" />
-          <p className="text-gray-700 font-medium">Failed to load vendors</p>
-          <p className="text-sm text-gray-500 mt-2">Please try again later</p>
+      <div className="min-h-screen bg-white">
+        <div className="wrapper py-12">
+          <div className="flex items-center justify-center min-h-[400px] bg-white border border-[#e6e6e6] rounded-xl">
+            <div className="text-center">
+              <Icon icon="bi:exclamation-triangle" className="text-5xl text-red-500 mb-4" />
+              <p className="text-[#212529] font-extrabold text-lg mb-2">Failed to load vendors</p>
+              <p className="text-sm text-grey-500">Please try again later</p>
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-[#f8f9fa] rounded-xl overflow-hidden min-h-[600px]">
-      <section className="py-8 flex flex-col gap-6">
-        {/* Header */}
-        <div className="pb-6 border-b border-[#e9ecef]">
-          <div className="flex justify-between items-start flex-wrap gap-5">
-            <div>
-              <h1 className="text-[32px] font-bold text-[#2c3e50] mb-2 flex items-center">
-                <Icon icon="bi:shop" className="text-[#402D87] mr-3" />
-                Vendors Management
+    <div className="min-h-screen bg-white flex flex-col gap-12">
+      <section
+        className="bg-gradient-to-br from-primary-500 to-primary-700 text-white pt-20 pb-12"
+        style={{ marginTop: '-72px', paddingTop: '88px' }}
+      >
+        <div className="wrapper">
+          <div className="grid grid-cols-[1.1fr_0.9fr] gap-12 items-center max-md:grid-cols-1 max-md:text-center max-md:gap-8">
+            <div className="hero__text">
+              <h1 className="text-[clamp(32px,5vw,48px)] font-extrabold mb-4 leading-tight">
+                Manage Your Vendors
               </h1>
-              <p className="text-base text-[#6c757d] m-0 leading-relaxed">
-                View and manage all vendors on the platform.
+              <p className="text-lg opacity-90 mb-8 leading-relaxed">
+                View, manage, and monitor all vendor accounts and their status across your platform.
               </p>
             </div>
           </div>
         </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-xl p-6 border border-[#f1f3f4] shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-            {/* Search - Takes more space */}
-            <div className="md:col-span-5">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+      </section>
+      <div className="wrapper">
+        {/* Filters and Table Section */}
+        <div className="grid grid-cols-[280px_1fr] gap-8 items-start max-lg:grid-cols-[260px_1fr] max-md:grid-cols-1 max-md:gap-6">
+          {/* Filter Sidebar */}
+          <aside className="bg-white border border-[#e6e6e6] rounded-xl sticky top-[88px] max-h-[calc(100vh-120px)] overflow-y-auto max-md:static max-md:max-h-none max-md:overflow-y-visible">
+            <div className="flex justify-between items-start p-6 pb-4 border-b border-[#e6e6e6]">
+              <div className="flex-1">
+                <h3 className="text-xl font-extrabold text-[#212529] mb-1">Filter Results</h3>
+                <p className="text-sm text-grey-500 font-medium">
+                  {vendors.length} {vendors.length === 1 ? 'vendor' : 'vendors'} available
+                </p>
+              </div>
+            </div>
+            <section className="flex flex-col gap-4 p-6">
               <Input
                 type="text"
-                placeholder="Search by email, phone, or branch..."
+                label="Search vendors..."
+                placeholder="Search vendors..."
                 value={search}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   handleSearchChange(e.target.value)
                 }
-                className="h-[42px] w-full"
               />
-            </div>
 
-            {/* Status */}
-            <div className="md:col-span-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <select
+              <Select
+                label="Status"
+                options={statusOptions}
+                placeholder="Select status"
                 value={status}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                className="w-full h-[42px] border border-gray-300 rounded-lg py-2 px-4 text-sm bg-white text-gray-900 cursor-pointer focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25"
-              >
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+                onValueChange={handleStatusChange}
+                className="w-full"
+              />
+            </section>
+          </aside>
 
-            <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Items per page</label>
-              <select
-                value={limit}
-                onChange={(e) => handleLimitChange(Number(e.target.value))}
-                className="w-full h-[42px] border border-gray-300 rounded-lg py-2 px-4 text-sm bg-white text-gray-900 cursor-pointer focus:border-[#402D87] focus:outline-none focus:ring-2 focus:ring-[#402D87]/25"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
+          {/* Table Section */}
+          <div className="flex-1 flex flex-col">
+            <div className="bg-white border border-[#e6e6e6] rounded-xl overflow-hidden">
+              <div className="bg-[#f0f0f0] px-6 py-5 border-b border-[#e6e6e6] flex items-center justify-between">
+                <h5 className="text-lg font-extrabold text-[#212529] m-0">Vendor List</h5>
+                <div>
+                  <span className="text-sm text-grey-500 bg-white px-3 py-1 rounded-full border border-[#e6e6e6]">
+                    {vendors.length} {vendors.length === 1 ? 'vendor' : 'vendors'} found
+                  </span>
+                </div>
+              </div>
+              <DataTable
+                columns={columns}
+                data={vendors}
+                isLoading={isLoading}
+                initialPageSize={limit}
+                emptyState={
+                  <div className="py-20 px-5 text-center">
+                    <Icon icon="bi:shop" className="text-6xl text-[#e6e6e6] mb-4" />
+                    <h5 className="text-xl font-extrabold text-[#212529] mb-2">No vendors found</h5>
+                    <p className="text-sm text-grey-500">
+                      {search || (status && status !== 'all')
+                        ? 'Try adjusting your filters'
+                        : 'No vendors have been registered yet'}
+                    </p>
+                  </div>
+                }
+              />
+
+              {/* Pagination */}
+              {pagination && vendors.length > 0 && (
+                <div className="px-6 py-5 border-t border-[#e6e6e6] bg-[#f0f0f0] flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-sm text-grey-500">
+                    Showing {(currentPage - 1) * limit + 1} to{' '}
+                    {Math.min(currentPage * limit, vendors.length)} of {vendors.length}{' '}
+                    {vendors.length === 1 ? 'vendor' : 'vendors'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handlePreviousPage}
+                      disabled={!hasPreviousPage}
+                      className={cn(
+                        'w-9 h-9 border-2 border-[#e6e6e6] bg-white rounded-lg flex items-center justify-center cursor-pointer transition-all hover:border-primary-500 hover:text-primary-500',
+                        !hasPreviousPage && 'opacity-50 cursor-not-allowed',
+                      )}
+                    >
+                      <Icon icon="bi:chevron-left" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextPage}
+                      disabled={!pagination.hasNextPage}
+                      className={cn(
+                        'w-9 h-9 border-2 border-[#e6e6e6] bg-white rounded-lg flex items-center justify-center cursor-pointer transition-all hover:border-primary-500 hover:text-primary-500',
+                        !pagination.hasNextPage && 'opacity-50 cursor-not-allowed',
+                      )}
+                    >
+                      <Icon icon="bi:chevron-right" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
-            <div className="text-sm text-gray-600 mb-1">Total Vendors</div>
-            <div className="text-2xl font-bold text-[#402D87]">
-              {pagination ? vendors.length + (pagination.hasNextPage ? '+' : '') : '-'}
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
-            <div className="text-sm text-gray-600 mb-1">Pending</div>
-            <div className="text-2xl font-bold text-yellow-600">
-              {vendors.filter((v) => v.status === 'pending').length}
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
-            <div className="text-sm text-gray-600 mb-1">Verified</div>
-            <div className="text-2xl font-bold text-green-600">
-              {vendors.filter((v) => v.status === 'verified' || v.status === 'active').length}
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 border border-[#f1f3f4] shadow-sm">
-            <div className="text-sm text-gray-600 mb-1">Suspended</div>
-            <div className="text-2xl font-bold text-red-600">
-              {vendors.filter((v) => v.status === 'suspended').length}
-            </div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="bg-white rounded-xl border border-[#f1f3f4] shadow-sm overflow-hidden">
-          <DataTable
-            columns={columns}
-            data={vendors}
-            isLoading={isLoading}
-            initialPageSize={limit}
-            emptyState={
-              <div className="py-16 text-center">
-                <Icon icon="bi:shop" className="text-6xl text-gray-300 mb-4" />
-                <p className="font-semibold text-gray-700">No vendors found</p>
-                <p className="text-gray-500 text-sm mt-2">
-                  {search || status
-                    ? 'Try adjusting your filters'
-                    : 'No vendors have been registered yet'}
-                </p>
-              </div>
-            }
-          />
-
-          {/* Pagination */}
-          {pagination && vendors.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                Page {currentPage} • Showing {vendors.length} vendors
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handlePreviousPage}
-                  disabled={!hasPreviousPage}
-                  className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-lg border transition-colors flex items-center gap-1',
-                    hasPreviousPage
-                      ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                      : 'border-gray-200 text-gray-400 cursor-not-allowed',
-                  )}
-                >
-                  <Icon icon="bi:chevron-left" />
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextPage}
-                  disabled={!pagination.hasNextPage}
-                  className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-lg border transition-colors flex items-center gap-1',
-                    pagination.hasNextPage
-                      ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                      : 'border-gray-200 text-gray-400 cursor-not-allowed',
-                  )}
-                >
-                  Next
-                  <Icon icon="bi:chevron-right" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
+      </div>
 
       {/* Modals */}
       <VendorDetailsModal

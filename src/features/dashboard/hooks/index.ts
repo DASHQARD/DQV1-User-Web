@@ -1,4 +1,6 @@
 export * from './useDashboardMetrics'
 export * from './useRedemptionForm'
+export * from './useBranches'
 export * from './useUserInfo'
 export * from './useCards'
+export * from './useRecipients'

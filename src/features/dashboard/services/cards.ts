@@ -6,8 +6,10 @@ import type {
   CardDetailResponse,
 } from '@/types/cards'
 
-export const getCards = async (): Promise<CardsListResponse> => {
-  const response = await axiosClient.get('/cards')
+export const getCards = async (params?: {
+  card_type?: 'corporate' | 'vendor' | 'all'
+}): Promise<CardsListResponse> => {
+  const response = await axiosClient.get('/cards', { params })
   return response as unknown as CardsListResponse
 }
 
