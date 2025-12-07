@@ -11,7 +11,7 @@ export default function Vendors() {
   const { search, setSearch } = useVendorsFilters()
   const { data, isLoading, error } = usePublicVendors()
 
-  const vendors = data?.data || []
+  const vendors = Array.isArray(data?.data) ? data.data : data?.data ? [data.data] : []
   // const pagination = data?.pagination
 
   return (
@@ -41,7 +41,7 @@ export default function Vendors() {
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <div className="flex-1 w-full md:max-w-md">
               <SearchBox
-                value={search}
+                value={search || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
                 placeholder="Search vendors..."
                 className="w-full"
@@ -82,7 +82,7 @@ export default function Vendors() {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-              {vendors.map((vendor) => (
+              {vendors.map((vendor: any) => (
                 <div
                   key={vendor.id}
                   onClick={() =>

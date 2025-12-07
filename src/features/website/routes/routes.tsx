@@ -4,7 +4,7 @@ import {
   Checkout,
   DashQards,
   LandingPage,
-  Vendors,
+  WebsiteVendors,
   VendorsProfile,
   ViewBag,
 } from '../pages'
@@ -24,7 +24,7 @@ export const websiteRoutes: RouteObject[] = [
   },
   {
     path: 'vendors',
-    element: <Vendors />,
+    element: <WebsiteVendors />,
   },
   {
     path: 'vendor',

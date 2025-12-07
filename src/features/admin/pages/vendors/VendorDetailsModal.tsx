@@ -24,7 +24,7 @@ const Field = ({ label, value }: { label: string; value: React.ReactNode }) => (
 )
 
 export function VendorDetailsModal({ vendorId, isOpen, onClose }: VendorDetailsModalProps) {
-  const { data, isLoading, error } = useVendorDetails(vendorId)
+  const { data, isLoading, error } = useVendorDetails(vendorId ? String(vendorId) : '')
 
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-US', {

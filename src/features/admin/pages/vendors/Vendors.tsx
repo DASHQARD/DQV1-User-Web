@@ -43,7 +43,7 @@ export default function Vendors() {
   const pagination = data?.pagination
 
   const handleViewDetails = useCallback((vendor: Vendor) => {
-    setSelectedVendorId(vendor.id)
+    setSelectedVendorId(vendor.user_id)
     setShowDetailsModal(true)
   }, [])
 
@@ -104,14 +104,14 @@ export default function Vendors() {
       {
         accessorKey: 'email',
         header: 'Email',
-        cell: ({ row }) => <span className="text-[#212529]">{row.original.email || 'N/A'}</span>,
+        cell: ({ row }) => (
+          <span className="text-[#212529]">{row.original.branch_manager_email || 'N/A'}</span>
+        ),
       },
       {
         accessorKey: 'phonenumber',
         header: 'Phone Number',
-        cell: ({ row }) => (
-          <span className="text-grey-500">{row.original.phonenumber || 'N/A'}</span>
-        ),
+        cell: () => <span className="text-grey-500">N/A</span>,
       },
       {
         accessorKey: 'branch_name',
