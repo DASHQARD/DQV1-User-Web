@@ -6,7 +6,7 @@ import type { CreateCardData, UpdateCardData } from '@/types/cards'
 export function useCards() {
   return useQuery({
     queryKey: ['cards'],
-    queryFn: getCards,
+    queryFn: () => getCards(),
   })
 }
 

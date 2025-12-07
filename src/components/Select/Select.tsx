@@ -100,7 +100,7 @@ export const Select = React.memo(
             </Value>
             <div>
               {!loading && <CustomIcon name="Caret" className="text-[#9DA1A8]" />}
-              {loading && <Loader size="small" />}
+              {loading && <Loader />}
             </div>
           </Trigger>
 

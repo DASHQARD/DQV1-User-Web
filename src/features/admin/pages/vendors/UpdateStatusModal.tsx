@@ -33,7 +33,7 @@ export function UpdateStatusModal({ vendor, isOpen, onClose }: UpdateStatusModal
 
     updateStatus(
       {
-        user_id: vendor.id,
+        user_id: vendor.user_id,
         status: selectedStatus,
       },
       {
@@ -60,7 +60,9 @@ export function UpdateStatusModal({ vendor, isOpen, onClose }: UpdateStatusModal
           <div className="space-y-6">
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-600">Vendor Email</label>
-              <p className="text-base font-normal text-gray-900">{vendor.email}</p>
+              <p className="text-base font-normal text-gray-900">
+                {vendor.branch_manager_email || 'N/A'}
+              </p>
             </div>
 
             <div className="space-y-1">
