@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-// import { useAuthStore } from '@/stores'
 
 interface DashboardMetrics {
   redemptionBalance: number
@@ -19,24 +18,6 @@ interface Redemption {
   updated_at: string
   giftCardType?: string
 }
-
-// interface GiftCardPerformance {
-//   type: string
-//   totalRedeemed: number
-//   redemptionCount: number
-//   averageAmount: number
-//   percentage: number
-// }
-
-// interface VendorMetrics {
-//   totalRedemptions: number
-//   totalDashxRedeemed: number
-//   giftCardRedemptions: number
-//   giftCardPerformance: GiftCardPerformance[]
-//   payoutAmount: number
-//   payoutPeriod: string
-// }
-
 export function useDashboardMetrics() {
   const [isLoading, setIsLoading] = useState(true)
   const [metrics, setMetrics] = useState<DashboardMetrics>({
