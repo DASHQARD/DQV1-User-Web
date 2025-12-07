@@ -23,37 +23,6 @@ interface BranchPerformance {
 type SortField = 'name' | 'revenue' | 'redemptions' | 'performance'
 type SortOrder = 'asc' | 'desc'
 
-// Deterministic mock data generator using branch ID as seed
-const generateMockData = (branchId: number | string) => {
-  // Use branch ID as seed for deterministic values
-  const seed = typeof branchId === 'string' ? parseInt(branchId, 10) || 0 : branchId
-  const pseudoRandom = (max: number, offset = 0) =>
-    (((seed * 9301 + 49297) % 233280) / 233280) * max + offset
-  const pseudoRandomInt = (max: number, offset = 0) => Math.floor(pseudoRandom(max, offset))
-
-  const totalRedemptions = pseudoRandomInt(500, 50)
-  const totalRevenue = pseudoRandomInt(50000, 5000)
-  const giftCardRedemptions = pseudoRandomInt(200, 20)
-  const dashxRedeemed = pseudoRandomInt(30000, 3000)
-  const dashpassRedeemed = pseudoRandomInt(20000, 2000)
-  const daysAgo = pseudoRandomInt(7)
-  const lastActivity = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString()
-  const trendIndex = pseudoRandomInt(3)
-  const performanceTrend = (['up', 'down', 'stable'] as const)[trendIndex]
-  const performanceChange = pseudoRandomInt(40, -20)
-
-  return {
-    totalRedemptions,
-    totalRevenue,
-    giftCardRedemptions,
-    dashxRedeemed,
-    dashpassRedeemed,
-    lastActivity,
-    performanceTrend,
-    performanceChange,
-  }
-}
-
 export default function BranchPerformance() {
   const { data: branchesResponse, isLoading } = useBranches()
   const [selectedPeriod, setSelectedPeriod] = useState('30')
