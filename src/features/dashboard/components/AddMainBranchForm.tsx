@@ -140,4 +140,3 @@ export default function AddMainBranchForm({ onSuccess }: { onSuccess?: () => voi
     </form>
   )
 }
-

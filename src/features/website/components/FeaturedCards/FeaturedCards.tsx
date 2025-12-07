@@ -1,130 +1,119 @@
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components'
 import { CardItems } from '../CardItems'
-import { allQards } from '@/mocks/featuredCards'
-import type { FeaturedCardProps } from '@/types'
 import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { useCards } from '../../hooks/useCards'
+import type { PublicCardResponse } from '@/types/cards'
+import { Loader, Tabs, TabsContent, TabsList, TabsTrigger, Text } from '@/components'
 
-type CardFilter = 'all' | 'dashx' | 'dashpass'
+type CardFilter = 'dashx' | 'dashpass'
 
 export const FeaturedCards = () => {
   const navigate = useNavigate()
-  const [activeFilter, setActiveFilter] = useState<CardFilter>('all')
+  const [activeTab, setActiveTab] = useState<CardFilter>('dashx')
   const { usePublicCardsService } = useCards()
-  const { data: publicCards } = usePublicCardsService()
-  console.log('publicCards', publicCards)
+  const { data: publicCardsResponse, isLoading } = usePublicCardsService()
 
-  // Filter cards based on active filter
-  // Note: DashPass maps to dashpro in the mocks
-  const featuredCards = useMemo(() => {
-    let filtered = allQards
-
-    if (activeFilter === 'dashx') {
-      filtered = allQards.filter((card) => card.type === 'dashx')
-    } else if (activeFilter === 'dashpass') {
-      // DashPass corresponds to DashPro in the mocks
-      filtered = allQards.filter((card) => card.type === 'dashpro')
-    } else {
-      // Show both DashX and DashPass (DashPro) cards
-      filtered = allQards.filter((card) => card.type === 'dashx' || card.type === 'dashpro')
+  // Get all dashx and dashpass cards
+  const allCards = useMemo(() => {
+    if (!publicCardsResponse?.data) {
+      return []
     }
 
-    return filtered as FeaturedCardProps[]
-  }, [activeFilter])
+    const cards = publicCardsResponse.data as unknown as PublicCardResponse[]
+
+    // Filter to only include dashx and dashpass cards (case-insensitive)
+    return cards.filter((card) => {
+      const cardType = card.type?.toLowerCase()
+      return cardType === 'dashx' || cardType === 'dashpass' || cardType === 'dashpro'
+    })
+  }, [publicCardsResponse])
+
+  // Helper function to render card items
+  const renderCardItems = (cards: PublicCardResponse[]) => {
+    if (cards.length === 0) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <p className="text-grey-500">
+            No {activeTab === 'dashx' ? 'DashX' : 'DashPass'} cards available
+          </p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {cards.map((card: PublicCardResponse) => (
+          <CardItems
+            key={card.card_id || card.id}
+            id={card.card_id || card.id}
+            product={card.product}
+            vendor_name={card.vendor_name || ''}
+            rating={card.rating || 0}
+            price={card.price}
+            currency={card.currency}
+            type={card.type as 'DashX' | 'dashpro' | 'dashpass' | 'dashgo'}
+            description={card.description}
+            expiry_date={card.expiry_date}
+            terms_and_conditions={card.terms_and_conditions || []}
+            created_at={card.created_at || new Date().toISOString()}
+            created_by={null}
+            fraud_flag={false}
+            fraud_notes={null}
+            images={card.images || []}
+            is_activated={false}
+            issue_date={card.created_at || new Date().toISOString()}
+            last_modified_by={null}
+            status={card.status || 'active'}
+            updated_at={card.updated_at || new Date().toISOString()}
+            vendor_id={card.vendor_id}
+            onGetQard={() => navigate(`/vendor/${card.product}`)}
+          />
+        ))}
+      </div>
+    )
+  }
 
   return (
-    <section className="py-12 bg-[#faf9fc]">
-      <div className="wrapper flex flex-col gap-6">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="m-0 text-[clamp(22px,2.4vw,28px)] font-extrabold text-gray-900">
-            Featured Cards
-          </h2>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveFilter('all')}
-              className={`inline-flex items-center justify-center border-none rounded-full px-[18px] py-3 font-extrabold cursor-pointer transition-all duration-200 ease-in-out shadow-[0_8px_22px_rgba(0,0,0,0.18)] ${
-                activeFilter === 'all'
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-white text-primary-500 hover:-translate-y-px active:translate-y-0 hover:bg-primary-500 hover:text-white'
-              }`}
-              type="button"
-            >
-              All
-            </button>
-            <button
-              onClick={() => setActiveFilter('dashx')}
-              className={`inline-flex items-center justify-center border-none rounded-full px-[18px] py-3 font-extrabold cursor-pointer transition-all duration-200 ease-in-out shadow-[0_8px_22px_rgba(0,0,0,0.18)] ${
-                activeFilter === 'dashx'
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-white text-primary-500 hover:-translate-y-px active:translate-y-0 hover:bg-primary-500 hover:text-white'
-              }`}
-              type="button"
-            >
-              DashX
-            </button>
-            <button
-              onClick={() => setActiveFilter('dashpass')}
-              className={`inline-flex items-center justify-center border-none rounded-full px-[18px] py-3 font-extrabold cursor-pointer transition-all duration-200 ease-in-out shadow-[0_8px_22px_rgba(0,0,0,0.18)] ${
-                activeFilter === 'dashpass'
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-white text-primary-500 hover:-translate-y-px active:translate-y-0 hover:bg-primary-500 hover:text-white'
-              }`}
-              type="button"
-            >
-              DashPass
-            </button>
+    <section className="py-12">
+      <div className="wrapper flex flex-col gap-4 bg-white rounded-2xl">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as CardFilter)}>
+          <div className="flex flex-col gap-4">
+            <div className="px-6 pt-6 flex items-center justify-between">
+              <Text variant="h3" weight="medium" className="text-gray-900">
+                Featured Cards
+              </Text>
+              <button className="text-sm font-medium text-[#014fd3]">See more</button>
+            </div>
+
+            <TabsList className="px-6">
+              <TabsTrigger value="dashx">DashX</TabsTrigger>
+              <TabsTrigger value="dashpass">DashPass</TabsTrigger>
+            </TabsList>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {featuredCards.map((card: FeaturedCardProps, idx: number) => (
-            <CardItems
-              key={idx}
-              title={card.title}
-              subtitle={card.subtitle}
-              imageUrl={card.imageUrl}
-              rating={card.rating}
-              reviews={card.reviews}
-              price={card.price}
-              type={card.type}
-              onGetQard={() => navigate(`/vendor/${card.title}`)}
-            />
-          ))}
-        </div>
-
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious href="#" />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">1</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#" isActive>
-                2
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">3</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext href="#" />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+          <div className="px-6 pb-6 mt-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader />
+              </div>
+            ) : (
+              <>
+                <TabsContent value="dashx" className="mt-0">
+                  {renderCardItems(allCards.filter((card) => card.type?.toLowerCase() === 'dashx'))}
+                </TabsContent>
+                <TabsContent value="dashpass" className="mt-0">
+                  {renderCardItems(
+                    allCards.filter(
+                      (card) =>
+                        card.type?.toLowerCase() === 'dashpass' ||
+                        card.type?.toLowerCase() === 'dashpro',
+                    ),
+                  )}
+                </TabsContent>
+              </>
+            )}
+          </div>
+        </Tabs>
       </div>
     </section>
   )

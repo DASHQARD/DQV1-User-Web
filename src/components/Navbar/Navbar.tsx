@@ -82,7 +82,7 @@ export default function Navbar() {
             <PopoverContent
               align="end"
               sideOffset={12}
-              className="w-[360px] p-0 border border-gray-200 shadow-2xl rounded-2xl bg-white"
+              className="w-[393px] p-0 shadow-2xl border-none  bg-white"
             >
               <CartPopoverContent />
             </PopoverContent>

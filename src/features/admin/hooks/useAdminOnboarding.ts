@@ -24,17 +24,17 @@ export function useAdminOnboarding() {
       const accessToken = response?.data?.accessToken ?? response?.accessToken
       const refreshToken = response?.data?.refreshToken ?? response?.refreshToken
 
+      // If tokens are provided, authenticate the user
       if (accessToken && refreshToken) {
         authenticate({
           token: accessToken,
           refreshToken: refreshToken,
         })
-        toast.success(response.message || 'Onboarding successful')
-        navigate(ROUTES.IN_APP.ADMIN.HOME)
-      } else {
-        toast.success(response.message || 'Onboarding successful')
-        navigate(ROUTES.IN_APP.ADMIN.AUTH.LOGIN)
       }
+
+      toast.success(response.message || 'Onboarding successful')
+      // Always redirect to admin login page after successful onboarding
+      navigate(ROUTES.IN_APP.ADMIN.AUTH.LOGIN)
     },
     onError: (error: { status: number; message: string }) => {
       const errorMessage = error?.message || 'Onboarding failed. Please try again.'

@@ -17,12 +17,7 @@ export default function Contact() {
   }
 
   return (
-    <section
-      className="py-12"
-      style={{
-        background: 'linear-gradient(135deg, #f8f9ff, #fff)',
-      }}
-    >
+    <section className="py-12">
       <div className="wrapper flex flex-col gap-12">
         <section className="flex flex-col gap-5 justify-center items-center">
           <div className="py-2 px-6 flex items-center gap-1 text-sm font-bold bg-primary-500 text-white rounded-full w-fit">

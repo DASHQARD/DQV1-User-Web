@@ -87,21 +87,41 @@ export type CardDetailResponse = {
   data: CardResponse
 }
 
-export type PublicCardsResponse = {
+export type PaginationResponse = {
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+  limit: number
+  next: string | null
+  previous: string | null
+}
+
+export type PublicCardResponse = {
   card_id: number
-  vendor_id: number
-  vendor_name: string
-  product: string
-  description: string
-  type: string
-  price: string
-  currency: string
-  expiry_date: string
-  status: string
-  rating: number
   created_at: string
-  updated_at: string
-  recipient_count: string
+  currency: string
+  description: string
+  expiry_date: string
   images: CardImageResponse[]
+  price: string
+  product: string
+  rating: number
+  recipient_count: string
+  status: string
   terms_and_conditions: CardFileResponse[]
+  file_name: string
+  file_url: string
+  id: number
+  length: number
+  type: string
+  updated_at: string
+  vendor_id: number
+  vendor_name: string | null
+}
+
+export type PublicCardsResponse = {
+  status: string
+  statusCode: number
+  message: string
+  data: PublicCardsResponse[]
+  pagination: PaginationResponse
 }

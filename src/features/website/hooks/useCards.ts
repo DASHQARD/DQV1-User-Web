@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getCards, getPublicCards } from '../services'
+import { getCards, getPublicCards, getPublicVendorCards } from '../services'
 
 export function useCards() {
   function useCardsService(query?: Record<string, any>) {
@@ -9,15 +9,23 @@ export function useCards() {
     })
   }
 
-  function usePublicCardsService() {
+  function usePublicCardsService(query?: Record<string, any>) {
     return useQuery({
-      queryKey: ['public-cards'],
-      queryFn: getPublicCards,
+      queryKey: ['public-cards', query],
+      queryFn: () => getPublicCards(query),
+    })
+  }
+
+  function usePublicVendorCardsService(vendor_id: string) {
+    return useQuery({
+      queryKey: ['public-vendor-cards', vendor_id],
+      queryFn: () => getPublicVendorCards(vendor_id),
     })
   }
 
   return {
     useCardsService,
     usePublicCardsService,
+    usePublicVendorCardsService,
   }
 }

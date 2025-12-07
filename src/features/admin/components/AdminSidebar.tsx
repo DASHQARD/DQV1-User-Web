@@ -77,8 +77,8 @@ export default function AdminSidebar() {
         },
         {
           path: ROUTES.IN_APP.ADMIN.MERCHANTS,
-          label: 'Merchants',
-          icon: 'bi:shop',
+          label: 'Cooperate',
+          icon: 'bi:building',
         },
       ],
     },

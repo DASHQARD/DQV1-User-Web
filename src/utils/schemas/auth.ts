@@ -79,7 +79,6 @@ export const ResetPasswordSchema = z
 export const OnboardingSchema = z.object({
   first_name: getRequiredStringSchema('First Name'),
   last_name: getRequiredStringSchema('Last Name'),
-  phone_number: getRequiredStringSchema('Phone Number'),
   street_address: getRequiredStringSchema('Street Address'),
   dob: getRequiredStringSchema('Date of Birth'),
   id_type: getRequiredStringSchema('ID Type'),

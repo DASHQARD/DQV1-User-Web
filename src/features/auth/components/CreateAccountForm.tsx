@@ -9,18 +9,21 @@ import { CreateAccountSchema } from '@/utils/schemas'
 import { z } from 'zod'
 import { AccountType } from '.'
 import { useAuth } from '../hooks'
+import { useCountriesData } from '@/hooks'
 import React from 'react'
 
 export default function CreateAccountForm() {
   const { useCreateAccountMutation, useGetCountriesService } = useAuth()
   const { mutate, isPending } = useCreateAccountMutation()
   const { data: countries } = useGetCountriesService()
+  const { countries: phoneCountries } = useCountriesData()
   console.log('countries', countries)
   const form = useForm<z.infer<typeof CreateAccountSchema>>({
     resolver: zodResolver(CreateAccountSchema),
     mode: 'onChange',
     defaultValues: {
       user_type: 'user',
+      phone_number: '+233-',
     },
   })
 
@@ -40,21 +43,10 @@ export default function CreateAccountForm() {
   }, [selectedCountryId, countries, form])
 
   const onSubmit = (data: z.infer<typeof CreateAccountSchema>) => {
-    // BasePhoneInput returns format: "+233-559617908"
-    // Format it to: "+233559617908" (remove dash and ensure country code is included)
-    let formattedPhoneNumber = data.phone_number || ''
-
-    // Remove all dashes
-    formattedPhoneNumber = formattedPhoneNumber.replace(/-/g, '')
-
-    // If phone number doesn't start with +, try to add country code from selected country
-
-    formattedPhoneNumber = `+233${formattedPhoneNumber}`
-
     const payload: any = {
       user_type: data.user_type,
       email: data.email,
-      phone_number: formattedPhoneNumber,
+      phone_number: data.phone_number.replace('-', ''),
       password: data.password,
       country: String(data.country),
       country_code: data.country_code,
@@ -138,8 +130,8 @@ export default function CreateAccountForm() {
             return (
               <BasePhoneInput
                 placeholder="Enter number eg. 5512345678"
-                options={countries}
-                selectedVal={value}
+                options={phoneCountries}
+                selectedVal={value || '+233-'}
                 maxLength={10}
                 handleChange={onChange}
                 label="Phone Number"

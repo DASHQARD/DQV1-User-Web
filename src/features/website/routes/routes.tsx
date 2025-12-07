@@ -1,5 +1,13 @@
 import type { RouteObject } from 'react-router'
-import { AboutUs, DashQards, LandingPage, Vendor } from '../pages'
+import {
+  AboutUs,
+  Checkout,
+  DashQards,
+  LandingPage,
+  Vendors,
+  VendorsProfile,
+  ViewBag,
+} from '../pages'
 
 export const websiteRoutes: RouteObject[] = [
   {
@@ -15,7 +23,19 @@ export const websiteRoutes: RouteObject[] = [
     element: <DashQards />,
   },
   {
-    path: 'vendor/:id',
-    element: <Vendor />,
+    path: 'vendors',
+    element: <Vendors />,
+  },
+  {
+    path: 'vendor',
+    element: <VendorsProfile />,
+  },
+  {
+    path: 'checkout',
+    element: <Checkout />,
+  },
+  {
+    path: 'view-bag',
+    element: <ViewBag />,
   },
 ]
