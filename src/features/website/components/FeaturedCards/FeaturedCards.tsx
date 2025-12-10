@@ -44,8 +44,8 @@ export const FeaturedCards = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {cards.map((card: PublicCardResponse) => (
           <CardItems
-            key={card.card_id || card.id}
-            id={card.card_id || card.id}
+            key={card.card_id}
+            id={card.card_id}
             product={card.product}
             vendor_name={card.vendor_name || ''}
             rating={card.rating || 0}
@@ -59,14 +59,20 @@ export const FeaturedCards = () => {
             created_by={null}
             fraud_flag={false}
             fraud_notes={null}
-            images={card.images || []}
+            images={(card.images || []).map((img) => ({
+              id: img.id,
+              file_url: img.file_url,
+              file_name: img.file_name,
+              created_at: img.created_at || new Date().toISOString(),
+              updated_at: img.updated_at || new Date().toISOString(),
+            }))}
             is_activated={false}
             issue_date={card.created_at || new Date().toISOString()}
             last_modified_by={null}
             status={card.status || 'active'}
             updated_at={card.updated_at || new Date().toISOString()}
             vendor_id={card.vendor_id}
-            onGetQard={() => navigate(`/card/${card.card_id || card.id}`)}
+            onGetQard={() => navigate(`/card/${card.card_id}`)}
           />
         ))}
       </div>

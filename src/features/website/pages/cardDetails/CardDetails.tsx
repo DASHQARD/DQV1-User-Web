@@ -65,7 +65,7 @@ export default function CardDetails() {
     }
 
     await addToCartAsync({
-      card_id: card.id || card.card_id,
+      card_id: card.card_id,
       amount: cardAmount,
       quantity: 1,
     })
@@ -74,7 +74,7 @@ export default function CardDetails() {
 
   // Generate QR code for the card
   const qrCodeUrl = card
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${card.product}-${card.id || card.card_id}`)}&bgcolor=FFFFFF&color=402D87&margin=10`
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${card.product}-${card.card_id}`)}&bgcolor=FFFFFF&color=402D87&margin=10`
     : ''
 
   if (isLoading) {
@@ -214,7 +214,7 @@ export default function CardDetails() {
                 {card.product}
               </Text>
               {card.vendor_name && (
-                <Text variant="body1" className="text-gray-600 mb-4">
+                <Text variant="p" className="text-gray-600 mb-4">
                   by {card.vendor_name}
                 </Text>
               )}
@@ -231,7 +231,7 @@ export default function CardDetails() {
                 <Text variant="h3" weight="medium" className="text-gray-900 mb-2">
                   Description
                 </Text>
-                <Text variant="body1" className="text-gray-600 whitespace-pre-line">
+                <Text variant="p" className="text-gray-600 whitespace-pre-line">
                   {card.description}
                 </Text>
               </div>
@@ -309,7 +309,9 @@ export default function CardDetails() {
               >
                 {isAdding ? (
                   <>
-                    <Loader className="mr-2" />
+                    <div className="mr-2">
+                      <Loader />
+                    </div>
                     Adding...
                   </>
                 ) : (

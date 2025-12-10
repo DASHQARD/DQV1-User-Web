@@ -232,7 +232,7 @@ export default function Sidebar() {
       section: 'Transactions',
       items: [
         { path: '/dashboard/transactions', label: 'Transactions', icon: 'bi:receipt' },
-        { path: ROUTES.IN_APP.DASHBOARD.PURCHASE, label: 'Purchase', icon: 'bi:gift' },
+        { path: ROUTES.IN_APP.PURCHASE, label: 'Purchase', icon: 'bi:gift' },
       ],
     },
     {

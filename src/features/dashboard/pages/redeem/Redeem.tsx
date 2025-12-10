@@ -30,14 +30,14 @@ export default function Redeem() {
 
   // Auto-fill user information from logged-in user
   useEffect(() => {
-    if (userInfo.phone) {
+    if (userInfo.userInfo.phone) {
       // User phone is already set from auth store
     }
-  }, [userInfo.phone])
+  }, [userInfo.userInfo.phone])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    await submitRedemption(userInfo)
+    await submitRedemption(userInfo.userInfo)
   }
 
   const handleModalClose = () => {
@@ -272,13 +272,13 @@ export default function Redeem() {
                       </div>
                       <div className="flex-1">
                         <div className="text-sm font-semibold text-[#1F2937]">
-                          {userInfo.name || 'User'}
+                          {userInfo.userInfo.name || 'User'}
                         </div>
                         <div className="text-xs text-[#6B7280]">
-                          {userInfo.phone || 'Phone not available'}
+                          {userInfo.userInfo.phone || 'Phone not available'}
                         </div>
                         <div className="text-xs text-[#6B7280] mt-0.5">
-                          {userInfo.email || 'Email not available'}
+                          {userInfo.userInfo.email || 'Email not available'}
                         </div>
                       </div>
                       <Icon icon="bi:check-circle-fill" className="text-xl text-[#10B981]" />
@@ -318,7 +318,7 @@ export default function Redeem() {
                           <button
                             type="button"
                             className="bg-transparent text-[#402D87] border border-[#402D87] px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200 flex items-center gap-2 hover:bg-[#402D87] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed"
-                            onClick={() => submitRedemption(userInfo)}
+                            onClick={() => submitRedemption(userInfo.userInfo)}
                             disabled={isSubmitting}
                           >
                             <Icon icon="bi:arrow-clockwise" />
@@ -337,7 +337,8 @@ export default function Redeem() {
                             <div>
                               <h4 className="text-base font-semibold m-0 mb-1">Balance Verified</h4>
                               <p className="text-sm m-0 opacity-80">
-                                Account: {userInfo.name || 'User'} ({userInfo.phone || 'N/A'})
+                                Account: {userInfo.userInfo.name || 'User'} (
+                                {userInfo.userInfo.phone || 'N/A'})
                               </p>
                             </div>
                           </div>

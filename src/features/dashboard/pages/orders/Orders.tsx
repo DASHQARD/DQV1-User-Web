@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { PaginatedTable, Text } from '@/components'
 import type { QueryType } from '@/types'
 import { DEFAULT_QUERY } from '@/utils/constants'
@@ -11,7 +11,10 @@ export default function Orders() {
 
   const { useGetPaymentByIdService } = usePaymentInfoService()
 
-  const { data: payment, isLoading } = useGetPaymentByIdService()
+  const { data: paymentData, isLoading } = useGetPaymentByIdService()
+  // getPaymentById returns PaymentInfoData (single object), but we need an array for the table
+  // If it's an array, use it directly; if it's a single object, wrap it in an array
+  const payment = Array.isArray(paymentData) ? paymentData : paymentData ? [paymentData] : []
 
   return (
     <div className="w-full">
@@ -26,9 +29,9 @@ export default function Orders() {
 
       <PaginatedTable
         columns={paymentListColumns}
-        data={payment || []}
+        data={payment}
         loading={isLoading}
-        total={payment?.length}
+        total={payment.length}
         query={query}
         setQuery={setQuery}
         searchPlaceholder="Search orders by order number, card type, or status..."

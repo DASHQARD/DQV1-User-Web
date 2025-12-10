@@ -57,7 +57,7 @@ export default function DashGoPurchase() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const onSubmit = (data: z.infer<typeof DashGoPurchaseSchema>) => {
+  const onSubmit = (data: z.infer<typeof DashGoAndDashProPurchaseFormSchema>) => {
     console.log(data)
   }
 

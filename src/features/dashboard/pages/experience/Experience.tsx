@@ -234,7 +234,7 @@ export default function Experience() {
               <Loader />
             </div>
           ) : (
-            <DataTable columns={columns} data={cardsResponse?.data} />
+            <DataTable columns={columns} data={cardsResponse?.data || []} />
           )}
         </div>
       </div>

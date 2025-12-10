@@ -49,6 +49,9 @@ export default function Settings() {
   const [alertType, setAlertType] = useState<'success' | 'danger'>('success')
 
   const [passwordLoading, setPasswordLoading] = useState(false)
+  const [oldPassword, setOldPassword] = useState('')
+  const [password, setPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   // Name change modal states
@@ -87,21 +90,29 @@ export default function Settings() {
     if (userProfile) {
       form.reset({
         fullname: userProfile?.fullname || '',
-        phonenumber: userProfile?.phonenumber || '',
-        email: userProfile?.email || '',
+        dob: userProfile?.dob || '',
       })
     }
   }, [userProfile, form])
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (form.formState.errors.newPassword) return
+    if (!oldPassword || !password || !newPassword) {
+      setAlertMessage('All password fields are required')
+      setAlertType('danger')
+      return
+    }
+    if (password !== newPassword) {
+      setAlertMessage('New passwords do not match')
+      setAlertType('danger')
+      return
+    }
 
     setPasswordLoading(true)
     try {
       await axiosClient.post('/auth/change-password', {
-        currentPassword: form.getValues('oldPassword'),
-        newPassword: form.getValues('password'),
+        currentPassword: oldPassword,
+        newPassword: password,
       })
 
       setShowLogoutModal(true)
@@ -454,8 +465,10 @@ export default function Settings() {
                       label="Current Password"
                       type="password"
                       placeholder="Enter current password"
-                      {...form.register('oldPassword')}
-                      error={form.formState.errors.oldPassword?.message}
+                      value={oldPassword}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setOldPassword(e.target.value)
+                      }
                       className="w-full"
                     />
 
@@ -463,8 +476,10 @@ export default function Settings() {
                       label="New Password"
                       type="password"
                       placeholder="Enter new password"
-                      {...form.register('password')}
-                      error={form.formState.errors.password?.message}
+                      value={password}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setPassword(e.target.value)
+                      }
                       className="w-full"
                     />
 
@@ -472,8 +487,10 @@ export default function Settings() {
                       label="Confirm New Password"
                       type="password"
                       placeholder="Confirm new password"
-                      {...form.register('newPassword')}
-                      error={form.formState.errors.newPassword?.message}
+                      value={newPassword}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setNewPassword(e.target.value)
+                      }
                       className="w-full"
                     />
 
@@ -481,7 +498,13 @@ export default function Settings() {
                       <button
                         type="submit"
                         className="w-full bg-gradient-to-br from-[#402D87] to-[#5a4fcf] text-white px-6 py-3 rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
-                        disabled={passwordLoading || !!form.formState.errors.newPassword?.message}
+                        disabled={
+                          passwordLoading ||
+                          !oldPassword ||
+                          !password ||
+                          !newPassword ||
+                          password !== newPassword
+                        }
                       >
                         {passwordLoading ? (
                           <span className="flex items-center justify-center">
@@ -693,7 +716,6 @@ export default function Settings() {
                       New Name <span className="text-red-600 ml-1">*</span>
                     </label>
                     <Input
-                      {...form.register('name')}
                       placeholder="Enter your new name"
                       disabled={submittingNameRequest}
                       required
@@ -710,7 +732,6 @@ export default function Settings() {
                   </label>
                   <Input
                     type="textarea"
-                    {...form.register('reason')}
                     placeholder="Please explain why you want to change your name (optional)"
                     disabled={submittingNameRequest}
                     className="w-full"
@@ -754,7 +775,7 @@ export default function Settings() {
       {/* Phone Change Modal */}
       <Modal
         isOpen={phoneModal.show}
-        setIsOpen={(open) => !open && closePhoneModal()}
+        setIsOpen={(open) => !open && setPhoneModal((prev) => ({ ...prev, show: false }))}
         showClose
         position="center"
         panelClass="max-w-lg w-full max-h-[90vh] overflow-hidden"

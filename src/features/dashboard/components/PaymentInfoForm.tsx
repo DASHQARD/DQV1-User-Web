@@ -12,7 +12,8 @@ import { useUserProfile } from '@/hooks'
 
 export default function PaymentInfoForm() {
   const { data: userProfile } = useUserProfile()
-  const { mutate, isPending } = usePaymentInfoService()
+  const { useUpdatePaymentInfoService } = usePaymentInfoService()
+  const { mutate, isPending } = useUpdatePaymentInfoService()
   const { countries } = useCountriesData()
 
   const form = useForm<z.infer<typeof PaymentInfoSchema>>({

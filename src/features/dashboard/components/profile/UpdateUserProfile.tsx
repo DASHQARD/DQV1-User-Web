@@ -22,7 +22,6 @@ export default function UpdateUserProfile() {
       form.reset({
         fullname: userProfile?.fullname || '',
         dob: userProfile?.dob || '',
-        email: userProfile?.email || '',
       })
     }
   }, [userProfile, form])

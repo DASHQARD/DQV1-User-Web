@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { formatCurrency } from '@/utils/format'
 import { AssignRecipientSchema } from '@/utils/schemas'
-import { useCards, useCreateCard } from '@/features/dashboard/hooks'
+import { useCreateCard } from '@/features/dashboard/hooks'
 import { useCart } from '../../hooks'
 
 const QRPlaceholder = () => {
@@ -96,10 +96,10 @@ export default function DashProPurchase() {
         terms_and_conditions: [],
       },
       {
-        onSuccess: (response) => {
+        onSuccess: (response: any) => {
           console.log('response', response)
           addToCart({
-            card_id: response.id,
+            card_id: response.card_id,
             amount: amount,
             quantity: 1,
           })

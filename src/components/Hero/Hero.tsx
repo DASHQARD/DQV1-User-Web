@@ -42,7 +42,7 @@ export default function Hero() {
   })
 
   // Stats trail animation
-  const [statsTrail, statsApi] = useTrail(stats.length, () => ({
+  const [statsTrail] = useTrail(stats.length, () => ({
     from: { opacity: 0, x: -20 },
     to: { opacity: 1, x: 0 },
     delay: 800,
@@ -69,7 +69,7 @@ export default function Hero() {
   const logoSpring = useSpring({
     from: { opacity: 0.1, y: 0 },
     to: async (next) => {
-      while (1) {
+      while (true) {
         await next({ opacity: 0.2, y: -10 })
         await next({ opacity: 0.1, y: 0 })
       }

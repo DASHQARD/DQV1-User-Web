@@ -50,7 +50,7 @@ export const CardItems = ({
   vendor_name,
   // rating = 0,
   price,
-  currency = 'GHS',
+  // currency = 'GHS',
   type,
   onGetQard,
 }: FeaturedCardProps) => {

@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { Button } from '@/components/Button'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
-import { ROUTES } from '@/utils/constants'
+import { ROUTES, MODAL_NAMES } from '@/utils/constants'
+import { usePersistedModalState } from '@/hooks'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
 
 export default function AboutUs() {
-  const [showModal, setShowModal] = useState(false)
+  const modal = usePersistedModalState({
+    paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
+  })
 
   // Scroll to top on mount
   useEffect(() => {
@@ -15,12 +18,15 @@ export default function AboutUs() {
   }, [])
 
   const openPurchaseModal = () => {
-    setShowModal(true)
-  }
-
-  const handlePurchaseSubmit = (purchaseData: unknown) => {
-    console.log('Purchase submitted:', purchaseData)
-    setShowModal(false)
+    // PurchaseModal requires cart_item_id, but this is just a demo button
+    // You may want to redirect to purchase page instead
+    modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
+      cart_item_id: 0, // This won't work without a real cart_item_id
+      cardType: 'dashpro',
+      cardProduct: 'DashPro Gift Card',
+      cardCurrency: 'GHS',
+      amount: 0,
+    })
   }
 
   return (
@@ -526,14 +532,7 @@ export default function AboutUs() {
       </section>
 
       {/* Purchase Modal */}
-      {showModal && (
-        <PurchaseModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          onSave={handlePurchaseSubmit}
-          showTrigger={false}
-        />
-      )}
+      <PurchaseModal />
     </div>
   )
 }

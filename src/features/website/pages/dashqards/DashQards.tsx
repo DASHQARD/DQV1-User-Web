@@ -184,9 +184,8 @@ export default function DashQards() {
   // Navigate to card details
   const onGetCard = useCallback(
     (card: PublicCardResponse) => {
-      const cardId = card.card_id || card.id
-      if (cardId) {
-        navigate(`/card/${cardId}`)
+      if (card.card_id) {
+        navigate(`/card/${card.card_id}`)
       }
     },
     [navigate],
@@ -518,8 +517,8 @@ export default function DashQards() {
                       .filter((card) => card.type?.toLowerCase() !== 'dashpro')
                       .map((card) => (
                         <CardItems
-                          key={card.card_id || card.id}
-                          id={card.card_id || card.id}
+                          key={card.card_id}
+                          id={card.card_id}
                           product={card.product}
                           vendor_name={card.vendor_name || ''}
                           rating={card.rating || 0}
@@ -533,7 +532,13 @@ export default function DashQards() {
                           created_by={null}
                           fraud_flag={false}
                           fraud_notes={null}
-                          images={card.images || []}
+                          images={(card.images || []).map((img) => ({
+                            id: img.id,
+                            file_url: img.file_url,
+                            file_name: img.file_name,
+                            created_at: img.created_at || new Date().toISOString(),
+                            updated_at: img.updated_at || new Date().toISOString(),
+                          }))}
                           is_activated={false}
                           issue_date={card.created_at || new Date().toISOString()}
                           last_modified_by={null}
