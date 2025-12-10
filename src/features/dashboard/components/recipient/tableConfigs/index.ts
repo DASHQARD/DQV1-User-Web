@@ -1,0 +1,1 @@
+export { recipientListColumns } from './recipient'

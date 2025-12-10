@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { formatCurrency } from '@/utils/format'
-import { DashGoPurchaseSchema } from '@/utils/schemas'
+import { DashGoAndDashProPurchaseFormSchema } from '@/utils/schemas'
 
 const QRPlaceholder = () => {
   const pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
@@ -33,8 +33,8 @@ export default function DashGoPurchase() {
     handleSubmit,
     formState: { errors },
     getValues,
-  } = useForm<z.infer<typeof DashGoPurchaseSchema>>({
-    resolver: zodResolver(DashGoPurchaseSchema),
+  } = useForm<z.infer<typeof DashGoAndDashProPurchaseFormSchema>>({
+    resolver: zodResolver(DashGoAndDashProPurchaseFormSchema),
   })
 
   const toggleCardFlip = () => {

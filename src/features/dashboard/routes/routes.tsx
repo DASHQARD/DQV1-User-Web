@@ -1,6 +1,5 @@
 import { type RouteObject, Outlet } from 'react-router'
 import { Home } from '../pages/home'
-import { Purchase } from '../pages/purchase'
 import {
   AddBranch,
   BranchPerformance,
@@ -8,6 +7,7 @@ import {
   BusinessIdentificationCards,
   Compliance,
   CreateBranch,
+  Orders,
   PaymentInfo,
   ProfileInformation,
   Redeem,
@@ -24,8 +24,8 @@ export const dashboardRoutes: RouteObject[] = [
     element: <Home />,
   },
   {
-    path: 'purchase',
-    element: <Purchase />,
+    path: 'orders',
+    element: <Orders />,
   },
   {
     path: 'redeem/dashpro',

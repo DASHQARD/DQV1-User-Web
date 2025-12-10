@@ -164,3 +164,8 @@ export const AddMainBranchSchema = z.object({
   branch_manager_name: getRequiredStringSchema('Branch Manager Name'),
   branch_manager_email: getRequiredEmailSchema('Branch Manager Email'),
 })
+
+export const UpdateUserInfoSchema = z.object({
+  fullname: getRequiredStringSchema('Full Name'),
+  dob: getRequiredStringSchema('Date of Birth'),
+})

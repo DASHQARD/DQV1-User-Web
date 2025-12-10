@@ -1,18 +1,18 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
-import { Modal, OTPInput, Input, BasePhoneInput, Button } from '@/components'
+import { Modal, OTPInput, Input } from '@/components'
 import { useAuthStore } from '@/stores'
 import { axiosClient } from '@/libs/axios'
 import LoaderGif from '@/assets/gifs/loader.gif'
 import { ROUTES } from '@/utils/constants'
 import { cn } from '@/libs/clsx'
-import { useCountriesData, useUserProfile } from '@/hooks'
-import { Controller } from 'react-hook-form'
-import { SettingsSchema } from '@/utils/schemas'
+import { useUserProfile } from '@/hooks'
+import { UpdateUserInfoSchema } from '@/utils/schemas'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { UpdateUserProfile } from '../../components'
 
 interface PhoneModal {
   show: boolean
@@ -40,10 +40,9 @@ export default function Settings() {
   const navigate = useNavigate()
   const { data: userProfile } = useUserProfile()
   const { logout, reset } = useAuthStore()
-  const { countries } = useCountriesData()
 
-  const form = useForm<z.infer<typeof SettingsSchema>>({
-    resolver: zodResolver(SettingsSchema),
+  const form = useForm<z.infer<typeof UpdateUserInfoSchema>>({
+    resolver: zodResolver(UpdateUserInfoSchema),
   })
   const [isLoading] = useState(false)
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
@@ -183,35 +182,6 @@ export default function Settings() {
 
   // Phone change modal handlers
 
-  const closePhoneModal = () => {
-    setPhoneModal({
-      show: false,
-      step: 'confirm-current',
-      current: '',
-      otpOld: '',
-      newValue: '',
-      otpNew: '',
-      loading: false,
-      error: '',
-    })
-  }
-
-  const onSubmit = async (data: z.infer<typeof SettingsSchema>) => {
-    try {
-      await axiosClient.post('/auth/update-profile', {
-        fullname: data.fullname,
-        phonenumber: data.phonenumber,
-      })
-      setAlertMessage('Profile updated successfully!')
-      setAlertType('success')
-      setTimeout(() => setAlertMessage(null), 5000)
-    } catch (error: any) {
-      setAlertMessage(error?.message || 'Failed to update profile')
-      setAlertType('danger')
-      setTimeout(() => setAlertMessage(null), 5000)
-    }
-  }
-
   // Calculate PIN mismatch
   // const pinConfirmMismatch = pinCode.new !== pinCode.confirm || !pinCode.new || !pinCode.confirm
 
@@ -256,7 +226,6 @@ export default function Settings() {
           newPhoneOtp: modal.otpNew,
         })
 
-        closePhoneModal()
         setAlertMessage('Phone number changed successfully!')
         setAlertType('success')
         setTimeout(() => setAlertMessage(null), 5000)
@@ -419,8 +388,8 @@ export default function Settings() {
               className={cn(
                 'border-none rounded-xl py-4 px-5 font-medium shadow-md flex items-center gap-3',
                 alertType === 'success'
-                  ? 'bg-gradient-to-br from-green-100 to-green-200 text-green-800 border-l-4 border-green-600'
-                  : 'bg-gradient-to-br from-red-100 to-red-200 text-red-800 border-l-4 border-red-600',
+                  ? 'bg-linear-to-br from-green-100 to-green-200 text-green-800 border-l-4 border-green-600'
+                  : 'bg-linear-to-br from-red-100 to-red-200 text-red-800 border-l-4 border-red-600',
               )}
             >
               <Icon
@@ -445,7 +414,7 @@ export default function Settings() {
 
             {/* Profile Settings Card */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 mb-8 overflow-hidden transition-all hover:shadow-xl hover:-translate-y-0.5">
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 px-6 py-6 border-b border-gray-200">
+              <div className="bg-linear-to-br from-gray-50 to-gray-100 px-6 py-6 border-b border-gray-200">
                 <h5 className="text-xl font-semibold text-gray-700 mb-2 flex items-center">
                   <Icon icon="bi:person-circle" className="mr-2 text-[#402D87]" />
                   Personal Information
@@ -456,58 +425,7 @@ export default function Settings() {
               </div>
 
               <div className="p-6">
-                <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-4">
-                    <h6 className="text-base font-semibold text-gray-700 mb-5 pb-2 border-b-2 border-gray-200 flex items-center">
-                      <span className="w-1 h-4 bg-[#402D87] mr-2"></span>
-                      Basic Information
-                    </h6>
-
-                    <Input
-                      {...form.register('fullname')}
-                      disabled
-                      readOnly
-                      placeholder="Enter your full name"
-                      className="w-full"
-                    />
-
-                    <Input
-                      type="email"
-                      {...form.register('email')}
-                      disabled
-                      readOnly
-                      placeholder="Enter your email"
-                      className="w-full"
-                      innerClassName="pr-12"
-                    />
-
-                    <Controller
-                      control={form.control}
-                      name="phonenumber"
-                      render={({ field: { value, onChange } }) => {
-                        return (
-                          <BasePhoneInput
-                            placeholder="Enter number eg. 5512345678"
-                            options={countries}
-                            selectedVal={value}
-                            maxLength={10}
-                            handleChange={onChange}
-                            label="Phone Number"
-                            error={form.formState.errors.phonenumber?.message}
-                          />
-                        )
-                      }}
-                    />
-                  </div>
-                  <div className="flex gap-2 py-4 border-t border-gray-200">
-                    <Button type="submit" variant="secondary">
-                      Save
-                    </Button>
-                    <Button type="button" variant="outline" onClick={() => form.reset()}>
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
+                <UpdateUserProfile />
               </div>
             </div>
           </div>
@@ -521,7 +439,7 @@ export default function Settings() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Password Card */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-lg border border-gray-200 border-t-4 border-t-[#402D87] overflow-hidden transition-all hover:shadow-xl hover:-translate-y-0.5">
+              <div className="bg-linear-to-br from-gray-50 to-gray-100 rounded-2xl shadow-lg border border-gray-200 border-t-4 border-t-[#402D87] overflow-hidden transition-all hover:shadow-xl hover:-translate-y-0.5">
                 <div className="bg-gray-50 px-6 py-6 border-b border-gray-200">
                   <h5 className="text-xl font-semibold text-gray-700 mb-2 flex items-center">
                     <Icon icon="bi:key" className="mr-2 text-[#402D87]" />
@@ -701,8 +619,8 @@ export default function Settings() {
         panelClass="max-w-2xl w-full max-h-[90vh] overflow-hidden"
       >
         <div className="flex flex-col h-full">
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 px-8 py-6 border-b border-gray-200 flex items-center gap-5 flex-shrink-0">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-[#402D87] flex items-center justify-center shrink-0 shadow-lg">
+          <div className="bg-linear-to-br from-gray-50 to-gray-100 px-8 py-6 border-b border-gray-200 flex items-center gap-5 flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-linear-to-br from-pink-500 to-[#402D87] flex items-center justify-center shrink-0 shadow-lg">
               <Icon icon="bi:person-badge" className="text-xl text-white" />
             </div>
             <div className="flex-1">
@@ -713,7 +631,7 @@ export default function Settings() {
 
           {nameRequestSuccess ? (
             <div className="p-8 text-center flex-1 flex flex-col items-center justify-center">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center mb-6 animate-bounce">
+              <div className="w-24 h-24 rounded-full bg-linear-to-br from-green-500 to-green-600 flex items-center justify-center mb-6 animate-bounce">
                 <Icon icon="bi:check-circle-fill" className="text-5xl text-white" />
               </div>
               <h5 className="text-2xl font-bold text-gray-800 mb-3">
@@ -725,7 +643,7 @@ export default function Settings() {
               </p>
               <button
                 onClick={closeNameChangeModal}
-                className="bg-gradient-to-br from-[#402D87] to-[#5a4fcf] text-white px-8 py-3 rounded-xl font-semibold text-base transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                className="bg-linear-to-br from-[#402D87] to-[#5a4fcf] text-white px-8 py-3 rounded-xl font-semibold text-base transition-all hover:-translate-y-0.5 hover:shadow-lg"
               >
                 Got it
               </button>
@@ -743,7 +661,7 @@ export default function Settings() {
                   </div>
                 )}
 
-                <div className="mb-6 rounded-xl py-4 px-5 bg-gradient-to-br from-blue-100 to-blue-200 text-blue-800 border-l-4 border-blue-600 flex items-start gap-4">
+                <div className="mb-6 rounded-xl py-4 px-5 bg-linear-to-br from-blue-100 to-blue-200 text-blue-800 border-l-4 border-blue-600 flex items-start gap-4">
                   <Icon icon="bi:info-circle-fill" className="text-xl shrink-0 mt-0.5" />
                   <div>
                     <strong className="block mb-1">Instructions</strong>
@@ -756,7 +674,7 @@ export default function Settings() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <label className="block font-semibold text-gray-700 mb-2 text-sm flex items-center">
+                    <label className="font-semibold text-gray-700 mb-2 text-sm flex items-center">
                       <Icon icon="bi:person" className="mr-2 text-[#402D87]" />
                       Current Name
                     </label>
@@ -770,7 +688,7 @@ export default function Settings() {
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-gray-700 mb-2 text-sm flex items-center">
+                    <label className="font-semibold text-gray-700 mb-2 text-sm flex items-center">
                       <Icon icon="bi:pencil" className="mr-2 text-[#402D87]" />
                       New Name <span className="text-red-600 ml-1">*</span>
                     </label>
@@ -785,7 +703,7 @@ export default function Settings() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-gray-700 mb-2 text-sm flex items-center">
+                  <label className="font-semibold text-gray-700 mb-2 text-sm flex items-center">
                     <Icon icon="bi:chat-text" className="mr-2 text-[#402D87]" />
                     Reason for Change{' '}
                     <span className="text-gray-500 font-normal text-xs ml-1">(Optional)</span>
@@ -842,8 +760,8 @@ export default function Settings() {
         panelClass="max-w-lg w-full max-h-[90vh] overflow-hidden"
       >
         <div className="flex flex-col h-full">
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 px-8 py-8 text-center border-b border-gray-200 flex-shrink-0">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-[#402D87] flex items-center justify-center mx-auto mb-5 shadow-lg">
+          <div className="bg-linear-to-br from-gray-50 to-gray-100 px-8 py-8 text-center border-b border-gray-200 flex-shrink-0">
+            <div className="w-20 h-20 rounded-full bg-linear-to-br from-blue-500 to-[#402D77] flex items-center justify-center mx-auto mb-5 shadow-lg">
               <Icon icon="bi:phone" className="text-3xl text-white" />
             </div>
             <h4 className="text-2xl font-bold text-gray-800 mb-2">Change Phone Number</h4>
@@ -870,8 +788,8 @@ export default function Settings() {
             {/* Step 1: Confirm Current Phone */}
             {phoneModal.step === 'confirm-current' && (
               <div className="text-center">
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-2xl p-6 mb-8 flex flex-col items-center">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-[#402D87] flex items-center justify-center mb-4">
+                <div className="bg-linear-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-2xl p-6 mb-8 flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-full bg-linear-to-br from-blue-500 to-[#402D87] flex items-center justify-center mb-4">
                     <Icon icon="bi:phone-fill" className="text-2xl text-white" />
                   </div>
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
@@ -939,8 +857,8 @@ export default function Settings() {
             {/* Step 3: Confirm New Phone */}
             {phoneModal.step === 'confirm-new' && (
               <div className="text-center">
-                <div className="bg-gradient-to-br from-[#402D87]/5 to-blue-50 border-2 border-[#402D87] rounded-2xl p-6 mb-8 flex flex-col items-center">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-[#402D87] flex items-center justify-center mb-4">
+                <div className="bg-linear-to-br from-[#402D87]/5 to-blue-50 border-2 border-[#402D87] rounded-2xl p-6 mb-8 flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-full bg-linear-to-br from-blue-500 to-[#402D87] flex items-center justify-center mb-4">
                     <Icon icon="bi:phone-fill" className="text-2xl text-white" />
                   </div>
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">

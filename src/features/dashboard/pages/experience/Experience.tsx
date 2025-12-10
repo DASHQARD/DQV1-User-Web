@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Icon } from '@/libs'
 import { Button } from '@/components/Button'
 import { DataTable, Loader, Modal, Popover, PopoverTrigger, PopoverContent } from '@/components'
@@ -8,8 +8,6 @@ import type { CardResponse } from '@/types/cards'
 import { CreateEditCardModal } from './CreateEditCardModal'
 import { CardDetailsModal } from './CardDetailsModal'
 import { useUserProfile } from '@/hooks'
-import { useAuthStore } from '@/stores'
-import { useSearchParams } from 'react-router-dom'
 
 export default function Experience() {
   const { data: cardsResponse, isLoading } = useCards()
@@ -20,55 +18,16 @@ export default function Experience() {
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [showApprovalModal, setShowApprovalModal] = useState(false)
   const [openPopoverId, setOpenPopoverId] = useState<number | null>(null)
-  const [searchParams] = useSearchParams()
+
+  console.log('cardsResponse', cardsResponse)
 
   const { data: userProfile } = useUserProfile()
-  const { user } = useAuthStore()
-
-  const userType = (user as any)?.user_type
-  const urlAccount = searchParams.get('account')
-
-  // Determine if user is corporate or vendor
-  const isCorporate = urlAccount === 'corporate' || (!urlAccount && userType === 'corporate')
-  const isCorporateVendor =
-    userType === 'corporate_vendor' && (urlAccount === 'corporate' || !urlAccount)
-  const isVendorView =
-    urlAccount === 'vendor' ||
-    (userType === 'corporate_vendor' && urlAccount !== 'corporate' && urlAccount !== null) ||
-    (!urlAccount && userType === 'vendor')
 
   console.log('userProfile', userProfile)
 
   // Filter cards based on user type
   // Corporate users: only show corporate cards (vendor_id is null or 0)
   // Corporate_vendor users: show both vendor and corporate cards
-  // Vendor users: show vendor cards
-  const allCards = useMemo(() => {
-    if (!cardsResponse) return []
-    const data = (cardsResponse as { data?: CardResponse[] })?.data
-    return Array.isArray(data) ? data : []
-  }, [cardsResponse])
-
-  const cards = useMemo(() => {
-    if (isCorporate) {
-      // Corporate users: only show corporate cards (vendor_id is null or 0)
-      return allCards.filter((card: CardResponse) => !card.vendor_id || card.vendor_id === 0)
-    } else if (isCorporateVendor && urlAccount !== 'vendor') {
-      // Corporate_vendor users viewing corporate account: show corporate cards only
-      return allCards.filter((card: CardResponse) => !card.vendor_id || card.vendor_id === 0)
-    } else if (userType === 'corporate_vendor' && urlAccount === 'vendor') {
-      // Corporate_vendor users viewing vendor account: show vendor cards (vendor_id > 0)
-      return allCards.filter((card: CardResponse) => card.vendor_id && card.vendor_id > 0)
-    } else if (isCorporateVendor && !urlAccount) {
-      // Corporate_vendor users (default): show both vendor and corporate cards
-      return allCards
-    } else if (isVendorView) {
-      // Vendor users: show vendor cards (vendor_id > 0)
-      return allCards.filter((card: CardResponse) => card.vendor_id && card.vendor_id > 0)
-    }
-    // Default: show all cards
-    return allCards
-  }, [allCards, isCorporate, isCorporateVendor, isVendorView, userType, urlAccount])
 
   const handleViewDetails = (cardId: number) => {
     setSelectedCardId(cardId)
@@ -158,10 +117,10 @@ export default function Experience() {
       },
     },
     {
-      accessorKey: 'issue_date',
+      accessorKey: 'created_at',
       header: 'Issue Date',
       cell: ({ row }) => {
-        const date = new Date(row.original.issue_date)
+        const date = new Date(row.original.created_at)
         return (
           <div className="text-gray-600">
             {date.toLocaleDateString('en-GB', {
@@ -275,7 +234,7 @@ export default function Experience() {
               <Loader />
             </div>
           ) : (
-            <DataTable columns={columns} data={cards} />
+            <DataTable columns={columns} data={cardsResponse?.data} />
           )}
         </div>
       </div>

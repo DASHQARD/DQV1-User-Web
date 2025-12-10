@@ -1,5 +1,5 @@
 import { axiosClient } from '@/libs'
-import type { CardsListResponse, PublicCardsResponse } from '@/types/cards'
+import type { CardsListResponse, PublicCardResponse, PublicCardsResponse } from '@/types/cards'
 import type { VendorDetailsResponse } from '@/types/vendor'
 import { userRecipient } from '../../dashboard/services/recipients'
 
@@ -15,6 +15,11 @@ const getPublicCards = async (query?: Record<string, any>): Promise<PublicCardsR
 
 const getPublicVendorCards = async (vendor_id: string): Promise<PublicCardsResponse> => {
   const response = await axiosClient.get(`/cards-info/${vendor_id}`)
+  return response.data
+}
+
+const getPublicCardById = async (card_id: string | number): Promise<PublicCardResponse> => {
+  const response = await axiosClient.get(`/cards-info/${card_id}`)
   return response.data
 }
 
@@ -37,4 +42,11 @@ const getPublicVendors = async (params: {
   return response as unknown as VendorDetailsResponse
 }
 
-export { getCards, getPublicCards, getPublicVendors, getPublicVendorCards, userRecipient }
+export {
+  getCards,
+  getPublicCards,
+  getPublicVendors,
+  getPublicVendorCards,
+  getPublicCardById,
+  userRecipient,
+}

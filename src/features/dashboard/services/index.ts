@@ -1,3 +1,4 @@
 export * from './cards'
 export * from './branches'
 export * from './recipients'
+export * from './user'

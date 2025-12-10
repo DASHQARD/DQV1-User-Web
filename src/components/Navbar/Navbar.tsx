@@ -36,10 +36,6 @@ export default function Navbar() {
       label: 'Contact',
       path: ROUTES.IN_APP.CONTACT,
     },
-    {
-      label: 'Bulk Gifting',
-      path: ROUTES.IN_APP.BULK_GIFTING,
-    },
   ]
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-sm">
@@ -103,28 +99,23 @@ export default function Navbar() {
                 className="w-64 p-0 border border-gray-200 rounded-2xl shadow-xl bg-white"
               >
                 <div className="p-4 border-b border-gray-100">
-                  <p className="text-sm text-gray-500 mb-1">Hi,</p>
-                  <p className="text-xl font-semibold text-gray-900">{displayName}</p>
+                  <p className="text-sm text-gray-500 mb-1">
+                    Hi, <span className="font-semibold text-gray-900">{displayName}</span>
+                  </p>
                 </div>
-                <div className="flex flex-col p-4 gap-3 text-sm text-gray-800">
+                <div className="flex flex-col p-1 gap-1 text-sm text-gray-800">
                   {[
-                    {
-                      label: 'Dashboard',
-                      icon: 'bi:speedometer2',
-                      path: ROUTES.IN_APP.DASHBOARD.HOME,
-                    },
-                    { label: 'My orders', icon: 'bi:box', path: ROUTES.IN_APP.DASHBOARD.PURCHASE },
+                    { label: 'My orders', icon: 'bi:box', path: ROUTES.IN_APP.DASHBOARD.ORDERS },
                     {
                       label: 'My Info',
                       icon: 'bi:pencil-square',
                       path: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.PROFILE_INFORMATION,
                     },
                     { label: 'Notifications', icon: 'bi:bell', path: '/dashboard/notifications' },
-                    { label: 'Notify Me List', icon: 'bi:star', path: '/dashboard/notify-me' },
                     {
                       label: 'Gift Cards',
                       icon: 'bi:gift',
-                      path: ROUTES.IN_APP.DASHBOARD.PURCHASE,
+                      path: ROUTES.IN_APP.DASHBOARD.REDEEM,
                     },
                   ].map((item) => (
                     <button
@@ -134,7 +125,7 @@ export default function Navbar() {
                         navigate(item.path)
                         setAccountPopoverOpen(false)
                       }}
-                      className="flex items-center gap-3 text-left hover:text-primary-600 transition-colors"
+                      className="flex items-center gap-3 p-3 text-left hover:bg-black/20 transition-colors"
                     >
                       <Icon icon={item.icon} className="text-lg" />
                       <span>{item.label}</span>

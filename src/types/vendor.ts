@@ -43,7 +43,7 @@ export type VendorDetailsResponse = {
   status: string
   statusCode: number
   message: string
-  data: Vendor
+  data: Vendor[]
   pagination: {
     limit: number
     hasNextPage: boolean

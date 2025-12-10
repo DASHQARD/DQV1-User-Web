@@ -3,7 +3,7 @@ import { useCartStore } from '@/stores/cart'
 import { useCart } from '@/features/website/hooks/useCart'
 import { Icon } from '@/libs'
 import { Loader, Text } from '@/components'
-import type { CartItemResponse } from '@/types/cart'
+import type { CartItemResponse, CartItemImage } from '@/types/cart'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
 import DashpassBg from '@/assets/svgs/Dashpass_bg.svg'
@@ -69,63 +69,57 @@ export default function CartPopoverContent() {
     }
   }
 
-  // Group cart items by card_id
-  type GroupedCartItem = {
+  // Flatten cart items from nested structure
+  // cartItems is an array of carts, each cart has an items array
+  type FlattenedCartItem = {
+    cart_id: number
     card_id: number
-    cart_ids: number[] // All cart IDs in this group
     product: string
-    vendor_name: string
+    vendor_name?: string
     type: string
     currency: string
     price: string
-    images: CartItemResponse['images']
-    totalQuantity: number
-    totalAmount: number
-    item: CartItemResponse // Keep reference to first item for other properties
+    amount: string
+    images?: CartItemImage[]
+    cart_item_id?: number
   }
 
-  const groupedCartItems = (() => {
+  const flattenedCartItems: FlattenedCartItem[] = (() => {
     if (!Array.isArray(cartItems)) return []
 
-    const grouped = new Map<number, GroupedCartItem>()
+    const flattened: FlattenedCartItem[] = []
 
-    cartItems.forEach((item: CartItemResponse) => {
-      const cardId = item.card_id
-      const quantity = parseInt(item.recipient_count || '1', 10)
-      const amount = parseFloat(item.amount)
-
-      if (grouped.has(cardId)) {
-        const existing = grouped.get(cardId)!
-        existing.cart_ids.push(item.cart_id)
-        existing.totalQuantity += quantity
-        existing.totalAmount += amount
-      } else {
-        grouped.set(cardId, {
-          card_id: cardId,
-          cart_ids: [item.cart_id],
-          product: item.product,
-          vendor_name: item.vendor_name,
-          type: item.type,
-          currency: item.currency,
-          price: item.price,
-          images: item.images,
-          totalQuantity: quantity,
-          totalAmount: amount,
-          item: item,
+    cartItems.forEach((cart: CartItemResponse) => {
+      // Each cart has an items array
+      if (cart.items && Array.isArray(cart.items)) {
+        cart.items.forEach((item) => {
+          flattened.push({
+            cart_id: cart.cart_id,
+            card_id: item.card_id,
+            product: item.product,
+            vendor_name: undefined, // May not be in nested structure
+            type: item.type,
+            currency: 'GHS', // Default, adjust if available
+            price: item.total_amount,
+            amount: item.total_amount,
+            images: item.images,
+            cart_item_id: item.cart_item_id,
+          })
         })
       }
     })
 
-    return Array.from(grouped.values())
+    return flattened
   })()
 
   const subtotal = Array.isArray(cartItems)
-    ? cartItems.reduce((total: number, item: CartItemResponse) => {
-        return total + parseFloat(item.amount)
+    ? cartItems.reduce((total: number, cart: CartItemResponse) => {
+        const amount = parseFloat(cart.total_amount || '0')
+        return total + amount
       }, 0)
     : 0
 
-  const totalItems = Array.isArray(cartItems) ? cartItems.length : 0
+  const totalItems = flattenedCartItems.length
 
   return (
     <div className="flex flex-col w-[393px] max-h-[70vh]">
@@ -135,7 +129,7 @@ export default function CartPopoverContent() {
           Subtotal: <span className="font-bold">{formatPrice(subtotal)}</span>
         </p>
 
-        {groupedCartItems.length > 0 && (
+        {flattenedCartItems.length > 0 && (
           <div className="flex items-center justify-between gap-4">
             <button
               type="button"
@@ -164,7 +158,7 @@ export default function CartPopoverContent() {
             <Loader />
             <p className="text-gray-600 text-sm mt-4">Loading cart...</p>
           </div>
-        ) : groupedCartItems.length === 0 ? (
+        ) : flattenedCartItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Icon icon="bi:cart-x" className="text-6xl text-gray-300 mb-4" />
             <p className="text-gray-600 text-lg font-medium">Your bag is empty</p>
@@ -172,26 +166,30 @@ export default function CartPopoverContent() {
           </div>
         ) : (
           <div className="space-y-4">
-            {groupedCartItems.map((groupedItem) => {
-              const cardBackground = getCardBackground(groupedItem.type)
-              const cardImageUrl = groupedItem.images?.[0]?.file_url
-                ? getImageUrl(groupedItem.images[0].file_url)
+            {flattenedCartItems.map((item: FlattenedCartItem) => {
+              const cardBackground = getCardBackground(item.type || '')
+              const cardImageUrl = item.images?.[0]?.file_url
+                ? getImageUrl(item.images[0].file_url)
                 : null
+              const amount = parseFloat(item.amount || '0')
 
               return (
-                <div key={groupedItem.card_id} className="flex gap-4">
-                  <div className="max-w-[210px] w-full h-[125px] shrink-0 rounded-lg overflow-hidden  relative">
+                <div
+                  key={`${item.cart_id}-${item.cart_item_id || item.card_id}`}
+                  className="flex gap-4"
+                >
+                  <div className="max-w-[210px] w-full h-[125px] shrink-0 rounded-lg overflow-hidden relative">
                     {/* Card Background - always shown as fallback */}
                     <img
                       src={cardBackground}
-                      alt={`${groupedItem.type} card background`}
+                      alt={`${item.type || 'card'} card background`}
                       className="absolute inset-0 w-full h-full object-cover"
                     />
                     {/* Uploaded Image - shown if available, falls back to background on error */}
                     {cardImageUrl && (
                       <img
                         src={cardImageUrl}
-                        alt={`${groupedItem.product || groupedItem.type} card image`}
+                        alt={`${item.product || item.type} card image`}
                         className="absolute inset-0 w-full h-full object-cover"
                         onError={(e) => {
                           // Hide uploaded image if it fails to load
@@ -204,54 +202,23 @@ export default function CartPopoverContent() {
 
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div className="flex flex-col gap-1">
-                      <p className="font-semibold text-gray-900 text-sm  line-clamp-1">
-                        {groupedItem.vendor_name}: {groupedItem.product}
+                      <p className="font-semibold text-gray-900 text-sm line-clamp-1">
+                        {item.vendor_name ? `${item.vendor_name}: ${item.product}` : item.product}
                       </p>
                       <Text variant="p" weight="bold" className="text-primary-500">
-                        {groupedItem.currency} {groupedItem.totalAmount.toFixed(2)}
+                        {item.currency || 'GHS'} {amount.toFixed(2)}
                       </Text>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      {/* Quantity Selector */}
-                      <div className="flex items-center bg-white rounded-full border border-gray-200 shadow-sm">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (groupedItem.totalQuantity > 1) {
-                              // TODO: Implement quantity decrease API call
-                              // For now, remove one cart item from the group
-                              // Remove the first cart_id in the group
-                              if (groupedItem.cart_ids.length > 0) {
-                                handleRemoveItem(groupedItem.cart_ids[0])
-                              }
-                            } else {
-                              // If quantity is 1, remove all items in the group
-                              groupedItem.cart_ids.forEach((cartId) => {
-                                handleRemoveItem(cartId)
-                              })
-                            }
-                          }}
-                          className="p-2 hover:bg-gray-50 rounded-l-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          aria-label="Decrease quantity"
-                        >
-                          <Icon icon="bi:dash-lg" className="text-lg text-gray-600" />
-                        </button>
-                        <span className="px-4 py-2 text-sm font-medium text-gray-700 min-w-8 text-center">
-                          {groupedItem.totalQuantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            // TODO: Implement quantity increase API call
-                            // For now, this is just UI
-                          }}
-                          className="p-2 hover:bg-gray-50 rounded-r-full transition-colors"
-                          aria-label="Increase quantity"
-                        >
-                          <Icon icon="bi:plus" className="text-lg text-gray-600" />
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(item.cart_item_id || item.cart_id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                        aria-label="Remove item"
+                      >
+                        <Icon icon="bi:trash" className="text-lg" />
+                      </button>
                     </div>
                   </div>
                 </div>

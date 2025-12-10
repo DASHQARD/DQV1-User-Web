@@ -2,6 +2,7 @@ import { axiosClient } from '@/libs'
 import type {
   AssignRecipientPayload,
   RecipientsListResponse,
+  CreateRecipientPayload,
   UpdateRecipientPayload,
   UpdateRecipientAmountPayload,
 } from '@/types/cart'
@@ -9,8 +10,15 @@ import type {
 export const assignRecipient = async (
   data: AssignRecipientPayload,
 ): Promise<{ status: string; message: string }> => {
-  const response = await axiosClient.post('/carts/users/assign', data)
+  const response = await axiosClient.post('/carts/assign-recipient', data)
   return response as unknown as { status: string; message: string }
+}
+
+export const createRecipient = async (
+  data: CreateRecipientPayload,
+): Promise<{ status: string; statusCode: number; message: string }> => {
+  const response = await axiosClient.post('/carts/add-recipients', data)
+  return response as unknown as { status: string; statusCode: number; message: string }
 }
 
 export const userRecipient = async (): Promise<RecipientsListResponse> => {

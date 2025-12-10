@@ -1,6 +1,6 @@
 export * from './experience'
 export * from './home'
-export * from './purchase'
+export * from './orders'
 export * from './redeem'
 export * from './settings'
 export * from './transactions'

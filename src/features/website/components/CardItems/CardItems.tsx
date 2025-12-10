@@ -5,6 +5,7 @@ import DashproBg from '@/assets/svgs/dashpro_bg.svg'
 import DashpassBg from '@/assets/svgs/Dashpass_bg.svg'
 import { useCart } from '../../hooks/useCart'
 import { useCartStore } from '@/stores/cart'
+import { formatCurrency } from '@/utils/format'
 
 type FeaturedCardProps = {
   created_at: string
@@ -108,16 +109,12 @@ export const CardItems = ({
       return
     }
 
-    try {
-      await addToCartAsync({
-        card_id: id,
-        amount: displayPrice,
-        quantity: 1,
-      })
-      openCart()
-    } catch (error) {
-      console.error('Failed to add item to cart:', error)
-    }
+    await addToCartAsync({
+      card_id: id,
+      amount: displayPrice,
+      quantity: 1,
+    })
+    openCart()
   }
 
   const handleCardClick = () => {
@@ -161,7 +158,9 @@ export const CardItems = ({
 
             {/* Right: Price */}
             <div className="text-right">
-              <span className="text-2xl font-extrabold">{displayPrice.toFixed(2)}</span>
+              <span className="text-2xl font-extrabold">
+                {formatCurrency(displayPrice.toFixed(2), 'GHS')}
+              </span>
             </div>
           </div>
 
@@ -190,11 +189,7 @@ export const CardItems = ({
             {vendor_name} - {product}
           </p>
 
-          {price && (
-            <p className="font-medium">
-              {currency} {displayPrice.toFixed(2)}
-            </p>
-          )}
+          {price && <p className="font-medium">{formatCurrency(displayPrice.toFixed(2), 'GHS')}</p>}
         </header>
 
         {/* Meta */}

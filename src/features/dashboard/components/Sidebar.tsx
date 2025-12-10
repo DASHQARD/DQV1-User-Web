@@ -139,7 +139,7 @@ export default function Sidebar() {
   // Helper function to add account parameter to URLs
   const addAccountParam = (path: string): string => {
     if (!canSwitchProfiles) return path
-    const separator = path.includes('?') ? '&' : '?'
+    const separator = path?.includes('?') ? '&' : '?'
     return `${path}${separator}account=${selectedProfile}`
   }
 
@@ -266,13 +266,9 @@ export default function Sidebar() {
   // Regular user navigation items
   const regularNavItems = [
     {
-      section: 'Overview',
-      items: [{ path: ROUTES.IN_APP.DASHBOARD.HOME, label: 'Dashboard', icon: 'bi:speedometer2' }],
-    },
-    {
       section: 'Gift Cards',
       items: [
-        { path: ROUTES.IN_APP.DASHBOARD.PURCHASE, label: 'Purchase', icon: 'bi:gift' },
+        { path: ROUTES.IN_APP.DASHBOARD.ORDERS, label: 'My Orders', icon: 'bi:gift' },
         { path: ROUTES.IN_APP.DASHBOARD.REDEEM, label: 'Redeem', icon: 'bi:card-checklist' },
         { path: ROUTES.IN_APP.DASHBOARD.RECIPIENTS, label: 'Recipients', icon: 'bi:people-fill' },
         { path: '/dashboard/transactions', label: 'Transactions', icon: 'bi:receipt' },
@@ -296,17 +292,17 @@ export default function Sidebar() {
       className={cn(
         'bg-white flex flex-col w-[380px] transition-all duration-300 ease-in-out',
         'shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_4px_20px_rgba(0,0,0,0.08),0_8px_40px_rgba(0,0,0,0.04)]',
-        'border-r border-black/8 min-h-full h-auto flex-shrink-0 relative z-[5]',
+        'border-r border-black/8 min-h-full h-auto shrink-0 relative z-5',
         'max-lg:hidden',
-        isCollapsed && 'w-[90px] flex-shrink-0',
+        isCollapsed && 'w-[90px] shrink-0',
       )}
     >
-      <div className="flex flex-col grow min-h-full h-full overflow-hidden relative z-[2] p-0">
+      <div className="flex flex-col grow min-h-full h-full overflow-hidden relative z-2 p-0">
         {/* Top Bar */}
-        <div className="flex items-center justify-between p-6 mb-6 border-b border-black/6 bg-white relative z-[1]">
+        <div className="flex items-center justify-between p-6 mb-6 border-b border-black/6 bg-white relative z-1">
           <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#402D87] to-[#2d1a72] flex items-center justify-center text-white text-xl shadow-[0_4px_12px_rgba(64,45,135,0.25)] transition-all duration-300 hover:translate-y-[-1px] hover:shadow-[0_6px_16px_rgba(64,45,135,0.35)]">
+            <div className="shrink-0">
+              <div className="w-12 h-12 rounded-full bg-linear-to-br from-[#402D87] to-[#2d1a72] flex items-center justify-center text-white text-xl shadow-[0_4px_12px_rgba(64,45,135,0.25)] transition-all duration-300 hover:translate-y-[-1px] hover:shadow-[0_6px_16px_rgba(64,45,135,0.35)]">
                 <Icon icon="bi:person-fill" />
               </div>
             </div>
@@ -377,8 +373,8 @@ export default function Sidebar() {
                   >
                     {isActive(item.path) && (
                       <>
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-white/30 via-[#402D87] to-[#2d1a72] rounded-r-sm shadow-[2px_0_8px_rgba(64,45,135,0.4),2px_0_16px_rgba(64,45,135,0.2)]" />
-                        <div className="absolute inset-0 rounded-r-2xl bg-gradient-to-br from-white/8 via-transparent to-[rgba(45,26,114,0.03)] pointer-events-none" />
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-white/30 via-[#402D87] to-[#2d1a72] rounded-r-sm shadow-[2px_0_8px_rgba(64,45,135,0.4),2px_0_16px_rgba(64,45,135,0.2)]" />
+                        <div className="absolute inset-0 rounded-r-2xl bg-linear-to-br from-white/8 via-transparent to-[rgba(45,26,114,0.03)] pointer-events-none" />
                       </>
                     )}
                     <Link

@@ -2,6 +2,13 @@ import React from 'react'
 import { Button, Text } from '@/components'
 import { Icon } from '@/libs'
 import DashProBG from '@/assets/svgs/dashpro_bg.svg'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { formatCurrency } from '@/utils/format'
+import { AssignRecipientSchema } from '@/utils/schemas'
+import { useCards, useCreateCard } from '@/features/dashboard/hooks'
+import { useCart } from '../../hooks'
 
 const QRPlaceholder = () => {
   const pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
@@ -21,12 +28,40 @@ const QRPlaceholder = () => {
 export default function DashProPurchase() {
   const [isCardFlipped, setIsCardFlipped] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
-  const [assignToSelf, setAssignToSelf] = React.useState(true) // Default to true
-  const [amount, setAmount] = React.useState('1000')
-  const [name, setName] = React.useState('Recipient Name')
-  const [phone, setPhone] = React.useState('0244000000')
-  const [email, setEmail] = React.useState('recipient@example.com')
-  const [message, setMessage] = React.useState('Your personalized message will appear here...')
+  const [assignToSelf, setAssignToSelf] = React.useState(true)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    getValues,
+    setValue,
+  } = useForm<z.infer<typeof AssignRecipientSchema>>({
+    resolver: zodResolver(AssignRecipientSchema),
+    defaultValues: {
+      assign_to_self: true,
+      amount: 1000,
+      name: '',
+      phone: '',
+      email: '',
+      message: 'Your personalized message will appear here...',
+    },
+  })
+
+  // Watch form values for card preview
+  const amount = watch('amount')
+  const name = watch('name')
+  const message = watch('message')
+  const assignToSelfFormValue = watch('assign_to_self')
+
+  const { mutate: createDashProCard, isPending: isCreatingDashProCard } = useCreateCard()
+  const { addToCart } = useCart()
+
+  // Sync assignToSelf state with form value
+  React.useEffect(() => {
+    setAssignToSelf(assignToSelfFormValue)
+  }, [assignToSelfFormValue])
 
   const toggleCardFlip = () => {
     if (!isMobile) setIsCardFlipped((prev) => !prev)
@@ -35,14 +70,43 @@ export default function DashProPurchase() {
   const handleAssignToSelf = () => {
     const newValue = !assignToSelf
     setAssignToSelf(newValue)
-
-    if (newValue) {
-      // When assigning to self, populate with user info but these will be ignored in API
-    }
+    setValue('assign_to_self', newValue)
   }
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const onSubmit = (data: z.infer<typeof AssignRecipientSchema>) => {
+    // Calculate dates in YYYY-MM-DD format
+    const today = new Date()
+    const issueDate = today.toISOString().split('T')[0] // YYYY-MM-DD format
+
+    // Add 1 year (handles leap years correctly)
+    const expiryDate = new Date(today)
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1)
+    const expiryDateFormatted = expiryDate.toISOString().split('T')[0] // YYYY-MM-DD format
+
+    createDashProCard(
+      {
+        product: 'DashPro',
+        description: 'DashPro',
+        type: 'DashPro',
+        price: amount,
+        currency: 'GHS',
+        issue_date: issueDate,
+        expiry_date: expiryDateFormatted,
+        images: [],
+        terms_and_conditions: [],
+      },
+      {
+        onSuccess: (response) => {
+          console.log('response', response)
+          addToCart({
+            card_id: response.id,
+            amount: amount,
+            quantity: 1,
+          })
+        },
+      },
+    )
+    console.log('Form submitted:', data)
   }
 
   React.useEffect(() => {
@@ -52,13 +116,14 @@ export default function DashProPurchase() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const displayedCardAmount = amount ? `GHS ${Number(amount).toLocaleString()}` : 'GHS 0'
+  // Computed values for card preview
+  const displayedCardAmount = amount ? formatCurrency(amount.toString(), 'GHS') : 'GHS 0'
   const displayedCardRecipient = assignToSelf ? 'Your Name' : name || 'Recipient Name'
   const displayedCardMessage = message || 'Your personalized message will appear here...'
 
   return (
     <div>
-      <div className="!max-w-[900px] md:!w-full">
+      <div className="max-w-[900px] w-full">
         {/* Modal Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-t-[20px] border-b-2 border-[#ffc40033] bg-linear-to-br from-[#402d87] to-[#2d1a72] px-8 py-6 text-white">
           <div className="flex items-center gap-4">
@@ -81,7 +146,7 @@ export default function DashProPurchase() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
           {/* Card Preview Section */}
           <section className="border-b border-[#f1f3f4] bg-linear-to-br from-[#f8f9fa] to-[#e9ecef] px-10 py-8">
             <div className="flex flex-col gap-6">
@@ -112,7 +177,7 @@ export default function DashProPurchase() {
                           {displayedCardRecipient}
                         </div>
                         <div className="flex items-end justify-end p-4">
-                          {amount && (assignToSelf || name) ? <QRPlaceholder /> : null}
+                          {amount && (assignToSelf || getValues('name')) ? <QRPlaceholder /> : null}
                         </div>
                       </div>
                       {!isMobile && (
@@ -192,12 +257,13 @@ export default function DashProPurchase() {
                   min={1}
                   max={10000}
                   step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  {...register('amount', { valueAsNumber: true })}
                   placeholder="0.00"
                   className="w-full rounded-lg border border-gray-200 px-4 py-3 pl-16 text-lg font-semibold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-                  required
                 />
+                {errors.amount && (
+                  <p className="mt-1 text-xs text-red-500">{errors.amount.message}</p>
+                )}
               </div>
             </div>
           </section>
@@ -215,8 +281,7 @@ export default function DashProPurchase() {
                 </label>
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  {...register('name')}
                   disabled={assignToSelf}
                   className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
                     assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
@@ -226,8 +291,8 @@ export default function DashProPurchase() {
                       ? 'Will use your account information'
                       : "Enter recipient's full name"
                   }
-                  required={!assignToSelf}
                 />
+                {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
                 {assignToSelf && (
                   <p className="mt-1 text-xs text-gray-500">Will use your account name</p>
                 )}
@@ -238,15 +303,16 @@ export default function DashProPurchase() {
                 </label>
                 <input
                   type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  {...register('phone')}
                   disabled={assignToSelf}
                   className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
                     assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
                   }`}
                   placeholder={assignToSelf ? 'Will use your account phone' : 'Enter phone number'}
-                  required={!assignToSelf}
                 />
+                {errors.phone && (
+                  <p className="mt-1 text-xs text-red-500">{errors.phone.message}</p>
+                )}
                 {assignToSelf && (
                   <p className="mt-1 text-xs text-gray-500">Will use your account phone number</p>
                 )}
@@ -257,15 +323,16 @@ export default function DashProPurchase() {
                 </label>
                 <input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...register('email')}
                   disabled={assignToSelf}
                   className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
                     assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
                   }`}
                   placeholder={assignToSelf ? 'Will use your account email' : 'Enter email address'}
-                  required={!assignToSelf}
                 />
+                {errors.email && (
+                  <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
+                )}
                 {assignToSelf && (
                   <p className="mt-1 text-xs text-gray-500">Will use your account email</p>
                 )}
@@ -276,8 +343,7 @@ export default function DashProPurchase() {
                 </label>
                 <textarea
                   rows={3}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
+                  {...register('message')}
                   className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                   placeholder="Write a personal message for the recipient..."
                 />
@@ -293,6 +359,7 @@ export default function DashProPurchase() {
                   <div className="relative h-6 w-11">
                     <input
                       type="checkbox"
+                      {...register('assign_to_self')}
                       checked={assignToSelf}
                       onChange={handleAssignToSelf}
                       className="peer sr-only"
@@ -319,8 +386,13 @@ export default function DashProPurchase() {
             <Button type="button" variant="outline" className="md:w-auto">
               Cancel
             </Button>
-            <Button type="submit" variant="secondary" className="md:w-auto">
-              Create and customize a personalized DashPro gift card recipient
+            <Button
+              type="submit"
+              variant="secondary"
+              className="md:w-auto"
+              disabled={isCreatingDashProCard}
+            >
+              Create and customize DashPro Gift Card
             </Button>
           </div>
         </form>

@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router'
 import {
   AboutUs,
+  CardDetails,
   Checkout,
   DashQards,
   LandingPage,
@@ -37,5 +38,9 @@ export const websiteRoutes: RouteObject[] = [
   {
     path: 'view-bag',
     element: <ViewBag />,
+  },
+  {
+    path: 'card/:id',
+    element: <CardDetails />,
   },
 ]

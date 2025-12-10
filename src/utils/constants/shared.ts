@@ -10,7 +10,7 @@ export const ROUTES = {
     },
     DASHBOARD: {
       HOME: '/dashboard',
-      PURCHASE: '/dashboard/purchase',
+      ORDERS: '/dashboard/orders',
       REDEEM: '/dashboard/redeem/dashpro',
       REDEMPTIONS: '/dashboard/redemptions',
       TRANSACTIONS: '/dashboard/transactions',
@@ -127,6 +127,12 @@ export const DEFAULT_QUERY = {
 }
 
 export const MODAL_NAMES = {
+  RECIPIENT: {
+    ROOT: 'recipient-modal',
+    ASSIGN: 'assign-recipient',
+    BULK_UPLOAD: 'bulk-upload-recipient',
+    CREATE: 'create-recipient',
+  },
   AUTH: {
     ROOT: 'auth-modal',
     LOGOUT: 'logout',

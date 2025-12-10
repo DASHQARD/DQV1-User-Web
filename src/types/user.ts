@@ -66,24 +66,37 @@ export type UserProfileResponse = {
   user_type: string
 }
 
-export type PaymentInfoData =
-  | {
-      payment_method: 'mobile_money'
-      mobile_money_provider: string
-      mobile_money_number: string
-      bankName?: never
-      bankAccountNumber?: never
-      branch?: never
-      accountName?: never
-      sortSwiftCode?: never
-    }
-  | {
-      payment_method: 'bank'
-      bank_name: string
-      bank_account_number: string
-      branch: string
-      account_name: string
-      sortSwiftCode: string
-      mobileMoneyProvider?: never
-      mobileMoneyNumber?: never
-    }
+export type PaymentInfoData = {
+  amount: number
+  card_type: string | null
+  created_at: string
+  currency: string
+  id: number
+  phone: string
+  receipt_number: string
+  status: string
+  trans_id: string
+  type: string
+  updated_at: string
+  user_id: number
+  user_name: string
+  user_type: string
+}
+
+export type PaymentResponse = {
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+  limit: number
+  message: string
+  next: string | null
+  previous: string | null
+  status: string
+  statusCode: number
+  url: string
+  data: PaymentInfoData[]
+}
+
+export type UpdateUserInfoPayload = {
+  full_name: string
+  dob: string
+}

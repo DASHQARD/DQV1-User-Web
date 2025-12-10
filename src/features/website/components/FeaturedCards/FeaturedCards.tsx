@@ -66,7 +66,7 @@ export const FeaturedCards = () => {
             status={card.status || 'active'}
             updated_at={card.updated_at || new Date().toISOString()}
             vendor_id={card.vendor_id}
-            onGetQard={() => navigate(`/vendor/${card.product}`)}
+            onGetQard={() => navigate(`/card/${card.card_id || card.id}`)}
           />
         ))}
       </div>

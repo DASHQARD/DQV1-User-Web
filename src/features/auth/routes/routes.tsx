@@ -24,7 +24,7 @@ export const authRoutes: RouteObject[] = [
     element: <Onboarding />,
   },
   {
-    path: 'onboard',
+    path: 'onboard-branch',
     element: <AdminOnboarding />,
   },
 ]

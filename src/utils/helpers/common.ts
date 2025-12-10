@@ -10,3 +10,38 @@ export function getQueryString(obj?: Record<string, any>) {
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
     .join('&')
 }
+
+export function sentenceCase(str: string) {
+  return str?.replace(/\.\s+([a-z])[^\\.]|^(\s*[a-z])[^\\.]/g, (s) =>
+    s.replace(/([a-z])/, (s) => s.toUpperCase()),
+  )
+}
+
+export function getStatusVariant(status?: string) {
+  switch (status) {
+    case 'active':
+      return 'success'
+    case 'paid':
+      return 'success'
+    case 'successful':
+      return 'success'
+    case 'approved':
+      return 'success'
+    case 'processing':
+      return 'warning'
+    case 'pending':
+      return 'warning'
+    case 'failed':
+      return 'error'
+    case 'inactive':
+      return 'error'
+    case 'deactivate':
+      return 'error'
+    case 'deactivated':
+      return 'error'
+    case 'rejected':
+      return 'error'
+    default:
+      return 'warning'
+  }
+}

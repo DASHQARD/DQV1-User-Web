@@ -1,34 +1,37 @@
+export type CartItemImage = {
+  file_url: string
+  file_name: string
+}
+
 export type CartItemResponse = {
   cart_id: number
-  amount: string
-  cart_status: string
-  user_id: number
-  cart_created_at: string
-  cart_updated_at: string
   card_id: number
   product: string
-  description: string
+  vendor_name?: string
   type: string
-  price: string
   currency: string
-  vendor_id: number
-  vendor_name: string
-  expiry_date: string
-  rating: number
-  recipient_count: string
-  recipients: {
-    id: number
-    name: string
-    email: string
-    phone: string
-    message: string
-    created_at: string
-  }[]
-  images: {
-    id: number
-    file_url: string
-    file_name: string
-  }[]
+  price: string
+  amount: string
+  quantity?: number
+  images?: CartItemImage[]
+  cart_item_id?: number
+  total_amount?: string
+  total_quantity?: number
+  cart_status?: string
+  user_id?: number
+  cart_created_at?: string
+  cart_updated_at?: string
+  item_count?: string
+  // Legacy nested structure support
+  items?: Array<{
+    type: string
+    images: CartItemImage[]
+    card_id: number
+    product: string
+    cart_item_id: number
+    total_amount: string
+    total_quantity: number
+  }>
 }
 
 export type CartListResponse = {
@@ -51,14 +54,14 @@ export type AddToCartPayload = {
 }
 
 export type AssignRecipientPayload = {
-  cart_id: number
+  assign_to_self: boolean
+  cart_item_id: number
+  quantity: number
+  amount: number
+  message?: string
   name?: string
   email?: string
   phone?: string
-  message: string
-  quantity: number
-  amount: number
-  assign_to_self?: boolean
 }
 
 export type RecipientResponse = {
@@ -80,6 +83,12 @@ export type RecipientsListResponse = {
   statusCode: number
   message: string
   data: RecipientResponse[]
+}
+
+export type CreateRecipientPayload = {
+  name: string
+  email: string
+  phone: string
 }
 
 export type UpdateRecipientPayload = {

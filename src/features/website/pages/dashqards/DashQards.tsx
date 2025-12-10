@@ -1,13 +1,15 @@
-import { Button, SearchBox, Text } from '@/components'
+import { Button, Text } from '@/components'
 import { Icon } from '@/libs'
-import { useMemo, useState, useCallback } from 'react'
-import type { PublicCardResponse } from '@/types/cards'
+import { useState, useMemo, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import DashXImage from '@/assets/images/DashX.png'
 import DashGoImage from '@/assets/images/DashGo.png'
 import DashProImage from '@/assets/images/DashPro.png'
 import { CardItems, DashProPurchase, DashGoPurchase } from '../../components'
-import { useReducerSpread } from '@/hooks'
-import { useCards, useVendorsFilters } from '../../hooks'
+import { Controller, useForm } from 'react-hook-form'
+import { Select } from '@/components/Select'
+import useVendorsManagementBase from '../../hooks/vendors/useVendorsManagement'
+import type { PublicCardResponse } from '@/types/cards'
 
 const heroImages = {
   pro: DashProImage,
@@ -15,179 +17,78 @@ const heroImages = {
   go: DashGoImage,
 }
 
-const cardTabs = [
-  { id: 'dashx', label: 'DashX' },
-  { id: 'dashgo', label: 'DashGo' },
-  { id: 'dashpro', label: 'DashPro' },
-]
-
-const priceRanges = [
-  { label: 'Under $25', min: 0, max: 25 },
-  { label: '$25 - $50', min: 25, max: 50 },
-  { label: '$50 - $100', min: 50, max: 100 },
-  { label: '$100 - $250', min: 100, max: 250 },
-  { label: '$250+', min: 250, max: null },
-]
-
-type SortOption = 'popular' | 'price-low' | 'price-high' | 'newest' | 'rating'
-
 export default function DashQards() {
-  const [activeTab, setActiveTab] = useState<'dashx' | 'dashgo' | 'dashpro'>('dashx')
-  const [sortBy, setSortBy] = useState<SortOption>('popular')
-  const { limit, min_price, max_price, setMinPrice, setMaxPrice, search, setSearch } =
-    useVendorsFilters()
-  const { usePublicCardsService } = useCards()
-  const { data: cardsResponse } = usePublicCardsService({ limit, search })
-
-  // Filter state
-  const [filters, setFilters] = useReducerSpread({
-    vendors: [] as string[],
-    minRating: null as number | null,
-    categories: [] as string[],
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState<'dashx' | 'dashgo' | 'dashpro' | 'dashpass'>('dashx')
+  const { control, watch } = useForm({
+    defaultValues: {
+      sortBy: 'popular',
+    },
   })
+  const sortBy = watch('sortBy')
+  const {
+    cardsResponse,
+    min_price,
+    max_price,
+    setMinPrice,
+    setMaxPrice,
+    search,
+    setSearch,
+    cardTabs,
+    priceRanges,
+    sortOptions,
+  } = useVendorsManagementBase()
 
-  // Get cards from API
+  // Get all cards from response
   const allCards = useMemo(() => {
-    if (!cardsResponse?.data) return []
+    if (!cardsResponse?.data) {
+      return []
+    }
     // Handle both array and object with data property
-    const data = Array.isArray(cardsResponse.data)
+    const cards = Array.isArray(cardsResponse.data)
       ? cardsResponse.data
-      : (cardsResponse.data as any)?.data || []
-    return (data as unknown as PublicCardResponse[]) || []
+      : Array.isArray(cardsResponse)
+        ? cardsResponse
+        : []
+    return cards as unknown as PublicCardResponse[]
   }, [cardsResponse])
 
-  // Convert API cards to CardItems format
-  const convertedCards = useMemo(() => {
-    return allCards.map((card) => ({
-      id: card.id || card.card_id,
-      product: card.product,
-      vendor_name: card.vendor_name || '',
-      price: card.price,
-      currency: card.currency,
-      type: card.type as 'DashX' | 'dashpro' | 'dashpass' | 'dashgo',
-      rating: card.rating || 0,
-      description: card.description,
-      images: card.images || [],
-      created_at: card.created_at,
-      updated_at: card.updated_at,
-      expiry_date: card.expiry_date,
-      status: card.status,
-      is_activated: false,
-      fraud_flag: false,
-      fraud_notes: null,
-      issue_date: card.created_at,
-      created_by: null,
-      last_modified_by: null,
-      vendor_id: card.vendor_id,
-      terms_and_conditions: card.terms_and_conditions || [],
-    }))
-  }, [allCards])
-
-  // DashPro modal state (defined after convertedCards)
-  const [showDashProPurchase, setShowDashProPurchase] = useState(false)
-  const [selectedDashProCard, setSelectedDashProCard] = useState<(typeof convertedCards)[0] | null>(
-    null,
-  )
-
-  // Debug logs
-  console.log('showDashProPurchase:', showDashProPurchase)
-  console.log('selectedDashProCard:', selectedDashProCard)
-
-  // Get available vendors from API cards
-  const availableVendors = useMemo(() => {
-    const vendorCounts: Record<string, number> = {}
-    convertedCards.forEach((card) => {
-      const vendor = card.vendor_name || ''
-      if (vendor) {
-        vendorCounts[vendor] = (vendorCounts[vendor] || 0) + 1
-      }
-    })
-
-    return Object.entries(vendorCounts)
-      .map(([vendor, count]) => ({
-        value: vendor,
-        label: vendor,
-        count,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label))
-  }, [convertedCards])
-
-  // Get available categories (using description or type as category for now)
-  const availableCategories = useMemo(() => {
-    const categoryCounts: Record<string, number> = {}
-    convertedCards.forEach((card) => {
-      // Use type as category since we don't have a category field
-      const category = card.type || ''
-      if (category) {
-        categoryCounts[category] = (categoryCounts[category] || 0) + 1
-      }
-    })
-
-    return Object.entries(categoryCounts)
-      .map(([category, count]) => ({
-        value: category,
-        label: category.charAt(0).toUpperCase() + category.slice(1),
-        count,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label))
-  }, [convertedCards])
-
-  // Filter cards
+  // Filter cards based on active tab and filters
   const filteredQardsAll = useMemo(() => {
-    let filtered = [...convertedCards]
+    return allCards.filter((card) => {
+      // Filter by card type (activeTab)
+      const cardType = card.type?.toLowerCase()
+      if (activeTab !== 'dashx' && cardType !== activeTab) {
+        return false
+      }
+      if (activeTab === 'dashx' && cardType !== 'dashx' && cardType !== 'dashpass') {
+        return false
+      }
 
-    // Filter by card type (activeTab)
-    const normalizedActiveTab = activeTab.toLowerCase()
-    filtered = filtered.filter((card) => {
-      const cardType = card.type?.toLowerCase() || ''
-      return cardType === normalizedActiveTab || cardType === 'dashpass'
+      // Filter by price range
+      const cardPrice = parseFloat(card.price) || 0
+      if (min_price && cardPrice < parseFloat(min_price)) {
+        return false
+      }
+      if (max_price && cardPrice > parseFloat(max_price)) {
+        return false
+      }
+
+      // Filter by search
+      if (search) {
+        const searchLower = search.toLowerCase()
+        const matchesSearch =
+          card.product?.toLowerCase().includes(searchLower) ||
+          card.vendor_name?.toLowerCase().includes(searchLower) ||
+          card.description?.toLowerCase().includes(searchLower)
+        if (!matchesSearch) {
+          return false
+        }
+      }
+
+      return true
     })
-
-    // Filter by vendors
-    if (filters.vendors.length > 0) {
-      filtered = filtered.filter((card) => filters.vendors.includes(card.vendor_name))
-    }
-
-    // Filter by price range
-    if (min_price || max_price) {
-      filtered = filtered.filter((card) => {
-        const price = parseFloat(card.price) || 0
-        const min = min_price ? parseFloat(min_price) : 0
-        const max = max_price ? parseFloat(max_price) : Infinity
-        return price >= min && price <= max
-      })
-    }
-
-    // Filter by rating
-    if (filters.minRating !== null) {
-      filtered = filtered.filter((card) => (card.rating || 0) >= filters.minRating!)
-    }
-
-    // Filter by categories
-    if (filters.categories.length > 0) {
-      filtered = filtered.filter((card) => {
-        const cardType = card.type?.toLowerCase() || ''
-        return filters.categories.some((cat) => cat.toLowerCase() === cardType)
-      })
-    }
-
-    // Filter by search term
-    if (search) {
-      const searchLower = search.toLowerCase()
-      filtered = filtered.filter((card) => {
-        const product = card.product?.toLowerCase() || ''
-        const description = card.description?.toLowerCase() || ''
-        const vendorName = card.vendor_name?.toLowerCase() || ''
-        return (
-          product.includes(searchLower) ||
-          description.includes(searchLower) ||
-          vendorName.includes(searchLower)
-        )
-      })
-    }
-
-    return filtered
-  }, [convertedCards, activeTab, filters, min_price, max_price, search])
+  }, [allCards, activeTab, min_price, max_price, search])
 
   // Sort cards
   const sortedQards = useMemo(() => {
@@ -206,84 +107,89 @@ export default function DashQards() {
           const priceB = parseFloat(b.price) || 0
           return priceB - priceA
         })
-      case 'rating':
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0))
       case 'newest':
         return sorted.sort((a, b) => {
-          const dateA = new Date(a.created_at).getTime()
-          const dateB = new Date(b.created_at).getTime()
+          const dateA = new Date(a.created_at || 0).getTime()
+          const dateB = new Date(b.created_at || 0).getTime()
           return dateB - dateA
+        })
+      case 'rating':
+        return sorted.sort((a, b) => {
+          const ratingA = a.rating || 0
+          const ratingB = b.rating || 0
+          return ratingB - ratingA
         })
       case 'popular':
       default:
-        // Sort by rating first, then by created date
+        // Default: keep original order or sort by rating
         return sorted.sort((a, b) => {
-          const ratingDiff = (b.rating || 0) - (a.rating || 0)
-          if (ratingDiff !== 0) return ratingDiff
-          const dateA = new Date(a.created_at).getTime()
-          const dateB = new Date(b.created_at).getTime()
-          return dateB - dateA
+          const ratingA = a.rating || 0
+          const ratingB = b.rating || 0
+          return ratingB - ratingA
         })
     }
   }, [filteredQardsAll, sortBy])
 
-  // Helper functions
+  // Get card count by type
   const getCardTypeCount = useCallback(
-    (type: string) => {
-      const normalizedType = type.toLowerCase()
-      return convertedCards.filter((card) => {
-        const cardType = card.type?.toLowerCase() || ''
-        return (
-          cardType === normalizedType || (normalizedType === 'dashx' && cardType === 'dashpass')
-        )
+    (typeId: string) => {
+      return allCards.filter((card) => {
+        const cardType = card.type?.toLowerCase()
+        // Count only cards of the specific type
+        return cardType === typeId
       }).length
     },
-    [convertedCards],
+    [allCards],
   )
 
+  // Set price range helper
   const setPriceRange = useCallback(
-    (min: number, max: number | null) => {
-      setMinPrice(min.toString())
+    (min: number | null, max: number | null) => {
+      setMinPrice(min !== null ? min.toString() : null)
       setMaxPrice(max !== null ? max.toString() : null)
     },
     [setMinPrice, setMaxPrice],
   )
 
+  // Check if price range is active
   const isPriceRangeActive = useCallback(
-    (min: number, max: number | null) => {
+    (min: number | null, max: number | null) => {
       const currentMin = min_price ? parseFloat(min_price) : null
       const currentMax = max_price ? parseFloat(max_price) : null
-      return currentMin === min && currentMax === max
+
+      if (min === null && max === null) {
+        return currentMin === null && currentMax === null
+      }
+
+      if (min !== null && max !== null) {
+        return currentMin === min && currentMax === max
+      }
+
+      if (min !== null && max === null) {
+        return currentMin === min && currentMax === null
+      }
+
+      return false
     },
     [min_price, max_price],
   )
 
+  // Clear all filters
   const clearAllFilters = useCallback(() => {
-    setFilters({
-      vendors: [],
-      minRating: null,
-      categories: [],
-    })
     setMinPrice(null)
     setMaxPrice(null)
     setSearch(null)
-  }, [setFilters, setMinPrice, setMaxPrice, setSearch])
+  }, [setMinPrice, setMaxPrice, setSearch])
 
+  // Navigate to card details
   const onGetCard = useCallback(
-    (item: (typeof convertedCards)[0]) => {
-      const cardType = item.type?.toLowerCase() || ''
-
-      // DashPro shows DashProPurchase component
-      if (cardType === 'dashpro') {
-        setSelectedDashProCard(item)
-        setShowDashProPurchase(true)
-        return
+    (card: PublicCardResponse) => {
+      const cardId = card.card_id || card.id
+      if (cardId) {
+        navigate(`/card/${cardId}`)
       }
-
-      // Other card types - you can add navigation here if needed
-      console.log('Card clicked:', item.product, 'Type:', cardType)
     },
-    [setSelectedDashProCard, setShowDashProPurchase],
+    [navigate],
   )
 
   return (
@@ -328,7 +234,7 @@ export default function DashQards() {
               <div className="absolute top-1.5 left-14 w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.3)] rotate-[4deg] opacity-92 max-md:w-[220px] max-md:left-10 max-md:top-1">
                 <img src={heroImages.go} alt="DashGo card" className="w-full h-full object-cover" />
               </div>
-              <div className="absolute top-11 left-[110px] w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.3)] rotate-[-2deg] max-md:w-[220px] max-md:left-[88px] max-md:top-10">
+              <div className="absolute top-11 left-[110px] w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.3)] -rotate-2deg max-md:w-[220px] max-md:left-[88px] max-md:top-10">
                 <img src={heroImages.x} alt="DashX card" className="w-full h-full object-cover" />
               </div>
             </div>
@@ -339,69 +245,10 @@ export default function DashQards() {
       {/* All Qards Section */}
       <section id="cards-section" className="py-12 bg-white">
         <div className="wrapper">
-          <div className="flex justify-between items-end mb-8 gap-6 max-md:flex-col max-md:items-stretch max-md:gap-4">
-            <div>
-              <Text variant="h3" weight="bold" className="text-[#212529]">
-                All Gift Cards
-              </Text>
-              <p className="text-base text-grey-500">
-                Choose from {filteredQardsAll.length} available gift cards
-              </p>
-            </div>
-            <div className="flex items-center gap-4 flex-wrap">
-              {/* Search Input */}
-              <div className="flex-1 min-w-[200px] max-w-[400px]">
-                <SearchBox
-                  value={search || ''}
-                  onChange={(e) => setSearch(e.target.value || null)}
-                  placeholder="Search cards..."
-                  className="w-full"
-                />
-              </div>
-              <section className="flex items-center gap-4">
-                <div
-                  className="flex bg-[#f0f0f0] rounded-lg p-0.5"
-                  role="tablist"
-                  aria-label="Qard type"
-                >
-                  {cardTabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      role="tab"
-                      aria-selected={activeTab === tab.id}
-                      onClick={() => setActiveTab(tab.id as 'dashx' | 'dashgo' | 'dashpro')}
-                      className={`px-4 py-2 rounded-full font-bold text-sm transition-all ${
-                        activeTab === tab.id
-                          ? 'border-2 border-primary-500 text-primary-500'
-                          : 'border-2 border-[#e6e6e6] text-[#3b3b3b] hover:bg-white/50'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              <div>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="px-3 py-2 border-2 border-[#e6e6e6] rounded-lg bg-white font-semibold text-[#212529] cursor-pointer transition-colors focus:outline-none focus:border-primary-500"
-                >
-                  <option value="popular">Most Popular</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="newest">Newest First</option>
-                  <option value="rating">Highest Rated</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
           {/* E-commerce Layout */}
-          <div className="grid grid-cols-[280px_1fr] gap-8 items-start max-lg:grid-cols-[260px_1fr] max-md:grid-cols-1 max-md:gap-6">
+          <div className="flex gap-8 items-start max-md:flex-col max-md:gap-6">
             {/* Filter Sidebar */}
-            <aside className="bg-white border border-[#e6e6e6] rounded-xl sticky top-[88px] max-h-[calc(100vh-120px)] overflow-y-auto max-md:static max-md:max-h-none max-md:overflow-y-visible">
+            <aside className="bg-white border border-[#e6e6e6] rounded-xl sticky top-[120px] w-[280px] h-[calc(100vh-140px)] overflow-y-auto shrink-0 max-lg:w-[260px] max-md:static max-md:w-full max-md:h-auto max-md:max-h-none max-md:overflow-y-visible">
               {/* Filter Header */}
               <div className="flex justify-between items-start p-6 pb-4 border-b border-[#e6e6e6]">
                 <div className="flex-1">
@@ -437,7 +284,9 @@ export default function DashQards() {
                           type="radio"
                           value={tab.id}
                           checked={activeTab === tab.id}
-                          onChange={() => setActiveTab(tab.id as 'dashx' | 'dashgo' | 'dashpro')}
+                          onChange={() => {
+                            setActiveTab(tab.id as 'dashx' | 'dashgo' | 'dashpro' | 'dashpass')
+                          }}
                           className="hidden"
                         />
                         <div className="flex items-center justify-between w-full">
@@ -471,72 +320,6 @@ export default function DashQards() {
                   </button>
                 </div>
                 <div>
-                  {/* Vendor Filter */}
-                  <div className="px-6 pb-5">
-                    <div className="flex justify-between items-center mb-3 p-1.5 -mx-2 rounded-md cursor-pointer transition-colors hover:bg-primary-500/5">
-                      <h5 className="text-[15px] font-semibold text-[#212529]">Vendor</h5>
-                      <div className="flex items-center gap-2">
-                        {filters.vendors.length > 0 && (
-                          <span className="text-xs text-primary-500 font-semibold bg-primary-500/10 px-2 py-0.5 rounded-xl">
-                            {filters.vendors.length} selected
-                          </span>
-                        )}
-                        <button className="w-6 h-6 flex items-center justify-center text-grey-500 rounded-full transition-all hover:bg-primary-500/10 hover:text-primary-500">
-                          <Icon icon="bi:chevron-down" className="size-3" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="max-h-[230px] overflow-y-auto pr-2 -mr-2 scrollbar-thin scrollbar-thumb-[#ddd] scrollbar-track-[#f5f5f5]">
-                      <div className="grid gap-2">
-                        {availableVendors.map((vendor) => (
-                          <label
-                            key={vendor.value}
-                            className="flex items-center gap-3 p-2.5 rounded-md cursor-pointer transition-colors hover:bg-[#f8f9fa]"
-                          >
-                            <div className="relative">
-                              <input
-                                type="checkbox"
-                                value={vendor.value}
-                                checked={filters.vendors.includes(vendor.value)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setFilters({
-                                      vendors: [...filters.vendors, vendor.value],
-                                    })
-                                  } else {
-                                    setFilters({
-                                      vendors: filters.vendors.filter((v) => v !== vendor.value),
-                                    })
-                                  }
-                                }}
-                                className="opacity-0 absolute"
-                              />
-                              <div
-                                className={`w-[18px] h-[18px] border-2 rounded transition-all flex items-center justify-center ${
-                                  filters.vendors.includes(vendor.value)
-                                    ? 'bg-primary-500 border-primary-500'
-                                    : 'border-[#ddd] bg-white'
-                                }`}
-                              >
-                                {filters.vendors.includes(vendor.value) && (
-                                  <span className="text-white text-xs font-bold">✓</span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between flex-1">
-                              <span className="text-sm font-medium text-[#212529]">
-                                {vendor.label}
-                              </span>
-                              <span className="text-xs text-grey-500 bg-[#f0f0f0] px-2 py-0.5 rounded-lg font-medium">
-                                {vendor.count}
-                              </span>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Price Range Filter */}
                   <div className="px-6 pb-5 border-t border-[#f0f0f0]">
                     <div className="flex justify-between items-center mb-3 p-1.5 -mx-2 rounded-md cursor-pointer transition-colors hover:bg-primary-500/5">
@@ -615,231 +398,99 @@ export default function DashQards() {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Quality & Category Group */}
-                <div className="border-b border-[#f0f0f0] last:border-b-0">
-                  <div className="flex justify-between items-center p-5 pb-3 cursor-pointer transition-colors hover:bg-primary-500/5">
-                    <h4 className="text-[13px] font-bold text-[#212529] uppercase tracking-wider">
-                      Quality & Category
-                    </h4>
-                    <button className="w-7 h-7 flex items-center justify-center text-grey-500 rounded-full transition-all hover:bg-primary-500/10 hover:text-primary-500">
-                      <Icon icon="bi:chevron-down" className="size-3.5" />
-                    </button>
-                  </div>
-                  <div>
-                    {/* Rating Filter */}
-                    <div className="px-6 pb-5">
-                      <div className="flex justify-between items-center mb-3 p-1.5 -mx-2 rounded-md cursor-pointer transition-colors hover:bg-primary-500/5">
-                        <h5 className="text-[15px] font-semibold text-[#212529]">Minimum Rating</h5>
-                        <div className="flex items-center gap-2">
-                          {filters.minRating && (
-                            <span className="text-xs text-[#28a745] font-semibold bg-[#d4edda] px-2 py-0.5 rounded-xl">
-                              {filters.minRating}+ Stars
-                            </span>
-                          )}
-                          <button className="w-6 h-6 flex items-center justify-center text-grey-500 rounded-full transition-all hover:bg-primary-500/10 hover:text-primary-500">
-                            <Icon icon="bi:chevron-down" className="size-3" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="grid gap-2">
-                        {[5, 4, 3, 2, 1].map((rating) => (
-                          <label
-                            key={rating}
-                            className={`flex items-center gap-3 p-2.5 rounded-md cursor-pointer transition-all border-2 ${
-                              filters.minRating === rating
-                                ? 'bg-primary-500/5 border-primary-500/20'
-                                : 'border-transparent hover:bg-[#f8f9fa]'
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              value={rating}
-                              checked={filters.minRating === rating}
-                              onChange={(e) =>
-                                setFilters({
-                                  minRating: e.target.checked ? rating : null,
-                                })
-                              }
-                              className="hidden"
-                            />
-                            <div className="flex items-center gap-2.5">
-                              <div className="flex gap-0.5">
-                                {Array.from({ length: 5 }).map((_, n) => {
-                                  const starNumber = n + 1
-                                  return (
-                                    <Icon
-                                      key={starNumber}
-                                      icon={starNumber <= rating ? 'bi:star-fill' : 'bi:star'}
-                                      className={`size-3.5 ${
-                                        starNumber <= rating ? 'text-yellow-500' : 'text-[#ddd]'
-                                      }`}
-                                    />
-                                  )
-                                })}
-                              </div>
-                              <span className="text-sm font-medium text-[#212529]">
-                                {rating}+ Stars
-                              </span>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Category Filter */}
-                    <div className="px-6 pb-5 border-t border-[#f0f0f0]">
-                      <div className="flex justify-between items-center mb-3 p-1.5 -mx-2 rounded-md cursor-pointer transition-colors hover:bg-primary-500/5">
-                        <h5 className="text-[15px] font-semibold text-[#212529]">Category</h5>
-                        <div className="flex items-center gap-2">
-                          {filters.categories.length > 0 && (
-                            <span className="text-xs text-primary-500 font-semibold bg-primary-500/10 px-2 py-0.5 rounded-xl">
-                              {filters.categories.length} selected
-                            </span>
-                          )}
-                          <button className="w-6 h-6 flex items-center justify-center text-grey-500 rounded-full transition-all hover:bg-primary-500/10 hover:text-primary-500">
-                            <Icon icon="bi:chevron-down" className="size-3" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="max-h-[230px] overflow-y-auto pr-2 -mr-2 scrollbar-thin scrollbar-thumb-[#ddd] scrollbar-track-[#f5f5f5]">
-                        <div className="grid gap-2">
-                          {availableCategories.map((category) => (
-                            <label
-                              key={category.value}
-                              className="flex items-center gap-3 p-2.5 rounded-md cursor-pointer transition-colors hover:bg-[#f8f9fa]"
-                            >
-                              <div className="relative">
-                                <input
-                                  type="checkbox"
-                                  value={category.value}
-                                  checked={filters.categories.includes(category.value)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setFilters({
-                                        categories: [...filters.categories, category.value],
-                                      })
-                                    } else {
-                                      setFilters({
-                                        categories: filters.categories.filter(
-                                          (c) => c !== category.value,
-                                        ),
-                                      })
-                                    }
-                                  }}
-                                  className="opacity-0 absolute"
-                                />
-                                <div
-                                  className={`w-[18px] h-[18px] border-2 rounded transition-all flex items-center justify-center ${
-                                    filters.categories.includes(category.value)
-                                      ? 'bg-primary-500 border-primary-500'
-                                      : 'border-[#ddd] bg-white'
-                                  }`}
-                                >
-                                  {filters.categories.includes(category.value) && (
-                                    <span className="text-white text-xs font-bold">✓</span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center justify-between flex-1">
-                                <span className="text-sm font-medium text-[#212529]">
-                                  {category.label}
-                                </span>
-                                <span className="text-xs text-grey-500 bg-[#f0f0f0] px-2 py-0.5 rounded-lg font-medium">
-                                  {category.count}
-                                </span>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Filter Footer */}
-                <div className="p-4 border-t border-[#e6e6e6] bg-[#f8f9fa]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] text-grey-500 font-medium">
-                      {filters.vendors.length + filters.categories.length} filters active
-                    </span>
-                    <button
-                      onClick={clearAllFilters}
-                      className="flex items-center gap-1.5 text-xs text-grey-500 bg-white border border-[#ddd] cursor-pointer font-semibold px-3 py-1.5 rounded-2xl transition-all hover:bg-grey-500 hover:text-white hover:border-grey-500"
-                    >
-                      <Icon icon="bi:arrow-counterclockwise" className="size-3" />
-                      Reset All
-                    </button>
-                  </div>
+              {/* Filter Footer */}
+              <div className="p-4 border-t border-[#e6e6e6] bg-[#f8f9fa]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] text-grey-500 font-medium">
+                    {(() => {
+                      const activeFilters = [min_price, max_price, search].filter(Boolean).length
+                      return `${activeFilters} filter${activeFilters !== 1 ? 's' : ''} active`
+                    })()}
+                  </span>
+                  <button
+                    onClick={clearAllFilters}
+                    className="flex items-center gap-1.5 text-xs text-grey-500 bg-white border border-[#ddd] cursor-pointer font-semibold px-3 py-1.5 rounded-2xl transition-all hover:bg-grey-500 hover:text-white hover:border-grey-500"
+                  >
+                    <Icon icon="bi:arrow-counterclockwise" className="size-3" />
+                    Reset All
+                  </button>
                 </div>
               </div>
             </aside>
 
             {/* Products Main */}
-            <main>
-              <div className="mb-6">
-                <div className="flex flex-col gap-3">
-                  <span className="text-base font-bold text-[#212529]">
-                    {filteredQardsAll.length} Results
-                  </span>
-                  {(filters.vendors.length > 0 ||
-                    filters.categories.length > 0 ||
-                    min_price ||
-                    max_price ||
-                    filters.minRating ||
-                    search) && (
-                    <div className="flex flex-wrap gap-2">
-                      {filters.vendors.map((filter) => (
-                        <span
-                          key={filter}
-                          className="inline-flex items-center gap-1.5 bg-primary-500 text-white px-2 py-1 rounded-2xl text-xs font-semibold"
-                        >
-                          {filter}
-                          <button
-                            onClick={() =>
-                              setFilters({
-                                vendors: filters.vendors.filter((v) => v !== filter),
-                              })
-                            }
-                            className="bg-transparent border-none text-white cursor-pointer p-0 w-4 h-4 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
-                          >
-                            <Icon icon="bi:x" className="size-3" />
-                          </button>
-                        </span>
-                      ))}
-                      {filters.categories.map((category) => (
-                        <span
-                          key={category}
-                          className="inline-flex items-center gap-1.5 bg-primary-500 text-white px-2 py-1 rounded-2xl text-xs font-semibold"
-                        >
-                          {category}
-                          <button
-                            onClick={() =>
-                              setFilters({
-                                categories: filters.categories.filter((c) => c !== category),
-                              })
-                            }
-                            className="bg-transparent border-none text-white cursor-pointer p-0 w-4 h-4 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
-                          >
-                            <Icon icon="bi:x" className="size-3" />
-                          </button>
-                        </span>
-                      ))}
-                      {search && (
-                        <span className="inline-flex items-center gap-1.5 bg-primary-500 text-white px-2 py-1 rounded-2xl text-xs font-semibold">
-                          Search: "{search}"
-                          <button
-                            onClick={() => setSearch(null)}
-                            className="bg-transparent border-none text-white cursor-pointer p-0 w-4 h-4 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
-                          >
-                            <Icon icon="bi:x" className="size-3" />
-                          </button>
-                        </span>
-                      )}
-                    </div>
-                  )}
+            <main className="flex flex-col gap-4 flex-1 min-w-0">
+              <section className="flex flex-col gap-4">
+                <div className="pt-2 pb-4 pr-4 border-b border-[#e6e6e6]">
+                  <Text variant="h2" weight="medium" className="text-[#212529]">
+                    Results for "All Gift Cards" in{' '}
+                    <span className="font-normal">({filteredQardsAll.length})</span>
+                  </Text>
+                  <p className="py-2 opacity-0">check</p>
                 </div>
-              </div>
+
+                <div className="flex items-center gap-2 justify-end">
+                  <Text variant="p" weight="medium" className="text-[#212529]">
+                    Sort by:
+                  </Text>
+                  <Controller
+                    name="sortBy"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        options={sortOptions}
+                        placeholder="Select sort by"
+                        className="w-[200px]"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
+                    )}
+                  />
+                </div>
+              </section>
+
+              <section className="flex flex-col gap-3">
+                {(min_price || max_price || search) && (
+                  <div className="flex flex-wrap gap-2">
+                    {min_price && (
+                      <span className="inline-flex items-center gap-1.5 bg-primary-500 text-white px-2 py-1 rounded-2xl text-xs font-semibold">
+                        Min: ${min_price}
+                        <button
+                          onClick={() => setMinPrice(null)}
+                          className="bg-transparent border-none text-white cursor-pointer p-0 w-4 h-4 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
+                        >
+                          <Icon icon="bi:x" className="size-3" />
+                        </button>
+                      </span>
+                    )}
+                    {max_price && (
+                      <span className="inline-flex items-center gap-1.5 bg-primary-500 text-white px-2 py-1 rounded-2xl text-xs font-semibold">
+                        Max: ${max_price}
+                        <button
+                          onClick={() => setMaxPrice(null)}
+                          className="bg-transparent border-none text-white cursor-pointer p-0 w-4 h-4 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
+                        >
+                          <Icon icon="bi:x" className="size-3" />
+                        </button>
+                      </span>
+                    )}
+                    {search && (
+                      <span className="inline-flex items-center gap-1.5 bg-primary-500 text-white px-2 py-1 rounded-2xl text-xs font-semibold">
+                        Search: "{search}"
+                        <button
+                          onClick={() => setSearch(null)}
+                          className="bg-transparent border-none text-white cursor-pointer p-0 w-4 h-4 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
+                        >
+                          <Icon icon="bi:x" className="size-3" />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                )}
+              </section>
 
               {activeTab === 'dashpro' ? (
                 <div className="w-full">
@@ -856,7 +507,7 @@ export default function DashQards() {
                   </div>
                   <h3 className="text-2xl font-bold text-[#212529] mb-2">No gift cards found</h3>
                   <p className="text-base mb-6">Try adjusting your filters or search criteria</p>
-                  <Button variant="outline" onClick={clearAllFilters} className="!rounded-full">
+                  <Button variant="outline" onClick={clearAllFilters} className="rounded-full!">
                     Clear All Filters
                   </Button>
                 </div>
@@ -866,7 +517,31 @@ export default function DashQards() {
                     {sortedQards
                       .filter((card) => card.type?.toLowerCase() !== 'dashpro')
                       .map((card) => (
-                        <CardItems key={card.id} {...card} onGetQard={() => onGetCard(card)} />
+                        <CardItems
+                          key={card.card_id || card.id}
+                          id={card.card_id || card.id}
+                          product={card.product}
+                          vendor_name={card.vendor_name || ''}
+                          rating={card.rating || 0}
+                          price={card.price}
+                          currency={card.currency}
+                          type={card.type as 'DashX' | 'dashpro' | 'dashpass' | 'dashgo'}
+                          description={card.description}
+                          expiry_date={card.expiry_date}
+                          terms_and_conditions={card.terms_and_conditions || []}
+                          created_at={card.created_at || new Date().toISOString()}
+                          created_by={null}
+                          fraud_flag={false}
+                          fraud_notes={null}
+                          images={card.images || []}
+                          is_activated={false}
+                          issue_date={card.created_at || new Date().toISOString()}
+                          last_modified_by={null}
+                          status={card.status || 'active'}
+                          updated_at={card.updated_at || new Date().toISOString()}
+                          vendor_id={card.vendor_id}
+                          onGetQard={() => onGetCard(card)}
+                        />
                       ))}
                   </div>
                 </>

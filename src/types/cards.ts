@@ -37,8 +37,8 @@ export type CardImageResponse = {
   id: number
   file_url: string
   file_name: string
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 export type CardFileResponse = {
@@ -97,25 +97,21 @@ export type PaginationResponse = {
 
 export type PublicCardResponse = {
   card_id: number
-  created_at: string
-  currency: string
-  description: string
-  expiry_date: string
-  images: CardImageResponse[]
-  price: string
-  product: string
-  rating: number
-  recipient_count: string
-  status: string
-  terms_and_conditions: CardFileResponse[]
-  file_name: string
-  file_url: string
-  id: number
-  length: number
-  type: string
-  updated_at: string
   vendor_id: number
   vendor_name: string | null
+  product: string
+  description: string
+  type: 'DashX' | 'dashPass'
+  price: string
+  currency: string
+  expiry_date: string
+  status: string
+  rating: number
+  created_at: string
+  updated_at: string
+  recipient_count: string
+  images: CardImageResponse[]
+  terms_and_conditions: CardFileResponse[]
 }
 
 export type PublicCardsResponse = {

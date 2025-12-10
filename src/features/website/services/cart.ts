@@ -21,3 +21,7 @@ export const getCartItem = async (id: number): Promise<CartItemResponse> => {
 export const deleteCartItem = async (id: number): Promise<void> => {
   await axiosClient.delete(`/carts/${id}`)
 }
+
+export const deleteCartItemRecipient = async (cart_item_id: number): Promise<void> => {
+  await axiosClient.delete(`/carts/items/${cart_item_id}`)
+}

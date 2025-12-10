@@ -4,20 +4,10 @@ import { Icon } from '@/libs'
 import { Button, Loader, Text, Modal } from '@/components'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import { useCart } from '../../hooks/useCart'
-import {
-  assignRecipient,
-  deleteRecipient,
-  getRecipients,
-  updateRecipient,
-  updateRecipientAmount,
-} from '@/features/dashboard/services'
-import type {
-  AssignRecipientPayload,
-  RecipientResponse,
-  CartItemResponse,
-  UpdateRecipientPayload,
-  UpdateRecipientAmountPayload,
-} from '@/types/cart'
+import { usePersistedModalState } from '@/hooks'
+import { MODAL_NAMES } from '@/utils/constants'
+import { deleteRecipient, getRecipients } from '@/features/dashboard/services'
+import type { RecipientResponse, CartItemResponse } from '@/types/cart'
 import { useToast } from '@/hooks'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
@@ -31,9 +21,15 @@ export default function ViewBag() {
   const toast = useToast()
   const queryClient = useQueryClient()
   const { cartItems, isLoading: isLoadingCart } = useCart()
-  const [selectedCartItem, setSelectedCartItem] = useState<CartItemResponse | null>(null)
-  const [selectedRecipient, setSelectedRecipient] = useState<RecipientResponse | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const modal = usePersistedModalState<{
+    cart_item_id: number
+    cardType?: string
+    cardProduct?: string
+    cardCurrency?: string
+    amount?: number
+  }>({
+    paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
+  })
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [recipientToDelete, setRecipientToDelete] = useState<RecipientResponse | null>(null)
 
@@ -42,21 +38,6 @@ export default function ViewBag() {
     queryKey: ['cart-recipients'],
     queryFn: () => getRecipients(),
     enabled: Array.isArray(cartItems) && cartItems.length > 0,
-  })
-
-  // Assign recipient mutation
-  const assignMutation = useMutation({
-    mutationFn: assignRecipient,
-    onSuccess: () => {
-      toast.success('Recipient assigned successfully')
-      queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-      setIsModalOpen(false)
-      setSelectedCartItem(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to assign recipient')
-    },
   })
 
   // Delete cart item mutation
@@ -84,37 +65,7 @@ export default function ViewBag() {
     },
   })
 
-  // Update recipient mutation (for DashPass and DashX)
-  const updateRecipientMutation = useMutation({
-    mutationFn: updateRecipient,
-    onSuccess: () => {
-      toast.success('Recipient updated successfully')
-      queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-      setIsModalOpen(false)
-      setSelectedCartItem(null)
-      setSelectedRecipient(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to update recipient')
-    },
-  })
-
-  // Update recipient amount mutation (for DashGo and DashPro)
-  const updateRecipientAmountMutation = useMutation({
-    mutationFn: updateRecipientAmount,
-    onSuccess: () => {
-      toast.success('Recipient updated successfully')
-      queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-      setIsModalOpen(false)
-      setSelectedCartItem(null)
-      setSelectedRecipient(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to update recipient')
-    },
-  })
+  // Note: PurchaseModal handles recipient assignment/updates internally
 
   // Construct full image URL from file_url
   const getImageUrl = (fileUrl: string | undefined) => {
@@ -148,10 +99,49 @@ export default function ViewBag() {
     }
   }
 
-  // Use cart items directly without grouping
+  // Flatten cart items from nested structure
+  // cartItems is an array of carts, each cart has an items array
+  type FlattenedCartItem = {
+    cart_id: number
+    card_id: number
+    product: string
+    vendor_name?: string
+    type: string
+    currency: string
+    price: string
+    amount: string
+    images?: Array<{ file_url: string; file_name: string }>
+    cart_item_id?: number
+    recipient_count?: string
+  }
+
   const displayCartItems = useMemo(() => {
     if (!Array.isArray(cartItems)) return []
-    return cartItems
+
+    const flattened: FlattenedCartItem[] = []
+
+    cartItems.forEach((cart: CartItemResponse) => {
+      // Each cart has an items array
+      if (cart.items && Array.isArray(cart.items)) {
+        cart.items.forEach((item) => {
+          flattened.push({
+            cart_id: cart.cart_id,
+            card_id: item.card_id,
+            product: item.product,
+            vendor_name: undefined, // May not be in nested structure
+            type: item.type,
+            currency: 'GHS', // Default, adjust if available
+            price: item.total_amount,
+            amount: item.total_amount,
+            images: item.images,
+            cart_item_id: item.cart_item_id,
+            recipient_count: cart.item_count, // Use cart's item_count
+          })
+        })
+      }
+    })
+
+    return flattened
   }, [cartItems])
 
   // Group recipients by cart_id
@@ -167,16 +157,32 @@ export default function ViewBag() {
     return grouped
   }, [recipients])
 
-  const handleAddRecipient = (item: CartItemResponse) => {
-    setSelectedCartItem(item)
-    setSelectedRecipient(null)
-    setIsModalOpen(true)
+  const handleAddRecipient = (item: FlattenedCartItem) => {
+    if (!item.cart_item_id) {
+      toast.error('Cart item ID is required')
+      return
+    }
+    modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
+      cart_item_id: item.cart_item_id,
+      cardType: item.type,
+      cardProduct: item.product,
+      cardCurrency: item.currency || 'GHS',
+      amount: parseFloat(item.amount || '0'),
+    })
   }
 
-  const handleEditRecipient = (item: CartItemResponse, recipient: RecipientResponse) => {
-    setSelectedCartItem(item)
-    setSelectedRecipient(recipient)
-    setIsModalOpen(true)
+  const handleEditRecipient = (item: FlattenedCartItem, recipient: RecipientResponse) => {
+    if (!item.cart_item_id) {
+      toast.error('Cart item ID is required')
+      return
+    }
+    modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
+      cart_item_id: item.cart_item_id,
+      cardType: item.type,
+      cardProduct: item.product,
+      cardCurrency: item.currency || 'GHS',
+      amount: recipient.amount,
+    })
   }
 
   const handleDeleteRecipient = (recipient: RecipientResponse) => {
@@ -203,64 +209,8 @@ export default function ViewBag() {
     }
   }
 
-  const handleSaveRecipient = (data: {
-    amount: number
-    name?: string
-    phone?: string
-    email?: string
-    message?: string
-    assign_to_self?: boolean
-  }) => {
-    if (!selectedCartItem) return
-
-    // If editing an existing recipient
-    if (selectedRecipient) {
-      const normalizedType = selectedCartItem.type?.toLowerCase()
-      const isDashProOrDashGo = normalizedType === 'dashpro' || normalizedType === 'dashgo'
-
-      if (isDashProOrDashGo) {
-        // Use updateRecipientAmount for DashPro and DashGo
-        const payload: UpdateRecipientAmountPayload = {
-          id: selectedRecipient.id,
-          cart_id: selectedCartItem.cart_id,
-          amount: data.amount.toString(),
-          name: data.name || selectedRecipient.name,
-          email: data.email || selectedRecipient.email,
-          phone: data.phone || selectedRecipient.phone,
-          message: data.message || selectedRecipient.message || '',
-        }
-        updateRecipientAmountMutation.mutate(payload)
-      } else {
-        // Use updateRecipient for DashPass and DashX
-        const payload: UpdateRecipientPayload = {
-          id: selectedRecipient.id,
-          cart_id: selectedCartItem.cart_id,
-          name: data.name || selectedRecipient.name,
-          email: data.email || selectedRecipient.email,
-          phone: data.phone || selectedRecipient.phone,
-          message: data.message || selectedRecipient.message || '',
-        }
-        updateRecipientMutation.mutate(payload)
-      }
-    } else {
-      // Adding a new recipient
-      const payload: AssignRecipientPayload = {
-        cart_id: selectedCartItem.cart_id,
-        quantity: 1,
-        amount: data.amount,
-        message: data.message || '',
-        assign_to_self: data.assign_to_self,
-      }
-
-      if (!data.assign_to_self) {
-        payload.name = data.name
-        payload.email = data.email
-        payload.phone = data.phone
-      }
-
-      assignMutation.mutate(payload)
-    }
-  }
+  // Note: PurchaseModal handles save internally via useAssignRecipientService
+  // The modal state is managed via URL params through usePersistedModalState
 
   const handleRemoveItem = (cartId: number) => {
     deleteMutation.mutate(cartId)
@@ -278,12 +228,13 @@ export default function ViewBag() {
   }
 
   const subtotal = Array.isArray(cartItems)
-    ? cartItems.reduce((total: number, item: CartItemResponse) => {
-        return total + parseFloat(item.amount)
+    ? cartItems.reduce((total: number, cart: CartItemResponse) => {
+        const amount = parseFloat(cart.total_amount || '0')
+        return total + amount
       }, 0)
     : 0
 
-  const totalItems = Array.isArray(cartItems) ? cartItems.length : 0
+  const totalItems = displayCartItems.length
 
   if (isLoadingCart) {
     return (
@@ -316,8 +267,8 @@ export default function ViewBag() {
                 </Button>
               </div>
             ) : (
-              displayCartItems.map((item: CartItemResponse) => {
-                const cardBackground = getCardBackground(item.type)
+              displayCartItems.map((item: FlattenedCartItem) => {
+                const cardBackground = getCardBackground(item.type || '')
                 const cardImageUrl = item.images?.[0]?.file_url
                   ? getImageUrl(item.images[0].file_url)
                   : null
@@ -325,7 +276,7 @@ export default function ViewBag() {
                 // Get recipients for this cart item
                 const itemRecipients = recipientsByCart[item.cart_id] || []
                 const quantity = parseInt(item.recipient_count || '1', 10)
-                const displayPrice = parseFloat(item.amount)
+                const displayPrice = parseFloat(item.amount || '0')
 
                 return (
                   <div
@@ -358,12 +309,14 @@ export default function ViewBag() {
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <h3 className="font-semibold text-gray-900 text-lg">
-                              {item.vendor_name}: {item.product}
+                              {item.vendor_name
+                                ? `${item.vendor_name}: ${item.product}`
+                                : item.product}
                             </h3>
                             <p className="text-sm text-gray-500 mt-1">Type: {item.type}</p>
                           </div>
                           <button
-                            onClick={() => handleRemoveItem(item.cart_id)}
+                            onClick={() => handleRemoveItem(item.cart_item_id || item.cart_id)}
                             className="text-gray-400 hover:text-red-500 transition-colors"
                             aria-label="Remove item"
                           >
@@ -373,7 +326,7 @@ export default function ViewBag() {
 
                         <div className="mb-4">
                           <Text variant="p" weight="bold" className="text-primary-500 text-lg">
-                            {item.currency} {displayPrice.toFixed(2)}
+                            {item.currency || 'GHS'} {displayPrice.toFixed(2)}
                           </Text>
                         </div>
 
@@ -387,7 +340,7 @@ export default function ViewBag() {
                                 if (quantity > 1) {
                                   // TODO: Implement quantity decrease API call
                                 } else {
-                                  handleRemoveItem(item.cart_id)
+                                  handleRemoveItem(item.cart_item_id || item.cart_id)
                                 }
                               }}
                               className="p-2 hover:bg-gray-50 rounded-l-full transition-colors"
@@ -532,34 +485,8 @@ export default function ViewBag() {
         </div>
       </div>
 
-      {/* Recipient Modal */}
-      {selectedCartItem && (
-        <PurchaseModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false)
-            setSelectedCartItem(null)
-            setSelectedRecipient(null)
-          }}
-          onSave={handleSaveRecipient}
-          cardType={selectedCartItem.type}
-          cardProduct={selectedCartItem.product}
-          cardCurrency={selectedCartItem.currency}
-          initialData={
-            selectedRecipient
-              ? {
-                  amount: selectedRecipient.amount,
-                  name: selectedRecipient.name,
-                  email: selectedRecipient.email,
-                  phone: selectedRecipient.phone,
-                  message: selectedRecipient.message || '',
-                }
-              : {
-                  amount: parseFloat(selectedCartItem.amount),
-                }
-          }
-        />
-      )}
+      {/* Recipient Modal - PurchaseModal uses URL params via usePersistedModalState */}
+      <PurchaseModal />
 
       {/* Delete Recipient Confirmation Modal */}
       <Modal isOpen={isDeleteModalOpen} setIsOpen={setIsDeleteModalOpen} panelClass="!max-w-md">
