@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router'
 
 import DashXIllustration from '@/assets/svgs/Dashx_bg.svg'
-import DashGoIllustration from '@/assets/svgs/Dashgo_bg.svg'
-import DashProIllustration from '@/assets/svgs/Dashpro_bg.svg'
+import DashGoIllustration from '@/assets/svgs/dashgo_bg.svg'
+import DashProIllustration from '@/assets/svgs/dashpro_bg.svg'
 import { CustomIcon, Dropdown, Text } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
