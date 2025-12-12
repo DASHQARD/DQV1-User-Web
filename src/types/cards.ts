@@ -118,6 +118,6 @@ export type PublicCardsResponse = {
   status: string
   statusCode: number
   message: string
-  data: PublicCardsResponse[]
+  data: PublicCardResponse[]
   pagination: PaginationResponse
 }

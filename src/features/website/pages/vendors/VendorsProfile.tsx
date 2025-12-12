@@ -5,8 +5,7 @@ import { Icon } from '@/libs'
 import React from 'react'
 import { CardItems } from '../../components'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
-import { usePublicVendors } from '../../hooks'
-import { useGetVendorCards } from '@/features/admin/hooks'
+import { useCards, usePublicVendors } from '../../hooks'
 import { useCart } from '../../hooks/useCart'
 import { useCartStore } from '@/stores/cart'
 import { useForm } from 'react-hook-form'
@@ -20,7 +19,9 @@ export default function VendorsProfile() {
   const { data: vendorDetailsResponse, isLoading: isLoadingVendor } = usePublicVendors()
   const vendorDetails = vendorDetailsResponse?.data?.[0]
   console.log('vendorDetails', vendorDetails)
-  const { data: vendorCards = [] } = useGetVendorCards(vendor_id || '')
+  const { usePublicVendorCardsService } = useCards()
+  const { data: vendorCardsResponse } = usePublicVendorCardsService(vendor_id || '')
+  const vendorCards = vendorCardsResponse?.data || []
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
 
@@ -28,7 +29,7 @@ export default function VendorsProfile() {
   const featuredCard = React.useMemo(() => {
     if (vendorCards.length === 0) return null
     // Find first DashGo card
-    const dashGoCard = vendorCards.find((card) => card.type?.toLowerCase() === 'dashgo')
+    const dashGoCard = vendorCards.find((card: any) => card.type?.toLowerCase() === 'dashgo')
     // Return DashGo card if found, otherwise return first card
     return dashGoCard || vendorCards[0]
   }, [vendorCards])
@@ -48,7 +49,7 @@ export default function VendorsProfile() {
     }
 
     await addToCartAsync({
-      card_id: featuredCard.id,
+      card_id: featuredCard.card_id,
       amount: cardAmount,
       quantity: 1,
     })
@@ -309,7 +310,7 @@ export default function VendorsProfile() {
                 : 'flex flex-col gap-4'
             }`}
           >
-            {vendorCards.map((card, idx) => (
+            {vendorCards.map((card: any, idx: number) => (
               <CardItems
                 key={idx}
                 {...card}

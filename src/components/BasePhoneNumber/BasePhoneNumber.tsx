@@ -1,10 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import flags from 'react-phone-number-input/flags'
 
 import { cn, Icon } from '@/libs'
-
-import { InputLabel } from '../InputLabel'
-import { ErrorText, Text } from '../Text'
+import { ErrorText } from '../Text'
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: any
@@ -17,164 +14,77 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   type?: any
   error?: any
   maxLength?: any
-  placeholder?: string
 }
 
 export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      options,
-      id,
-      error,
-      selectedVal,
-      handleChange,
-      label,
-      isRequired,
-      name,
-      maxLength,
-      placeholder,
-    },
-    ref,
-  ) => {
-    const { code, number } = useMemo(() => {
-      const normalizedValue =
-        typeof selectedVal === 'string' ? selectedVal.trim() : (selectedVal ?? '')
+  ({ options, id, error, selectedVal, handleChange, label, isRequired, name, maxLength }, ref) => {
+    const code = useMemo(() => {
+      const value = selectedVal?.split('-')[0]
+      return value
+    }, [selectedVal])
 
-      if (!normalizedValue) {
-        return { code: '', number: '' }
-      }
-
-      if (normalizedValue.includes('-')) {
-        const [countryCode, localNumber = ''] = normalizedValue.split('-')
-        return { code: countryCode, number: localNumber }
-      }
-
-      const dialCodeMatch = normalizedValue.match(/^(\+\d{1,4})(\d*)$/)
-      if (dialCodeMatch) {
-        return {
-          code: dialCodeMatch[1],
-          number: dialCodeMatch[2],
-        }
-      }
-
-      if (options?.length) {
-        const matchedOption = options.find((option: any) => normalizedValue.startsWith(option.code))
-        if (matchedOption) {
-          return {
-            code: matchedOption.code,
-            number: normalizedValue.slice(matchedOption.code.length),
-          }
-        }
-      }
-
-      return { code: '', number: normalizedValue }
-    }, [selectedVal, options])
+    const number = useMemo(() => {
+      const value = selectedVal?.split('-')[1]
+      return value || ''
+    }, [selectedVal])
 
     const [isOpen, setIsOpen] = useState(false)
     const [displayImage, setDisplayImage] = useState('')
-    const [selectedCountryCode, setSelectedCountryCode] = useState<string>('')
     const [query, setQuery] = useState('')
     const [countryCode, setCountryCode] = useState(code)
     const [value, setValue] = useState(number)
 
     const inputRef = React.useRef<HTMLDivElement>(null)
-    const prevSelectedValRef = React.useRef<string | undefined>(selectedVal)
-    const isInternalUpdateRef = React.useRef(false)
 
     const isNumber = /^\d+$/
 
-    // Initialize with default option on mount
+    const setDefault = (options: any) => {
+      // Default to Ghana (+233)
+      const ghanaOption = options?.find((option: any) => {
+        return option?.code === '+233' || option?.label === 'Ghana'
+      })
+      return ghanaOption || options?.[0]
+    }
+
     useEffect(() => {
-      if (options && !countryCode) {
-        // eslint-disable-next-line react-hooks/immutability
-        const option = setDefault(options)
-        if (option?.code) {
-          setCountryCode(option.code)
-          setDisplayImage(option.image)
-          setSelectedCountryCode(option.countryCode || '')
-        }
-      }
-    }, [options, countryCode])
+      if (!options?.length) return
 
-    // Keep local state in sync when parsed code/number changes (e.g. options load late)
+      const option = setDefault(options)
+      // Initialize state from options prop only if not already set
+      if (option?.code && !countryCode) {
+        setCountryCode(option.code)
+      }
+      if (option?.image && !displayImage) {
+        setDisplayImage(option.image)
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [options])
+
     useEffect(() => {
-      if (code && code !== countryCode) {
-        setCountryCode(code)
-      }
-      if (number !== undefined && number !== value) {
-        setValue(number)
-      }
-    }, [code, number, countryCode, value])
-
-    // Sync state with props when selectedVal changes externally (but don't trigger handleChange)
-    useEffect(() => {
-      // Skip if this update came from our own internal change
-      if (isInternalUpdateRef.current) {
-        isInternalUpdateRef.current = false
-        prevSelectedValRef.current = selectedVal
-        return
-      }
-
-      // Only update if selectedVal actually changed from outside
-      if (selectedVal !== prevSelectedValRef.current) {
-        prevSelectedValRef.current = selectedVal
-
-        const newCode = selectedVal?.split('-')[0]
-        const newNumber = selectedVal?.split('-')[1] || ''
-
-        if (newCode && newCode !== countryCode) {
-          setCountryCode(newCode)
-        }
-        if (newNumber !== value) {
-          setValue(newNumber)
-        }
-      }
-    }, [selectedVal, countryCode, value])
-
-    // Helper function to notify parent of changes (only on user interaction)
-    const notifyChange = React.useCallback(
-      (newCountryCode: string, newValue: string) => {
-        if (!handleChange) return
-
-        const combinedValue = newValue ? `${newCountryCode}-${newValue}` : ''
-        isInternalUpdateRef.current = true
-        prevSelectedValRef.current = combinedValue
-        handleChange(combinedValue)
-      },
-      [handleChange],
-    )
+      if (value) handleChange(countryCode + '-' + value)
+      else handleChange('')
+    }, [countryCode, value, handleChange])
 
     const selectOption = (option: any) => {
       setQuery(() => '')
       setDisplayImage(option.image)
-      setSelectedCountryCode(option.countryCode || '')
-      const newCountryCode = option.code
-      setCountryCode(newCountryCode)
-      setIsOpen((isOpen) => !isOpen)
-      // Notify parent immediately when user selects a country
-      notifyChange(newCountryCode, value)
+      setCountryCode(option.code)
+      setIsOpen(false)
     }
 
-    const setDefault = (options: any) => {
-      const value = options?.filter((option: any) => {
-        if (option?.code === '+233' || option?.label === 'Ghana') return option
-      })
-      return value[0]
+    const getDisplayValue = () => {
+      if (query) return query
+      if (countryCode) return countryCode
+      return ''
     }
 
     const filter = (options: any) => {
-      if (!query) return options
-      const lowerQuery = query.toLowerCase()
-      return options?.filter(
-        (option: any) =>
-          option?.code?.toLowerCase().indexOf(lowerQuery) > -1 ||
-          option?.label?.toLowerCase().indexOf(lowerQuery) > -1,
-      )
+      return options?.filter((option: any) => option?.code?.indexOf(query) > -1)
     }
 
     useEffect(() => {
-      function closeMenu(e: any) {
-        if (inputRef.current && isOpen && !inputRef.current.contains(e.target)) {
+      function closeMenu(e: MouseEvent) {
+        if (inputRef.current && isOpen && !inputRef.current.contains(e.target as Node)) {
           setIsOpen(false)
         }
       }
@@ -188,118 +98,78 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
       }
     }, [isOpen])
 
-    function toggle(e?: React.MouseEvent) {
-      e?.stopPropagation()
+    function toggle(e: React.MouseEvent) {
+      e.stopPropagation()
       setIsOpen(!isOpen)
     }
 
-    const computedInputClassName = cn(
-      'w-full border-none min-w-[0px] !outline-0 !bg-[transparent] self-stretch outline-none text-grey-600',
-      'placeholder:text-gray-300 disabled:cursor-not-allowed',
-    )
-
     return (
-      <div className={cn(`grid`)}>
+      <div className={cn(`grid gap-2`)}>
         {label ? (
-          <InputLabel className="flex gap-1 items-center font-family-figtree" htmlFor={id}>
+          <label className={cn(`text-sm font-medium`)} htmlFor={id}>
             {label}
             {isRequired && <span className="text-error"> *</span>}
-          </InputLabel>
+          </label>
         ) : null}
         <div
           ref={inputRef}
-          className={`flex gap-4 border border-gray-300 rounded-lg h-12 items-center px-3 relative`}
+          className={`dropdown flex gap-4 border border-[#CDD3D3] rounded-lg h-12 items-center px-6 relative`}
         >
-          <div className={cn(`relative`)}>
-            <div
-              aria-hidden
-              className={cn(`flex items-center gap-1 cursor-pointer`)}
-              onClick={toggle}
-            >
-              <div className="flex items-center gap-1">
-                {selectedCountryCode && flags[selectedCountryCode as keyof typeof flags] ? (
-                  React.createElement(
-                    flags[selectedCountryCode as keyof typeof flags] as React.ComponentType<{
-                      title?: string
-                      className?: string
-                    }>,
-                    {
-                      title: selectedCountryCode,
-                      className: 'w-6 h-6 object-contain',
-                    },
-                  )
-                ) : displayImage ? (
-                  <img
-                    className="object-contain"
-                    src={displayImage}
-                    alt={''}
-                    width={24}
-                    height={24}
-                  />
-                ) : null}
-                <Text variant="span" weight="normal" className="text-gray-600">
-                  {countryCode || '+233'}
-                </Text>
-              </div>
-
-              <div
+          <div className={cn(`relative  rounded-md bg-white-100`)}>
+            <div className={cn(`flex items-center gap-2 py-1 cursor-pointer`)} onClick={toggle}>
+              {displayImage && (
+                <img
+                  className="image shrink-0"
+                  src={displayImage}
+                  alt={''}
+                  width={24}
+                  height={24}
+                />
+              )}
+              <input
                 className={cn(
-                  `transition-transform ${isOpen ? 'rotate-180' : ''} border-r border-gray-200 pr-2`,
+                  `font-light bg-transparent cursor-pointer outline-none w-[50px] shrink-0`,
                 )}
+                type="text"
+                value={getDisplayValue()}
+                onClick={toggle}
+                name={name}
+                placeholder="Select..."
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  setCountryCode('')
+                }}
+                readOnly
+              />
+              <div
+                className={cn(`caret transition-all -ml-4 shrink-0 ${isOpen ? 'rotate-180' : ''}`)}
               >
-                <Icon icon="hugeicons:arrow-down-01" className="text-gray-400" />
+                <Icon icon="bi:caret-down-fill" className="size-4" />
               </div>
             </div>
             {isOpen && (
               <div
                 className={cn(
-                  `absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] overflow-y-auto min-w-[200px]`,
+                  `absolute left-0 top-full mt-1 w-full bg-white border border-[#CDD3D3] rounded-lg shadow-lg z-50 max-h-[200px] overflow-y-auto`,
                 )}
               >
                 {options?.length ? (
-                  <div className="max-h-[200px] overflow-y-auto">
-                    {filter(options)?.map((option: any) => (
-                      <div
-                        aria-hidden
-                        onClick={() => selectOption(option)}
-                        className={cn(
-                          `flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer ${
-                            option.code === countryCode ? 'bg-gray-100' : ''
-                          }`,
-                        )}
-                        key={`${option.code}-${option.label}`}
-                      >
-                        {option.countryCode && flags[option.countryCode as keyof typeof flags] ? (
-                          React.createElement(
-                            flags[option.countryCode as keyof typeof flags] as React.ComponentType<{
-                              title?: string
-                              className?: string
-                            }>,
-                            {
-                              title: option.countryCode,
-                              className: 'w-6 h-6 object-contain',
-                            },
-                          )
-                        ) : option.image ? (
-                          <img
-                            className="object-contain"
-                            src={option.image}
-                            alt=""
-                            width={24}
-                            height={24}
-                          />
-                        ) : (
-                          <div className="w-6 h-6 bg-gray-200 rounded" />
-                        )}
-                        <span className="text-gray-700 font-medium">{option.code}</span>
-                        {option.label && (
-                          <span className="text-gray-500 text-sm ml-auto truncate">
-                            {option.label}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  filter(options)?.map((option: any) => (
+                    <div
+                      onClick={() => selectOption(option)}
+                      className={cn(
+                        `option flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer ${
+                          option.code === countryCode ? 'bg-primary-50 text-primary-700' : ''
+                        }`,
+                      )}
+                      key={`${option.code}-${option.label}`}
+                    >
+                      {option.image ? (
+                        <img className="image" src={option.image} alt="" width={24} height={24} />
+                      ) : null}
+                      <span>{option.code}</span>
+                    </div>
+                  ))
                 ) : (
                   <div className={cn(`p-[12px_24px]`)}>No Options</div>
                 )}
@@ -311,20 +181,15 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
             maxLength={maxLength}
             value={value}
             data-testid={'phoneNumber'}
-            className={cn(computedInputClassName, 'placeholder:text-gray-300 placeholder:text-sm')}
+            className={cn(`w-full font-light bg-transparent outline-none`)}
             name={name}
-            placeholder={placeholder}
+            placeholder="Enter number"
             onChange={(e) => {
-              if (isNumber.test(e.target.value) || e.target.value === '') {
-                const newValue = e.target.value
-                setValue(newValue)
-                // Immediately update parent form when user types
-                notifyChange(countryCode, newValue)
-              }
+              if (isNumber.test(e.target.value) || e.target.value === '') setValue(e.target.value)
             }}
           />
         </div>
-        <ErrorText error={error} />
+        {error && <ErrorText error={error} />}
       </div>
     )
   },

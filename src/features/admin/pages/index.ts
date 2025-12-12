@@ -1,6 +1,0 @@
-export * from './home'
-export * from './login'
-export * from './vendors'
-export * from './customers'
-export * from './admins'
-export * from './onboarding'

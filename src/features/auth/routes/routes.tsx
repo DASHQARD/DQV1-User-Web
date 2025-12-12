@@ -1,6 +1,5 @@
 import type { RouteObject } from 'react-router'
 import { CreateAccount, ForgotPassword, Login, Onboarding, ResetPassword } from '../pages'
-import { AdminOnboarding } from '@/features/admin/pages'
 
 export const authRoutes: RouteObject[] = [
   {
@@ -22,9 +21,5 @@ export const authRoutes: RouteObject[] = [
   {
     path: 'onboarding',
     element: <Onboarding />,
-  },
-  {
-    path: 'onboard-branch',
-    element: <AdminOnboarding />,
   },
 ]

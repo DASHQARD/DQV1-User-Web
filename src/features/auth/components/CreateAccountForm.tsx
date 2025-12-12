@@ -20,10 +20,9 @@ export default function CreateAccountForm() {
   console.log('countries', countries)
   const form = useForm<z.infer<typeof CreateAccountSchema>>({
     resolver: zodResolver(CreateAccountSchema),
-    mode: 'onChange',
+    mode: 'onSubmit',
     defaultValues: {
       user_type: 'user',
-      phone_number: '+233-',
     },
   })
 
@@ -43,6 +42,7 @@ export default function CreateAccountForm() {
   }, [selectedCountryId, countries, form])
 
   const onSubmit = (data: z.infer<typeof CreateAccountSchema>) => {
+    console.log('data', data)
     const payload: any = {
       user_type: data.user_type,
       email: data.email,
@@ -123,23 +123,30 @@ export default function CreateAccountForm() {
           error={form.formState.errors.email?.message}
         />
 
-        <Controller
-          control={form.control}
-          name="phone_number"
-          render={({ field: { value, onChange } }) => {
-            return (
-              <BasePhoneInput
-                placeholder="Enter number eg. 5512345678"
-                options={phoneCountries}
-                selectedVal={value || '+233-'}
-                maxLength={10}
-                handleChange={onChange}
-                label="Phone Number"
-                error={form.formState.errors.phone_number?.message}
-              />
-            )
-          }}
-        />
+        <div className="flex flex-col gap-1">
+          <Controller
+            control={form.control}
+            name="phone_number"
+            render={({ field: { value, onChange } }) => {
+              return (
+                <BasePhoneInput
+                  placeholder="Enter number eg. 5512345678"
+                  options={phoneCountries}
+                  selectedVal={value || '+233'}
+                  maxLength={9}
+                  handleChange={onChange}
+                  label="Phone Number"
+                  error={form.formState.errors.phone_number?.message}
+                />
+              )
+            }}
+          />
+          <p className="text-xs text-gray-500">
+            Please enter your number in the format:{' '}
+            <span className="font-medium">+2335512345678</span>
+          </p>
+        </div>
+
         <Input
           label="Password"
           placeholder="Enter your password"
@@ -156,7 +163,7 @@ export default function CreateAccountForm() {
         />
 
         <Button
-          disabled={!form.formState.isValid || isPending}
+          // disabled={!form.formState.isValid || isPending}
           loading={isPending}
           type="submit"
           variant="secondary"

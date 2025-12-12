@@ -1,1 +1,1 @@
-export { default as BranchPerformance } from './BranchPerformance'
+export { default as BranchManagement } from './BranchManagement'

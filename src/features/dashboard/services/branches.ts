@@ -23,6 +23,13 @@ export interface BranchesListResponse {
   status: string
   statusCode: number
   message: string
+  pagination: {
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+    limit: number
+    next: string | null
+    previous: string | null
+  }
   data: Branch[]
 }
 
