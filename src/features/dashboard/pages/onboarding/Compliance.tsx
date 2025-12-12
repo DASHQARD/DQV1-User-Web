@@ -39,10 +39,11 @@ export default function Compliance() {
     const hasBusinessDocs = Boolean(userProfile?.business_documents?.length)
     const hasPaymentDetails =
       Boolean(userProfile?.momo_accounts?.length) || Boolean(userProfile?.bank_accounts?.length)
-    const branchesData = (userProfile as any)?.branches
-    const branchCount = Array.isArray(branchesData) ? branchesData.length : 0
 
-    return [
+    const userType = (userProfile as any)?.user_type
+    const isCorporate = userType === 'corporate'
+
+    const baseChecklist: ChecklistItem[] = [
       {
         id: 'profile',
         title: 'Profile Information',
@@ -75,6 +76,16 @@ export default function Compliance() {
         isComplete: hasBusinessDocs,
         route: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_IDENTIFICATION_CARDS,
       },
+    ]
+
+    // For corporate users, only show the 4 base items
+    if (isCorporate) {
+      return baseChecklist
+    }
+
+    // For vendor/corporate_vendor users, include payout only (branches moved to separate section)
+    return [
+      ...baseChecklist,
       {
         id: 'payout',
         title: 'Payout Method',
@@ -82,14 +93,6 @@ export default function Compliance() {
         helper: 'Mobile money or bank account for payouts.',
         isComplete: hasPaymentDetails,
         route: ROUTES.IN_APP.DASHBOARD.PAYMENT_METHODS,
-      },
-      {
-        id: 'branches',
-        title: 'Branch Locations',
-        description: 'List every outlet that will redeem DashQards.',
-        helper: 'Add at least one active branch or service point.',
-        isComplete: branchCount > 0,
-        route: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ADD_BRANCH,
       },
     ]
   }, [userProfile])
@@ -100,6 +103,8 @@ export default function Compliance() {
   const nextStep = checklist.find((item) => !item.isComplete)
   const onboardingStage = formatStage(userProfile?.onboarding_stage)
   const status = userProfile?.status ? formatStage(userProfile.status) : 'Pending review'
+  const userType = (userProfile as any)?.user_type
+  const isCorporate = userType === 'corporate'
 
   if (isLoading) {
     return (
@@ -119,12 +124,15 @@ export default function Compliance() {
             </div>
             <div>
               <p className="uppercase text-xs tracking-[0.3em] text-[#402D87]/70 font-semibold mb-2">
-                Vendor Compliance
+                {isCorporate ? 'Corporate Compliance' : 'Vendor Compliance'}
               </p>
               <h1 className="text-3xl sm:text-4xl font-bold text-[#111827]">Complete onboarding</h1>
               <p className="text-sm sm:text-base text-gray-600 mt-3 max-w-2xl">
-                Share your compliance information so we can verify your business and activate vendor
-                settlements. You can finish every requirement from this page.
+                Share your compliance information so we can verify your business
+                {isCorporate
+                  ? ' and activate your corporate account.'
+                  : ' and activate vendor settlements.'}{' '}
+                You can finish every requirement from this page.
               </p>
             </div>
           </div>

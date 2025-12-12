@@ -2,7 +2,7 @@ import { type RouteObject, Outlet } from 'react-router'
 import { Home } from '../pages/home'
 import {
   AddBranch,
-  BranchPerformance,
+  BranchManagement,
   BusinessDetails,
   BusinessIdentificationCards,
   Compliance,
@@ -53,7 +53,7 @@ export const dashboardRoutes: RouteObject[] = [
   },
   {
     path: 'branches',
-    element: <BranchPerformance />,
+    element: <BranchManagement />,
   },
   {
     path: 'compliance',

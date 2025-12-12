@@ -10,6 +10,16 @@ export const ROUTES = {
     },
     DASHBOARD: {
       HOME: '/dashboard',
+      SETTINGS: {
+        ROOT: '/dashboard/settings',
+        PERSONAL_INFORMATION: '/dashboard/settings/personal-information',
+        SECURITY_SETTINGS: '/dashboard/settings/security',
+        PAYOUT_ACCOUNTS: '/dashboard/settings/payout-accounts',
+      },
+      GIFT_CARDS: {
+        ROOT: '/dashboard/gift-cards',
+        GIFT_CARD_DETAILS: '/dashboard/gift-cards/:id',
+      },
       ORDERS: '/dashboard/orders',
       REDEEM: '/dashboard/redeem/dashpro',
       REDEMPTIONS: '/dashboard/redemptions',

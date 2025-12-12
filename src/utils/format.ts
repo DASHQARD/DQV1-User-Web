@@ -48,20 +48,7 @@ export function formatRelativeTime(date: string | Date): string {
 
 /**
  * Get formatted last login time from localStorage
- */
-export function getFormattedLastLogin(): string {
-  const lastLogin = localStorage.getItem('lastLoginTime')
-  if (!lastLogin) return 'First time login'
 
-  try {
-    const lastLoginDate = new Date(lastLogin)
-    return formatRelativeTime(lastLoginDate)
-  } catch {
-    return 'Unknown'
-  }
-}
-
-/**
  * Update last login time in localStorage
  */
 export function updateLastLoginTime(): void {

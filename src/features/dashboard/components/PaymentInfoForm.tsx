@@ -2,13 +2,22 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/Button'
-import { Input, Combobox, RadioGroup, RadioGroupItem, Text, BasePhoneInput } from '@/components'
+import {
+  Input,
+  Combobox,
+  RadioGroup,
+  RadioGroupItem,
+  Text,
+  BasePhoneInput,
+  Checkbox,
+} from '@/components'
 import { PaymentInfoSchema } from '@/utils/schemas/payment'
 import { usePaymentInfoService } from '../hooks/usePayment'
 import { useCountriesData } from '@/hooks'
 import { GHANA_BANKS } from '@/assets/data/banks'
 import React from 'react'
 import { useUserProfile } from '@/hooks'
+import { Icon } from '@/libs'
 
 export default function PaymentInfoForm() {
   const { data: userProfile } = useUserProfile()
@@ -27,8 +36,13 @@ export default function PaymentInfoForm() {
       branch: '',
       account_name: '',
       sort_swift_code: '',
+      become_vendor: false,
     },
   })
+
+  const userType = (userProfile as any)?.user_type
+  const isCorporate = userType === 'corporate'
+  const isCorporateVendor = userType === 'corporate_vendor'
 
   React.useEffect(() => {
     if (!userProfile) return
@@ -89,28 +103,37 @@ export default function PaymentInfoForm() {
 
   const onSubmit = (data: z.infer<typeof PaymentInfoSchema>) => {
     // Prepare the data based on payment method
+    const basePayload: any = {}
+
     if (data.payment_method === 'mobile_money') {
       // BasePhoneInput returns format: "+233-559617908"
       // Extract the number part (after the dash) and strip any non-digit characters
       const phoneValue = data.mobile_money_number || ''
       const numberPart = phoneValue.includes('-') ? phoneValue.split('-')[1] : phoneValue
-      const cleanedMobileMoneyNumber = numberPart.replace(/\D/g, '')
+      const cleanedMobileMoneyNumber = '0' + numberPart.replace(/\D/g, '')
 
-      mutate({
+      Object.assign(basePayload, {
         payment_method: 'mobile_money',
         mobile_money_provider: data.mobile_money_provider!,
         mobile_money_number: cleanedMobileMoneyNumber,
-      } as any)
+      })
     } else if (data.payment_method === 'bank') {
-      mutate({
+      Object.assign(basePayload, {
         payment_method: 'bank',
         bank_name: data.bank_name!,
         account_number: data.account_number!,
         branch: data.branch!,
         account_name: data.account_name!,
         sort_swift_code: data.sort_swift_code!,
-      } as any)
+      })
     }
+
+    // Add become_vendor flag for corporate users
+    if (isCorporate && data.become_vendor) {
+      basePayload.become_vendor = true
+    }
+
+    mutate(basePayload)
   }
 
   return (
@@ -163,23 +186,29 @@ export default function PaymentInfoForm() {
               )}
             />
 
-            <Controller
-              control={form.control}
-              name="mobile_money_number"
-              render={({ field: { value, onChange } }) => {
-                return (
-                  <BasePhoneInput
-                    placeholder="Enter number eg. 5512345678"
-                    options={countries}
-                    selectedVal={value}
-                    maxLength={10}
-                    handleChange={onChange}
-                    label="Mobile Money Number"
-                    error={form.formState.errors.mobile_money_number?.message}
-                  />
-                )
-              }}
-            />
+            <div className="flex flex-col gap-1">
+              <Controller
+                control={form.control}
+                name="mobile_money_number"
+                render={({ field: { value, onChange } }) => {
+                  return (
+                    <BasePhoneInput
+                      placeholder="Enter number eg. 5512345678"
+                      options={countries}
+                      selectedVal={value}
+                      maxLength={10}
+                      handleChange={onChange}
+                      label="Mobile Money Number"
+                      error={form.formState.errors.mobile_money_number?.message}
+                    />
+                  )
+                }}
+              />
+              <p className="text-xs text-gray-500">
+                Please enter your number in the format:{' '}
+                <span className="font-medium">+2335512345678</span>
+              </p>
+            </div>
           </div>
         )}
 
@@ -231,6 +260,62 @@ export default function PaymentInfoForm() {
               {...form.register('sort_swift_code')}
               error={form.formState.errors.sort_swift_code?.message}
             />
+          </div>
+        )}
+
+        {/* Become Vendor Opt-in for Corporate Users */}
+        {isCorporate && !isCorporateVendor && (
+          <div className="border-t border-gray-200 pt-6 mt-4">
+            <div className="bg-linear-to-br from-[#f5f1ff] to-[#fdf9ff] border border-[#e9d5ff] rounded-xl p-5">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-[#402D87] flex items-center justify-center text-white shrink-0">
+                  <Icon icon="bi:shop-window" className="text-lg" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">Become a Vendor</h3>
+                    <span className="px-2 py-1 text-xs font-semibold text-[#402D87] bg-[#ede9fe] rounded-full">
+                      Optional
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Enable vendor features to accept redemptions and switch between corporate and
+                    vendor profiles. You'll be able to manage branches and receive vendor
+                    settlements.
+                  </p>
+                  <Controller
+                    control={form.control}
+                    name="become_vendor"
+                    render={({ field: { value, onChange } }) => (
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={value || false}
+                          onChange={(e) => onChange(e.target.checked)}
+                          label="Enable vendor features"
+                        />
+                      </div>
+                    )}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Show info for corporate_vendor users */}
+        {isCorporateVendor && (
+          <div className="border-t border-gray-200 pt-6 mt-4">
+            <div className="bg-[#ecfdf5] border border-[#a7f3d0] rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <Icon icon="bi:check-circle-fill" className="text-[#059669] text-xl" />
+                <div>
+                  <p className="text-sm font-semibold text-[#059669]">Vendor features enabled</p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    You can switch between corporate and vendor profiles from the sidebar.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

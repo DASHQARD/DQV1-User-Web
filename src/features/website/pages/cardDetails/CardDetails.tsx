@@ -4,11 +4,14 @@ import { Icon } from '@/libs'
 import { useCards } from '../../hooks/useCards'
 import { useCart } from '../../hooks/useCart'
 import { useCartStore } from '@/stores/cart'
+import { usePresignedURL } from '@/hooks'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
 import DashpassBg from '@/assets/svgs/Dashpass_bg.svg'
 import { ROUTES } from '@/utils/constants/shared'
 import type { PublicCardResponse } from '@/types/cards'
+import { formatCurrency } from '@/utils/format'
+import React from 'react'
 
 export default function CardDetails() {
   const { id } = useParams<{ id: string }>()
@@ -17,8 +20,52 @@ export default function CardDetails() {
   const { data: cardResponse, isLoading, error } = usePublicCardById(id || null)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
+  const { mutateAsync: fetchPresignedURL, isPending: isFetchingPresignedURL } = usePresignedURL()
+  const [imageUrls, setImageUrls] = React.useState<Record<number, string>>({})
 
   const card = cardResponse as unknown as PublicCardResponse
+
+  // Fetch presigned URLs for card images
+  React.useEffect(() => {
+    if (!card?.images?.length) {
+      return
+    }
+
+    let cancelled = false
+
+    const loadImages = async () => {
+      try {
+        const urlPromises = card.images.map(async (image) => {
+          if (image.id && image.file_url) {
+            const url = await fetchPresignedURL(image.file_url)
+            return { id: image.id, url }
+          }
+          return null
+        })
+
+        const results = await Promise.all(urlPromises)
+
+        if (cancelled) return
+
+        const urlMap: Record<number, string> = {}
+        results.forEach((result) => {
+          if (result) {
+            urlMap[result.id] = result.url
+          }
+        })
+
+        setImageUrls(urlMap)
+      } catch (error) {
+        console.error('Failed to fetch card images', error)
+      }
+    }
+
+    loadImages()
+
+    return () => {
+      cancelled = true
+    }
+  }, [card?.images, fetchPresignedURL])
 
   // Get card background based on type
   const getCardBackground = () => {
@@ -176,19 +223,42 @@ export default function CardDetails() {
             {/* Additional Images */}
             {card.images && card.images.length > 0 && (
               <div className="grid grid-cols-4 gap-2">
-                {card.images.slice(0, 4).map((image, index) => (
-                  <div
-                    key={image.id || index}
-                    className="relative overflow-hidden rounded-lg bg-gray-200"
-                    style={{ paddingTop: '100%' }}
-                  >
-                    <img
-                      src={image.file_url}
-                      alt={`${card.product} image ${index + 1}`}
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
+                {isFetchingPresignedURL ? (
+                  <div className="col-span-4 flex items-center justify-center py-8">
+                    <Loader />
                   </div>
-                ))}
+                ) : (
+                  card.images.slice(0, 4).map((image, index) => {
+                    const imageUrl =
+                      image.id && imageUrls[image.id] ? imageUrls[image.id] : image.file_url
+                    return (
+                      <div
+                        key={image.id || index}
+                        className="relative overflow-hidden rounded-lg bg-gray-200"
+                        style={{ paddingTop: '100%' }}
+                      >
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={`${card.product} image ${index + 1}`}
+                            className="absolute inset-0 h-full w-full object-cover"
+                            onError={(e) => {
+                              // Fallback to file_url if presigned URL fails
+                              const target = e.target as HTMLImageElement
+                              if (imageUrl !== image.file_url) {
+                                target.src = image.file_url
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                            <Icon icon="bi:image" className="size-8" />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
+                )}
               </div>
             )}
           </div>
@@ -196,33 +266,26 @@ export default function CardDetails() {
           {/* Right Column - Card Details */}
           <div className="space-y-6">
             {/* Header */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-semibold uppercase">
-                  {getCardTypeName()}
-                </span>
-                {card.rating > 0 && (
-                  <div className="flex items-center gap-1 text-yellow-500">
-                    <Icon icon="bi:star-fill" className="size-4" />
-                    <span className="text-sm font-semibold text-gray-700">
-                      {card.rating.toFixed(1)}
-                    </span>
-                  </div>
+            <div className="pt-6 flex flex-col gap-4">
+              <section>
+                {card.vendor_name && (
+                  <button
+                    onClick={() =>
+                      navigate(
+                        `/vendor?vendor_id=${card.vendor_id}&name=${encodeURIComponent(card.vendor_name || '')}`,
+                      )
+                    }
+                    className="text-[#001e73] text-sm hover:text-primary-500 hover:underline transition-colors cursor-pointer"
+                  >
+                    {card.vendor_name}
+                  </button>
                 )}
-              </div>
-              <Text variant="h1" weight="bold" className="text-gray-900 mb-2">
-                {card.product}
+              </section>
+
+              <Text variant="h2" weight="semibold" className="text-primary-500">
+                {card.vendor_name} - {formatCurrency(displayPrice.toFixed(2), 'GHS')} {card.product}{' '}
+                Gift Card
               </Text>
-              {card.vendor_name && (
-                <Text variant="p" className="text-gray-600 mb-4">
-                  by {card.vendor_name}
-                </Text>
-              )}
-              <div className="flex items-baseline gap-2">
-                <Text variant="h2" weight="bold" className="text-primary-500">
-                  {card.currency} {displayPrice.toFixed(2)}
-                </Text>
-              </div>
             </div>
 
             {/* Description */}

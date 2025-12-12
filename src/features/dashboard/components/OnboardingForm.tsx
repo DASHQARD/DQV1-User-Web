@@ -51,17 +51,17 @@ export default function OnboardingForm() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
-      <section className="flex sm:flex-row flex-col gap-10 border-b border-[#CDD3D3] pb-16">
+      <section className="flex sm:flex-row flex-col gap-10 pb-16">
         <div className="flex flex-col gap-2 max-w-[271px] w-full">
-          <Text variant="h6" weight="normal" className="text-[#151819]">
-            Personal Information
+          <Text variant="h2" weight="semibold">
+            Name & address
           </Text>
-          <p className="text-sm text-gray-500">
-            Complete your compliance information to enjoy all benefits
-          </p>
+          <Text variant="span" weight="normal" className="text-gray-500">
+            Update your personal details and contact information
+          </Text>
         </div>
 
-        <section className="grid grid-cols-2 gap-4 flex-1">
+        <section className="grid grid-cols-2 gap-4 flex-1 max-w-[554px]">
           <Input
             label="First Name"
             placeholder="Enter your first name"

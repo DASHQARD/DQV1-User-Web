@@ -2,6 +2,7 @@ import { axiosClient } from '@/libs'
 import type { CardsListResponse, PublicCardResponse, PublicCardsResponse } from '@/types/cards'
 import type { VendorDetailsResponse } from '@/types/vendor'
 import { userRecipient } from '../../dashboard/services/recipients'
+import { getRecipientCards } from './recipients'
 
 const getCards = async (query?: Record<string, any>): Promise<CardsListResponse> => {
   const response = await axiosClient.get('/cards', query)
@@ -49,4 +50,5 @@ export {
   getPublicVendorCards,
   getPublicCardById,
   userRecipient,
+  getRecipientCards,
 }

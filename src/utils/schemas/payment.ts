@@ -11,6 +11,7 @@ export const PaymentInfoSchema = z
     branch: z.string().optional(),
     account_name: z.string().optional(),
     sort_swift_code: z.string().optional(),
+    become_vendor: z.boolean().optional(),
   })
   .refine(
     (data) => {

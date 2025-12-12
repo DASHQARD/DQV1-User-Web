@@ -15,6 +15,7 @@ import { bulkAssignRecipients, getRecipients } from '@/features/dashboard/servic
 import { useAuthStore } from '@/stores'
 import { useUserProfile } from '@/hooks'
 import { usePayments } from '../../hooks'
+import { useRecipientCards } from '../../hooks/useRecipientCards'
 
 export default function Checkout() {
   const navigate = useNavigate()
@@ -35,11 +36,17 @@ export default function Checkout() {
   const { data: recipientsData } = useQuery({
     queryKey: ['cart-recipients'],
     queryFn: () => getRecipients(),
-    enabled: Array.isArray(cartItems) && cartItems.length > 0,
+    enabled: false,
   })
 
   const recipients = useMemo(() => recipientsData?.data || [], [recipientsData?.data])
 
+  const { useRecipientCardsService, useGetRecipientByIDsService } = useRecipientCards()
+  const { data: recipientCardsData } = useRecipientCardsService()
+  const { data: recipientByIDsData } = useGetRecipientByIDsService(31)
+
+  console.log('recipientCardsData', recipientCardsData)
+  console.log('recipientByIDsData', recipientByIDsData)
   // Flatten cart items from nested structure
   type FlattenedCartItem = {
     cart_id: number
