@@ -1,53 +1,45 @@
-import { Text, PaginatedTable } from '@/components'
-import { useCards } from '../../hooks'
-import { useReducerSpread, useUserProfile } from '@/hooks'
-import { CreateExperience, experienceListColumns, experienceListCsvHeaders } from '../../components'
+import { PaginatedTable, Text } from '@/components'
+import { BulkUploadGiftCards } from '../../components/corporate/modals/BulkUploadGiftCards'
+import { purchaseListColumns, purchaseListCsvHeaders } from '../../components'
 import { OPTIONS } from '@/utils/constants/filter'
 import { DEFAULT_QUERY } from '@/utils/constants/shared'
+import { useReducerSpread } from '@/hooks'
 import type { QueryType } from '@/types/shared'
 
-export default function Experience() {
+export default function Purchase() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
-  const { data: cardsResponse, isLoading } = useCards()
-
-  console.log('cardsResponse', cardsResponse)
-
-  const { data: userProfile } = useUserProfile()
-
-  console.log('userProfile', userProfile)
-
   return (
     <>
       <div className="lg:py-10">
         <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
             <Text variant="h2" weight="semibold" className="text-primary-900">
-              My Experiences
+              My Purhaces
             </Text>
             <div className="flex items-center gap-3">
-              <CreateExperience />
+              <BulkUploadGiftCards />
             </div>
           </div>
           <div className="relative space-y-[37px]">
             <div className="text-[#0c4b77] py-2 border-b-2 border-[#0c4b77] w-fit">
               <Text variant="h6" weight="medium">
-                My Experiences ({cardsResponse?.data?.length || 0})
+                My Purhaces (0)
               </Text>
             </div>
             <PaginatedTable
               filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
-              columns={experienceListColumns}
-              data={cardsResponse?.data || []}
-              loading={isLoading}
-              total={cardsResponse?.data?.length || 0}
+              columns={purchaseListColumns}
+              data={[]}
+              loading={false}
+              total={0}
               query={query}
               setQuery={setQuery}
               searchPlaceholder="Search by product name or type..."
-              csvHeaders={experienceListCsvHeaders}
+              csvHeaders={purchaseListCsvHeaders}
               filterBy={{
                 simpleSelects: [{ label: 'status', options: OPTIONS.CUSTOMER_STATUS }],
               }}
-              printTitle="Experiences"
+              printTitle="Purchases"
             />
           </div>
         </div>

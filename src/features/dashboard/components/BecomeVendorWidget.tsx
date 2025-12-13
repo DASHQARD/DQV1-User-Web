@@ -28,20 +28,21 @@ export default function BecomeVendorWidget() {
   const hasBusinessDetails = Boolean(userProfile?.business_details?.length)
   const hasBusinessDocs = Boolean(userProfile?.business_documents?.length)
 
-  const completedCount =
-    (hasProfile ? 1 : 0) +
-    (hasIdentityDocs ? 1 : 0) +
-    (hasBusinessDetails ? 1 : 0) +
-    (hasBusinessDocs ? 1 : 0)
-  const totalCount = 4
+  const hasProfileAndIdentity = hasProfile && hasIdentityDocs
+  const hasBusinessDetailsAndDocs = hasBusinessDetails && hasBusinessDocs
+
+  const completedCount = (hasProfileAndIdentity ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0)
+  const totalCount = 2
   const progressPercentage = (completedCount / totalCount) * 100
 
   // Find the first incomplete step
   const getNextIncompleteStep = () => {
-    if (!hasProfile) return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.PROFILE_INFORMATION
-    if (!hasIdentityDocs) return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.UPLOAD_ID
-    if (!hasBusinessDetails) return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_DETAILS
-    if (!hasBusinessDocs) return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_IDENTIFICATION_CARDS
+    if (!hasProfileAndIdentity) {
+      return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.PROFILE_INFORMATION
+    }
+    if (!hasBusinessDetailsAndDocs) {
+      return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_DETAILS
+    }
     return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT
   }
 
@@ -86,7 +87,7 @@ export default function BecomeVendorWidget() {
                     Complete your onboarding process to gain access
                   </Text>
                   <Text variant="span" className="text-gray-600">
-                    Finish all 4 steps to activate your corporate account.
+                    Finish all 2 steps to activate your corporate account.
                   </Text>
                 </section>
                 <button
@@ -137,56 +138,28 @@ export default function BecomeVendorWidget() {
               to={addAccountParam(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.PROFILE_INFORMATION)}
               className={cn(
                 'flex items-center gap-3 p-3 rounded-lg transition-colors',
-                hasProfile ? 'bg-gray-50 opacity-75' : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
+                hasProfileAndIdentity ? 'bg-gray-50 opacity-75' : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
               )}
             >
               <Icon
-                icon={hasProfile ? 'bi:check-circle-fill' : 'bi:circle'}
-                className={cn('text-lg shrink-0', hasProfile ? 'text-[#059669]' : 'text-gray-400')}
-              />
-              <div className="flex-1">
-                <div
-                  className={cn(
-                    'text-sm font-medium',
-                    hasProfile ? 'text-gray-500 line-through' : 'text-gray-900',
-                  )}
-                >
-                  Profile Information
-                </div>
-                {!hasProfile && (
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    Full name, address, date of birth & ID number
-                  </div>
-                )}
-              </div>
-            </Link>
-
-            <Link
-              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.UPLOAD_ID)}
-              className={cn(
-                'flex items-center gap-3 p-3 rounded-lg transition-colors',
-                hasIdentityDocs ? 'bg-gray-50 opacity-75' : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
-              )}
-            >
-              <Icon
-                icon={hasIdentityDocs ? 'bi:check-circle-fill' : 'bi:circle'}
+                icon={hasProfileAndIdentity ? 'bi:check-circle-fill' : 'bi:circle'}
                 className={cn(
                   'text-lg shrink-0',
-                  hasIdentityDocs ? 'text-[#059669]' : 'text-gray-400',
+                  hasProfileAndIdentity ? 'text-[#059669]' : 'text-gray-400',
                 )}
               />
               <div className="flex-1">
                 <div
                   className={cn(
                     'text-sm font-medium',
-                    hasIdentityDocs ? 'text-gray-500 line-through' : 'text-gray-900',
+                    hasProfileAndIdentity ? 'text-gray-500 line-through' : 'text-gray-900',
                   )}
                 >
-                  Identity Documents
+                  Profile Information & Identity Documents
                 </div>
-                {!hasIdentityDocs && (
+                {!hasProfileAndIdentity && (
                   <div className="text-xs text-gray-500 mt-0.5">
-                    Upload a government-issued photo ID for verification
+                    Full name, address, date of birth, ID number, and photo ID
                   </div>
                 )}
               </div>
@@ -196,59 +169,30 @@ export default function BecomeVendorWidget() {
               to={addAccountParam(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_DETAILS)}
               className={cn(
                 'flex items-center gap-3 p-3 rounded-lg transition-colors',
-                hasBusinessDetails ? 'bg-gray-50 opacity-75' : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
+                hasBusinessDetailsAndDocs
+                  ? 'bg-gray-50 opacity-75'
+                  : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
               )}
             >
               <Icon
-                icon={hasBusinessDetails ? 'bi:check-circle-fill' : 'bi:circle'}
+                icon={hasBusinessDetailsAndDocs ? 'bi:check-circle-fill' : 'bi:circle'}
                 className={cn(
                   'text-lg shrink-0',
-                  hasBusinessDetails ? 'text-[#059669]' : 'text-gray-400',
+                  hasBusinessDetailsAndDocs ? 'text-[#059669]' : 'text-gray-400',
                 )}
               />
               <div className="flex-1">
                 <div
                   className={cn(
                     'text-sm font-medium',
-                    hasBusinessDetails ? 'text-gray-500 line-through' : 'text-gray-900',
+                    hasBusinessDetailsAndDocs ? 'text-gray-500 line-through' : 'text-gray-900',
                   )}
                 >
-                  Business Details
+                  Business Details & Documentation
                 </div>
-                {!hasBusinessDetails && (
+                {!hasBusinessDetailsAndDocs && (
                   <div className="text-xs text-gray-500 mt-0.5">
-                    Business name, registration number, address
-                  </div>
-                )}
-              </div>
-            </Link>
-
-            <Link
-              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_IDENTIFICATION_CARDS)}
-              className={cn(
-                'flex items-center gap-3 p-3 rounded-lg transition-colors',
-                hasBusinessDocs ? 'bg-gray-50 opacity-75' : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
-              )}
-            >
-              <Icon
-                icon={hasBusinessDocs ? 'bi:check-circle-fill' : 'bi:circle'}
-                className={cn(
-                  'text-lg shrink-0',
-                  hasBusinessDocs ? 'text-[#059669]' : 'text-gray-400',
-                )}
-              />
-              <div className="flex-1">
-                <div
-                  className={cn(
-                    'text-sm font-medium',
-                    hasBusinessDocs ? 'text-gray-500 line-through' : 'text-gray-900',
-                  )}
-                >
-                  Business Documentation
-                </div>
-                {!hasBusinessDocs && (
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    Certificate of incorporation, licence, utility bill, logo
+                    Business information and supporting documents
                   </div>
                 )}
               </div>
@@ -258,10 +202,8 @@ export default function BecomeVendorWidget() {
           {/* Continue Button */}
           {(() => {
             const getNextStepName = () => {
-              if (!hasProfile) return 'Profile Information'
-              if (!hasIdentityDocs) return 'Identity Documents'
-              if (!hasBusinessDetails) return 'Business Details'
-              if (!hasBusinessDocs) return 'Business Documentation'
+              if (!hasProfileAndIdentity) return 'Profile Information & Identity Documents'
+              if (!hasBusinessDetailsAndDocs) return 'Business Details & Documentation'
               return null
             }
 

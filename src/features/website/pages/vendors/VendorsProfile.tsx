@@ -21,7 +21,7 @@ export default function VendorsProfile() {
   console.log('vendorDetails', vendorDetails)
   const { usePublicVendorCardsService } = useCards()
   const { data: vendorCardsResponse } = usePublicVendorCardsService(vendor_id || '')
-  const vendorCards = vendorCardsResponse?.data || []
+  const vendorCards = React.useMemo(() => vendorCardsResponse?.data || [], [vendorCardsResponse])
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
 

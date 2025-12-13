@@ -21,6 +21,7 @@ export const ROUTES = {
         GIFT_CARD_DETAILS: '/dashboard/gift-cards/:id',
       },
       ORDERS: '/dashboard/orders',
+      PURCHASE: '/dashboard/purchase',
       REDEEM: '/dashboard/redeem/dashpro',
       REDEMPTIONS: '/dashboard/redemptions',
       TRANSACTIONS: '/dashboard/transactions',

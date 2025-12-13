@@ -94,6 +94,8 @@ export const UploadUserIDSchema = z.object({
     .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB'),
 })
 
+export const ProfileAndIdentitySchema = OnboardingSchema.merge(UploadUserIDSchema)
+
 export const VerifyLoginOTPSchema = z
   .object({
     otp: getRequiredStringSchema('OTP'),

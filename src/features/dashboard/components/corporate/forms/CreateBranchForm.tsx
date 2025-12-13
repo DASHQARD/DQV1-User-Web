@@ -260,18 +260,20 @@ export default function CreateBranchForm() {
           Payment Method
         </Text>
 
-        <Controller
-          control={form.control}
-          name="same_as_corporate"
-          render={({ field: { value, onChange } }) => (
-            <Checkbox
-              id="same_as_corporate"
-              checked={value || false}
-              onChange={(e) => onChange(e.target.checked)}
-              label="Same as corporate account"
-            />
-          )}
-        />
+        {(userProfile as any)?.user_type === 'corporate_vendor' && (
+          <Controller
+            control={form.control}
+            name="same_as_corporate"
+            render={({ field: { value, onChange } }) => (
+              <Checkbox
+                id="same_as_corporate"
+                checked={value || false}
+                onChange={(e) => onChange(e.target.checked)}
+                label="Same as corporate account"
+              />
+            )}
+          />
+        )}
 
         {!sameAsCorporate && (
           <>

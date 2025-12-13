@@ -211,7 +211,7 @@ export function PaginatedTable({
 
       {loading ? (
         <div className="w-full h-80 grid place-items-center">
-          <div>
+          <div className="w-full">
             <Loader />
           </div>
         </div>

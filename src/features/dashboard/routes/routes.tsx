@@ -10,6 +10,7 @@ import {
   Orders,
   PaymentInfo,
   ProfileInformation,
+  Purchase,
   Redeem,
   Recipients,
   Settings,
@@ -34,6 +35,10 @@ export const dashboardRoutes: RouteObject[] = [
   {
     path: 'transactions',
     element: <Transactions />,
+  },
+  {
+    path: 'purchase',
+    element: <Purchase />,
   },
   {
     path: 'recipients',

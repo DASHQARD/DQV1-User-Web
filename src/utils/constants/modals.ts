@@ -2,6 +2,11 @@ export const MODALS = {
   BRANCH: {
     ROOT: 'branch-modal',
     CREATE: 'create-branch',
+    BULK_UPLOAD: 'bulk-upload-branches',
+  },
+  VENDOR_ACCOUNT: {
+    ROOT: 'vendor-account-modal',
+    CREATE: 'create-vendor-account',
   },
   EXPERIENCE: {
     ROOT: 'experience-modal',

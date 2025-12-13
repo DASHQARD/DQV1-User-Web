@@ -48,3 +48,25 @@ export const deleteBranch = async (id: string): Promise<DeleteBranchResponse> =>
   const response = await axiosClient.delete(`/branches/${id}`)
   return response as unknown as DeleteBranchResponse
 }
+
+export interface BulkBranchesUploadResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: {
+    successful: number
+    failed: number
+    total: number
+  }
+}
+
+export const bulkUploadBranches = async (file: File): Promise<BulkBranchesUploadResponse> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await axiosClient.post('/vendors/branches/bulk-upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+  return response as unknown as BulkBranchesUploadResponse
+}

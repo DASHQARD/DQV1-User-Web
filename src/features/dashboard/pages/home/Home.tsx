@@ -158,15 +158,14 @@ export default function Home() {
                   Boolean(userProfile?.dob) &&
                   Boolean(userProfile?.id_number)
                 const hasIdentityDocs = Boolean(userProfile?.id_images?.length)
+                const hasProfileAndIdentity = hasProfile && hasIdentityDocs
                 const hasBusinessDetails = Boolean(userProfile?.business_details?.length)
                 const hasBusinessDocs = Boolean(userProfile?.business_documents?.length)
+                const hasBusinessDetailsAndDocs = hasBusinessDetails && hasBusinessDocs
 
                 const completedCount =
-                  (hasProfile ? 1 : 0) +
-                  (hasIdentityDocs ? 1 : 0) +
-                  (hasBusinessDetails ? 1 : 0) +
-                  (hasBusinessDocs ? 1 : 0)
-                const totalCount = 4
+                  (hasProfileAndIdentity ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0)
+                const totalCount = 2
                 const progressPercentage = (completedCount / totalCount) * 100
 
                 const addAccountParam = (path: string): string => {
@@ -175,12 +174,12 @@ export default function Home() {
                 }
 
                 const getNextIncompleteStep = () => {
-                  if (!hasProfile) return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.PROFILE_INFORMATION
-                  if (!hasIdentityDocs) return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.UPLOAD_ID
-                  if (!hasBusinessDetails)
+                  if (!hasProfileAndIdentity) {
+                    return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.PROFILE_INFORMATION
+                  }
+                  if (!hasBusinessDetailsAndDocs) {
                     return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_DETAILS
-                  if (!hasBusinessDocs)
-                    return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_IDENTIFICATION_CARDS
+                  }
                   return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT
                 }
 
@@ -305,11 +304,14 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <SummaryCards />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <QardsPerformance />
-          <AuditLogs />
-        </div>
+        {/* Show SummaryCards and QardsPerformance only if corporate has vendor account or user is vendor */}
+        {(userType === 'corporate_vendor' || userType === 'vendor') && (
+          <>
+            <SummaryCards />
+            <QardsPerformance />
+          </>
+        )}
+        <AuditLogs />
 
         {isVendor && (
           /* Vendor Metrics */

@@ -17,22 +17,17 @@ const isComplianceComplete = (userProfile: UserProfileResponse | undefined): boo
     Boolean(userProfile.id_number)
 
   const hasIdentityDocs = Boolean(userProfile.id_images?.length)
+  const hasProfileAndIdentity = hasProfile && hasIdentityDocs
   const hasBusinessDetails = Boolean(userProfile.business_details?.length)
   const hasBusinessDocs = Boolean(userProfile.business_documents?.length)
+  const hasBusinessDetailsAndDocs = hasBusinessDetails && hasBusinessDocs
   const hasPaymentDetails =
     Boolean(userProfile.momo_accounts?.length) || Boolean(userProfile.bank_accounts?.length)
   const branchesData = userProfile.branches
   const branchCount = Array.isArray(branchesData) ? branchesData.length : 0
 
-  // All 6 checklist items must be complete
-  return (
-    hasProfile &&
-    hasIdentityDocs &&
-    hasBusinessDetails &&
-    hasBusinessDocs &&
-    hasPaymentDetails &&
-    branchCount > 0
-  )
+  // All checklist items must be complete (profile & identity combined as 1, business details & docs combined as 1)
+  return hasProfileAndIdentity && hasBusinessDetailsAndDocs && hasPaymentDetails && branchCount > 0
 }
 
 export default function DashboardLayout() {

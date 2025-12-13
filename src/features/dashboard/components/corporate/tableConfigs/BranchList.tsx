@@ -1,6 +1,7 @@
-import { CustomIcon, DateCell, Dropdown, StatusCell } from '@/components'
+import { DateCell, StatusCell } from '@/components'
 import type { CsvHeader } from '@/types'
 import { formatDate } from '@/utils/format'
+import { BranchActionCell } from './BranchActionCell'
 
 export const branchListColumns = [
   {
@@ -33,7 +34,7 @@ export const branchListColumns = [
     id: 'actions',
     header: '',
     accessorKey: '',
-    cell: ActionCell,
+    cell: BranchActionCell,
   },
 ]
 
@@ -64,13 +65,3 @@ export const branchListCsvHeaders: Array<CsvHeader> = [
     accessor: 'status',
   },
 ]
-
-function ActionCell() {
-  return (
-    <Dropdown actions={[]}>
-      <button type="button" className="btn rounded-lg no-print" aria-label="View actions">
-        <CustomIcon name="MoreVertical" width={24} height={24} />
-      </button>
-    </Dropdown>
-  )
-}

@@ -3,7 +3,7 @@ import type { CsvHeader } from '@/types'
 import { formatDate, formatCurrency } from '@/utils/format'
 import { ExperienceActionCell } from './ExperienceActionCell'
 
-export const experienceListColumns = [
+export const purchaseListColumns = [
   {
     header: 'Product',
     accessorKey: 'product',
@@ -39,7 +39,7 @@ export const experienceListColumns = [
   },
 ]
 
-export const experienceListCsvHeaders: Array<CsvHeader> = [
+export const purchaseListCsvHeaders: Array<CsvHeader> = [
   {
     name: 'Product',
     accessor: 'product',

@@ -38,7 +38,8 @@ export default function CreateExperienceForm() {
 
   const userType = (user as any)?.user_type
   const isBranchManager = userType === 'branch_manager'
-  const isVendor = userType === 'vendor' || userType === 'corporate_vendor'
+  // const isVendor = userType === 'vendor' || userType === 'corporate_vendor'
+  // const isCorporate = userType === 'corporate'
 
   const cardTypes = ['DashX', 'DashPass']
 
@@ -164,8 +165,8 @@ export default function CreateExperienceForm() {
         terms_and_conditions: uploadedTerms,
       }
 
-      // Add branch IDs if vendor or branch manager
-      if (isVendor || isBranchManager) {
+      // Add branch IDs when branches are selected
+      if (branchIds.length > 0) {
         payload.branch_ids = branchIds
       }
 
@@ -293,12 +294,18 @@ export default function CreateExperienceForm() {
         />
       </div>
 
-      {/* Branch Selection - Only for vendors and branch managers */}
-      {(isVendor || isBranchManager) && branches?.data && branches.data.length > 0 && (
+      {/* Branch Selection - Show branches for selection */}
+      {branches?.data && branches.data.length > 0 && (
         <div className="border-t border-gray-200 pt-4">
-          <Text as="h3" className="text-lg font-semibold text-gray-900 mb-4">
-            Available Branches
-          </Text>
+          <div className="mb-2">
+            <Text as="h3" className="text-lg font-semibold text-gray-900 mb-1">
+              Select Branches
+            </Text>
+            <Text as="p" className="text-sm text-gray-600">
+              Choose which branches this experience will apply to. You can select individual
+              branches or select all.
+            </Text>
+          </div>
           <div className="space-y-3">
             <Checkbox
               id="select-all-branches"
@@ -306,7 +313,7 @@ export default function CreateExperienceForm() {
               onChange={(e) => setSelectAllBranches(e.target.checked)}
               label="Select all branches"
             />
-            <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+            <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
               {branches.data.map((branch) => {
                 const branchId = Number(branch.id)
                 return (
@@ -320,6 +327,11 @@ export default function CreateExperienceForm() {
                 )
               })}
             </div>
+            {selectedBranches.length > 0 && (
+              <Text as="p" className="text-sm text-green-600">
+                {selectedBranches.length} branch{selectedBranches.length !== 1 ? 'es' : ''} selected
+              </Text>
+            )}
             {isBranchManager && (
               <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <strong>Note:</strong> Experiences created by branch managers require vendor admin

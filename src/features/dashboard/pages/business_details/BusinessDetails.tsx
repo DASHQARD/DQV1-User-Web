@@ -9,17 +9,9 @@ import {
   BreadcrumbLink,
   BreadcrumbSeparator,
   BreadcrumbPage,
-  Banner,
 } from '@/components'
-import { useUserProfile } from '@/hooks'
 
 export default function BusinessDetails() {
-  const { data: userProfile } = useUserProfile()
-
-  // Only check for business details completion
-  const hasBusinessDetails = Boolean(userProfile?.business_details?.length)
-  const progress = hasBusinessDetails ? 100 : 0
-
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
@@ -38,7 +30,7 @@ export default function BusinessDetails() {
         </Breadcrumb>
         <h1 className="text-2xl font-bold">Business Details</h1>
       </div>
-      <Banner currentProgress={progress} />
+
       <div className="bg-white border border-[#CDD3D3] rounded-xl p-8">
         <BusinessDetailsForm />
       </div>

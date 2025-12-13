@@ -46,39 +46,27 @@ export default function Compliance() {
     const baseChecklist: ChecklistItem[] = [
       {
         id: 'profile',
-        title: 'Profile Information',
-        description: 'Contact person details and identification basics.',
-        helper: 'Full name, address, date of birth & ID number.',
-        isComplete: hasProfile,
+        title: 'Profile Information & Identity Documents',
+        description:
+          'Complete your contact details and upload a government-issued photo ID for verification.',
+        helper:
+          "Full name, address, date of birth, ID number, and photo ID (Passport, National ID, or Driver's License).",
+        isComplete: hasProfile && hasIdentityDocs,
         route: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.PROFILE_INFORMATION,
       },
       {
-        id: 'identity',
-        title: 'Identity Documents',
-        description: 'Upload a government-issued photo ID for verification.',
-        helper: 'Accepted: Passport, National ID, Driver’s License.',
-        isComplete: hasIdentityDocs,
-        route: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.UPLOAD_ID,
-      },
-      {
-        id: 'business-details',
-        title: 'Business Details',
-        description: 'Tell us about your legal entity and registration.',
-        helper: 'Business name, registration number, address.',
-        isComplete: hasBusinessDetails,
+        id: 'business',
+        title: 'Business Details & Documentation',
+        description:
+          'Complete your business information and provide proof of incorporation and supporting files.',
+        helper:
+          'Business name, registration number, address, and documents (Certificate of incorporation, licence, utility bill, logo).',
+        isComplete: hasBusinessDetails && hasBusinessDocs,
         route: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_DETAILS,
-      },
-      {
-        id: 'business-docs',
-        title: 'Business Documentation',
-        description: 'Provide proof of incorporation and supporting files.',
-        helper: 'Certificate of incorporation, licence, utility bill, logo.',
-        isComplete: hasBusinessDocs,
-        route: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_IDENTIFICATION_CARDS,
       },
     ]
 
-    // For corporate users, only show the 4 base items
+    // For corporate users, only show the 2 base items (Profile & Identity combined, Business Details & Documentation combined)
     if (isCorporate) {
       return baseChecklist
     }
@@ -116,7 +104,7 @@ export default function Compliance() {
 
   return (
     <div className="space-y-8">
-      <header className="bg-gradient-to-br from-[#f9f5ff] via-white to-[#fdf9ff] border border-gray-100 rounded-[32px] shadow-[0_30px_80px_rgba(64,45,135,0.08)] p-6 sm:p-10">
+      <header className="bg-linear-to-br from-[#f9f5ff] via-white to-[#fdf9ff] border border-gray-100 rounded-[32px] shadow-[0_30px_80px_rgba(64,45,135,0.08)] p-6 sm:p-10">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-2xl bg-[#402D87] text-white flex items-center justify-center shadow-lg shadow-[#402D87]/30">
@@ -147,7 +135,7 @@ export default function Compliance() {
               variant="outline"
               onClick={() => refetch()}
               loading={isFetching}
-              className="!rounded-full"
+              className="rounded-full!"
             >
               Refresh status
             </Button>
@@ -160,7 +148,7 @@ export default function Compliance() {
             <p className="mt-3 text-4xl font-bold text-[#402D87]">{progress}%</p>
             <div className="mt-4 h-2 rounded-full bg-gray-100 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[#402D87] via-[#7950ed] to-[#d977ff] transition-all duration-500"
+                className="h-full bg-linear-to-r from-[#402D87] via-[#7950ed] to-[#d977ff] transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -206,7 +194,7 @@ export default function Compliance() {
           {checklist.map((item) => (
             <div
               key={item.id}
-              className="relative rounded-3xl border border-gray-100 p-6 shadow-[0_15px_40px_rgba(15,23,42,0.05)] bg-gradient-to-br from-white to-[#f9fbff]"
+              className="relative rounded-3xl border border-gray-100 p-6 shadow-[0_15px_40px_rgba(15,23,42,0.05)] bg-linear-to-br from-white to-[#f9fbff]"
             >
               <div className="flex items-start gap-4">
                 <div
@@ -239,7 +227,7 @@ export default function Compliance() {
                     <Button
                       variant={item.isComplete ? 'outline' : 'secondary'}
                       size="medium"
-                      className="!rounded-full"
+                      className="rounded-full!"
                       onClick={() => navigate(item.route)}
                     >
                       {item.isComplete ? 'Review details' : 'Complete step'}
