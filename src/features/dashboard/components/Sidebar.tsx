@@ -6,7 +6,7 @@ import { CORPORATE_NAV_ITEMS, REGULAR_NAV_ITEMS, ROUTES, VENDOR_NAV_ITEMS } from
 import { cn } from '@/libs'
 import { useUserProfile } from '@/hooks'
 import { Logo } from '@/assets/images'
-import { Avatar, Text, Tooltip, TooltipTrigger, TooltipContent } from '@/components'
+import { Avatar, Text, Tooltip, TooltipTrigger, TooltipContent, Modal, Button } from '@/components'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { PaymentChangeNotifications } from './corporate/notifications/PaymentChangeNotifications'
 import { ExperienceApprovalNotifications } from './corporate/notifications/ExperienceApprovalNotifications'
@@ -24,6 +24,9 @@ export default function Sidebar() {
   const { data: userProfile } = useUserProfile()
   const vendorAccountModal = usePersistedModalState({
     paramName: MODALS.VENDOR_ACCOUNT.CREATE,
+  })
+  const logoutModal = usePersistedModalState({
+    paramName: MODALS.LOGOUT.CONFIRM,
   })
 
   console.log('userProfile', userProfile)
@@ -100,12 +103,17 @@ export default function Sidebar() {
     localStorage.setItem('sidebarCollapsed', newState.toString())
   }
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    logoutModal.openModal(MODALS.LOGOUT.CONFIRM)
+  }
+
+  const confirmLogout = async () => {
     // Clear session storage on logout
     sessionStorage.removeItem('complianceRedirectDone')
     sessionStorage.removeItem('dashboardManuallyAccessed')
     sessionStorage.removeItem('previousDashboardPath')
     logout()
+    logoutModal.closeModal()
     navigate(ROUTES.IN_APP.AUTH.LOGIN)
   }
 
@@ -475,9 +483,7 @@ export default function Sidebar() {
                             />
                           </Link>
                         </TooltipTrigger>
-                        <TooltipContent side="right" className="bg-black text-white">
-                          {item.label}
-                        </TooltipContent>
+                        <TooltipContent side="right">{item.label}</TooltipContent>
                       </Tooltip>
                     ) : (
                       <Link
@@ -561,6 +567,40 @@ export default function Sidebar() {
           </ul>
         </nav>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        position="center"
+        title="Confirm Logout"
+        isOpen={logoutModal.isModalOpen(MODALS.LOGOUT.CONFIRM)}
+        setIsOpen={(isOpen) => {
+          if (!isOpen) {
+            logoutModal.closeModal()
+          }
+        }}
+        panelClass="!max-w-md p-8"
+      >
+        <div className="flex flex-col gap-6">
+          <div>
+            <Text className="text-gray-700">
+              Are you sure you want to log out? You'll need to sign in again to access your account.
+            </Text>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => logoutModal.closeModal()}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button type="button" variant="danger" onClick={confirmLogout} className="flex-1">
+              Logout
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </aside>
   )
 }

@@ -24,6 +24,7 @@ export const ROUTES = {
       PURCHASE: '/dashboard/purchase',
       REDEEM: '/dashboard/redeem/dashpro',
       REDEMPTIONS: '/dashboard/redemptions',
+      REDEMPTION_TRANSACTIONS: '/dashboard/redemption-transactions',
       TRANSACTIONS: '/dashboard/transactions',
       EXPERIENCE: '/dashboard/experience',
       RECIPIENTS: '/dashboard/recipients',

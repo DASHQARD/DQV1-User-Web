@@ -93,7 +93,7 @@ export const VENDOR_NAV_ITEMS = [
     section: 'Transactions',
     items: [
       {
-        path: '/dashboard/transactions',
+        path: ROUTES.IN_APP.DASHBOARD.REDEMPTION_TRANSACTIONS,
         label: 'Redemption Transactions',
         icon: 'bi:receipt',
       },

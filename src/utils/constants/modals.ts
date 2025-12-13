@@ -29,4 +29,8 @@ export const MODALS = {
     ROOT: 'notifications-modal',
     PAYMENT_CHANGE: 'payment-change-notification',
   },
+  LOGOUT: {
+    ROOT: 'logout-modal',
+    CONFIRM: 'confirm-logout',
+  },
 }

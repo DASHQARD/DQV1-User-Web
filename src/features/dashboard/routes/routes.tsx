@@ -12,6 +12,8 @@ import {
   ProfileInformation,
   Purchase,
   Redeem,
+  Redemptions,
+  RedemptionTransactions,
   Recipients,
   Settings,
   Transactions,
@@ -37,6 +39,10 @@ export const dashboardRoutes: RouteObject[] = [
     element: <Transactions />,
   },
   {
+    path: 'redemption-transactions',
+    element: <RedemptionTransactions />,
+  },
+  {
     path: 'purchase',
     element: <Purchase />,
   },
@@ -59,6 +65,10 @@ export const dashboardRoutes: RouteObject[] = [
   {
     path: 'branches',
     element: <BranchManagement />,
+  },
+  {
+    path: 'redemptions',
+    element: <Redemptions />,
   },
   {
     path: 'compliance',
