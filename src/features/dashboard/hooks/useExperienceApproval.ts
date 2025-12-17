@@ -10,6 +10,7 @@ export function usePendingExperienceApprovals() {
   return useQuery({
     queryKey: ['pending-experience-approvals'],
     queryFn: getPendingExperienceApprovals,
+    enabled: false,
   })
 }
 

@@ -402,9 +402,7 @@ export default function Transactions() {
             <Icon icon="bi:list" className="mr-3 text-[#402D87]" />
             Transactions
           </h2>
-          <p className="text-base text-gray-500">
-            View your purchase and redemption transaction history
-          </p>
+          <p className="text-base text-gray-500">View your purchase and transaction history</p>
         </div>
 
         {/* Toggle Cards Section */}
@@ -706,7 +704,7 @@ export default function Transactions() {
                   <p className="text-sm text-gray-500">
                     {activeTab === 'purchases'
                       ? 'No purchase transactions match your current filters.'
-                      : 'No redemption transactions match your current filters.'}
+                      : 'No transactions match your current filters.'}
                   </p>
                 </div>
               )}

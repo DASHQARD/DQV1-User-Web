@@ -1,6 +1,6 @@
 import { PaginatedTable, Text } from '@/components'
 import { BulkUploadGiftCards } from '../../components/corporate/modals/BulkUploadGiftCards'
-import { purchaseListColumns, purchaseListCsvHeaders } from '../../components'
+import { purchasesListColumns, purchaseListCsvHeaders } from '../../components'
 import { OPTIONS } from '@/utils/constants/filter'
 import { DEFAULT_QUERY } from '@/utils/constants/shared'
 import { useReducerSpread } from '@/hooks'
@@ -28,7 +28,7 @@ export default function Purchase() {
             </div>
             <PaginatedTable
               filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
-              columns={purchaseListColumns}
+              columns={purchasesListColumns}
               data={[]}
               loading={false}
               total={0}

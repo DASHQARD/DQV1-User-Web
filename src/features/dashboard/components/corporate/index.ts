@@ -1,3 +1,7 @@
 export * from './modals'
 export * from './tableConfigs'
 export * from './forms'
+export { default as RecentAuditLogs } from './RecentAuditLogs'
+export { default as RecentRequests } from './RecentRequests'
+export { default as RecentTransactions } from './RecentTransactions'
+export { default as CompleteCorporateWidget } from './CompleteCorporateWidget'

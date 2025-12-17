@@ -10,6 +10,7 @@ export function usePaymentChangeNotifications() {
   return useQuery({
     queryKey: ['payment-change-notifications'],
     queryFn: getPaymentChangeNotifications,
+    enabled: false,
   })
 }
 

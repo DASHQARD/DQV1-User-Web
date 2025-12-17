@@ -1,4 +1,30 @@
 export const MODALS = {
+  TRANSACTION: {
+    PARAM_NAME: 'transaction',
+    CHILDREN: {
+      VIEW: 'view',
+    },
+  },
+  PURCHASE: {
+    PARAM_NAME: 'purchase',
+    CHILDREN: {
+      VIEW: 'view',
+    },
+  },
+  REDEMPTION: {
+    PARAM_NAME: 'redemption',
+    CHILDREN: {
+      VIEW: 'view',
+    },
+  },
+  REQUEST: {
+    PARAM_NAME: 'request',
+    CHILDREN: {
+      VIEW: 'view',
+      APPROVE: 'approve',
+      REJECT: 'reject',
+    },
+  },
   BRANCH: {
     ROOT: 'branch-modal',
     CREATE: 'create-branch',

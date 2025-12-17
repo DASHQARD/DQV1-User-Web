@@ -17,6 +17,11 @@ export function sentenceCase(str: string) {
   )
 }
 
+export function getTarget(inputObj: Record<string, any>, path: string | string[]): any {
+  const pathArr = Array.isArray(path) ? path : path?.split('.')
+  return pathArr.reduce((target, currentPath) => target?.[currentPath], inputObj)
+}
+
 export function getStatusVariant(status?: string) {
   switch (status) {
     case 'active':

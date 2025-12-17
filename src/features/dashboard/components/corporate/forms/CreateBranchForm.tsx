@@ -11,11 +11,11 @@ import {
   RadioGroupItem,
   Text,
   BasePhoneInput,
-  Checkbox,
+  // Checkbox,
 } from '@/components'
 import { CreateBranchFormSchema } from '@/utils/schemas/auth'
 import { useAuth } from '@/features/auth/hooks'
-import { useUserProfile, useCountriesData, useToast } from '@/hooks'
+import { useCountriesData, useToast } from '@/hooks'
 import { GHANA_BANKS } from '@/assets/data/banks'
 import { useQueryClient } from '@tanstack/react-query'
 import { axiosClient } from '@/libs'
@@ -26,7 +26,7 @@ export default function CreateBranchForm() {
   const modal = usePersistedModalState({
     paramName: MODALS.BRANCH.CREATE,
   })
-  const { data: userProfile } = useUserProfile()
+  // const { data: userProfile } = useUserProfile()
   const { useGetCountriesService } = useAuth()
   const { data: countries } = useGetCountriesService()
   const { countries: countriesData } = useCountriesData()
@@ -81,45 +81,43 @@ export default function CreateBranchForm() {
     }
   }, [selectedCountryId, countries, form])
 
-  // Auto-fill payment details from corporate account when "same as corporate" is checked
-  React.useEffect(() => {
-    if (sameAsCorporate && userProfile) {
-      // Check if user has mobile money accounts
-      if (userProfile.momo_accounts?.length) {
-        const momoAccount = userProfile.momo_accounts[0]
-        const digitsOnly = momoAccount.momo_number ? momoAccount.momo_number.replace(/\D/g, '') : ''
-        let localNumber = digitsOnly
-        if (digitsOnly.startsWith('233')) {
-          localNumber = digitsOnly.slice(3)
-        }
-        const formattedNumber = localNumber ? `+233-${localNumber}` : ''
+  // React.useEffect(() => {
+  //   if (sameAsCorporate && userProfile) {
+  //     if (userProfile.momo_accounts?.length) {
+  //       const momoAccount = userProfile.momo_accounts[0]
+  //       const digitsOnly = momoAccount.momo_number ? momoAccount.momo_number.replace(/\D/g, '') : ''
+  //       let localNumber = digitsOnly
+  //       if (digitsOnly.startsWith('233')) {
+  //         localNumber = digitsOnly.slice(3)
+  //       }
+  //       const formattedNumber = localNumber ? `+233-${localNumber}` : ''
 
-        form.setValue('payment_method', 'mobile_money')
-        form.setValue('mobile_money_provider', momoAccount.provider || '')
-        form.setValue('mobile_money_number', formattedNumber)
-      }
-      // Check if user has bank accounts
-      else if (userProfile.bank_accounts?.length) {
-        const bankAccount = userProfile.bank_accounts[0]
-        form.setValue('payment_method', 'bank')
-        form.setValue('bank_name', bankAccount.bank_name || '')
-        form.setValue('account_number', bankAccount.account_number || '')
-        form.setValue('account_name', bankAccount.account_holder_name || '')
-        form.setValue('sort_code', bankAccount.sort_code || '')
-        form.setValue('swift_code', bankAccount.swift_code || '')
-      }
-    } else if (!sameAsCorporate) {
-      // Clear payment fields when unchecked
-      form.setValue('payment_method', '')
-      form.setValue('mobile_money_provider', '')
-      form.setValue('mobile_money_number', '')
-      form.setValue('bank_name', '')
-      form.setValue('account_number', '')
-      form.setValue('account_name', '')
-      form.setValue('sort_code', '')
-      form.setValue('swift_code', '')
-    }
-  }, [sameAsCorporate, userProfile, form])
+  //       form.setValue('payment_method', 'mobile_money')
+  //       form.setValue('mobile_money_provider', momoAccount.provider || '')
+  //       form.setValue('mobile_money_number', formattedNumber)
+  //     }
+  //     // Check if user has bank accounts
+  //     else if (userProfile.bank_accounts?.length) {
+  //       const bankAccount = userProfile.bank_accounts[0]
+  //       form.setValue('payment_method', 'bank')
+  //       form.setValue('bank_name', bankAccount.bank_name || '')
+  //       form.setValue('account_number', bankAccount.account_number || '')
+  //       form.setValue('account_name', bankAccount.account_holder_name || '')
+  //       form.setValue('sort_code', bankAccount.sort_code || '')
+  //       form.setValue('swift_code', bankAccount.swift_code || '')
+  //     }
+  //   } else if (!sameAsCorporate) {
+  //     // Clear payment fields when unchecked
+  //     form.setValue('payment_method', '')
+  //     form.setValue('mobile_money_provider', '')
+  //     form.setValue('mobile_money_number', '')
+  //     form.setValue('bank_name', '')
+  //     form.setValue('account_number', '')
+  //     form.setValue('account_name', '')
+  //     form.setValue('sort_code', '')
+  //     form.setValue('swift_code', '')
+  //   }
+  // }, [sameAsCorporate, userProfile, form])
 
   const mobileMoneyProviders = [
     { label: 'MTN Mobile Money', value: 'mtn' },
@@ -260,7 +258,7 @@ export default function CreateBranchForm() {
           Payment Method
         </Text>
 
-        {(userProfile as any)?.user_type === 'corporate_vendor' && (
+        {/* {(userProfile as any)?.user_type === 'corporate_vendor' && (
           <Controller
             control={form.control}
             name="same_as_corporate"
@@ -273,7 +271,7 @@ export default function CreateBranchForm() {
               />
             )}
           />
-        )}
+        )} */}
 
         {!sameAsCorporate && (
           <>

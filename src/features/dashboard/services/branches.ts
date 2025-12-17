@@ -1,4 +1,5 @@
 import { axiosClient } from '@/libs'
+import { getList } from '@/services/requests'
 
 export interface Branch {
   id: string
@@ -40,8 +41,7 @@ export interface DeleteBranchResponse {
 }
 
 export const getBranches = async (): Promise<BranchesListResponse> => {
-  const response = await axiosClient.get('/vendors/branches')
-  return response as unknown as BranchesListResponse
+  return await getList<BranchesListResponse>('/vendors/branches')
 }
 
 export const deleteBranch = async (id: string): Promise<DeleteBranchResponse> => {

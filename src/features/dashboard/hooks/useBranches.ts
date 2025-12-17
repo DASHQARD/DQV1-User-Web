@@ -6,6 +6,7 @@ export function useBranches() {
   return useQuery({
     queryKey: ['branches'],
     queryFn: getBranches,
+    enabled: false,
   })
 }
 

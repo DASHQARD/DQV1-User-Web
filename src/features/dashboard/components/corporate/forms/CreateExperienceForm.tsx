@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { FileUploader, Input, Combobox, Button, Checkbox, Text } from '@/components'
+import { FileUploader, Input, Combobox, Button, Text } from '@/components'
 import { CreateCardSchema } from '@/utils/schemas/cards'
 import { useCreateCard } from '@/features/dashboard/hooks'
-import { useBranches } from '@/features/dashboard/hooks/useBranches'
 import { useUploadFiles } from '@/hooks'
 import { useToast } from '@/hooks'
 import { useQueryClient } from '@tanstack/react-query'
@@ -21,8 +20,18 @@ type FormData = z.infer<typeof CreateCardSchema> & {
 export default function CreateExperienceForm() {
   const { mutateAsync: createCard, isPending: isCreating } = useCreateCard()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const { data: branches } = useBranches()
   const { user } = useAuthStore()
+
+  // Dummy branches data
+  const branches = {
+    data: [
+      { id: '1', branch_name: 'Accra Main Branch', branch_location: 'Airport Road' },
+      { id: '2', branch_name: 'Kumasi Branch', branch_location: 'Adum Central' },
+      { id: '3', branch_name: 'Tema Branch', branch_location: 'Harbor Road' },
+      { id: '4', branch_name: 'Takoradi Branch', branch_location: 'Harbor Circle' },
+      { id: '5', branch_name: 'Tamale Branch', branch_location: 'Central Market' },
+    ],
+  }
   const toast = useToast()
   const queryClient = useQueryClient()
   const modal = usePersistedModalState({
@@ -34,7 +43,9 @@ export default function CreateExperienceForm() {
   const [imageErrors, setImageErrors] = useState<string>('')
   const [termsErrors, setTermsErrors] = useState<string>('')
   const [selectedBranches, setSelectedBranches] = useState<number[]>([])
-  const [selectAllBranches, setSelectAllBranches] = useState(false)
+  const [selectedBranchOptions, setSelectedBranchOptions] = useState<
+    Array<{ label: string; value: string }>
+  >([])
 
   const userType = (user as any)?.user_type
   const isBranchManager = userType === 'branch_manager'
@@ -72,7 +83,7 @@ export default function CreateExperienceForm() {
         setImageErrors('')
         setTermsErrors('')
         setSelectedBranches([])
-        setSelectAllBranches(false)
+        setSelectedBranchOptions([])
       }, 0)
     }
   }, [isModalOpen, form])
@@ -99,25 +110,38 @@ export default function CreateExperienceForm() {
     setTermsErrors('')
   }
 
-  // Handle select all branches
-  useEffect(() => {
-    if (selectAllBranches && branches?.data) {
-      const branchIds = branches.data.map((branch) => Number(branch.id))
-      // Use setTimeout to defer state update
-      setTimeout(() => setSelectedBranches(branchIds), 0)
-    } else if (!selectAllBranches) {
-      setTimeout(() => setSelectedBranches([]), 0)
-    }
-  }, [selectAllBranches, branches])
+  // Handle branch selection change (for multi-select)
+  const handleBranchOptionChange = (
+    selectedOptions: Array<{ label: string; value: string }> | null,
+  ) => {
+    const options = selectedOptions || []
+    setSelectedBranchOptions(options)
 
-  const handleBranchToggle = (branchId: number) => {
-    setSelectedBranches((prev) =>
-      prev.includes(branchId) ? prev.filter((id) => id !== branchId) : [...prev, branchId],
-    )
-    if (selectAllBranches) {
-      setSelectAllBranches(false)
+    // Check if "All Branches" is selected
+    const hasAllBranches = options.some((opt) => opt.value === 'all')
+
+    if (hasAllBranches) {
+      // If "All Branches" is selected, select all branch IDs
+      if (branches?.data) {
+        setSelectedBranches(branches.data.map((branch) => Number(branch.id)))
+      }
+    } else {
+      // Otherwise, use the selected branch IDs (excluding "all")
+      const branchIds = options.filter((opt) => opt.value !== 'all').map((opt) => Number(opt.value))
+      setSelectedBranches(branchIds)
     }
   }
+
+  // Build branch options for the select
+  const branchOptions = branches?.data
+    ? [
+        { label: 'All Branches', value: 'all' },
+        ...branches.data.map((branch) => ({
+          label: `${branch.branch_name} - ${branch.branch_location}`,
+          value: String(branch.id),
+        })),
+      ]
+    : [{ label: 'All Branches', value: 'all' }]
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -147,11 +171,8 @@ export default function CreateExperienceForm() {
         file_name: termsFiles[index].name,
       }))
 
-      // Determine branch IDs - if select all, use all branch IDs, otherwise use selected
-      const branchIds =
-        selectAllBranches && branches?.data
-          ? branches.data.map((branch) => Number(branch.id))
-          : selectedBranches
+      // Use selected branches (already determined in handleBranchOptionChange)
+      const branchIds = selectedBranches
 
       const payload: any = {
         product: data.product,
@@ -185,7 +206,7 @@ export default function CreateExperienceForm() {
       setImageFiles([])
       setTermsFiles([])
       setSelectedBranches([])
-      setSelectAllBranches(false)
+      setSelectedBranchOptions([])
       modal.closeModal()
     } catch (error: any) {
       console.error('Error submitting experience:', error)
@@ -294,51 +315,31 @@ export default function CreateExperienceForm() {
         />
       </div>
 
-      {/* Branch Selection - Show branches for selection */}
+      {/* Branch Selection */}
       {branches?.data && branches.data.length > 0 && (
         <div className="border-t border-gray-200 pt-4">
-          <div className="mb-2">
-            <Text as="h3" className="text-lg font-semibold text-gray-900 mb-1">
-              Select Branches
+          <Combobox
+            label="Select Branches"
+            options={branchOptions}
+            value={selectedBranchOptions}
+            onChange={handleBranchOptionChange}
+            placeholder="Select branches (e.g., All Branches or Accra Main Branch - Airport Road)"
+            isMulti
+            isSearchable
+          />
+          {selectedBranchOptions.length > 0 && (
+            <Text as="p" className="text-sm text-gray-600 mt-2">
+              {selectedBranchOptions.some((opt) => opt.value === 'all')
+                ? `All ${branches.data.length} branches selected`
+                : `${selectedBranchOptions.length} branch${selectedBranchOptions.length !== 1 ? 'es' : ''} selected`}
             </Text>
-            <Text as="p" className="text-sm text-gray-600">
-              Choose which branches this experience will apply to. You can select individual
-              branches or select all.
-            </Text>
-          </div>
-          <div className="space-y-3">
-            <Checkbox
-              id="select-all-branches"
-              checked={selectAllBranches}
-              onChange={(e) => setSelectAllBranches(e.target.checked)}
-              label="Select all branches"
-            />
-            <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
-              {branches.data.map((branch) => {
-                const branchId = Number(branch.id)
-                return (
-                  <Checkbox
-                    key={branch.id}
-                    id={`branch-${branch.id}`}
-                    checked={selectedBranches.includes(branchId)}
-                    onChange={() => handleBranchToggle(branchId)}
-                    label={`${branch.branch_name} - ${branch.branch_location}`}
-                  />
-                )
-              })}
-            </div>
-            {selectedBranches.length > 0 && (
-              <Text as="p" className="text-sm text-green-600">
-                {selectedBranches.length} branch{selectedBranches.length !== 1 ? 'es' : ''} selected
-              </Text>
-            )}
-            {isBranchManager && (
-              <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <strong>Note:</strong> Experiences created by branch managers require vendor admin
-                approval before they become active.
-              </p>
-            )}
-          </div>
+          )}
+          {isBranchManager && (
+            <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">
+              <strong>Note:</strong> Experiences created by branch managers require vendor admin
+              approval before they become active.
+            </p>
+          )}
         </div>
       )}
 

@@ -1,20 +1,25 @@
-import { DateCell, StatusCell } from '@/components'
+import { DateCell, StatusCell, CurrencyCell } from '@/components'
 import type { CsvHeader } from '@/types'
 import { formatDate, formatCurrency } from '@/utils/format'
-import { ExperienceActionCell } from './ExperienceActionCell'
+import { PurchaseActionCell } from './PurchaseActionCell'
 
-export const purchaseListColumns = [
+export const purchasesListColumns = [
   {
-    header: 'Product',
-    accessorKey: 'product',
+    header: 'Purchase ID',
+    accessorKey: 'id',
   },
   {
-    header: 'Type',
-    accessorKey: 'type',
+    header: 'Recipient',
+    accessorKey: 'recipientName',
   },
   {
-    header: 'Price',
-    accessorKey: 'price',
+    header: 'Card Number',
+    accessorKey: 'cardNumber',
+  },
+  {
+    header: 'Amount',
+    accessorKey: 'amount',
+    cell: CurrencyCell,
   },
   {
     header: 'Status',
@@ -22,56 +27,56 @@ export const purchaseListColumns = [
     cell: StatusCell,
   },
   {
-    header: 'Date Created',
-    accessorKey: 'created_at',
+    header: 'Date',
+    accessorKey: 'date',
     cell: DateCell,
   },
   {
-    header: 'Expiry Date',
-    accessorKey: 'expiry_date',
+    header: 'Created At',
+    accessorKey: 'createdAt',
     cell: DateCell,
   },
   {
     id: 'actions',
     header: '',
     accessorKey: '',
-    cell: ExperienceActionCell,
+    cell: PurchaseActionCell,
   },
 ]
 
 export const purchaseListCsvHeaders: Array<CsvHeader> = [
   {
-    name: 'Product',
-    accessor: 'product',
+    name: 'Purchase ID',
+    accessor: 'id',
   },
   {
-    name: 'Type',
-    accessor: 'type',
+    name: 'Recipient',
+    accessor: 'recipientName',
   },
   {
-    name: 'Price',
-    accessor: 'price',
+    name: 'Card Number',
+    accessor: 'cardNumber',
+  },
+  {
+    name: 'Amount',
+    accessor: 'amount',
     transform: (value: any) => {
-      const price = parseFloat(value as string)
-      return formatCurrency(price, 'GHS')
+      const amount = parseFloat(value as string)
+      return formatCurrency(amount, 'GHS')
     },
-  },
-  {
-    name: 'Currency',
-    accessor: 'currency',
   },
   {
     name: 'Status',
     accessor: 'status',
   },
   {
-    name: 'Date Created',
-    accessor: 'created_at',
+    name: 'Date',
+    accessor: 'date',
     transform: (value) => formatDate(value),
   },
   {
-    name: 'Expiry Date',
-    accessor: 'expiry_date',
+    name: 'Created At',
+    accessor: 'createdAt',
     transform: (value) => formatDate(value),
   },
 ]

@@ -56,7 +56,7 @@ export default function Settings() {
     {
       label: 'Payout Accounts',
       icon: 'bi:credit-card-fill',
-      path: ROUTES.IN_APP.DASHBOARD.PAYMENT_METHODS,
+      path: ROUTES.IN_APP.DASHBOARD.VENDOR.PAYMENT_METHODS,
     },
     {
       label: 'Log Out',

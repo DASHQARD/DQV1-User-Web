@@ -3,45 +3,44 @@ import { ROUTES } from './shared'
 export const CORPORATE_NAV_ITEMS = [
   {
     section: 'Overview',
-    items: [{ path: ROUTES.IN_APP.DASHBOARD.HOME, label: 'Dashboard', icon: 'bi:grid' }],
+    items: [{ path: ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME, label: 'Dashboard', icon: 'bi:grid' }],
   },
   {
     section: 'Transactions',
     items: [
-      { path: '/dashboard/transactions', label: 'Transactions', icon: 'bi:receipt' },
-      { path: ROUTES.IN_APP.DASHBOARD.PURCHASE, label: 'Purchase', icon: 'bi:gift' },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.TRANSACTIONS,
+        label: 'Transactions',
+        icon: 'bi:receipt',
+      },
+      { path: ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE, label: 'Purchase', icon: 'bi:gift' },
     ],
   },
   {
     section: 'Management',
     items: [
       {
-        path: ROUTES.IN_APP.DASHBOARD.BRANCHES,
-        label: 'Branches',
-        icon: 'bi:building',
+        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS,
+        label: 'Requests',
+        icon: 'bi:clipboard-check',
+      },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.AUDIT_LOGS,
+        label: 'Audit Logs',
+        icon: 'bi:journal-text',
       },
     ],
   },
-  // {
-  //   section: 'Subscriptions',
-  //   items: [
-  //     {
-  //       path: '/dashboard/subscriptions',
-  //       label: 'Subscriptions',
-  //       icon: 'bi:credit-card-2-front',
-  //     },
-  //   ],
-  // },
 ]
 
-export const REGULAR_NAV_ITEMS = [
+export const USER_NAV_ITEMS = [
   {
     section: 'Gift Cards',
     items: [
       { path: ROUTES.IN_APP.DASHBOARD.ORDERS, label: 'My Orders', icon: 'bi:gift' },
       { path: ROUTES.IN_APP.DASHBOARD.REDEEM, label: 'Redeem', icon: 'bi:card-checklist' },
       { path: ROUTES.IN_APP.DASHBOARD.RECIPIENTS, label: 'Recipients', icon: 'bi:people-fill' },
-      { path: '/dashboard/transactions', label: 'Transactions', icon: 'bi:receipt' },
+      { path: ROUTES.IN_APP.DASHBOARD.TRANSACTIONS, label: 'Transactions', icon: 'bi:receipt' },
     ],
   },
   {
@@ -57,23 +56,25 @@ export const REGULAR_NAV_ITEMS = [
 export const VENDOR_NAV_ITEMS = [
   {
     section: 'Overview',
-    items: [{ path: ROUTES.IN_APP.DASHBOARD.HOME, label: 'Dashboard', icon: 'bi:speedometer2' }],
+    items: [
+      { path: ROUTES.IN_APP.DASHBOARD.VENDOR.HOME, label: 'Dashboard', icon: 'bi:speedometer2' },
+    ],
   },
   {
     section: 'Experience',
     items: [
       {
-        path: ROUTES.IN_APP.DASHBOARD.EXPERIENCE,
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.EXPERIENCE,
         label: 'My Experience',
         icon: 'bi:briefcase-fill',
       },
     ],
   },
   {
-    section: 'Management',
+    section: 'Branch Management',
     items: [
       {
-        path: ROUTES.IN_APP.DASHBOARD.BRANCHES,
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES,
         label: 'Branches',
         icon: 'bi:building',
       },
@@ -83,19 +84,24 @@ export const VENDOR_NAV_ITEMS = [
     section: 'Redemptions',
     items: [
       {
-        path: ROUTES.IN_APP.DASHBOARD.REDEMPTIONS,
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.REDEMPTIONS,
         label: 'Redemptions',
         icon: 'bi:arrow-left-right',
       },
     ],
   },
   {
-    section: 'Transactions',
+    section: 'Management',
     items: [
       {
-        path: ROUTES.IN_APP.DASHBOARD.REDEMPTION_TRANSACTIONS,
-        label: 'Redemption Transactions',
-        icon: 'bi:receipt',
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS,
+        label: 'Requests',
+        icon: 'bi:clipboard-check',
+      },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.AUDIT_LOGS,
+        label: 'Audit Logs',
+        icon: 'bi:journal-text',
       },
     ],
   },
@@ -104,7 +110,7 @@ export const VENDOR_NAV_ITEMS = [
     items: [
       { path: '/dashboard/settings', label: 'Settings', icon: 'bi:gear-fill' },
       {
-        path: ROUTES.IN_APP.DASHBOARD.PAYMENT_METHODS,
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.PAYMENT_METHODS,
         label: 'Payment Methods',
         icon: 'bi:credit-card-fill',
       },
