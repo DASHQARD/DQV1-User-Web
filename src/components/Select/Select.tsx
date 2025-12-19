@@ -68,8 +68,8 @@ export const Select = React.memo(
     const { onValueChange, onElementBlur } = useHookFormInputRef({
       name,
       value,
-      onChange: onChange as (e: Event) => void,
-      onBlur: onBlur as (e: Event) => void,
+      onChange: onChange as unknown as (e: Event) => void,
+      onBlur: onBlur as unknown as (e: Event) => void,
       ref: ref as React.Ref<HTMLInputElement>,
     })
 

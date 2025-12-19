@@ -135,3 +135,13 @@ body {
     sans-serif;
   margin: 0;
 }
+
+/* 3D Card Flip Styles */
+.transform-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}

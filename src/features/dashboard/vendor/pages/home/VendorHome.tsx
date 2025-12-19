@@ -2,6 +2,11 @@ import { Text } from '@/components'
 import { Icon } from '@/libs'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
+import {
+  SummaryCards,
+  QardsPerformance,
+  CompleteVendorWidget,
+} from '@/features/dashboard/components'
 
 export default function VendorHome() {
   const addAccountParam = (path: string): string => {
@@ -135,6 +140,15 @@ export default function VendorHome() {
               <p className="text-sm m-0">No branches added yet</p>
             </div>
           </div>
+        </div>
+
+        {/* Vendor Widgets */}
+        <SummaryCards />
+        <QardsPerformance />
+
+        {/* Complete Vendor Onboarding Widget */}
+        <div className="fixed bottom-6 right-6 z-50 w-[598px] max-w-[calc(100vw-3rem)]">
+          <CompleteVendorWidget />
         </div>
       </section>
     </div>

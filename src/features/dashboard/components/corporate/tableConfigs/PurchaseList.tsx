@@ -32,11 +32,6 @@ export const purchasesListColumns = [
     cell: DateCell,
   },
   {
-    header: 'Created At',
-    accessorKey: 'createdAt',
-    cell: DateCell,
-  },
-  {
     id: 'actions',
     header: '',
     accessorKey: '',

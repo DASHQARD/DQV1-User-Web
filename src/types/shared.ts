@@ -112,3 +112,44 @@ export type CsvHeader = {
   accessor: string
   transform?: (v: any) => string
 }
+
+export type QueryType = {
+  page: number
+  limit: number
+  search: string
+  status: string
+  vendor_id: string
+  branch_type: string
+  is_single_branch: string
+  parent_branch_id: string
+  card_type: string
+  card_id: string
+  date_from: string
+  date_to: string
+  min_amount: string
+  max_amount: string
+  [key: string]: string | number
+}
+
+export type NativeEventHandler = (event: React.ChangeEvent<HTMLInputElement>) => void
+
+export type PersistedModalStateOptions = {
+  paramName?: string
+  defaultValue?: string | null
+  resetOnRouteChange?: boolean
+}
+
+export type PersistedModalStateReturn<TModalData = unknown> = {
+  modalState: string | null
+  modalData: TModalData | null
+  openModal: (modalName: string, data?: TModalData) => void
+  closeModal: () => void
+  isModalOpen: (modalName?: string) => boolean
+}
+
+export type generateCsvParams = {
+  headers: CsvHeader[]
+  data: Record<string, any>[]
+  fileName: string
+  separator?: string
+}

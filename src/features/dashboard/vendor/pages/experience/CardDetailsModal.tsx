@@ -1,7 +1,7 @@
 import { Modal } from '@/components'
 import { Icon } from '@/libs'
-import { useCard } from '../../hooks'
 import { Loader } from '@/components/Loader'
+import { useCard } from '@/features/dashboard/hooks'
 
 interface CardDetailsModalProps {
   cardId: number | null
@@ -102,7 +102,7 @@ export function CardDetailsModal({ cardId, isOpen, onClose }: CardDetailsModalPr
                 <div>
                   <label className="text-sm font-medium text-gray-500 mb-3 block">Images</label>
                   <div className="grid grid-cols-3 gap-4">
-                    {card.images.map((img, index) => (
+                    {card.images.map((img: { file_url: string; file_name: string }, index: number) => (
                       <div key={index} className="relative">
                         <img
                           src={img.file_url}
@@ -122,7 +122,7 @@ export function CardDetailsModal({ cardId, isOpen, onClose }: CardDetailsModalPr
                     Terms and Conditions
                   </label>
                   <div className="space-y-2">
-                    {card.terms_and_conditions.map((tc, index) => (
+                    {card.terms_and_conditions.map((tc: { file_url: string; file_name: string }, index: number) => (
                       <a
                         key={index}
                         href={tc.file_url}

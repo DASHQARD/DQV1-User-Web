@@ -13,7 +13,7 @@ type Transaction = {
   amount: number
   date: string
   createdAt: string
-  status?: string
+  status: string
   recipientName?: string
   vendorName?: string
 }
@@ -48,12 +48,12 @@ const recentTransactionsColumns: ColumnDef<Transaction>[] = [
   {
     header: 'Status',
     accessorKey: 'status',
-    cell: StatusCell,
+    cell: (info) => <StatusCell row={info.row as any} getValue={info.getValue as any} />,
   },
   {
     header: 'Date',
     accessorKey: 'createdAt',
-    cell: DateCell,
+    cell: ({ getValue }) => <DateCell getValue={() => String(getValue() || '')} />,
   },
 ]
 

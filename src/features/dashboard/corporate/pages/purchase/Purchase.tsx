@@ -1,6 +1,10 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { Button, Text, TabbedView } from '@/components'
-import { PurchaseDetails, BulkPurchaseEmployeesModal } from '@/features/dashboard/components'
+import {
+  PurchaseDetails,
+  BulkPurchaseEmployeesModal,
+  IndividualPurchaseModal,
+} from '@/features/dashboard/components'
 import { Icon } from '@/libs'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
@@ -9,7 +13,6 @@ import { usePurchaseManagement } from '@/features/dashboard/hooks'
 
 export default function Purchase() {
   const { purchaseTabConfig } = usePurchaseManagement()
-  const navigate = useNavigate()
   const location = useLocation()
   const searchParams = new URLSearchParams(location.search)
   const currentTab = searchParams.get('tab') || 'individual'
@@ -18,8 +21,12 @@ export default function Purchase() {
     paramName: MODALS.BULK_EMPLOYEE_PURCHASE.PARAM_NAME,
   })
 
+  const individualPurchaseModal = usePersistedModalState({
+    paramName: MODALS.PURCHASE.INDIVIDUAL.ROOT,
+  })
+
   const handleIndividualPurchase = () => {
-    navigate(`${location.pathname}?tab=individual`)
+    individualPurchaseModal.openModal(MODALS.PURCHASE.INDIVIDUAL.CREATE)
   }
 
   const handleBulkPurchase = () => {
@@ -69,6 +76,7 @@ export default function Purchase() {
 
       <PurchaseDetails />
       <BulkPurchaseEmployeesModal modal={bulkPurchaseModal} />
+      <IndividualPurchaseModal />
     </>
   )
 }

@@ -12,7 +12,10 @@ import { useCards } from '@/features/website'
 
 export default function Experience() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
-  const { data: cardsResponse, isLoading } = useCards()
+  const cardsService = useCards()
+  const cardsQuery = cardsService.useCardsService(query)
+  const cardsResponse = cardsQuery.data
+  const isLoading = cardsQuery.isLoading
 
   console.log('cardsResponse', cardsResponse)
 

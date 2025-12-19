@@ -32,7 +32,7 @@ export function VendorNameForm({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 mt-[120px]">
       <div className="flex flex-col gap-4">
-        <p className="text-xs text-gray-500">Step 1/2</p>
+        <p className="text-xs text-gray-500">Step 1/3</p>
         <Text variant="h2" weight="semibold" className="text-gray-900 mb-2">
           What's the name of your vendor account?
         </Text>

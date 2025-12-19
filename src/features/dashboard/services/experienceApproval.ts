@@ -4,6 +4,8 @@ export interface ExperienceApproval {
   id: number
   card_id: number
   product: string
+  title?: string
+  description?: string
   branch_id: number
   branch_name: string
   branch_manager_name: string

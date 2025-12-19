@@ -1,4 +1,4 @@
-import type { TierType } from '@/types'
+import type { TierType, IconNames } from '@/types'
 
 export function getCustomerTierTagIconName(tier: TierType): IconNames {
   switch (tier) {

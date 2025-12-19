@@ -1,4 +1,4 @@
-import type { generateCsvParams } from '@/types'
+import type { generateCsvParams, CsvHeader } from '@/types'
 
 export function generateAndDownloadCsv(options: generateCsvParams) {
   const file = generateCsv(options)
@@ -10,13 +10,13 @@ export function generateCsv(options: generateCsvParams) {
   const rows = []
 
   // add headers first
-  rows.push(headers.map((h) => h.name).join(separator))
+  rows.push(headers.map((h: CsvHeader) => h.name).join(separator))
 
   // append rows
-  data.forEach((row) => {
+  data.forEach((row: Record<string, any>) => {
     rows.push(
       headers
-        .map((h) => {
+        .map((h: CsvHeader) => {
           const transform = h.transform ?? String
           return `"${transform(h.accessor ? getTarget(row, h.accessor) : row)}"`
         })

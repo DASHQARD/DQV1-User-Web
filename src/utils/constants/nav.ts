@@ -115,8 +115,8 @@ export const VENDOR_NAV_ITEMS = [
       },
       {
         path: ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_BRANCH_MANAGER,
-        label: 'Invite Branch Manager',
-        icon: 'bi:person-plus',
+        label: 'Create Branch',
+        icon: 'bi:building-add',
       },
       {
         path: ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_ADMIN,

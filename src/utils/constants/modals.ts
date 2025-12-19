@@ -13,6 +13,10 @@ export const MODALS = {
     CHILDREN: {
       VIEW: 'view',
     },
+    INDIVIDUAL: {
+      ROOT: 'individual-purchase-modal',
+      CREATE: 'create-individual-purchase',
+    },
   },
   REDEMPTION: {
     PARAM_NAME: 'redemption',

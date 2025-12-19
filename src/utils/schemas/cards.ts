@@ -56,6 +56,12 @@ export const DashGoAndDashProPurchaseFormSchema = z.object({
   ),
 })
 
+export const DashGoDashboardPurchaseFormSchema = z.object({
+  recipient_card_amount: z.number().min(1).max(10000),
+  recipient_message: z.string().min(1),
+  vendor_id: z.string().min(1, 'Vendor is required'),
+})
+
 export const AssignRecipientSchema = z
   .object({
     assign_to_self: z.boolean(),

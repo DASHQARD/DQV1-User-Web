@@ -1,4 +1,3 @@
-import React from 'react'
 import { Text } from '@/components'
 import { PaginatedTable } from '@/components/Table'
 import { cn } from '@/libs'
@@ -236,10 +235,10 @@ const auditLogsColumns = [
 ]
 
 const auditLogsCsvHeaders = [
-  { label: 'Actor', key: 'actor_name' },
-  { label: 'Role', key: 'actor_type' },
-  { label: 'Action', key: 'action' },
-  { label: 'Date', key: 'created_at' },
+  { name: 'Actor', accessor: 'actor_name' },
+  { name: 'Role', accessor: 'actor_type' },
+  { name: 'Action', accessor: 'action' },
+  { name: 'Date', accessor: 'created_at' },
 ]
 
 export default function AuditLogs() {

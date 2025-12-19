@@ -3,7 +3,11 @@ import { Modal, Text } from '@/components'
 import { Icon } from '@/libs'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
-import { VendorNameForm, VendorProfileForm } from '@/features/dashboard/components/vendors/forms'
+import {
+  VendorNameForm,
+  VendorProfileForm,
+  VendorDetailsForm,
+} from '@/features/dashboard/components/vendors/forms'
 
 type VendorNameFormData = {
   vendor_name: string
@@ -14,10 +18,12 @@ export function CreateVendorAccount() {
     paramName: MODALS.VENDOR_ACCOUNT.CREATE,
   })
 
-  const [step, setStep] = React.useState<1 | 2>(1)
+  const [step, setStep] = React.useState<1 | 2 | 3>(1)
   const [vendorName, setVendorName] = React.useState('')
   const [vendorNameSameAsCorporate, setVendorNameSameAsCorporate] = React.useState(false)
   const [profileSameAsCorporate, setProfileSameAsCorporate] = React.useState(false)
+  const [vendorDetailsSameAsCorporate, setVendorDetailsSameAsCorporate] = React.useState(false)
+  const [profileData, setProfileData] = React.useState<any>(null)
 
   const handleCloseModal = React.useCallback(() => {
     modal.closeModal()
@@ -25,10 +31,16 @@ export function CreateVendorAccount() {
     setVendorName('')
     setVendorNameSameAsCorporate(false)
     setProfileSameAsCorporate(false)
+    setVendorDetailsSameAsCorporate(false)
+    setProfileData(null)
   }, [modal])
 
   const handleBackToStep1 = React.useCallback(() => {
     setStep(1)
+  }, [])
+
+  const handleBackToStep2 = React.useCallback(() => {
+    setStep(2)
   }, [])
 
   const handleStep1Complete = (data: VendorNameFormData) => {
@@ -37,11 +49,18 @@ export function CreateVendorAccount() {
   }
 
   const handleProfileSubmit = (data: any) => {
+    setProfileData(data)
+    setStep(3)
+  }
+
+  const handleVendorDetailsSubmit = (data: any) => {
     // TODO: Handle final submission to create vendor account and invite
     console.log('Creating vendor account:', {
       vendor_name: vendorName,
-      profile: data,
+      profile: profileData,
+      vendorDetails: data,
       profileSameAsCorporate,
+      vendorDetailsSameAsCorporate,
     })
     // TODO: Invite the vendor
     handleCloseModal()
@@ -60,26 +79,34 @@ export function CreateVendorAccount() {
         vendorName={vendorName}
         vendorNameSameAsCorporate={vendorNameSameAsCorporate}
         profileSameAsCorporate={profileSameAsCorporate}
+        vendorDetailsSameAsCorporate={vendorDetailsSameAsCorporate}
         onStep1Complete={handleStep1Complete}
         onBackToStep1={handleBackToStep1}
+        onBackToStep2={handleBackToStep2}
         onVendorNameSameAsCorporateChange={setVendorNameSameAsCorporate}
         onProfileSameAsCorporateChange={setProfileSameAsCorporate}
+        onVendorDetailsSameAsCorporateChange={setVendorDetailsSameAsCorporate}
         onProfileSubmit={handleProfileSubmit}
+        onVendorDetailsSubmit={handleVendorDetailsSubmit}
       />
     </Modal>
   )
 }
 
 interface CreateVendorAccountContentProps {
-  step: 1 | 2
+  step: 1 | 2 | 3
   vendorName: string
   vendorNameSameAsCorporate: boolean
   profileSameAsCorporate: boolean
+  vendorDetailsSameAsCorporate: boolean
   onStep1Complete: (data: VendorNameFormData) => void
   onBackToStep1: () => void
+  onBackToStep2: () => void
   onVendorNameSameAsCorporateChange: (value: boolean) => void
   onProfileSameAsCorporateChange: (value: boolean) => void
+  onVendorDetailsSameAsCorporateChange: (value: boolean) => void
   onProfileSubmit: (data: any) => void
+  onVendorDetailsSubmit: (data: any) => void
 }
 
 function CreateVendorAccountContent({
@@ -87,11 +114,15 @@ function CreateVendorAccountContent({
   vendorName,
   vendorNameSameAsCorporate,
   profileSameAsCorporate,
+  vendorDetailsSameAsCorporate,
   onStep1Complete,
   onBackToStep1,
+  onBackToStep2,
   onVendorNameSameAsCorporateChange,
   onProfileSameAsCorporateChange,
+  onVendorDetailsSameAsCorporateChange,
   onProfileSubmit,
+  onVendorDetailsSubmit,
 }: CreateVendorAccountContentProps) {
   return (
     <section
@@ -116,12 +147,19 @@ function CreateVendorAccountContent({
             onSameAsCorporateChange={onVendorNameSameAsCorporateChange}
             initialValue={vendorName}
           />
-        ) : (
+        ) : step === 2 ? (
           <VendorProfileForm
             onSubmit={onProfileSubmit}
             onCancel={onBackToStep1}
             sameAsCorporate={profileSameAsCorporate}
             onSameAsCorporateChange={onProfileSameAsCorporateChange}
+          />
+        ) : (
+          <VendorDetailsForm
+            onSubmit={onVendorDetailsSubmit}
+            onCancel={onBackToStep2}
+            sameAsCorporate={vendorDetailsSameAsCorporate}
+            onSameAsCorporateChange={onVendorDetailsSameAsCorporateChange}
           />
         )}
         <div className="py-8 px-6 mt-[120px] max-w-[480px] w-full rounded-2xl border border-[#e5e7eb] flex gap-4 h-fit bg-white">

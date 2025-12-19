@@ -76,7 +76,7 @@ export function VendorDetailsForm({
       className="flex flex-col gap-6 max-w-[448px] w-full"
     >
       <div className="flex flex-col gap-4">
-        <p className="text-xs text-gray-500">Step 2/2</p>
+        <p className="text-xs text-gray-500">Step 3/3</p>
         <div>
           <Text variant="h2" weight="semibold" className="text-gray-900 mb-2">
             Vendor Details & Documentation

@@ -58,11 +58,11 @@ export const requestListCsvHeaders: Array<CsvHeader> = [
   {
     name: 'Date',
     accessor: 'date',
-    transform: DateCell,
+    transform: (v: any) => (v ? new Date(v).toLocaleDateString() : ''),
   },
   {
     name: 'Created At',
     accessor: 'createdAt',
-    transform: DateCell,
+    transform: (v: any) => (v ? new Date(v).toLocaleDateString() : ''),
   },
 ]

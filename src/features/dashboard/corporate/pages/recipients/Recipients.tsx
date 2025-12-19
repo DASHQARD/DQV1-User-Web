@@ -1,4 +1,3 @@
-import React from 'react'
 import { Text, Button } from '@/components'
 import { PaginatedTable } from '@/components/Table'
 import { DEFAULT_QUERY } from '@/utils/constants'
@@ -169,13 +168,13 @@ const recipientsColumns = [
 ]
 
 const recipientsCsvHeaders = [
-  { label: 'First Name', key: 'first_name' },
-  { label: 'Last Name', key: 'last_name' },
-  { label: 'Email', key: 'email' },
-  { label: 'Phone', key: 'phone' },
-  { label: 'Message', key: 'message' },
-  { label: 'Created At', key: 'created_at' },
-  { label: 'Last Used', key: 'last_used' },
+  { name: 'First Name', accessor: 'first_name' },
+  { name: 'Last Name', accessor: 'last_name' },
+  { name: 'Email', accessor: 'email' },
+  { name: 'Phone', accessor: 'phone' },
+  { name: 'Message', accessor: 'message' },
+  { name: 'Created At', accessor: 'created_at' },
+  { name: 'Last Used', accessor: 'last_used' },
 ]
 
 export default function Recipients() {

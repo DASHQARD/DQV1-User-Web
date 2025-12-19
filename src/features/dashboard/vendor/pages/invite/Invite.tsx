@@ -14,7 +14,7 @@ export default function Invite() {
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between">
           <Text variant="h2" weight="semibold" className="text-primary-900">
-            Invitations
+            Branches & Admin
           </Text>
         </div>
 
@@ -22,7 +22,7 @@ export default function Invite() {
           tabs={[
             {
               key: 'branch-manager',
-              label: 'Invite Branch Manager',
+              label: 'Create Branch',
               component: InviteBranchManager,
             },
             {
