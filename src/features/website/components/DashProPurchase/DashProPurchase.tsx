@@ -2,7 +2,7 @@ import React from 'react'
 import { Button, Text } from '@/components'
 import { Icon } from '@/libs'
 import DashProBG from '@/assets/svgs/dashpro_bg.svg'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { formatCurrency } from '@/utils/format'
@@ -31,10 +31,10 @@ export default function DashProPurchase() {
   const [assignToSelf, setAssignToSelf] = React.useState(true)
 
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
-    watch,
     getValues,
     setValue,
   } = useForm<z.infer<typeof AssignRecipientSchema>>({
@@ -50,10 +50,10 @@ export default function DashProPurchase() {
   })
 
   // Watch form values for card preview
-  const amount = watch('amount')
-  const name = watch('name')
-  const message = watch('message')
-  const assignToSelfFormValue = watch('assign_to_self')
+  const amount = useWatch({ control, name: 'amount' })
+  const recipientName = useWatch({ control, name: 'name' })
+  const message = useWatch({ control, name: 'message' })
+  const assignToSelfFormValue = useWatch({ control, name: 'assign_to_self' })
 
   const { mutate: createDashProCard, isPending: isCreatingDashProCard } = useCreateCard()
   const { addToCart } = useCart()
@@ -118,7 +118,7 @@ export default function DashProPurchase() {
 
   // Computed values for card preview
   const displayedCardAmount = amount ? formatCurrency(amount.toString(), 'GHS') : 'GHS 0'
-  const displayedCardRecipient = assignToSelf ? 'Your Name' : name || 'Recipient Name'
+  const displayedCardRecipient = assignToSelf ? 'Your Name' : recipientName || 'Recipient Name'
   const displayedCardMessage = message || 'Your personalized message will appear here...'
 
   return (

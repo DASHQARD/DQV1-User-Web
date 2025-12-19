@@ -15,6 +15,9 @@ import { CorporateHome, Transactions } from '../pages'
 import { Purchase } from '../pages/purchase'
 import { Requests } from '../pages/requests'
 import { AuditLogs } from '../pages/auditLogs'
+import { Admins } from '../pages/admins'
+import { Notifications } from '../pages/notifications'
+import { Recipients } from '../pages/recipients'
 
 export const corporateRoutes: RouteObject[] = [
   {
@@ -40,6 +43,18 @@ export const corporateRoutes: RouteObject[] = [
   {
     path: 'audit-logs',
     element: <AuditLogs />,
+  },
+  {
+    path: 'admins',
+    element: <Admins />,
+  },
+  {
+    path: 'notifications',
+    element: <Notifications />,
+  },
+  {
+    path: 'recipients',
+    element: <Recipients />,
   },
   {
     path: 'settings',

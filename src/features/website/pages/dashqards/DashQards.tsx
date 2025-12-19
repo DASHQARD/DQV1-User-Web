@@ -6,7 +6,7 @@ import DashXImage from '@/assets/images/DashX.png'
 import DashGoImage from '@/assets/images/DashGo.png'
 import DashProImage from '@/assets/images/DashPro.png'
 import { CardItems, DashProPurchase, DashGoPurchase } from '../../components'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { Select } from '@/components/Select'
 import useVendorsManagementBase from '../../hooks/vendors/useVendorsManagement'
 import type { PublicCardResponse } from '@/types/cards'
@@ -20,12 +20,12 @@ const heroImages = {
 export default function DashQards() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'dashx' | 'dashgo' | 'dashpro' | 'dashpass'>('dashx')
-  const { control, watch } = useForm({
+  const { control } = useForm({
     defaultValues: {
       sortBy: 'popular',
     },
   })
-  const sortBy = watch('sortBy')
+  const sortBy = useWatch({ control, name: 'sortBy' })
   const {
     cardsResponse,
     min_price,

@@ -126,14 +126,6 @@ export default function CorporateSidebar() {
               <Icon icon="bi:briefcase" className="text-lg text-[#677084]" />
               <span>Portfolio</span>
             </Link>
-            <Link
-              to="/dashboard/settings"
-              onClick={() => setIsPopoverOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <Icon icon="bi:gear" className="text-lg text-[#677084]" />
-              <span>Settings</span>
-            </Link>
           </div>
 
           {/* Separator */}
@@ -168,17 +160,6 @@ export default function CorporateSidebar() {
             >
               <Icon icon="bi:question-circle" className="text-lg text-[#677084]" />
               <span>Help</span>
-            </button>
-            <button
-              onClick={() => {
-                setIsPopoverOpen(false)
-                logout()
-                navigate(ROUTES.IN_APP.AUTH.LOGIN)
-              }}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left font-semibold"
-            >
-              <Icon icon="bi:box-arrow-right" className="text-lg" />
-              <span>Log Out</span>
             </button>
           </div>
         </PopoverContent>
@@ -240,9 +221,9 @@ export default function CorporateSidebar() {
         {!isCollapsed && (
           <div className="p-4">
             {/* Workspace Card */}
-            <div className="rounded-lg bg-white border border-gray-200 shadow-sm p-4 mb-4">
+            <div className="rounded-lg bg-white border border-gray-200 shadow-sm p-3">
               {/* Top Section - Workspace Info */}
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <Avatar size="sm" />
                   <div className="flex-1 min-w-0">
@@ -259,12 +240,12 @@ export default function CorporateSidebar() {
                   </div>
                 </div>
                 {accountMenuContent && (
-                  <div className="flex items-center gap-2 mb-4">{accountMenuContent}</div>
+                  <div className="flex items-center gap-2">{accountMenuContent}</div>
                 )}
               </div>
 
               {/* Divider */}
-              <div className="border-t border-gray-200 my-3" />
+              <div className="border-t border-gray-200 my-1" />
 
               {/* Bottom Section - Discovery Score */}
               <div className="flex items-center gap-3">
@@ -387,6 +368,62 @@ export default function CorporateSidebar() {
           ))}
         </ul>
       </nav>
+
+      {/* Footer - Settings and Log Out */}
+      <div className="border-t border-gray-200 p-3 space-y-2">
+        {/* Settings */}
+        <Link
+          to="/dashboard/settings"
+          className={cn(
+            'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
+            isActive('/dashboard/settings') &&
+              'text-[#402D87] font-bold bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
+            !isActive('/dashboard/settings') &&
+              'hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.04)]',
+            isCollapsed && 'justify-center px-2',
+          )}
+        >
+          <Icon
+            icon="bi:gear"
+            className={cn(
+              'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+              isActive('/dashboard/settings') && 'text-[#402D87]',
+              !isActive('/dashboard/settings') &&
+                'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+            )}
+          />
+          {!isCollapsed && <span>Settings</span>}
+        </Link>
+
+        {/* Log Out */}
+        {isCollapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => {
+                  logout()
+                  navigate(ROUTES.IN_APP.AUTH.LOGIN)
+                }}
+                className="flex items-center justify-center gap-3.5 text-red-600 font-medium text-sm py-3 px-2 w-full transition-all duration-200 rounded-[10px] hover:bg-red-50 hover:text-red-700"
+              >
+                <Icon icon="bi:box-arrow-right" className="w-5 h-5 text-base shrink-0" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Log Out</TooltipContent>
+          </Tooltip>
+        ) : (
+          <button
+            onClick={() => {
+              logout()
+              navigate(ROUTES.IN_APP.AUTH.LOGIN)
+            }}
+            className="flex items-center gap-3.5 text-red-600 font-semibold text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] hover:bg-red-50 hover:text-red-700 text-left"
+          >
+            <Icon icon="bi:box-arrow-right" className="w-5 h-5 text-base shrink-0" />
+            <span>Log Out</span>
+          </button>
+        )}
+      </div>
     </aside>
   )
 }

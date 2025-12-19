@@ -1,7 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from '@/libs'
-import { Text } from '@/components'
 import { cn } from '@/libs'
 import { ROUTES } from '@/utils/constants'
 

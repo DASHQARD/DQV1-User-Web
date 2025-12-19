@@ -1,1 +1,1 @@
-export * from './VendorCards';
+export * from './VendorCards'

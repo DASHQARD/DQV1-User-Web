@@ -1,3 +1,4 @@
+import { DateCell } from '@/components'
 import type { Branch } from '@/features/dashboard/services'
 
 // Transaction interface matching the one used in Transactions.tsx
@@ -544,7 +545,7 @@ const MOCK_REQUESTS: Request[] = [
     product: 'ShopRite Gift Card Experience',
     requestedBy: 'John Smith',
     branchName: 'Downtown Branch',
-    status: 'pending',
+    status: 'initiate',
   },
   {
     id: '2',
@@ -564,7 +565,7 @@ const MOCK_REQUESTS: Request[] = [
     product: 'Game Stores Experience',
     requestedBy: 'Bob Williams',
     branchName: 'Uptown Branch',
-    status: 'rejected',
+    status: 'authorize',
   },
   {
     id: '4',
@@ -574,7 +575,7 @@ const MOCK_REQUESTS: Request[] = [
     product: 'New Branch - Airport Branch',
     requestedBy: 'Alice Brown',
     branchName: 'Airport Branch',
-    status: 'pending',
+    status: 'initiate',
   },
   {
     id: '5',
@@ -584,7 +585,7 @@ const MOCK_REQUESTS: Request[] = [
     product: 'MaxMart Gift Card Experience',
     requestedBy: 'Charlie Davis',
     branchName: 'South Branch',
-    status: 'pending',
+    status: 'authorize',
   },
   {
     id: '6',
@@ -614,7 +615,7 @@ const MOCK_REQUESTS: Request[] = [
     product: 'New Branch - Central Branch',
     requestedBy: 'Frank Taylor',
     branchName: 'Central Branch',
-    status: 'rejected',
+    status: 'initiate',
   },
 ]
 

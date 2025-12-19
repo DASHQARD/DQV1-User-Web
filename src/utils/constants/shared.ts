@@ -17,6 +17,9 @@ export const ROUTES = {
         PURCHASE: '/dashboard/corporate/purchase',
         TRANSACTIONS: '/dashboard/corporate/transactions',
         AUDIT_LOGS: '/dashboard/corporate/audit-logs',
+        ADMINS: '/dashboard/corporate/admins',
+        NOTIFICATIONS: '/dashboard/corporate/notifications',
+        RECIPIENTS: '/dashboard/corporate/recipients',
         COMPLIANCE: {
           ROOT: '/dashboard/corporate/compliance',
           PROFILE_INFORMATION: '/dashboard/corporate/compliance/profile',
@@ -34,6 +37,8 @@ export const ROUTES = {
         REQUESTS: '/dashboard/vendor/requests',
         AUDIT_LOGS: '/dashboard/vendor/audit-logs',
         PAYMENT_METHODS: '/dashboard/vendor/payment-methods',
+        INVITE_BRANCH_MANAGER: '/dashboard/vendor/invite-branch-manager',
+        INVITE_ADMIN: '/dashboard/vendor/invite-admin',
       },
       SETTINGS: {
         ROOT: '/dashboard/settings',

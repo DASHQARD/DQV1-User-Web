@@ -1,4 +1,4 @@
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button, Text, Input, Checkbox, FileUploader } from '@/components'
@@ -43,7 +43,11 @@ export function VendorWorkspaceForm({
     },
   })
 
-  const descriptionLength = form.watch('company_description')?.length || 0
+  const companyDescription = useWatch({
+    control: form.control,
+    name: 'company_description',
+  })
+  const descriptionLength = companyDescription?.length || 0
 
   return (
     <form

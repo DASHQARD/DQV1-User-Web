@@ -1,11 +1,15 @@
-import { Controller, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button, Text, Input, Checkbox, FileUploader, Combobox } from '@/components'
+import { Button, Text, Input } from '@/components'
 import { Icon } from '@/libs'
-import { ProfileAndIdentitySchema } from '@/utils/schemas'
+import { getRequiredStringSchema, getRequiredEmailSchema } from '@/utils/schemas/shared'
 
-const vendorProfileSchema = ProfileAndIdentitySchema
+const vendorProfileSchema = z.object({
+  first_name: getRequiredStringSchema('First Name'),
+  last_name: getRequiredStringSchema('Last Name'),
+  email: getRequiredEmailSchema('Email'),
+})
 
 type VendorProfileFormData = z.infer<typeof vendorProfileSchema>
 
@@ -21,7 +25,6 @@ export function VendorProfileForm({
   onSubmit,
   onCancel,
   sameAsCorporate,
-  onSameAsCorporateChange,
   initialValues,
 }: VendorProfileFormProps) {
   const form = useForm<VendorProfileFormData>({
@@ -29,12 +32,14 @@ export function VendorProfileForm({
     defaultValues: {
       first_name: initialValues?.first_name || '',
       last_name: initialValues?.last_name || '',
-      dob: initialValues?.dob || '',
-      street_address: initialValues?.street_address || '',
-      id_type: initialValues?.id_type || '',
-      id_number: initialValues?.id_number || '',
+      email: initialValues?.email || '',
     },
   })
+
+  // Hide form if same as corporate
+  if (sameAsCorporate) {
+    return null
+  }
 
   return (
     <form
@@ -42,24 +47,16 @@ export function VendorProfileForm({
       className="flex flex-col gap-6 max-w-[448px] w-full"
     >
       <div className="flex flex-col gap-4">
-        <p className="text-xs text-gray-500">Step 2/3</p>
+        <p className="text-xs text-gray-500">Step 2/2</p>
         <div>
           <Text variant="h2" weight="semibold" className="text-gray-900 mb-2">
-            Profile Information & Identity Documents
+            Profile Information
           </Text>
           <Text variant="p" className="text-sm text-gray-600">
-            Complete your contact details and upload a government-issued photo ID
+            Complete your contact details
           </Text>
         </div>
       </div>
-
-      {/* Same as Corporate Checkbox at the top */}
-      <Checkbox
-        id="profile-same-as-corporate"
-        checked={sameAsCorporate}
-        onChange={(e) => onSameAsCorporateChange(e.target.checked)}
-        label="Same as corporate"
-      />
 
       {/* Key Person Details Section */}
       <section className="flex flex-col gap-4">
@@ -78,96 +75,20 @@ export function VendorProfileForm({
             placeholder="Enter your first name"
             {...form.register('first_name')}
             error={form.formState.errors.first_name?.message}
-            disabled={sameAsCorporate}
           />
           <Input
             label="Last Name"
             placeholder="Enter your last name"
             {...form.register('last_name')}
             error={form.formState.errors.last_name?.message}
-            disabled={sameAsCorporate}
           />
           <Input
-            type="date"
-            label="Date of Birth"
-            placeholder="Enter your date of birth"
+            label="Email"
+            placeholder="Enter your email"
+            type="email"
             className="col-span-full"
-            {...form.register('dob')}
-            error={form.formState.errors.dob?.message}
-            disabled={sameAsCorporate}
-          />
-
-          <Input
-            label="Street Address"
-            placeholder="Enter your street address"
-            className="col-span-full"
-            {...form.register('street_address')}
-            error={form.formState.errors.street_address?.message}
-            disabled={sameAsCorporate}
-          />
-
-          <Controller
-            name="id_type"
-            control={form.control}
-            render={({ field }) => (
-              <Combobox
-                label="ID Type"
-                placeholder="Enter your ID type"
-                {...field}
-                error={form.formState.errors.id_type?.message}
-                options={[
-                  { label: 'National ID', value: 'national_id' },
-                  { label: 'Passport', value: 'passport' },
-                  { label: "Driver's License", value: 'drivers_license' },
-                  { label: 'Other', value: 'other' },
-                ]}
-                isDisabled={sameAsCorporate}
-              />
-            )}
-          />
-          <Input
-            label="ID Number"
-            placeholder="Enter your ID number"
-            {...form.register('id_number')}
-            error={form.formState.errors.id_number?.message}
-            disabled={sameAsCorporate}
-          />
-        </div>
-      </section>
-
-      {/* Identity Documents Section */}
-      <section className="flex flex-col gap-4">
-        <div className="grid grid-cols-1  gap-4">
-          <Controller
-            control={form.control}
-            name="front_id"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <div className={sameAsCorporate ? 'opacity-50 pointer-events-none' : ''}>
-                <FileUploader
-                  label="Upload Picture of Front of Identification"
-                  value={value}
-                  onChange={onChange}
-                  error={error?.message}
-                  id="front_id"
-                />
-              </div>
-            )}
-          />
-
-          <Controller
-            control={form.control}
-            name="back_id"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <div className={sameAsCorporate ? 'opacity-50 pointer-events-none' : ''}>
-                <FileUploader
-                  label="Upload Picture of Back of Identification"
-                  value={value}
-                  onChange={onChange}
-                  error={error?.message}
-                  id="back_id"
-                />
-              </div>
-            )}
+            {...form.register('email')}
+            error={form.formState.errors.email?.message}
           />
         </div>
       </section>
@@ -188,7 +109,7 @@ export function VendorProfileForm({
           variant="secondary"
           className="w-fit rounded-full"
         >
-          Continue
+          Invite
         </Button>
       </div>
     </form>

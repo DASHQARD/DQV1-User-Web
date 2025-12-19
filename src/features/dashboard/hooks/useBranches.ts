@@ -6,7 +6,7 @@ export function useBranches() {
   return useQuery({
     queryKey: ['branches'],
     queryFn: getBranches,
-    enabled: false,
+    enabled: true, // Enable to fetch branches for sidebar
   })
 }
 

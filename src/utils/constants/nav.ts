@@ -29,6 +29,21 @@ export const CORPORATE_NAV_ITEMS = [
         label: 'Audit Logs',
         icon: 'bi:journal-text',
       },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS,
+        label: 'Admins',
+        icon: 'bi:people-fill',
+      },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS,
+        label: 'Notifications',
+        icon: 'bi:bell-fill',
+      },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.RECIPIENTS,
+        label: 'Recipients',
+        icon: 'bi:person-lines-fill',
+      },
     ],
   },
 ]
@@ -99,6 +114,16 @@ export const VENDOR_NAV_ITEMS = [
         icon: 'bi:clipboard-check',
       },
       {
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_BRANCH_MANAGER,
+        label: 'Invite Branch Manager',
+        icon: 'bi:person-plus',
+      },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_ADMIN,
+        label: 'Invite Admin',
+        icon: 'bi:person-plus-fill',
+      },
+      {
         path: ROUTES.IN_APP.DASHBOARD.VENDOR.AUDIT_LOGS,
         label: 'Audit Logs',
         icon: 'bi:journal-text',
@@ -109,11 +134,7 @@ export const VENDOR_NAV_ITEMS = [
     section: 'Settings & Support',
     items: [
       { path: '/dashboard/settings', label: 'Settings', icon: 'bi:gear-fill' },
-      {
-        path: ROUTES.IN_APP.DASHBOARD.VENDOR.PAYMENT_METHODS,
-        label: 'Payment Methods',
-        icon: 'bi:credit-card-fill',
-      },
+      { path: 'logout', label: 'Log Out', icon: 'bi:box-arrow-right' },
     ],
   },
 ]

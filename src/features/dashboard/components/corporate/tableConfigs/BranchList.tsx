@@ -1,4 +1,4 @@
-import { DateCell, StatusCell } from '@/components'
+import { StatusCell } from '@/components'
 import type { CsvHeader } from '@/types'
 import { formatDate } from '@/utils/format'
 import { BranchActionCell } from './BranchActionCell'
@@ -12,19 +12,10 @@ export const branchListColumns = [
     header: 'Location',
     accessorKey: 'branch_location',
   },
-  {
-    header: 'Branch Manager',
-    accessorKey: 'branch_manager_name',
-  },
-  {
-    header: 'Manager Email',
-    accessorKey: 'branch_manager_email',
-  },
-  {
-    header: 'Date Created',
-    accessorKey: 'created_at',
-    cell: DateCell,
-  },
+  // {
+  //   header: 'Payment Method',
+  //   accessorKey: 'payment_method',
+  // },
   {
     header: 'Status',
     accessorKey: 'status',

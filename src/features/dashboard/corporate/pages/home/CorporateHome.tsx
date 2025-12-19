@@ -5,8 +5,11 @@ import {
   RecentTransactions,
   CompleteCorporateWidget,
 } from '@/features/dashboard/components'
+import { useCorporate } from '../../hooks'
 
 export default function CorporateHome() {
+  const { data: corporate } = useCorporate()
+  console.log('corporate', corporate)
   return (
     <div className="bg-[#f8f9fa] rounded-xl overflow-hidden min-h-[600px]">
       <section className="py-8 flex flex-col gap-8">

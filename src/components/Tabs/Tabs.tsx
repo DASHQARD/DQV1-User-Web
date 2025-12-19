@@ -14,7 +14,6 @@ type Props = Readonly<{
 }>
 export function Tabs({ tabs, active, setActive, className, btnClass }: Props) {
   const id = React.useId()
-  const idRef = React.useRef(id)
 
   return (
     <div className={cn('flex gap-2 border-b border-transparent text-gray-400', className)}>
@@ -32,7 +31,7 @@ export function Tabs({ tabs, active, setActive, className, btnClass }: Props) {
         >
           {active === item.value && (
             <motion.span
-              layoutId={idRef.current}
+              layoutId={id}
               transition={{ type: 'spring', duration: 0.6 }}
               className="absolute inset-0 border-b-2 border-primary-700"
             />

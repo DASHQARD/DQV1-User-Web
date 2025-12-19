@@ -45,6 +45,12 @@ type Props = Readonly<{
   noExport?: boolean
   onRowClick?: (rowData: Record<string, any>) => void
   filterWrapperClassName?: string
+  enableRowSelection?: boolean
+  getRowId?: (row: any) => string
+  rowSelection?: Record<string, boolean>
+  onRowSelectionChange?: (
+    updater: Record<string, boolean> | ((old: Record<string, boolean>) => Record<string, boolean>),
+  ) => void
 }>
 
 export function PaginatedTable({
@@ -64,6 +70,10 @@ export function PaginatedTable({
   noExport,
   onRowClick,
   filterWrapperClassName,
+  enableRowSelection,
+  getRowId,
+  rowSelection,
+  onRowSelectionChange,
 }: Props) {
   const memoisedColumns = React.useMemo(() => columns, [columns])
   const memoisedData = React.useMemo(() => data ?? [], [data])
@@ -221,7 +231,15 @@ export function PaginatedTable({
             <Text weight="bold" className="print-view mb-5">
               {printTitle}
             </Text>
-            <Table columns={memoisedColumns as any} data={memoisedData} onRowClick={onRowClick} />
+            <Table
+              columns={memoisedColumns as any}
+              data={memoisedData}
+              onRowClick={onRowClick}
+              enableRowSelection={enableRowSelection}
+              getRowId={getRowId}
+              rowSelection={rowSelection}
+              onRowSelectionChange={onRowSelectionChange}
+            />
 
             {memoisedData?.length ? null : (
               <EmptyState

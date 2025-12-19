@@ -7,6 +7,7 @@ export function useCards() {
   return useQuery({
     queryKey: ['cards'],
     queryFn: () => getCards(),
+    enabled: false,
   })
 }
 
@@ -14,7 +15,7 @@ export function useCard(id: number | null) {
   return useQuery({
     queryKey: ['card', id],
     queryFn: () => getCardById(id!),
-    enabled: !!id,
+    enabled: false,
   })
 }
 

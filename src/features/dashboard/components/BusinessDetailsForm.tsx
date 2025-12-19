@@ -8,7 +8,7 @@ import { z } from 'zod'
 import { useAuth } from '../../auth/hooks'
 import { useNavigate } from 'react-router-dom'
 import { BasePhoneInput, RadioGroup, RadioGroupItem } from '@/components'
-import { useCountriesData, useUserProfile, useUploadFiles, useToast } from '@/hooks'
+import { useCountriesData, useUserProfile, useUploadFiles } from '@/hooks'
 import React from 'react'
 import type { DropdownOption } from '@/types'
 
@@ -39,7 +39,7 @@ export default function BusinessDetailsForm() {
     useBusinessDetailsService()
   const { mutateAsync: submitBusinessID, isPending: isSubmittingID } = useBusinessUploadIDService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const toast = useToast()
+
   const { countries } = useCountriesData()
   const navigate = useNavigate()
 
@@ -154,7 +154,7 @@ export default function BusinessDetailsForm() {
                   <div className="flex items-center gap-3">
                     <RadioGroupItem value="llc" id="r1" />
                     <Text as="label" htmlFor="r1" className="cursor-pointer">
-                      LLC
+                      Limited Liability Company
                     </Text>
                   </div>
                   <div className="flex items-center gap-3">

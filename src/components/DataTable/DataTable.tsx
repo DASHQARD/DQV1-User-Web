@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import type {
   ColumnDef,
   ColumnFiltersState,
+  RowSelectionState,
   SortingState,
   VisibilityState,
 } from '@tanstack/react-table'
@@ -30,6 +31,12 @@ export interface DataTableProps<TData, TValue> {
   tableClassName?: string
   showPageSizeSelect?: boolean
   stickyHeader?: boolean
+  enableRowSelection?: boolean
+  getRowId?: (row: TData) => string
+  rowSelection?: RowSelectionState
+  onRowSelectionChange?: (
+    updater: RowSelectionState | ((old: RowSelectionState) => RowSelectionState),
+  ) => void
 }
 
 const defaultEmptyState = (
@@ -63,6 +70,10 @@ export function DataTable<TData, TValue>({
   tableClassName,
   showPageSizeSelect = true,
   stickyHeader = true,
+  enableRowSelection = false,
+  getRowId,
+  rowSelection,
+  onRowSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const preparedPageOptions = useMemo((): Array<{ label: string; value: number }> => {
     if (!Array.isArray(pageSizeOptions))
@@ -75,6 +86,11 @@ export function DataTable<TData, TValue>({
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({})
+
+  const currentRowSelection = rowSelection !== undefined ? rowSelection : internalRowSelection
+  const handleRowSelectionChange =
+    onRowSelectionChange !== undefined ? onRowSelectionChange : setInternalRowSelection
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -84,10 +100,14 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    enableRowSelection,
+    getRowId,
+    onRowSelectionChange: handleRowSelectionChange,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
+      rowSelection: currentRowSelection,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,

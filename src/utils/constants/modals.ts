@@ -1,4 +1,7 @@
 export const MODALS = {
+  BROWSE_CARDS: {
+    ROOT: 'browse-cards-modal',
+  },
   TRANSACTION: {
     PARAM_NAME: 'transaction',
     CHILDREN: {
@@ -29,6 +32,7 @@ export const MODALS = {
     ROOT: 'branch-modal',
     CREATE: 'create-branch',
     BULK_UPLOAD: 'bulk-upload-branches',
+    VIEW: 'view-branch',
   },
   VENDOR_ACCOUNT: {
     ROOT: 'vendor-account-modal',
@@ -51,6 +55,13 @@ export const MODALS = {
     ROOT: 'bulk-gift-cards-modal',
     UPLOAD: 'bulk-gift-cards-upload',
   },
+  BULK_EMPLOYEE_PURCHASE: {
+    ROOT: 'bulk-employee-purchase-modal',
+    PARAM_NAME: 'bulk_employee_purchase',
+    CHILDREN: {
+      CREATE: 'create',
+    },
+  },
   NOTIFICATIONS: {
     ROOT: 'notifications-modal',
     PAYMENT_CHANGE: 'payment-change-notification',
@@ -58,5 +69,9 @@ export const MODALS = {
   LOGOUT: {
     ROOT: 'logout-modal',
     CONFIRM: 'confirm-logout',
+  },
+  INVITE_ADMIN: {
+    ROOT: 'invite-admin-modal',
+    CREATE: 'invite-admin',
   },
 }
