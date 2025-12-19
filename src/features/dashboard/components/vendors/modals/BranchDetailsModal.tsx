@@ -95,7 +95,7 @@ export function BranchDetailsModal({ branch }: BranchDetailsModalProps) {
                 {isEditing ? (
                   <Input
                     value={editedBranch?.full_branch_id || ''}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setEditedBranch({ ...editedBranch!, full_branch_id: e.target.value })
                     }
                   />
@@ -108,7 +108,7 @@ export function BranchDetailsModal({ branch }: BranchDetailsModalProps) {
                 {isEditing ? (
                   <Input
                     value={editedBranch?.branch_code || ''}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setEditedBranch({ ...editedBranch!, branch_code: e.target.value })
                     }
                   />
@@ -121,7 +121,7 @@ export function BranchDetailsModal({ branch }: BranchDetailsModalProps) {
                 {isEditing ? (
                   <Input
                     value={editedBranch?.branch_location || ''}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setEditedBranch({ ...editedBranch!, branch_location: e.target.value })
                     }
                   />
@@ -134,7 +134,7 @@ export function BranchDetailsModal({ branch }: BranchDetailsModalProps) {
                 {isEditing ? (
                   <Input
                     value={editedBranch?.branch_type || ''}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setEditedBranch({ ...editedBranch!, branch_type: e.target.value })
                     }
                   />
@@ -160,7 +160,7 @@ export function BranchDetailsModal({ branch }: BranchDetailsModalProps) {
                 {isEditing ? (
                   <Input
                     value={editedBranch?.branch_manager_name || ''}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setEditedBranch({ ...editedBranch!, branch_manager_name: e.target.value })
                     }
                   />
@@ -174,7 +174,7 @@ export function BranchDetailsModal({ branch }: BranchDetailsModalProps) {
                   <Input
                     type="email"
                     value={editedBranch?.branch_manager_email || ''}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setEditedBranch({ ...editedBranch!, branch_manager_email: e.target.value })
                     }
                   />
@@ -196,7 +196,7 @@ export function BranchDetailsModal({ branch }: BranchDetailsModalProps) {
                 {isEditing ? (
                   <Input
                     value="Mobile Money"
-                    onChange={(e) => {
+                    onChange={() => {
                       // Handle payment method change
                     }}
                   />
@@ -209,7 +209,7 @@ export function BranchDetailsModal({ branch }: BranchDetailsModalProps) {
                 {isEditing ? (
                   <Input
                     value="0244123456"
-                    onChange={(e) => {
+                    onChange={() => {
                       // Handle account number change
                     }}
                   />
@@ -222,7 +222,7 @@ export function BranchDetailsModal({ branch }: BranchDetailsModalProps) {
                 {isEditing ? (
                   <Input
                     value="MTN"
-                    onChange={(e) => {
+                    onChange={() => {
                       // Handle provider change
                     }}
                   />

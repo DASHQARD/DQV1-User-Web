@@ -1,7 +1,5 @@
-import React from 'react'
 import { useLocation } from 'react-router-dom'
 import { Text, TabbedView } from '@/components'
-import { ROUTES } from '@/utils/constants'
 import { InviteBranchManager } from './InviteBranchManager'
 import { InviteAdmin } from './InviteAdmin'
 

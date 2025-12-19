@@ -1,4 +1,3 @@
-import { Text } from '@/components'
 import { PaginatedTable } from '@/components/Table'
 import { purchaseListCsvHeaders, purchasesListColumns } from '@/features/dashboard/components'
 import { MOCK_PURCHASES } from '@/mocks'

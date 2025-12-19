@@ -1,4 +1,3 @@
-import { DateCell } from '@/components'
 import type { Branch } from '@/features/dashboard/services'
 
 // Transaction interface matching the one used in Transactions.tsx

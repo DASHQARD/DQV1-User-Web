@@ -1,8 +1,6 @@
-import React from 'react'
-import { Text, Button } from '@/components'
+import { Text } from '@/components'
 import { PaginatedTable } from '@/components/Table'
 import { DEFAULT_QUERY } from '@/utils/constants'
-import type { QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
 import { InviteAdmin } from '../../../components/corporate/modals/InviteAdmin'
 
@@ -170,17 +168,17 @@ const adminsColumns = [
   },
 ]
 
-const adminsCsvHeaders = [
-  { label: 'Name', key: 'name' },
-  { label: 'Email', key: 'email' },
-  { label: 'Role', key: 'role' },
-  { label: 'Status', key: 'status' },
-  { label: 'Invited At', key: 'invited_at' },
-  { label: 'Last Active', key: 'last_active' },
-]
+// const adminsCsvHeaders = [
+//   { label: 'Name', key: 'name' },
+//   { label: 'Email', key: 'email' },
+//   { label: 'Role', key: 'role' },
+//   { label: 'Status', key: 'status' },
+//   { label: 'Invited At', key: 'invited_at' },
+//   { label: 'Last Active', key: 'last_active' },
+// ]
 
 export default function Admins() {
-  const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
+  const [query, setQuery] = useReducerSpread(DEFAULT_QUERY)
 
   return (
     <div className="py-10">
@@ -205,7 +203,7 @@ export default function Admins() {
             loading={false}
             query={query}
             setQuery={setQuery}
-            csvHeaders={adminsCsvHeaders}
+            // csvHeaders={adminsCsvHeaders}
             printTitle="Admins"
           />
         </div>
