@@ -158,7 +158,9 @@ export default function Settings() {
                   Your phone number
                 </Text>
                 <Text variant="span" className="text-[#14171f]">
-                  {userProfileData?.phonenumber ? userProfileData?.phonenumber : 'No phone number provided'}
+                  {userProfileData?.phonenumber
+                    ? userProfileData?.phonenumber
+                    : 'No phone number provided'}
                 </Text>
               </div>
             </div>

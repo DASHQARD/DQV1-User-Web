@@ -121,7 +121,12 @@ export function useAuth() {
     return useMutation({
       mutationFn: async (refreshTokenValue: string) => {
         const response = await refreshToken(refreshTokenValue)
-        return (response as any).data as { message?: string; tokens?: { accessToken: string; refreshToken: string }; accessToken?: string; refreshToken?: string }
+        return (response as any).data as {
+          message?: string
+          tokens?: { accessToken: string; refreshToken: string }
+          accessToken?: string
+          refreshToken?: string
+        }
       },
       onSuccess: (response: {
         message?: string

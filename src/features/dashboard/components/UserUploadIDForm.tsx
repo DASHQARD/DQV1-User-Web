@@ -39,8 +39,12 @@ export default function UserUploadIDForm() {
     const loadImages = async () => {
       try {
         const [frontUrl, backUrl] = await Promise.all([
-          userProfileData.id_images[0] ? fetchPresignedURL(userProfileData.id_images[0].file_url) : null,
-          userProfileData.id_images[1] ? fetchPresignedURL(userProfileData.id_images[1].file_url) : null,
+          userProfileData.id_images[0]
+            ? fetchPresignedURL(userProfileData.id_images[0].file_url)
+            : null,
+          userProfileData.id_images[1]
+            ? fetchPresignedURL(userProfileData.id_images[1].file_url)
+            : null,
         ])
 
         if (cancelled) return
@@ -82,7 +86,10 @@ export default function UserUploadIDForm() {
         { identificationPhotos },
         {
           onSuccess: () => {
-            if (userProfileData?.user_type === 'corporate' || userProfileData?.user_type === 'vendor') {
+            if (
+              userProfileData?.user_type === 'corporate' ||
+              userProfileData?.user_type === 'vendor'
+            ) {
               navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_DETAILS)
             } else {
               navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT)
