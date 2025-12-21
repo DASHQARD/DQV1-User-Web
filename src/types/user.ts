@@ -37,6 +37,18 @@ export type UserProfileResponse = {
       | 'utility_bill'
       | 'logo'
   }[]
+  onboarding_progress: {
+    branch_details_completed: boolean
+    business_details_completed: boolean
+    business_documents_completed: boolean
+    completed_at: string | null
+    current_stage: string
+    onboarding_completed: boolean
+    payment_details_completed: boolean
+    personal_details_completed: boolean
+    sign_up_completed: boolean
+    upload_id_completed: boolean
+  }
   created_at: string
   default_payment_option: null
   dob: string

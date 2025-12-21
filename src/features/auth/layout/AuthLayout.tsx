@@ -1,10 +1,9 @@
-import { Link } from 'react-router-dom'
-import CreateAccountMan from '@/assets/images/create-account-man.png'
+import { CreateAccountMan } from '@/assets/images'
 import LogoWhite from '@/assets/svgs/logo-white.svg?react'
 import { ROUTES } from '@/utils/constants'
-import { CreateAccountForm } from '../../components'
+import { Link, Outlet } from 'react-router-dom'
 
-export default function CreateAccount() {
+export default function AuthLayout() {
   return (
     <div className="flex relative min-h-screen overflow-hidden">
       <div className="bg-primary-500 rounded-tr-[220px] min-w-[623.34px] relative hidden lg:block">
@@ -20,9 +19,8 @@ export default function CreateAccount() {
           className="absolute bottom-0 -right-15 z-10"
         />
       </div>
-
       <div className="flex-1 flex items-center justify-center">
-        <CreateAccountForm />
+        <Outlet />
       </div>
     </div>
   )

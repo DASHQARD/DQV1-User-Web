@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BasePhoneInput, Combobox, Input, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
@@ -10,49 +11,37 @@ import { z } from 'zod'
 import { AccountType } from '.'
 import { useAuth } from '../hooks'
 import { useCountriesData } from '@/hooks'
-import React from 'react'
 
-export default function CreateAccountForm() {
-  const { useCreateAccountMutation, useGetCountriesService } = useAuth()
-  const { mutate, isPending } = useCreateAccountMutation()
+export default function SignUpForm() {
+  const { useSignUpMutation, useGetCountriesService } = useAuth()
+  const { mutate, isPending } = useSignUpMutation()
   const { data: countries } = useGetCountriesService()
   const { countries: phoneCountries } = useCountriesData()
-  console.log('countries', countries)
+
   const form = useForm<z.infer<typeof CreateAccountSchema>>({
     resolver: zodResolver(CreateAccountSchema),
-    mode: 'onSubmit',
+    mode: 'onChange',
     defaultValues: {
+      country: 'Ghana',
+      country_code: '01',
       user_type: 'user',
     },
   })
 
-  const selectedCountryId = form.watch('country')
-
-  // Update country_code when country changes
-  React.useEffect(() => {
-    if (selectedCountryId && countries) {
-      const selectedCountry = countries.find((c) => c.id === selectedCountryId)
-      if (selectedCountry) {
-        const countryCode = selectedCountry.code || selectedCountry.iso_code || ''
-        form.setValue('country_code', countryCode, { shouldValidate: true })
+  useEffect(() => {
+    if (countries && !form.getValues('country')) {
+      const ghana = countries.find(
+        (country: any) =>
+          country.id === 1 || country.name === 'Ghana' || country.name?.toLowerCase() === 'ghana',
+      )
+      if (ghana) {
+        form.setValue('country', String(ghana.id))
       }
-    } else if (!selectedCountryId) {
-      form.setValue('country_code', '', { shouldValidate: true })
     }
-  }, [selectedCountryId, countries, form])
+  }, [countries, form])
 
   const onSubmit = (data: z.infer<typeof CreateAccountSchema>) => {
-    console.log('data', data)
-    const payload: any = {
-      user_type: data.user_type,
-      email: data.email,
-      phone_number: data.phone_number.replace('-', ''),
-      password: data.password,
-      country: String(data.country),
-      country_code: data.country_code,
-    }
-
-    mutate(payload)
+    mutate(data)
   }
 
   return (
@@ -79,41 +68,21 @@ export default function CreateAccountForm() {
         <Controller
           control={form.control}
           name="country"
-          render={({ field, fieldState: { error } }) => (
-            <Combobox
-              label="Country"
-              options={
-                countries?.map((country) => ({
+          render={({ field, fieldState: { error } }) => {
+            return (
+              <Combobox
+                label="Country"
+                options={countries?.map((country: any) => ({
                   label: country.name,
-                  value: String(country.id),
-                })) || []
-              }
-              value={field.value ? String(field.value) : undefined}
-              onChange={(e: { target: { value: string } }) => {
-                const value = e.target.value ? Number(e.target.value) : undefined
-                field.onChange(value)
-
-                // Set country_code synchronously when country changes
-                if (value && countries) {
-                  const selectedCountry = countries.find((c) => c.id === value)
-                  if (selectedCountry) {
-                    const countryCode = selectedCountry.code || selectedCountry.iso_code || ''
-                    form.setValue('country_code', countryCode, { shouldValidate: true })
-                  }
-                } else {
-                  form.setValue('country_code', '', { shouldValidate: true })
-                }
-              }}
-              error={error?.message}
-              placeholder="Select country"
-              isSearchable={true}
-            />
-          )}
-        />
-        <Controller
-          control={form.control}
-          name="country_code"
-          render={({ field }) => <input type="hidden" {...field} />}
+                  value: country.name,
+                }))}
+                value={field.value || undefined}
+                error={error?.message}
+                placeholder="Select country"
+                isDisabled={true}
+              />
+            )
+          }}
         />
 
         <Input
@@ -154,16 +123,9 @@ export default function CreateAccountForm() {
           type="password"
           error={form.formState.errors.password?.message}
         />
-        <Input
-          label="Confirm Password"
-          placeholder="Enter your confirm password"
-          {...form.register('confirmPassword')}
-          type="password"
-          error={form.formState.errors.confirmPassword?.message}
-        />
 
         <Button
-          // disabled={!form.formState.isValid || isPending}
+          disabled={!form.formState.isValid || isPending}
           loading={isPending}
           type="submit"
           variant="secondary"

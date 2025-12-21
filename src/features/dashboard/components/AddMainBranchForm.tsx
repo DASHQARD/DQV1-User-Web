@@ -4,14 +4,16 @@ import { z } from 'zod'
 import { Input, Button, Checkbox, Combobox } from '@/components'
 import { useAuth } from '@/features/auth/hooks'
 import { AddMainBranchSchema } from '@/utils/schemas'
-import { useUserProfile } from '@/hooks'
+import { userProfile } from '@/hooks'
 import React from 'react'
 
 export default function AddMainBranchForm({ onSuccess }: { onSuccess?: () => void }) {
   const { useAddMainBranchService, useGetCountriesService } = useAuth()
   const { mutate, isPending } = useAddMainBranchService()
   const { data: countries } = useGetCountriesService()
-  const { refetch } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  console.log('userProfileData', userProfileData)
 
   const form = useForm<z.infer<typeof AddMainBranchSchema>>({
     resolver: zodResolver(AddMainBranchSchema),

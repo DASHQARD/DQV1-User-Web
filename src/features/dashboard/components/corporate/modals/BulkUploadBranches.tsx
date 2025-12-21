@@ -2,10 +2,10 @@ import React from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { Button, FileUploader, Modal, Text } from '@/components'
-import { bulkUploadBranches } from '@/features/dashboard/services/branches'
 import { usePersistedModalState, useToast } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
+import { bulkUploadBranches } from '@/features/dashboard/services/vendor'
 
 export function BulkUploadBranches() {
   const modal = usePersistedModalState({

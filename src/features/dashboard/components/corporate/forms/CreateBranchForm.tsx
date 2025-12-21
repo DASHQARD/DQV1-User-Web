@@ -13,7 +13,7 @@ import {
   BasePhoneInput,
   // Checkbox,
 } from '@/components'
-import { CreateBranchFormSchema } from '@/utils/schemas/auth'
+import { CreateBranchFormSchema } from '@/utils/schemas/auth/auth'
 import { useAuth } from '@/features/auth/hooks'
 import { useCountriesData, useToast } from '@/hooks'
 import { GHANA_BANKS } from '@/assets/data/banks'

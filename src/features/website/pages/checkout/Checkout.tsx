@@ -13,7 +13,7 @@ import DashproBg from '@/assets/svgs/dashpro_bg.svg'
 import { ENV_VARS, MODAL_NAMES } from '@/utils/constants'
 import { bulkAssignRecipients, getRecipients } from '@/features/dashboard/services'
 import { useAuthStore } from '@/stores'
-import { useUserProfile } from '@/hooks'
+import { userProfile } from '@/hooks'
 import { usePayments } from '../../hooks'
 import { useRecipientCards } from '../../hooks/useRecipientCards'
 
@@ -23,7 +23,9 @@ export default function Checkout() {
   const queryClient = useQueryClient()
   const { cartItems, isLoading: isLoadingCart } = useCart()
   const { user } = useAuthStore()
-  const { data: userProfile } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  console.log('userProfileData', userProfileData)
   const { useCheckoutService } = usePayments()
   const { mutateAsync: checkoutMutation, isPending: isCheckingOut } = useCheckoutService()
   const [isBulkModalOpen, setIsBulkModalOpen] = React.useState(false)

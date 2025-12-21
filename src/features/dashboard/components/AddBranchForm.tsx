@@ -17,11 +17,11 @@ import {
 import { useAuth } from '@/features/auth/hooks'
 import { AddBranchSchema } from '@/utils/schemas'
 import { ROUTES, MODALS } from '@/utils/constants'
-import { useUserProfile, usePersistedModalState, useCountriesData } from '@/hooks'
+import { userProfile, usePersistedModalState, useCountriesData } from '@/hooks'
 import React from 'react'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
-import type { BranchData } from '@/types/auth'
+import type { BranchData } from '@/types/auth/auth'
 import { GHANA_BANKS } from '@/assets/data/banks'
 
 export default function AddBranchForm() {
@@ -29,7 +29,10 @@ export default function AddBranchForm() {
   const modal = usePersistedModalState({
     paramName: MODALS.BRANCH.CREATE,
   })
-  const { data: userProfile, isLoading } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  console.log('userProfileData', userProfileData)
+  const { isLoading } = useGetUserProfileService()
   const { useAddBranchService, useGetCountriesService } = useAuth()
   const { mutate, isPending } = useAddBranchService()
   const { data: countries } = useGetCountriesService()

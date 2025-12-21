@@ -13,7 +13,7 @@ import {
 } from '@/components'
 import { Icon } from '@/libs'
 import { useAuth } from '@/features/auth/hooks'
-import { useToast, useUserProfile } from '@/hooks'
+import { useToast, userProfile } from '@/hooks'
 import { AddMainBranchForm } from '@/features/dashboard/components'
 import React from 'react'
 
@@ -22,7 +22,10 @@ export default function AddBranch() {
   const toast = useToast()
   const { useUploadBranchesService } = useAuth()
   const { mutateAsync: uploadBranches, isPending: isUploading } = useUploadBranchesService()
-  const { data: userProfile, isLoading, refetch } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  console.log('userProfileData', userProfileData)
+  const { isLoading, refetch } = useGetUserProfileService()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   // Check if user has any branches (main branch exists)

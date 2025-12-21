@@ -1,123 +1,128 @@
 import { axiosClient } from '@/libs'
+import { getList, postMethod } from '@/services/requests'
 import type {
-  AddMainBranchData,
-  BranchData,
   BusinessDetailsData,
+  ChangePasswordData,
   CreateAccountData,
   LoginData,
   OnboardingData,
   UploadBusinessIDData,
   UploadUserIDData,
+  PersonalDetailsWithIDData,
+  UploadIdentificationPhotosData,
+  PaymentMethodData,
+  BusinessDetailsWithDocumentsData,
+  UploadBusinessDocumentsData,
 } from '@/types'
 
-const login = async (data: LoginData) => {
-  const response = await axiosClient.post(`/auth/login`, data)
-  return response.data
-}
+const commonUrl = '/auth'
 
-const refreshToken = async (token: string) => {
-  const response = await axiosClient.post(`/auth/refresh-token`, {
-    refresh_token: token,
-  })
-  return response.data
-}
-
-const createAccount = async (data: CreateAccountData) => {
-  const response = await axiosClient.post(`/auth/sign-up`, data)
-  return response.data
+const signUp = async (data: CreateAccountData) => {
+  return await postMethod(`${commonUrl}/sign-up`, data)
 }
 
 const verifyEmail = async (token: string) => {
-  const response = await axiosClient.post(`/auth/verify-email`, { token })
-  return response.data
+  return await postMethod(`${commonUrl}/verify-email`, { token })
 }
 
-const onboarding = async (data: OnboardingData) => {
-  const response = await axiosClient.post(`/auth/personal-details`, data)
-  return response.data
-}
-
-const uploadUserID = async (data: UploadUserIDData) => {
-  const response = await axiosClient.post(`/auth/identifcation-photos`, data)
-  return response.data
-}
-
-const verifyLoginOTP = async (token: string) => {
-  const response = await axiosClient.post(`/auth/verify-login`, { token })
-  return response.data
+const login = async (data: LoginData) => {
+  return await postMethod(`${commonUrl}/login`, data)
 }
 
 const forgotPassword = async (email: string) => {
-  const response = await axiosClient.post(`/auth/forgot-password`, { email })
-  return response.data
+  return await postMethod(`${commonUrl}/forgot-password`, { email })
 }
 
 const resetPassword = async (data: { password: string; token: string }) => {
-  const response = await axiosClient.post(`/auth/reset-password`, data)
+  return await postMethod(`${commonUrl}/reset-password`, data)
+}
+
+const changePassword = async (data: ChangePasswordData) => {
+  return await postMethod(`${commonUrl}/change-password`, data)
+}
+
+const logout = async () => {
+  return await postMethod(`${commonUrl}/logout`)
+}
+
+const refreshToken = async (refreshToken: string) => {
+  return await postMethod(`${commonUrl}/refresh-token`, { refresh_token: refreshToken })
+}
+
+const personalDetails = async (data: OnboardingData) => {
+  return await postMethod(`${commonUrl}/personal-details`, data)
+}
+
+const personalDetailsWithID = async (data: PersonalDetailsWithIDData) => {
+  return await postMethod(`${commonUrl}/personal-details-with-identification`, data)
+}
+
+const uploadUserID = async (data: UploadUserIDData) => {
+  const response = await axiosClient.post(`${commonUrl}/identifcation-photos`, data)
+  return response.data
+}
+
+const uploadIdentificationPhotos = async (data: UploadIdentificationPhotosData) => {
+  return await postMethod(`${commonUrl}/identifcation-photos`, data)
+}
+
+const paymentMethod = async (data: PaymentMethodData) => {
+  return await postMethod(`${commonUrl}/payment-details`, data)
+}
+
+const verifyLoginOTP = async (token: string) => {
+  const response = await axiosClient.post(`${commonUrl}/verify-login`, { token })
   return response.data
 }
 
 const businessDetails = async (data: BusinessDetailsData) => {
-  const response = await axiosClient.post(`/auth/business-details`, data)
-  return response.data
+  return await postMethod(`${commonUrl}/business-details`, data)
+}
+
+const businessDocuments = async (data: UploadBusinessDocumentsData) => {
+  return await postMethod(`${commonUrl}/business-documents`, data)
 }
 
 const businessUploadID = async (data: UploadBusinessIDData) => {
-  const response = await axiosClient.post(`/auth/business-documents`, data)
-  return response.data
+  return await postMethod(`${commonUrl}/business-documents`, data)
 }
 
-const addBranch = async (data: BranchData) => {
-  const response = await axiosClient.post(`/auth/add-branch`, data)
-  return response.data
+const resendRefreshToken = async (email: string) => {
+  return await postMethod(`${commonUrl}/resend-login-token`, { email })
 }
 
 const getCountries = async () => {
-  const response = await axiosClient.get<
-    {
-      id: number
-      code: string
-      iso_code: string
-      name: string
-      currency: string
-      status: string
-      created_at: string
-      updated_at: string
-    }[]
-  >(`/countries`)
-  return response.data
+  return await getList(`/countries`)
 }
 
-const uploadBranches = async (file: File) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  const response = await axiosClient.post(`/auth/upload-branches`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  })
-  return response.data
+const getCountriesCode = async (country_code: string) => {
+  return await getList(`/countries/code/${country_code}`)
 }
 
-const addMainBranch = async (data: AddMainBranchData) => {
-  const response = await axiosClient.post(`/auth/add-main-branch`, data)
-  return response.data
+const businessDetailsWithDocuments = async (data: BusinessDetailsWithDocumentsData) => {
+  return await postMethod(`${commonUrl}/business-details-with-documents`, data)
 }
 
 export {
   refreshToken,
   businessUploadID,
   login,
-  createAccount,
+  signUp,
   verifyEmail,
-  onboarding,
+  personalDetails,
+  personalDetailsWithID,
   uploadUserID,
   verifyLoginOTP,
+  changePassword,
   forgotPassword,
   resetPassword,
+  logout,
   businessDetails,
-  addBranch,
   getCountries,
-  uploadBranches,
-  addMainBranch,
+  uploadIdentificationPhotos,
+  paymentMethod,
+  businessDocuments,
+  resendRefreshToken,
+  businessDetailsWithDocuments,
+  getCountriesCode,
 }

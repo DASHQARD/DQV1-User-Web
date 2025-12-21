@@ -8,47 +8,47 @@ import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 
 import {
-  addBranch,
-  addMainBranch,
   businessUploadID,
   businessDetails,
-  createAccount,
   refreshToken,
   forgotPassword,
   login,
-  onboarding,
   getCountries,
   resetPassword,
-  uploadBranches,
   uploadUserID,
   verifyEmail,
   verifyLoginOTP,
+  signUp,
+  changePassword,
+  logout,
+  personalDetails,
+  personalDetailsWithID,
+  paymentMethod,
+  uploadIdentificationPhotos,
+  resendRefreshToken,
+  getCountriesCode,
+  businessDetailsWithDocuments,
 } from '../services'
 
 export function useAuth() {
-  const toast = useToast()
+  const { success, error } = useToast()
   const [tokenExpired, setTokenExpired] = React.useState(false)
-  // const { mutate: sendOtpMutation } = useSendOtpMutation();
+
   const navigate = useNavigate()
 
-  function useCreateAccountMutation() {
+  function useSignUpMutation() {
     return useMutation({
-      mutationFn: createAccount,
-      onSuccess: (response: {
-        status: string
-        statusCode: number
-        message: string
-        data: { user: { id: string; email: string; user_type: string; verificationToken: string } }
-      }) => {
-        toast.success(
-          response.message ||
+      mutationFn: signUp,
+      onSuccess: (response: any) => {
+        success(
+          response.data?.message ||
             'Account created successfully. Email verification link has been sent to your email.',
         )
         navigate(ROUTES.IN_APP.AUTH.LOGIN)
       },
-      onError: (error: any) => {
-        const errorMessage = error?.message || 'Create account failed. Please try again.'
-        toast.error(errorMessage)
+      onError: (err: any) => {
+        const errorMessage = err?.message || 'Create account failed. Please try again.'
+        error(errorMessage)
       },
     })
   }
@@ -74,11 +74,11 @@ export function useAuth() {
           refreshToken: response.tokens.refreshToken,
         })
       },
-      onError: (error: { status: number; message: string }) => {
-        if (error.status === 401) {
-          toast.error(error.message)
+      onError: (err: { status: number; message: string }) => {
+        if (err.status === 401) {
+          error(err.message)
         } else {
-          toast.error('Verify email failed. Please try again.')
+          error('Verify email failed. Please try again.')
         }
       },
     })
@@ -87,15 +87,12 @@ export function useAuth() {
   function useLoginMutation() {
     return useMutation({
       mutationFn: login,
-      onSuccess: (response: { message: string }) => {
-        toast.success(response.message)
+      onSuccess: (response: any) => {
+        success(response.data?.message)
       },
-      onError: (error: { status: number; message: string }) => {
-        if (error.status === 401) {
-          toast.error(error.message)
-        } else {
-          toast.error('Login failed. Please try again.')
-        }
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage = err?.message || 'Login failed. Please try again.'
+        error(errorMessage)
       },
     })
   }
@@ -118,25 +115,56 @@ export function useAuth() {
           })
         }
         if (response?.message) {
-          toast.success(response.message)
+          success(response.message)
         }
         navigate(ROUTES.IN_APP.DASHBOARD.HOME)
       },
-      onError: (error: { status: number; message: string }) => {
-        toast.error(error.message)
+      onError: (err: { status: number; message: string }) => {
+        error(err.message)
       },
     })
   }
 
-  function useOnboardingService() {
+  function usePersonalDetailsService() {
     return useMutation({
-      mutationFn: onboarding,
+      mutationFn: personalDetails,
       onSuccess: (response: { status: string; statusCode: number; message: string }) => {
-        toast.success(response.message || 'Personal details updated successfully')
+        success(response.message || 'Personal details updated successfully')
       },
-      onError: (error: { status: number; message: string }) => {
-        const errorMessage = error?.message || 'Onboarding failed. Please try again.'
-        toast.error(errorMessage)
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage = err?.message || 'Onboarding failed. Please try again.'
+        error(errorMessage)
+      },
+    })
+  }
+
+  function usePersonalDetailsWithIDService() {
+    return useMutation({
+      mutationFn: personalDetailsWithID,
+      onSuccess: (response: any) => {
+        console.log('response', response)
+        success(
+          response.data?.message || 'Personal details with identification updated successfully',
+        )
+      },
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage =
+          err?.message || 'Personal details with identification update failed. Please try again.'
+        error(errorMessage)
+      },
+    })
+  }
+
+  function useUploadIdentificationPhotosService() {
+    return useMutation({
+      mutationFn: uploadIdentificationPhotos,
+      onSuccess: (response: { status: string; statusCode: number; message: string }) => {
+        success(response.message || 'Identification photos added successfully')
+      },
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage =
+          err?.message || 'Identification photos upload failed. Please try again.'
+        error(errorMessage)
       },
     })
   }
@@ -145,11 +173,21 @@ export function useAuth() {
     return useMutation({
       mutationFn: uploadUserID,
       onSuccess: (response: { status: string; statusCode: number; message: string }) => {
-        toast.success(response.message || 'Identification photos added successfully')
+        success(response.message || 'Identification photos added successfully')
       },
-      onError: (error: { status: number; message: string }) => {
-        const errorMessage = error?.message || 'Onboarding failed. Please try again.'
-        toast.error(errorMessage)
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage = err?.message || 'Onboarding failed. Please try again.'
+        error(errorMessage)
+      },
+    })
+  }
+
+  function useBusinessDetailsWithDocumentsService() {
+    return useMutation({
+      mutationFn: businessDetailsWithDocuments,
+      onSuccess: (response: any) => {
+        console.log('response', response)
+        success(response.message || 'Business details with documents updated successfully')
       },
     })
   }
@@ -157,12 +195,13 @@ export function useAuth() {
   function useBusinessUploadIDService() {
     return useMutation({
       mutationFn: businessUploadID,
-      onSuccess: (response: { status: string; statusCode: number; message: string }) => {
-        toast.success(response.message || 'Identification photos added successfully')
+      onSuccess: (response: any) => {
+        console.log('response', response)
+        success(response.message || 'Identification photos added successfully')
       },
-      onError: (error: { status: number; message: string }) => {
-        const errorMessage = error?.message || 'Onboarding failed. Please try again.'
-        toast.error(errorMessage)
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage = err?.message || 'Onboarding failed. Please try again.'
+        error(errorMessage)
       },
     })
   }
@@ -171,11 +210,11 @@ export function useAuth() {
     return useMutation({
       mutationFn: forgotPassword,
       onSuccess: () => {
-        toast.success('If the email exists, a reset link has been sent')
+        success('If the email exists, a reset link has been sent')
       },
-      onError: (error: { status: number; message: string }) => {
-        const errorMessage = error?.message || 'Forgot password failed. Please try again.'
-        toast.error(errorMessage)
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage = err?.message || 'Forgot password failed. Please try again.'
+        error(errorMessage)
       },
     })
   }
@@ -184,12 +223,30 @@ export function useAuth() {
     return useMutation({
       mutationFn: resetPassword,
       onSuccess: () => {
-        toast.success('Password reset successfully')
+        success('Password reset successfully')
         navigate(ROUTES.IN_APP.AUTH.LOGIN)
       },
-      onError: (error: { status: number; message: string }) => {
-        const errorMessage = error?.message || 'Reset password failed. Please try again.'
-        toast.error(errorMessage)
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage = err?.message || 'Reset password failed. Please try again.'
+        error(errorMessage)
+      },
+    })
+  }
+
+  function useChangePasswordService() {
+    return useMutation({
+      mutationFn: changePassword,
+      onSuccess: () => {
+        success('Password changed successfully')
+      },
+    })
+  }
+
+  function useLogoutService() {
+    return useMutation({
+      mutationFn: logout,
+      onSuccess: () => {
+        success('Logged out successfully')
       },
     })
   }
@@ -216,16 +273,23 @@ export function useAuth() {
           refreshToken: string
         }
       }) => {
+        console.log('response', response)
         useAuthStore.getState().authenticate({
           token: response.tokens.accessToken,
           refreshToken: response.tokens.refreshToken,
         })
-        toast.success('Login successful')
-        navigate(ROUTES.IN_APP.DASHBOARD.HOME)
+        success('Login successful')
+        if (response.user.user_type === 'corporate') {
+          navigate(ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME)
+        } else if (response.user.user_type === 'vendor') {
+          navigate(ROUTES.IN_APP.DASHBOARD.VENDOR.HOME)
+        } else {
+          navigate(ROUTES.IN_APP.DASHBOARD.HOME)
+        }
       },
-      onError: (error: { status: number; message: string }) => {
-        const errorMessage = error?.message || 'Verify login OTP failed. Please try again.'
-        toast.error(errorMessage)
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage = err?.message || 'Verify login OTP failed. Please try again.'
+        error(errorMessage)
       },
     })
   }
@@ -234,24 +298,11 @@ export function useAuth() {
     return useMutation({
       mutationFn: businessDetails,
       onSuccess: () => {
-        toast.success('Business details updated successfully')
+        success('Business details updated successfully')
       },
-      onError: (error: { status: number; message: string }) => {
-        const errorMessage = error?.message || 'Business details update failed. Please try again.'
-        toast.error(errorMessage)
-      },
-    })
-  }
-
-  function useAddBranchService() {
-    return useMutation({
-      mutationFn: addBranch,
-      onSuccess: () => {
-        toast.success('Branch added successfully')
-      },
-      onError: (error: { status: number; message: string }) => {
-        const errorMessage = error?.message || 'Failed to add branch. Please try again.'
-        toast.error(errorMessage)
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage = err?.message || 'Business details update failed. Please try again.'
+        error(errorMessage)
       },
     })
   }
@@ -260,32 +311,36 @@ export function useAuth() {
     return useQuery({
       queryKey: ['countries'],
       queryFn: getCountries,
-      // select: (response) => response.data,
     })
   }
 
-  function useUploadBranchesService() {
-    return useMutation({
-      mutationFn: uploadBranches,
-      onSuccess: () => {
-        toast.success('Branches uploaded successfully')
-      },
-      onError: (error: { status: number; message: string }) => {
-        const errorMessage = error?.message || 'Failed to upload branches. Please try again.'
-        toast.error(errorMessage)
-      },
+  function useGetCountriesCodeService(country_code: string) {
+    return useQuery({
+      queryKey: ['countries-code'],
+      queryFn: () => getCountriesCode(country_code),
+      enabled: !!country_code,
     })
   }
 
-  function useAddMainBranchService() {
+  function usePaymentMethodService() {
     return useMutation({
-      mutationFn: addMainBranch,
+      mutationFn: paymentMethod,
       onSuccess: (response: { status: string; statusCode: number; message: string }) => {
-        toast.success(response.message || 'Main branch added successfully')
+        success(response.message || 'Payment method updated successfully')
       },
-      onError: (error: { status: number; message: string }) => {
-        const errorMessage = error?.message || 'Failed to add main branch. Please try again.'
-        toast.error(errorMessage)
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage = err?.message || 'Payment method update failed. Please try again.'
+        error(errorMessage)
+      },
+    })
+  }
+
+  function useResendRefreshTokenService() {
+    return useMutation({
+      mutationFn: (email: string) => resendRefreshToken(email),
+      onSuccess: (response: { message: string }) => {
+        console.log('response', response)
+        success(response.message || 'Refresh token resent successfully')
       },
     })
   }
@@ -294,9 +349,9 @@ export function useAuth() {
     useLoginMutation,
     tokenExpired,
     setTokenExpired,
-    useCreateAccountMutation,
+    useSignUpMutation,
     useVerifyEmailMutation,
-    useOnboardingService,
+    usePersonalDetailsService,
     useUploadUserIDService,
     useVerifyLoginOTPService,
     useForgotPasswordService,
@@ -304,9 +359,14 @@ export function useAuth() {
     useBusinessDetailsService,
     useBusinessUploadIDService,
     useRefreshTokenService,
-    useAddBranchService,
     useGetCountriesService,
-    useUploadBranchesService,
-    useAddMainBranchService,
+    useGetCountriesCodeService,
+    useChangePasswordService,
+    useLogoutService,
+    usePersonalDetailsWithIDService,
+    useUploadIdentificationPhotosService,
+    usePaymentMethodService,
+    useResendRefreshTokenService,
+    useBusinessDetailsWithDocumentsService,
   }
 }

@@ -19,19 +19,6 @@ export type Vendor = {
   card_count: number
 }
 
-export type VendorsListResponse = {
-  status: string
-  statusCode: number
-  message: string
-  data: Vendor[]
-  pagination: {
-    limit: number
-    hasNextPage: boolean
-    next: string | null
-  }
-  url: string
-}
-
 export type VendorsQueryParams = {
   limit?: number
   status?: string
@@ -49,18 +36,6 @@ export type VendorDetailsResponse = {
     hasNextPage: boolean
     next: string | null
   }
-}
-
-export type UpdateVendorStatusPayload = {
-  user_id: number
-  status: string
-}
-
-export type UpdateVendorStatusResponse = {
-  status: string
-  statusCode: number
-  message: string
-  data?: any
 }
 
 export type VendorDetails = {

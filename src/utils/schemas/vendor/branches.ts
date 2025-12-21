@@ -1,6 +1,3 @@
-import { axiosClient } from '@/libs'
-import { getList } from '@/services/requests'
-
 export interface Branch {
   id: string
   user_id: number
@@ -20,6 +17,15 @@ export interface Branch {
   status: string
 }
 
+export interface OnboardBranchManagerPayload {
+  branch_id: number
+  password: string
+  full_name: string
+  email: string
+  phone_number: string
+  country: string
+  country_code: string
+}
 export interface BranchesListResponse {
   status: string
   statusCode: number
@@ -40,15 +46,6 @@ export interface DeleteBranchResponse {
   message: string
 }
 
-export const getBranches = async (): Promise<BranchesListResponse> => {
-  return await getList<BranchesListResponse>('/vendors/branches')
-}
-
-export const deleteBranch = async (id: string): Promise<DeleteBranchResponse> => {
-  const response = await axiosClient.delete(`/branches/${id}`)
-  return response as unknown as DeleteBranchResponse
-}
-
 export interface BulkBranchesUploadResponse {
   status: string
   statusCode: number
@@ -60,13 +57,17 @@ export interface BulkBranchesUploadResponse {
   }
 }
 
-export const bulkUploadBranches = async (file: File): Promise<BulkBranchesUploadResponse> => {
-  const formData = new FormData()
-  formData.append('file', file)
-  const response = await axiosClient.post('/vendors/branches/bulk-upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  })
-  return response as unknown as BulkBranchesUploadResponse
+export type BranchData = {
+  is_single_branch: true
+  branch_name: string
+  branch_location: string
+  country: string
+  country_code: string
+  main_branch: true
+  branches: {
+    branch_manager_name: string
+    branch_manager_email: string
+    branch_name: string
+    branch_location: string
+  }[]
 }

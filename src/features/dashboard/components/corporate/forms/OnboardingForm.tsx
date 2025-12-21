@@ -5,21 +5,21 @@ import { useNavigate } from 'react-router-dom'
 import { Combobox, Input, Text, FileUploader, Loader } from '@/components'
 import { Button } from '@/components/Button'
 import { ProfileAndIdentitySchema } from '@/utils/schemas'
-import { useAuth } from '../../auth/hooks'
-import { useUserProfile, useUploadFiles, usePresignedURL, useToast } from '@/hooks'
+import { useAuth } from '../../../../auth/hooks'
+import { userProfile, useUploadFiles, usePresignedURL, useToast } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import React from 'react'
 import { cn } from '@/libs'
 
 export default function OnboardingForm() {
   const navigate = useNavigate()
-  const { data: userProfile, isLoading } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData, isLoading } = useGetUserProfileService()
   const toast = useToast()
 
-  const { useOnboardingService, useUploadUserIDService } = useAuth()
-  const { mutateAsync: submitOnboarding, isPending: isSubmittingOnboarding } =
-    useOnboardingService()
-  const { mutateAsync: submitUserID, isPending: isSubmittingID } = useUploadUserIDService()
+  const { usePersonalDetailsWithIDService } = useAuth()
+  const { mutateAsync: submitPersonalDetailsWithID, isPending: isSubmittingPersonalDetailsWithID } =
+    usePersonalDetailsWithIDService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
   const { mutateAsync: fetchPresignedURL, isPending: isFetchingPresignedURL } = usePresignedURL()
 
@@ -30,18 +30,18 @@ export default function OnboardingForm() {
     resolver: zodResolver(ProfileAndIdentitySchema),
   })
 
-  const isPending = isSubmittingOnboarding || isSubmittingID || isUploading
+  const isPending = isSubmittingPersonalDetailsWithID || isUploading
 
   React.useEffect(() => {
-    if (!userProfile?.id_images?.length) {
-      if (userProfile) {
+    if (!userProfileData?.id_images?.length) {
+      if (userProfileData) {
         form.reset({
-          first_name: userProfile?.fullname?.split(' ')[0] || '',
-          last_name: userProfile?.fullname?.split(' ')[1] || '',
-          dob: userProfile?.dob || '',
-          street_address: userProfile?.street_address || '',
-          id_type: userProfile?.id_type || '',
-          id_number: userProfile?.id_number || '',
+          first_name: userProfileData?.fullname?.split(' ')[0] || '',
+          last_name: userProfileData?.fullname?.split(' ')[1] || '',
+          dob: userProfileData?.dob || '',
+          street_address: userProfileData?.street_address || '',
+          id_type: userProfileData?.id_type || '',
+          id_number: userProfileData?.id_number || '',
         } as any)
       }
       return
@@ -52,8 +52,12 @@ export default function OnboardingForm() {
     const loadImages = async () => {
       try {
         const [frontUrl, backUrl] = await Promise.all([
-          userProfile.id_images[0] ? fetchPresignedURL(userProfile.id_images[0].file_url) : null,
-          userProfile.id_images[1] ? fetchPresignedURL(userProfile.id_images[1].file_url) : null,
+          userProfileData.id_images[0]
+            ? fetchPresignedURL(userProfileData.id_images[0].file_url)
+            : null,
+          userProfileData.id_images[1]
+            ? fetchPresignedURL(userProfileData.id_images[1].file_url)
+            : null,
         ])
 
         if (cancelled) return
@@ -63,12 +67,12 @@ export default function OnboardingForm() {
 
         // Reset form with existing data
         form.reset({
-          first_name: userProfile?.fullname?.split(' ')[0] || '',
-          last_name: userProfile?.fullname?.split(' ')[1] || '',
-          dob: userProfile?.dob || '',
-          street_address: userProfile?.street_address || '',
-          id_type: userProfile?.id_type || '',
-          id_number: userProfile?.id_number || '',
+          first_name: userProfileData?.fullname?.split(' ')[0] || '',
+          last_name: userProfileData?.fullname?.split(' ')[1] || '',
+          dob: userProfileData?.dob || '',
+          street_address: userProfileData?.street_address || '',
+          id_type: userProfileData?.id_type || '',
+          id_number: userProfileData?.id_number || '',
         } as any)
       } catch (error) {
         console.error('Failed to fetch identification images', error)
@@ -83,21 +87,11 @@ export default function OnboardingForm() {
     return () => {
       cancelled = true
     }
-  }, [fetchPresignedURL, toast, userProfile, form])
+  }, [fetchPresignedURL, toast, userProfileData, form])
 
   const onSubmit = async (data: z.infer<typeof ProfileAndIdentitySchema>) => {
     try {
-      // First submit profile information
-      const onboardingPayload = {
-        full_name: `${data.first_name} ${data.last_name}`,
-        street_address: data.street_address,
-        dob: data.dob,
-        id_type: data.id_type,
-        id_number: data.id_number,
-      }
-      await submitOnboarding(onboardingPayload)
-
-      // Then upload ID images
+      // First upload ID images
       const files = [data.front_id, data.back_id]
       const uploadPromises = files.map((file) => uploadFiles([file]))
       const responses = await Promise.all(uploadPromises)
@@ -109,19 +103,20 @@ export default function OnboardingForm() {
         }),
       )
 
-      // Submit the user ID data
-      await submitUserID(
-        { identificationPhotos },
-        {
-          onSuccess: () => {
-            if (userProfile?.user_type === 'corporate' || userProfile?.user_type === 'vendor') {
-              navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_DETAILS)
-            } else {
-              navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT)
-            }
-          },
-        },
-      )
+      // Submit personal details with identification photos
+      const onboardingPayload = {
+        full_name: `${data.first_name} ${data.last_name}`,
+        street_address: data.street_address,
+        dob: data.dob,
+        id_type: data.id_type,
+        id_number: data.id_number,
+        identification_photos: identificationPhotos,
+      }
+
+      await submitPersonalDetailsWithID(onboardingPayload)
+
+      // Navigate to business details after successful submission
+      navigate(ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS)
     } catch (error: any) {
       console.error('Submission failed:', error)
       toast.error(error?.message || 'Failed to save. Please try again.')
@@ -158,6 +153,11 @@ export default function OnboardingForm() {
             label="Date of Birth"
             placeholder="Enter your date of birth"
             className="col-span-full"
+            max={(() => {
+              const today = new Date()
+              const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
+              return maxDate.toISOString().split('T')[0]
+            })()}
             {...form.register('dob')}
             error={form.formState.errors.dob?.message}
           />
@@ -215,7 +215,7 @@ export default function OnboardingForm() {
           <div className="flex justify-center items-center h-full bg-white">
             <Loader />
           </div>
-        ) : userProfile?.id_images?.length && userProfile?.id_images?.length > 0 ? (
+        ) : userProfileData?.id_images?.length && userProfileData?.id_images?.length > 0 ? (
           <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1 max-w-[554px]">
             <div className="min-w-0">
               <p className="text-sm font-medium text-gray-700 mb-2">Front of Identification</p>

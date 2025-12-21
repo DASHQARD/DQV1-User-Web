@@ -1,6 +1,6 @@
-export { default as CreateAccountForm } from './CreateAccountForm'
+export { default as SignUpForm } from './SignUpForm'
 export { default as AccountType } from './AccountType'
-export { default as OnboardingForm } from '../../dashboard/components/OnboardingForm'
+export { default as OnboardingForm } from '../../dashboard/components/corporate/forms/OnboardingForm'
 export { default as UserUploadIDForm } from '../../dashboard/components/UserUploadIDForm'
 export { default as OtpLoginModal } from './OtpLoginModal'
 export { default as ForgotPasswordForm } from './ForgotPasswordForm'

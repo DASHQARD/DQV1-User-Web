@@ -1,4 +1,4 @@
-export * from './create_account'
+export * from './sign_up'
 export * from './forgot_password'
 export * from './login'
 export * from './reset_password'

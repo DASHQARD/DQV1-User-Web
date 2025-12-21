@@ -6,7 +6,7 @@ import { FileUploader, Loader } from '@/components'
 import { Button } from '@/components/Button'
 import { useAuth } from '../../auth/hooks'
 import { UploadUserIDSchema } from '@/utils/schemas'
-import { useUploadFiles, useUserProfile, usePresignedURL } from '@/hooks'
+import { useUploadFiles, userProfile, usePresignedURL } from '@/hooks'
 import { useToast } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import React from 'react'
@@ -14,7 +14,10 @@ import { cn } from '@/libs'
 
 export default function UserUploadIDForm() {
   const navigate = useNavigate()
-  const { data: userProfile, isLoading } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  console.log('userProfileData', userProfileData)
+  const { isLoading } = useGetUserProfileService()
   const { useUploadUserIDService } = useAuth()
   const { mutateAsync: submitUserID, isPending: isSubmitting } = useUploadUserIDService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()

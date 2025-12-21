@@ -9,6 +9,7 @@ export function useCards() {
     return useQuery({
       queryKey: ['cards', query],
       queryFn: () => getCards(query),
+      enabled: false,
     })
   }
 

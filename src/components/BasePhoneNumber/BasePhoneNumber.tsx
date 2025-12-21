@@ -19,13 +19,27 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
   ({ options, id, error, selectedVal, handleChange, label, isRequired, name, maxLength }, ref) => {
     const code = useMemo(() => {
-      const value = selectedVal?.split('-')[0]
-      return value
+      if (!selectedVal) return ''
+      // Handle both formats: "+233-559617908" or "+233559617908"
+      const hasHyphen = selectedVal.includes('-')
+      if (hasHyphen) {
+        return selectedVal.split('-')[0]
+      }
+      // Extract country code (starts with +, followed by 1-4 digits)
+      const match = selectedVal.match(/^(\+\d{1,4})/)
+      return match ? match[1] : ''
     }, [selectedVal])
 
     const number = useMemo(() => {
-      const value = selectedVal?.split('-')[1]
-      return value || ''
+      if (!selectedVal) return ''
+      // Handle both formats: "+233-559617908" or "+233559617908"
+      const hasHyphen = selectedVal.includes('-')
+      if (hasHyphen) {
+        return selectedVal.split('-')[1] || ''
+      }
+      // Remove country code to get just the number
+      const match = selectedVal.match(/^\+\d{1,4}(.+)$/)
+      return match ? match[1] : ''
     }, [selectedVal])
 
     const [isOpen, setIsOpen] = useState(false)
@@ -61,7 +75,7 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
     }, [options])
 
     useEffect(() => {
-      if (value) handleChange(countryCode + '-' + value)
+      if (value) handleChange(countryCode + value)
       else handleChange('')
     }, [countryCode, value, handleChange])
 

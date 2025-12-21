@@ -7,7 +7,7 @@ import { FileUploader, Input, CreatableCombobox, Loader } from '@/components'
 import { Button } from '@/components/Button'
 import { useAuth } from '@/features/auth/hooks'
 import { UploadBusinessIDSchema } from '@/utils/schemas'
-import { useUploadFiles, useToast, useUserProfile, usePresignedURL } from '@/hooks'
+import { useUploadFiles, useToast, userProfile, usePresignedURL } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import type { DropdownOption } from '@/types'
 import React from 'react'
@@ -33,7 +33,10 @@ const businessIndustryOptions: DropdownOption[] = [
 
 export default function BusinessUploadIDForm() {
   const navigate = useNavigate()
-  const { data: userProfile, isLoading } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  console.log('userProfileData', userProfileData)
+  const { isLoading } = useGetUserProfileService()
   const { useBusinessUploadIDService } = useAuth()
   const { mutateAsync: submitBusinessID, isPending: isSubmitting } = useBusinessUploadIDService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()

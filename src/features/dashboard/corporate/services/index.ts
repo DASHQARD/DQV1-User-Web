@@ -1,28 +1,15 @@
-import { axiosClient } from '@/libs'
 import { getList } from '@/services/requests'
 
+const CORPORATE_API_URL = '/corporate-admin'
+
 export const getCorporate = async (): Promise<any> => {
-  return await getList<any>('/corporates')
+  return await getList<any>(CORPORATE_API_URL)
 }
 
-export interface BulkBranchesUploadResponse {
-  status: string
-  statusCode: number
-  message: string
-  data: {
-    successful: number
-    failed: number
-    total: number
-  }
+export const getCorporateById = async (id: string): Promise<any> => {
+  return await getList<any>(`${CORPORATE_API_URL}/admin/${id}`)
 }
 
-export const bulkUploadBranches = async (file: File): Promise<BulkBranchesUploadResponse> => {
-  const formData = new FormData()
-  formData.append('file', file)
-  const response = await axiosClient.post('/vendors/branches/bulk-upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  })
-  return response as unknown as BulkBranchesUploadResponse
+export const getAuditLogs = async (): Promise<any> => {
+  return await getList<any>(`/audit-logs/corporates`)
 }

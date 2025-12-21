@@ -2,35 +2,38 @@ import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
-import { useUserProfile } from '@/hooks'
+import { userProfile } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import { Text } from '@/components'
 
 export default function CompleteCorporateWidget() {
   const [isExpanded, setIsExpanded] = React.useState(false)
-  const { data: userProfile } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  console.log('userProfileData', userProfileData)
   const navigate = useNavigate()
 
-  // Helper function to add account parameter to URLs
   const addAccountParam = (path: string): string => {
     const separator = path?.includes('?') ? '&' : '?'
     return `${path}${separator}account=corporate`
   }
 
-  // Check completion status for corporate onboarding steps
-  // Step 1: Profile Information & ID Upload (combined in one form)
-  const hasProfile =
-    Boolean(userProfile?.fullname) &&
-    Boolean(userProfile?.street_address) &&
-    Boolean(userProfile?.dob) &&
-    Boolean(userProfile?.id_number)
-  const hasID = Boolean(userProfile?.id_images?.length)
-  const hasProfileAndID = hasProfile && hasID
+  const onboardingProgress = {
+    hasProfile: Boolean(userProfileData?.onboarding_progress?.personal_details_completed),
+    hasID: Boolean(userProfileData?.onboarding_progress?.upload_id_completed),
+    hasProfileAndID: Boolean(
+      userProfileData?.onboarding_progress?.personal_details_completed &&
+        userProfileData?.onboarding_progress?.upload_id_completed,
+    ),
+    hasBusinessDetails: Boolean(userProfileData?.onboarding_progress?.business_details_completed),
+    hasBusinessDocs: Boolean(userProfileData?.onboarding_progress?.business_documents_completed),
+    hasBusinessDetailsAndDocs: Boolean(
+      userProfileData?.onboarding_progress?.business_details_completed &&
+        userProfileData?.onboarding_progress?.business_documents_completed,
+    ),
+  }
 
-  // Step 2: Business Details & Business Documents (combined flow)
-  const hasBusinessDetails = Boolean(userProfile?.business_details?.length)
-  const hasBusinessDocs = Boolean(userProfile?.business_documents?.length)
-  const hasBusinessDetailsAndDocs = hasBusinessDetails && hasBusinessDocs
+  const { hasProfileAndID, hasBusinessDetailsAndDocs } = onboardingProgress
 
   const completedCount = (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0)
   const totalCount = 2

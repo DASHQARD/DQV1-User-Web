@@ -102,15 +102,17 @@ export function CardDetailsModal({ cardId, isOpen, onClose }: CardDetailsModalPr
                 <div>
                   <label className="text-sm font-medium text-gray-500 mb-3 block">Images</label>
                   <div className="grid grid-cols-3 gap-4">
-                    {card.images.map((img: { file_url: string; file_name: string }, index: number) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={img.file_url}
-                          alt={img.file_name}
-                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                        />
-                      </div>
-                    ))}
+                    {card.images.map(
+                      (img: { file_url: string; file_name: string }, index: number) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={img.file_url}
+                            alt={img.file_name}
+                            className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                          />
+                        </div>
+                      ),
+                    )}
                   </div>
                 </div>
               )}
@@ -122,19 +124,21 @@ export function CardDetailsModal({ cardId, isOpen, onClose }: CardDetailsModalPr
                     Terms and Conditions
                   </label>
                   <div className="space-y-2">
-                    {card.terms_and_conditions.map((tc: { file_url: string; file_name: string }, index: number) => (
-                      <a
-                        key={index}
-                        href={tc.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        <Icon icon="bi:file-earmark-pdf" className="w-6 h-6 text-red-500" />
-                        <span className="flex-1 text-sm text-gray-700">{tc.file_name}</span>
-                        <Icon icon="bi:box-arrow-up-right" className="w-4 h-4 text-gray-400" />
-                      </a>
-                    ))}
+                    {card.terms_and_conditions.map(
+                      (tc: { file_url: string; file_name: string }, index: number) => (
+                        <a
+                          key={index}
+                          href={tc.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <Icon icon="bi:file-earmark-pdf" className="w-6 h-6 text-red-500" />
+                          <span className="flex-1 text-sm text-gray-700">{tc.file_name}</span>
+                          <Icon icon="bi:box-arrow-up-right" className="w-4 h-4 text-gray-400" />
+                        </a>
+                      ),
+                    )}
                   </div>
                 </div>
               )}

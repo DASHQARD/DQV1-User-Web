@@ -1,10 +1,33 @@
 import { useQuery } from '@tanstack/react-query'
-import { getCorporate } from '../services'
+import { getCorporate, getCorporateById, getAuditLogs } from '../services'
 
-export function useCorporate() {
-  return useQuery({
-    queryKey: ['corporate'],
-    queryFn: getCorporate,
-    enabled: false,
-  })
+export function corporate() {
+  function useGetCorporateService() {
+    return useQuery({
+      queryKey: ['corporate'],
+      queryFn: getCorporate,
+    })
+  }
+
+  function useGetAuditLogsService() {
+    return useQuery({
+      queryKey: ['audit-logs'],
+      queryFn: getAuditLogs,
+      enabled: false,
+    })
+  }
+
+  function useGetCorporateByIdService(id: string) {
+    return useQuery({
+      queryKey: ['corporate', id],
+      queryFn: () => getCorporateById(id),
+      enabled: !!id,
+    })
+  }
+
+  return {
+    useGetCorporateService,
+    useGetCorporateByIdService,
+    useGetAuditLogsService,
+  }
 }

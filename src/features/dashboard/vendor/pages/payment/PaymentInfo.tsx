@@ -1,17 +1,19 @@
 import { Icon } from '@/libs'
 import { PaymentInfoForm } from '../../../components'
-import { useUserProfile } from '@/hooks'
+import { userProfile } from '@/hooks'
 
 export default function PaymentInfo() {
-  const { data: userProfile } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  console.log('userProfileData', userProfileData)
   console.log('userProfile', userProfile)
   return (
     <div className="bg-[#f8f9fa] rounded-[32px] p-4 sm:p-8 min-h-[600px]">
       <div className="max-w-4xl mx-auto bg-white rounded-[32px] shadow-[0_20px_60px_rgba(64,45,135,0.08)] border border-gray-100 overflow-hidden">
         {/* Card Header */}
-        <div className="bg-gradient-to-br from-[#f5f1ff] via-white to-[#fdf9ff] px-6 sm:px-10 py-8 border-b border-gray-100">
+        <div className="bg-linear-to-br from-[#f5f1ff] via-white to-[#fdf9ff] px-6 sm:px-10 py-8 border-b border-gray-100">
           <div className="flex flex-wrap gap-5 items-start">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#402D87] to-[#8d3cff] flex items-center justify-center text-white shadow-lg shadow-[#402D87]/25">
+            <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-[#402D87] to-[#8d3cff] flex items-center justify-center text-white shadow-lg shadow-[#402D87]/25">
               <Icon icon="bi:credit-card-fill" className="text-2xl" />
             </div>
 

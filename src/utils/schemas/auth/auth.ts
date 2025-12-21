@@ -4,7 +4,7 @@ import {
   getRequiredEmailSchema,
   getRequiredNumberSchema,
   getRequiredStringSchema,
-} from './shared'
+} from '../shared'
 
 export const LoginSchema = z.object({
   email: getRequiredEmailSchema('Email'),
@@ -16,51 +16,14 @@ export const AdminOnboardingSchema = z.object({
   password: getRequiredAlphaNumericStringSchema('Password'),
 })
 
-export const CreateAccountSchema = z
-  .object({
-    email: getRequiredEmailSchema('Email'),
-    password: getRequiredAlphaNumericStringSchema('Password'),
-    confirmPassword: getRequiredAlphaNumericStringSchema('Confirm Password'),
-    phone_number: getRequiredStringSchema('Phone Number'),
-    user_type: z.enum(['user', 'corporate']),
-    country: z.number().optional(),
-    country_code: z.string().optional(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  })
-  .refine(
-    (data) => {
-      if (data.user_type === 'corporate') {
-        return (
-          data.country !== undefined && data.country !== null && typeof data.country === 'number'
-        )
-      }
-      return true
-    },
-    {
-      message: 'Country is required',
-      path: ['country'],
-    },
-  )
-  .refine(
-    (data) => {
-      if (data.user_type === 'corporate') {
-        return (
-          data.country_code !== undefined &&
-          data.country_code !== null &&
-          typeof data.country_code === 'string' &&
-          data.country_code.length > 0
-        )
-      }
-      return true
-    },
-    {
-      message: 'Country code is required',
-      path: ['country_code'],
-    },
-  )
+export const CreateAccountSchema = z.object({
+  email: getRequiredEmailSchema('Email'),
+  password: getRequiredAlphaNumericStringSchema('Password'),
+  phone_number: getRequiredStringSchema('Phone Number'),
+  user_type: z.enum(['user', 'corporate']),
+  country: getRequiredStringSchema('Country'),
+  country_code: getRequiredStringSchema('Country Code'),
+})
 
 export const ForgotPasswordSchema = z.object({
   email: getRequiredEmailSchema('Email'),

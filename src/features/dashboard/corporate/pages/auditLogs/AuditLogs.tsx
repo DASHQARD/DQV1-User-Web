@@ -4,6 +4,7 @@ import { cn } from '@/libs'
 import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
+import { corporate } from '../../hooks'
 
 type ActivityData = {
   id: string
@@ -244,6 +245,10 @@ const auditLogsCsvHeaders = [
 export default function AuditLogs() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
 
+  const { useGetAuditLogsService } = corporate()
+
+  const { data: auditLogs } = useGetAuditLogsService()
+  console.log('auditLogs', auditLogs)
   return (
     <div className="py-10">
       <div className="flex flex-col gap-8">

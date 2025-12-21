@@ -3,7 +3,7 @@ import { type RouteObject } from 'react-router'
 import { DashboardLayout, dashboardRoutes, websiteRoutes } from '../features'
 import { WebsiteLayout } from '../layout'
 import { CustomErrorBoundary } from '@/components'
-import { authRoutes } from '@/features/auth'
+import { AuthLayout, authRoutes } from '@/features/auth'
 
 export const routes: RouteObject[] = [
   {
@@ -13,6 +13,7 @@ export const routes: RouteObject[] = [
   },
   {
     path: 'auth',
+    element: <AuthLayout />,
     children: authRoutes,
   },
   {

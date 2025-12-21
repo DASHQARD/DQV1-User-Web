@@ -2,13 +2,15 @@ import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
-import { useUserProfile } from '@/hooks'
+import { userProfile } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import { Text } from '@/components'
 
 export default function BecomeVendorWidget() {
   const [isExpanded, setIsExpanded] = React.useState(false)
-  const { data: userProfile } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  console.log('userProfileData', userProfileData)
   const navigate = useNavigate()
 
   // Helper function to add account parameter to URLs

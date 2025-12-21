@@ -5,7 +5,7 @@ import { Loader, Text } from '@/components'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { cn } from '@/libs/clsx'
-import { useUserProfile } from '@/hooks'
+import { userProfile } from '@/hooks'
 import { UpdateUserInfoSchema } from '@/utils/schemas'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
@@ -14,7 +14,9 @@ import { z } from 'zod'
 export default function Settings() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { data: userProfile } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  console.log('userProfileData', userProfileData)
   const { logout } = useAuthStore()
 
   console.log('userProfile', userProfile)

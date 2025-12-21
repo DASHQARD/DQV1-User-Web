@@ -1,5 +1,5 @@
 import { Text, PaginatedTable } from '@/components'
-import { useReducerSpread, useUserProfile } from '@/hooks'
+import { useReducerSpread, userProfile } from '@/hooks'
 import {
   CreateExperience,
   experienceListColumns,
@@ -19,7 +19,9 @@ export default function Experience() {
 
   console.log('cardsResponse', cardsResponse)
 
-  const { data: userProfile } = useUserProfile()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  console.log('userProfileData', userProfileData)
 
   console.log('userProfile', userProfile)
 
