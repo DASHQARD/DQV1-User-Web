@@ -21,8 +21,9 @@ import { userProfile, usePersistedModalState, useCountriesData } from '@/hooks'
 import React from 'react'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
-import type { BranchData } from '@/types/auth/auth'
+import type { BranchData } from '@/utils/schemas/vendor/branches'
 import { GHANA_BANKS } from '@/assets/data/banks'
+import { useBranches } from '@/features/dashboard/hooks/vendor/useBranches'
 
 export default function AddBranchForm() {
   const navigate = useNavigate()
@@ -30,15 +31,14 @@ export default function AddBranchForm() {
     paramName: MODALS.BRANCH.CREATE,
   })
   const { useGetUserProfileService } = userProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
-  const { isLoading } = useGetUserProfileService()
-  const { useAddBranchService, useGetCountriesService } = useAuth()
+  const { data: userProfileData, isLoading } = useGetUserProfileService()
+  const { useGetCountriesService } = useAuth()
+  const { useAddBranchService } = useBranches()
   const { mutate, isPending } = useAddBranchService()
   const { data: countries } = useGetCountriesService()
   const { countries: countriesData } = useCountriesData()
 
-  const existingBranches = userProfile?.branches || []
+  const existingBranches = userProfileData?.branches || []
 
   const form = useForm<z.infer<typeof AddBranchSchema>>({
     resolver: zodResolver(AddBranchSchema),
@@ -83,7 +83,7 @@ export default function AddBranchForm() {
   // Update country_code when country changes
   React.useEffect(() => {
     if (selectedCountryId && countries) {
-      const selectedCountry = countries.find((c) => c.id === selectedCountryId)
+      const selectedCountry = countries.find((c: any) => c.id === selectedCountryId)
       if (selectedCountry) {
         const countryCode = selectedCountry.code || selectedCountry.iso_code || ''
         form.setValue('country_code', countryCode, { shouldValidate: true })
@@ -189,7 +189,7 @@ export default function AddBranchForm() {
           <div className="bg-white rounded-lg p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Existing Branches</h2>
             <div className="space-y-4 max-h-60 overflow-y-auto">
-              {existingBranches.map((branch) => (
+              {existingBranches.map((branch: any) => (
                 <div
                   key={branch.id}
                   className={cn(
@@ -264,7 +264,7 @@ export default function AddBranchForm() {
                   <Combobox
                     label="Country"
                     options={
-                      countries?.map((country) => ({
+                      countries?.map((country: any) => ({
                         label: country.name,
                         value: String(country.id),
                       })) || []

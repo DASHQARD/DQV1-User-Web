@@ -42,16 +42,16 @@ export default function PaymentInfoForm() {
     },
   })
 
-  const userType = (userProfile as any)?.user_type
+  const userType = userProfileData?.user_type
   const isCorporate = userType === 'corporate'
   const isCorporateVendor = userType === 'corporate_vendor'
 
   React.useEffect(() => {
-    if (!userProfile) return
+    if (!userProfileData) return
 
     // Check if user has mobile money accounts
-    if (userProfile.momo_accounts?.length) {
-      const momoAccount = userProfile.momo_accounts[0]
+    if (userProfileData.momo_accounts?.length) {
+      const momoAccount = userProfileData.momo_accounts[0]
       // Extract only digits from momo_number
       const digitsOnly = momoAccount.momo_number ? momoAccount.momo_number.replace(/\D/g, '') : ''
 
@@ -77,8 +77,8 @@ export default function PaymentInfoForm() {
       })
     }
     // Check if user has bank accounts
-    else if (userProfile.bank_accounts?.length) {
-      const bankAccount = userProfile.bank_accounts[0]
+    else if (userProfileData.bank_accounts?.length) {
+      const bankAccount = userProfileData.bank_accounts[0]
       form.reset({
         payment_method: 'bank',
         mobile_money_provider: '',
@@ -90,7 +90,7 @@ export default function PaymentInfoForm() {
         sort_swift_code: bankAccount.swift_code || '',
       })
     }
-  }, [userProfile, form])
+  }, [userProfileData, form])
 
   const paymentMethod = useWatch({
     control: form.control,

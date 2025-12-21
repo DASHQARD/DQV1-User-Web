@@ -16,10 +16,7 @@ export default function Settings() {
   const location = useLocation()
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
   const { logout } = useAuthStore()
-
-  console.log('userProfile', userProfile)
 
   const form = useForm<z.infer<typeof UpdateUserInfoSchema>>({
     resolver: zodResolver(UpdateUserInfoSchema),
@@ -28,13 +25,13 @@ export default function Settings() {
 
   // Update profile when user info changes
   React.useEffect(() => {
-    if (userProfile) {
+    if (userProfileData) {
       form.reset({
-        fullname: userProfile?.fullname || '',
-        dob: userProfile?.dob || '',
+        fullname: userProfileData?.fullname || '',
+        dob: userProfileData?.dob || '',
       })
     }
-  }, [userProfile, form])
+  }, [userProfileData, form])
 
   if (isLoading) {
     return (
@@ -121,7 +118,7 @@ export default function Settings() {
                   Email
                 </Text>
                 <Text variant="span" className="text-[#14171f]">
-                  {userProfile?.email}
+                  {userProfileData?.email}
                 </Text>
               </div>
 
@@ -130,7 +127,7 @@ export default function Settings() {
                   Birthdate
                 </Text>
                 <Text variant="span" className="text-[#14171f]">
-                  {userProfile?.dob ? userProfile?.dob : 'MM/YYYY/DD'}
+                  {userProfileData?.dob ? userProfileData?.dob : 'MM/YYYY/DD'}
                 </Text>
               </div>
 
@@ -150,8 +147,8 @@ export default function Settings() {
                   Your address
                 </Text>
                 <Text variant="span" className="text-[#14171f]">
-                  {userProfile?.street_address
-                    ? userProfile?.street_address
+                  {userProfileData?.street_address
+                    ? userProfileData?.street_address
                     : 'No address provided'}
                 </Text>
               </div>
@@ -161,7 +158,7 @@ export default function Settings() {
                   Your phone number
                 </Text>
                 <Text variant="span" className="text-[#14171f]">
-                  {userProfile?.phonenumber ? userProfile?.phonenumber : 'No phone number provided'}
+                  {userProfileData?.phonenumber ? userProfileData?.phonenumber : 'No phone number provided'}
                 </Text>
               </div>
             </div>

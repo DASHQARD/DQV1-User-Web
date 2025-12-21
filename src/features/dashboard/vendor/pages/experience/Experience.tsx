@@ -54,7 +54,7 @@ export default function Experience() {
               searchPlaceholder="Search by product name or type..."
               csvHeaders={experienceListCsvHeaders}
               filterBy={{
-                simpleSelects: [{ label: 'status', options: OPTIONS.CUSTOMER_STATUS }],
+                simpleSelects: [{ label: 'status', options: OPTIONS.EXPERIENCE_STATUS }],
               }}
               printTitle="Experiences"
             />

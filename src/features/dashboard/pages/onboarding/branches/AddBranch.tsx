@@ -12,24 +12,40 @@ import {
   Loader,
 } from '@/components'
 import { Icon } from '@/libs'
-import { useAuth } from '@/features/auth/hooks'
 import { useToast, userProfile } from '@/hooks'
 import { AddMainBranchForm } from '@/features/dashboard/components'
 import React from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { bulkUploadBranches } from '@/features/dashboard/services/vendor/branches'
 
 export default function AddBranch() {
   const navigate = useNavigate()
   const toast = useToast()
-  const { useUploadBranchesService } = useAuth()
-  const { mutateAsync: uploadBranches, isPending: isUploading } = useUploadBranchesService()
+  const queryClient = useQueryClient()
   const { useGetUserProfileService } = userProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
-  const { isLoading, refetch } = useGetUserProfileService()
+  const { data: userProfileData, isLoading, refetch } = useGetUserProfileService()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
+  const bulkUploadMutation = useMutation({
+    mutationFn: bulkUploadBranches,
+    onSuccess: (response: any) => {
+      const message =
+        response.data?.successful && response.data?.total
+          ? `Successfully uploaded ${response.data.successful} of ${response.data.total} branches`
+          : 'Branches uploaded successfully'
+      toast.success(message)
+      queryClient.invalidateQueries({ queryKey: ['branches'] })
+      refetch()
+      navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT)
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || 'Failed to upload branches. Please try again.')
+    },
+  })
+
   // Check if user has any branches (main branch exists)
-  const hasBranches = Array.isArray(userProfile?.branches) && userProfile?.branches?.length > 0
+  const hasBranches =
+    Array.isArray(userProfileData?.branches) && userProfileData?.branches?.length > 0
 
   const handleImportClick = () => {
     fileInputRef.current?.click()
@@ -52,20 +68,11 @@ export default function AddBranch() {
       return
     }
 
-    try {
-      await uploadBranches(file)
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-      // Refresh branches after successful upload
-      await refetch()
-      // Optionally navigate or refresh the page
-      navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT)
-    } catch (error) {
-      console.error('Failed to upload branches:', error)
-      // Error is already handled by the hook's onError
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
+    bulkUploadMutation.mutate(file)
   }
 
   const handleMainBranchSuccess = () => {
@@ -127,8 +134,8 @@ export default function AddBranch() {
                 className="w-fit !rounded-none"
                 size="small"
                 onClick={handleImportClick}
-                disabled={isUploading || !hasBranches}
-                loading={isUploading}
+                disabled={bulkUploadMutation.isPending || !hasBranches}
+                loading={bulkUploadMutation.isPending}
                 title={
                   !hasBranches ? 'Please add a main branch first' : 'Import branches from Excel'
                 }

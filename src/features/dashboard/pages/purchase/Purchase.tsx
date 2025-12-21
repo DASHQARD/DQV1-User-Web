@@ -37,7 +37,7 @@ export default function Purchase() {
               searchPlaceholder="Search by product name or type..."
               csvHeaders={purchaseListCsvHeaders}
               filterBy={{
-                simpleSelects: [{ label: 'status', options: OPTIONS.CUSTOMER_STATUS }],
+                simpleSelects: [{ label: 'status', options: OPTIONS.PURCHASE_STATUS }],
               }}
               printTitle="Purchases"
             />

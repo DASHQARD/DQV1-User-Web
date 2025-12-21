@@ -11,22 +11,19 @@ export default function UpdateUserProfile() {
   const { useUpdateUserInfoService } = useUserInfo()
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
   const { mutate: updateUserInfo, isPending: isUpdatingUserInfo } = useUpdateUserInfoService()
   const form = useForm<z.infer<typeof UpdateUserInfoSchema>>({
     resolver: zodResolver(UpdateUserInfoSchema),
   })
 
-  console.log('userProfile', userProfile)
-
   React.useEffect(() => {
-    if (userProfile) {
+    if (userProfileData) {
       form.reset({
-        fullname: userProfile?.fullname || '',
-        dob: userProfile?.dob || '',
+        fullname: userProfileData?.fullname || '',
+        dob: userProfileData?.dob || '',
       })
     }
-  }, [userProfile, form])
+  }, [userProfileData, form])
 
   const onSubmit = (data: z.infer<typeof UpdateUserInfoSchema>) => {
     const payload = {
@@ -51,7 +48,7 @@ export default function UpdateUserProfile() {
 
         <Input
           type="email"
-          value={userProfile?.email || ''}
+          value={userProfileData?.email || ''}
           disabled
           readOnly
           placeholder="Enter your email"

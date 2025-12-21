@@ -6,6 +6,11 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
+import type {
+  OnboardingData,
+  UploadIdentificationPhotosData,
+  PaymentMethodData,
+} from '@/types/auth/auth'
 
 import {
   businessUploadID,
@@ -55,7 +60,22 @@ export function useAuth() {
 
   function useVerifyEmailMutation() {
     return useMutation({
-      mutationFn: verifyEmail,
+      mutationFn: async (token: string) => {
+        const response = await verifyEmail(token)
+        return (response as any).data as {
+          user: {
+            id: number
+            email: string
+            email_verified: boolean
+            onboarding_stage: string
+            user_type: string
+          }
+          tokens: {
+            accessToken: string
+            refreshToken: string
+          }
+        }
+      },
       onSuccess: (response: {
         user: {
           id: number
@@ -99,7 +119,10 @@ export function useAuth() {
 
   function useRefreshTokenService() {
     return useMutation({
-      mutationFn: refreshToken,
+      mutationFn: async (refreshTokenValue: string) => {
+        const response = await refreshToken(refreshTokenValue)
+        return (response as any).data as { message?: string; tokens?: { accessToken: string; refreshToken: string }; accessToken?: string; refreshToken?: string }
+      },
       onSuccess: (response: {
         message?: string
         tokens?: { accessToken: string; refreshToken: string }
@@ -127,7 +150,10 @@ export function useAuth() {
 
   function usePersonalDetailsService() {
     return useMutation({
-      mutationFn: personalDetails,
+      mutationFn: async (data: OnboardingData) => {
+        const response = await personalDetails(data)
+        return (response as any).data as { status: string; statusCode: number; message: string }
+      },
       onSuccess: (response: { status: string; statusCode: number; message: string }) => {
         success(response.message || 'Personal details updated successfully')
       },
@@ -157,7 +183,10 @@ export function useAuth() {
 
   function useUploadIdentificationPhotosService() {
     return useMutation({
-      mutationFn: uploadIdentificationPhotos,
+      mutationFn: async (data: UploadIdentificationPhotosData) => {
+        const response = await uploadIdentificationPhotos(data)
+        return (response as any).data as { status: string; statusCode: number; message: string }
+      },
       onSuccess: (response: { status: string; statusCode: number; message: string }) => {
         success(response.message || 'Identification photos added successfully')
       },
@@ -253,7 +282,25 @@ export function useAuth() {
 
   function useVerifyLoginOTPService() {
     return useMutation({
-      mutationFn: verifyLoginOTP,
+      mutationFn: async (token: string) => {
+        const response = await verifyLoginOTP(token)
+        return response as {
+          user: {
+            id: number
+            fullname: string
+            phonenumber: string
+            email: string
+            street_address: string
+            user_type: string
+            avatar: string | null
+            status: string
+            email_verified: boolean
+            default_payment_option: string | null
+            onboarding_stage: string
+          }
+          tokens: { accessToken: string; refreshToken: string }
+        }
+      },
       onSuccess: (response: {
         user: {
           id: number
@@ -324,7 +371,10 @@ export function useAuth() {
 
   function usePaymentMethodService() {
     return useMutation({
-      mutationFn: paymentMethod,
+      mutationFn: async (data: PaymentMethodData) => {
+        const response = await paymentMethod(data)
+        return (response as any).data as { status: string; statusCode: number; message: string }
+      },
       onSuccess: (response: { status: string; statusCode: number; message: string }) => {
         success(response.message || 'Payment method updated successfully')
       },
@@ -337,7 +387,10 @@ export function useAuth() {
 
   function useResendRefreshTokenService() {
     return useMutation({
-      mutationFn: (email: string) => resendRefreshToken(email),
+      mutationFn: async (email: string) => {
+        const response = await resendRefreshToken(email)
+        return (response as any).data as { message: string }
+      },
       onSuccess: (response: { message: string }) => {
         console.log('response', response)
         success(response.message || 'Refresh token resent successfully')

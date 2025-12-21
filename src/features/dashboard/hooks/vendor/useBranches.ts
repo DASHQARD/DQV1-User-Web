@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
-import { addBranch, getBranches } from '../../services/vendor'
+import { addBranch, deleteBranch, getBranches } from '../../services/vendor'
 
 export function useBranches() {
   const queryClient = useQueryClient()
@@ -17,9 +17,9 @@ export function useBranches() {
   function useAddBranchService() {
     return useMutation({
       mutationFn: addBranch,
-      onSuccess: (response) => {
+      onSuccess: (response: any) => {
         queryClient.invalidateQueries({ queryKey: ['branches'] })
-        toast.success(response.message || 'Branch deleted successfully')
+        toast.success(response.data?.message || 'Branch deleted successfully')
       },
       onError: (error: { status: number; message: string }) => {
         toast.error(error?.message || 'Failed to delete branch. Please try again.')
@@ -29,10 +29,10 @@ export function useBranches() {
 
   function useDeleteBranchService() {
     return useMutation({
-      mutationFn: deleteBranch,
-      onSuccess: (response) => {
+      mutationFn: (id: string) => deleteBranch(id),
+      onSuccess: (response: any) => {
         queryClient.invalidateQueries({ queryKey: ['branches'] })
-        toast.success(response.message || 'Branch deleted successfully')
+        toast.success(response.data?.message || 'Branch deleted successfully')
       },
       onError: (error: { status: number; message: string }) => {
         toast.error(error?.message || 'Failed to delete branch. Please try again.')

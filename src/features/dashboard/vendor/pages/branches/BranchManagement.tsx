@@ -59,7 +59,7 @@ export default function BranchManagement() {
               searchPlaceholder="Search by branch name or location..."
               csvHeaders={branchListCsvHeaders}
               filterBy={{
-                simpleSelects: [{ label: 'status', options: OPTIONS.CUSTOMER_STATUS }],
+                simpleSelects: [{ label: 'status', options: OPTIONS.BRANCH_MANAGEMENT_STATUS }],
               }}
               printTitle="Branches"
             />

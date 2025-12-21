@@ -48,8 +48,6 @@ export default function PurchaseModal() {
 
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
-  console.log('userProfile', userProfile)
 
   // Get data from modal
   const modalData = modal.modalData
@@ -115,10 +113,10 @@ export default function PurchaseModal() {
   const recipientName = form.watch('name')
   const displayedCardRecipient = React.useMemo(() => {
     if (assignToSelf) {
-      return userProfile?.fullname || 'Your Name'
+      return userProfileData?.fullname || 'Your Name'
     }
     return recipientName || 'Recipient Name'
-  }, [assignToSelf, recipientName, userProfile])
+  }, [assignToSelf, recipientName, userProfileData])
   const displayedCardMessage =
     form.watch('message') || 'Your personalized message will appear here...'
 
@@ -133,9 +131,9 @@ export default function PurchaseModal() {
 
     if (newValue) {
       // When assigning to self, populate with user info but these will be ignored in API
-      form.setValue('name', userProfile?.fullname || '')
-      form.setValue('email', userProfile?.email || '')
-      form.setValue('phone', userProfile?.phonenumber || '')
+      form.setValue('name', userProfileData?.fullname || '')
+      form.setValue('email', userProfileData?.email || '')
+      form.setValue('phone', userProfileData?.phonenumber || '')
     } else {
       // When assigning to someone else, clear the fields
       form.setValue('name', '')
@@ -158,9 +156,9 @@ export default function PurchaseModal() {
       form.setValue('assign_to_self', assignToSelf)
       if (assignToSelf) {
         // Set values explicitly to ensure they're visible
-        form.setValue('name', userProfile?.fullname || '')
-        form.setValue('phone', userProfile?.phonenumber || '')
-        form.setValue('email', userProfile?.email || '')
+        form.setValue('name', userProfileData?.fullname || '')
+        form.setValue('phone', userProfileData?.phonenumber || '')
+        form.setValue('email', userProfileData?.email || '')
         form.setValue('message', '')
         form.setValue('amount', modalData.amount || 0)
       } else {

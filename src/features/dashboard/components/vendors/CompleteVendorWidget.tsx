@@ -22,16 +22,16 @@ export default function CompleteVendorWidget() {
   // Check completion status for vendor onboarding steps
   // Step 1: Profile Information & ID Upload (combined in one form)
   const hasProfile =
-    Boolean(userProfile?.fullname) &&
-    Boolean(userProfile?.street_address) &&
-    Boolean(userProfile?.dob) &&
-    Boolean(userProfile?.id_number)
-  const hasID = Boolean(userProfile?.id_images?.length)
+    Boolean(userProfileData?.fullname) &&
+    Boolean(userProfileData?.street_address) &&
+    Boolean(userProfileData?.dob) &&
+    Boolean(userProfileData?.id_number)
+  const hasID = Boolean(userProfileData?.id_images?.length)
   const hasProfileAndID = hasProfile && hasID
 
   // Step 2: Business Details & Business Documents (combined flow)
-  const hasBusinessDetails = Boolean(userProfile?.business_details?.length)
-  const hasBusinessDocs = Boolean(userProfile?.business_documents?.length)
+  const hasBusinessDetails = Boolean(userProfileData?.business_details?.length)
+  const hasBusinessDocs = Boolean(userProfileData?.business_documents?.length)
   const hasBusinessDetailsAndDocs = hasBusinessDetails && hasBusinessDocs
 
   const completedCount = (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0)

@@ -3,13 +3,15 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input, Button, Checkbox, Combobox } from '@/components'
 import { useAuth } from '@/features/auth/hooks'
-import { AddMainBranchSchema } from '@/utils/schemas'
+import { AddMainBranchSchema, type BranchData } from '@/utils/schemas'
 import { userProfile } from '@/hooks'
 import React from 'react'
+import { useBranches } from '../hooks/vendor/useBranches'
 
 export default function AddMainBranchForm({ onSuccess }: { onSuccess?: () => void }) {
-  const { useAddMainBranchService, useGetCountriesService } = useAuth()
-  const { mutate, isPending } = useAddMainBranchService()
+  const { useGetCountriesService } = useAuth()
+  const { useAddBranchService } = useBranches()
+  const { mutate, isPending } = useAddBranchService()
   const { data: countries } = useGetCountriesService()
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
@@ -34,7 +36,7 @@ export default function AddMainBranchForm({ onSuccess }: { onSuccess?: () => voi
   // Update country_code when country changes (using country name)
   React.useEffect(() => {
     if (countryName && countries) {
-      const selectedCountry = countries.find((c) => c.name === countryName)
+      const selectedCountry = countries.find((c: any) => c.name === countryName)
       if (selectedCountry) {
         const countryCode = selectedCountry.code || selectedCountry.iso_code || ''
         form.setValue('country_code', countryCode, { shouldValidate: true })
@@ -45,9 +47,8 @@ export default function AddMainBranchForm({ onSuccess }: { onSuccess?: () => voi
   }, [countryName, countries, form])
 
   const onSubmit = (data: z.infer<typeof AddMainBranchSchema>) => {
-    mutate(data, {
+    mutate(data as unknown as BranchData, {
       onSuccess: () => {
-        refetch()
         onSuccess?.()
       },
     })
@@ -76,7 +77,7 @@ export default function AddMainBranchForm({ onSuccess }: { onSuccess?: () => voi
             <Combobox
               label="Country"
               options={
-                countries?.map((country) => ({
+                countries?.map((country: any) => ({
                   label: country.name,
                   value: country.name,
                 })) || []

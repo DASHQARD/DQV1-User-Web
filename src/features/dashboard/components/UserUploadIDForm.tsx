@@ -30,7 +30,7 @@ export default function UserUploadIDForm() {
   })
 
   React.useEffect(() => {
-    if (!userProfile?.id_images?.length) {
+    if (!userProfileData?.id_images?.length) {
       return
     }
 
@@ -39,8 +39,8 @@ export default function UserUploadIDForm() {
     const loadImages = async () => {
       try {
         const [frontUrl, backUrl] = await Promise.all([
-          userProfile.id_images[0] ? fetchPresignedURL(userProfile.id_images[0].file_url) : null,
-          userProfile.id_images[1] ? fetchPresignedURL(userProfile.id_images[1].file_url) : null,
+          userProfileData.id_images[0] ? fetchPresignedURL(userProfileData.id_images[0].file_url) : null,
+          userProfileData.id_images[1] ? fetchPresignedURL(userProfileData.id_images[1].file_url) : null,
         ])
 
         if (cancelled) return
@@ -60,7 +60,7 @@ export default function UserUploadIDForm() {
     return () => {
       cancelled = true
     }
-  }, [fetchPresignedURL, toast, userProfile])
+  }, [fetchPresignedURL, toast, userProfileData])
 
   const isPending = isUploading || isSubmitting
 
@@ -82,7 +82,7 @@ export default function UserUploadIDForm() {
         { identificationPhotos },
         {
           onSuccess: () => {
-            if (userProfile?.user_type === 'corporate' || userProfile?.user_type === 'vendor') {
+            if (userProfileData?.user_type === 'corporate' || userProfileData?.user_type === 'vendor') {
               navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_DETAILS)
             } else {
               navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT)
@@ -100,7 +100,7 @@ export default function UserUploadIDForm() {
     <div className="flex justify-center items-center h-full bg-white">
       <Loader />
     </div>
-  ) : userProfile?.id_images?.length && userProfile?.id_images?.length > 0 ? (
+  ) : userProfileData?.id_images?.length && userProfileData?.id_images?.length > 0 ? (
     <>
       {isFetchingPresignedURL ? (
         <div className="flex justify-center items-center h-full bg-white">
@@ -108,7 +108,7 @@ export default function UserUploadIDForm() {
         </div>
       ) : (
         <>
-          {userProfile?.id_images?.length && userProfile?.id_images?.length > 0 && (
+          {userProfileData?.id_images?.length && userProfileData?.id_images?.length > 0 && (
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-w-0">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-700">Front of Identification</p>
@@ -152,7 +152,7 @@ export default function UserUploadIDForm() {
         Upload your pictures of your identification (front and back)
       </p>
 
-      {!userProfile?.id_images && (
+      {!userProfileData?.id_images && (
         <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4 min-w-0">
           <Controller
             control={form.control}

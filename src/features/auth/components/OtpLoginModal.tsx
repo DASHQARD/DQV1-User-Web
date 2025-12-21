@@ -30,7 +30,9 @@ export default function OtpLoginModal() {
 
   const { resendOtp, formatCountdown, countdown } = useCountdown({
     sendOtp: () => {
-      resendRefreshToken(email)
+      if (email) {
+        resendRefreshToken(email)
+      }
     },
   })
 

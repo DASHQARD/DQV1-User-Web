@@ -48,7 +48,7 @@ export default function BusinessUploadIDForm() {
   })
 
   React.useEffect(() => {
-    if (!userProfile?.business_documents?.length) {
+    if (!userProfileData?.business_documents?.length) {
       return
     }
 
@@ -56,7 +56,7 @@ export default function BusinessUploadIDForm() {
 
     const loadDocuments = async () => {
       try {
-        const documentPromises = userProfile.business_documents.map(async (doc) => {
+        const documentPromises = userProfileData.business_documents.map(async (doc: any) => {
           const url = await fetchPresignedURL(doc.file_url)
           return { type: doc.type, url }
         })
@@ -66,14 +66,14 @@ export default function BusinessUploadIDForm() {
         if (cancelled) return
 
         const urlsMap: Record<string, string | null> = {}
-        results.forEach(({ type, url }) => {
+        results.forEach(({ type, url }: { type: string; url: string }) => {
           urlsMap[type] = url
         })
 
         setDocumentUrls(urlsMap)
 
         // Prefill form with existing data
-        const firstDoc = userProfile.business_documents[0]
+        const firstDoc = userProfileData.business_documents[0]
         if (firstDoc) {
           form.reset({
             employer_identification_number: firstDoc.employer_identification_number || '',
@@ -93,7 +93,7 @@ export default function BusinessUploadIDForm() {
     return () => {
       cancelled = true
     }
-  }, [fetchPresignedURL, toast, userProfile, form])
+  }, [fetchPresignedURL, toast, userProfileData, form])
 
   const isPending = isUploading || isSubmitting
 
@@ -146,7 +146,7 @@ export default function BusinessUploadIDForm() {
   }
 
   const hasDocuments =
-    userProfile?.business_documents?.length && userProfile.business_documents.length > 0
+    userProfileData?.business_documents?.length && userProfileData.business_documents.length > 0
 
   if (isLoading) {
     return (
@@ -165,12 +165,12 @@ export default function BusinessUploadIDForm() {
           </div>
         ) : (
           <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
-            {userProfile.business_documents.map((doc) => (
+            {userProfileData.business_documents.map((doc: any) => (
               <div key={doc.id}>
                 <p className="text-sm font-medium text-gray-700 mb-2">
                   {doc.type
                     .split('_')
-                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
                     .join(' ')}
                 </p>
                 <div

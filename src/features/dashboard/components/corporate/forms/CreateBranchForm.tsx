@@ -71,7 +71,7 @@ export default function CreateBranchForm() {
   // Update country_code when country changes
   React.useEffect(() => {
     if (selectedCountryId && countries) {
-      const selectedCountry = countries.find((c) => c.id === selectedCountryId)
+      const selectedCountry = countries.find((c: any) => c.id === selectedCountryId)
       if (selectedCountry) {
         const countryCode = selectedCountry.code || selectedCountry.iso_code || ''
         form.setValue('country_code', countryCode, { shouldValidate: true })
@@ -182,7 +182,7 @@ export default function CreateBranchForm() {
             <Combobox
               label="Country"
               options={
-                countries?.map((country) => ({
+                countries?.map((country: any) => ({
                   label: country.name,
                   value: String(country.id),
                 })) || []

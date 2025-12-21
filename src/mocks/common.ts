@@ -1,4 +1,4 @@
-import type { Branch } from '@/features/dashboard/services'
+import type { Branch } from '@/utils/schemas'
 
 // Transaction interface matching the one used in Transactions.tsx
 interface Transaction {

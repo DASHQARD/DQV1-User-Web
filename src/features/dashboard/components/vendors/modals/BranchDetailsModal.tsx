@@ -4,7 +4,7 @@ import { Icon } from '@/libs'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { getStatusVariant } from '@/utils/helpers/common'
-import type { Branch } from '@/features/dashboard/services/branches'
+import type { Branch } from '@/utils/schemas'
 
 interface BranchDetailsModalProps {
   branch: Branch | null
