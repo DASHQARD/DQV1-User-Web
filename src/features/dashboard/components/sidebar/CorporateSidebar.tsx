@@ -20,7 +20,7 @@ export default function CorporateSidebar() {
 
   console.log('user', user)
   const { useGetCorporateByIdService } = corporate()
-  console.log('user?.id', user?.id)
+
   const { data: corporateData } = useGetCorporateByIdService(user?.user_id)
   console.log('corporateData', corporateData)
   const [isCollapsed, setIsCollapsed] = React.useState(false)
@@ -29,7 +29,7 @@ export default function CorporateSidebar() {
     paramName: MODALS.VENDOR_ACCOUNT.CREATE,
   })
 
-  const displayName = (user as any)?.fullname || (user as any)?.name || 'User'
+  const displayName = user?.user_type
   const discoveryScore = 0
 
   const isActive = (path: string) => {
@@ -97,7 +97,7 @@ export default function CorporateSidebar() {
               <Avatar size="sm" />
               <div className="flex-1 min-w-0">
                 <Text variant="span" weight="semibold" className="block text-sm">
-                  Corporate Account
+                  {displayName} {user?.user_id}
                 </Text>
               </div>
             </div>

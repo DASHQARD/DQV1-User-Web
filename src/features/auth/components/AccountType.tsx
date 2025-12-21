@@ -1,12 +1,12 @@
 import { Icon } from '@/libs'
 
 interface AccountTypeProps {
-  value?: 'user' | 'corporate'
-  onChange?: (value: 'user' | 'corporate') => void
+  value?: 'user' | 'corporate super admin'
+  onChange?: (value: 'user' | 'corporate super admin') => void
 }
 
 export default function AccountType({ value = 'user', onChange }: AccountTypeProps) {
-  const handleClick = (type: 'user' | 'corporate') => {
+  const handleClick = (type: 'user' | 'corporate super admin') => {
     onChange?.(type)
   }
 
@@ -19,7 +19,7 @@ export default function AccountType({ value = 'user', onChange }: AccountTypePro
             onClick={() => handleClick('user')}
             className={`flex items-center gap-2 md:gap-3 px-4 py-2.5 md:px-5 md:py-3 border-none rounded-xl bg-transparent cursor-pointer transition-all duration-300 min-w-[120px] md:min-w-[140px] ${
               value === 'user'
-                ? 'bg-gradient-to-br from-[#402D87] to-[#5B4397] text-white shadow-[0_4px_12px_rgba(64,45,135,0.3)]'
+                ? 'bg-linear-to-br from-[#402D87] to-[#5B4397] text-white shadow-[0_4px_12px_rgba(64,45,135,0.3)]'
                 : 'hover:bg-[rgba(64,45,135,0.05)]'
             }`}
           >
@@ -51,10 +51,10 @@ export default function AccountType({ value = 'user', onChange }: AccountTypePro
 
           <button
             type="button"
-            onClick={() => handleClick('corporate')}
+            onClick={() => handleClick('corporate super admin')}
             className={`flex items-center gap-2 md:gap-3 px-4 py-2.5 md:px-5 md:py-3 border-none rounded-xl bg-transparent cursor-pointer transition-all duration-300 min-w-[120px] md:min-w-[140px] ${
-              value === 'corporate'
-                ? 'bg-gradient-to-br from-[#402D87] to-[#5B4397] text-white shadow-[0_4px_12px_rgba(64,45,135,0.3)]'
+              value === 'corporate super admin'
+                ? 'bg-linear-to-br from-[#402D87] to-[#5B4397] text-white shadow-[0_4px_12px_rgba(64,45,135,0.3)]'
                 : 'hover:bg-[rgba(64,45,135,0.05)]'
             }`}
           >
@@ -62,21 +62,23 @@ export default function AccountType({ value = 'user', onChange }: AccountTypePro
               <Icon
                 icon="bi:shop-window"
                 className={`text-sm md:text-base transition-colors duration-300 ${
-                  value === 'corporate' ? 'text-white' : 'text-gray-500'
+                  value === 'corporate super admin' ? 'text-white' : 'text-gray-500'
                 }`}
               />
             </div>
             <div className="flex flex-col items-start text-left">
               <span
                 className={`text-[13px] md:text-sm leading-tight transition-all duration-300 ${
-                  value === 'corporate' ? 'text-white font-semibold' : 'text-[#1a1a1a] font-medium'
+                  value === 'corporate super admin'
+                    ? 'text-white font-semibold'
+                    : 'text-[#1a1a1a] font-medium'
                 }`}
               >
                 Corporate
               </span>
               <span
                 className={`text-[11px] md:text-xs leading-tight transition-all duration-300 ${
-                  value === 'corporate' ? 'text-white/80' : 'text-gray-500'
+                  value === 'corporate super admin' ? 'text-white/80' : 'text-gray-500'
                 }`}
               >
                 Corporate account

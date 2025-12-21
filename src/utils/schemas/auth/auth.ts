@@ -20,7 +20,7 @@ export const CreateAccountSchema = z.object({
   email: getRequiredEmailSchema('Email'),
   password: getRequiredAlphaNumericStringSchema('Password'),
   phone_number: getRequiredStringSchema('Phone Number'),
-  user_type: z.enum(['user', 'corporate']),
+  user_type: z.enum(['user', 'corporate super admin']),
   country: getRequiredStringSchema('Country'),
   country_code: getRequiredStringSchema('Country Code'),
 })

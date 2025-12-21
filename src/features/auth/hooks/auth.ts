@@ -331,12 +331,12 @@ export function useAuth() {
           refreshToken: response.tokens.refreshToken,
         })
         success('Login successful')
-        if (response.user.user_type === 'corporate') {
-          navigate(ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME)
+        if (response.user.user_type === 'corporate super admin') {
+          navigate(`${ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME}?account=corporate`)
         } else if (response.user.user_type === 'vendor') {
-          navigate(ROUTES.IN_APP.DASHBOARD.VENDOR.HOME)
+          navigate(`${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor`)
         } else {
-          navigate(ROUTES.IN_APP.DASHBOARD.HOME)
+          navigate(`${ROUTES.IN_APP.DASHBOARD.HOME}?account=user`)
         }
       },
       onError: (err: { status: number; message: string }) => {
