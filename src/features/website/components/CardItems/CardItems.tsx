@@ -11,6 +11,8 @@ import { Text } from '@/components'
 type FeaturedCardProps = {
   card_id: number
   product: string
+  branch_name: string
+  branch_location: string
   description: string
   price: string
   base_price: string
@@ -35,6 +37,8 @@ type FeaturedCardProps = {
 export const CardItems = ({
   card_id,
   product,
+  branch_name,
+  branch_location,
   vendor_name,
   buttonText = 'Quick Add',
   rating = 0,
@@ -179,11 +183,15 @@ export const CardItems = ({
         {/* Header */}
         <header className="flex flex-col gap-2 text-[#030303]">
           <Text variant="p" weight="semibold" className="hover:underline">
-            {vendor_name}
+            {vendor_name || branch_name}
           </Text>
 
           <Text variant="span" className="text-[#666]">
             {product}
+          </Text>
+
+          <Text variant="span" className="text-[#666]">
+            {branch_location}
           </Text>
 
           {rating > 0 && (

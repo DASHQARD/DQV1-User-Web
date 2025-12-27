@@ -656,23 +656,23 @@ export default function DashQards() {
                           card_id={card.card_id}
                           product={card.product}
                           vendor_name={card.vendor_name || ''}
-                          rating={card.rating || 0}
-                          price={card.price}
-                          currency={card.currency}
-                          type={card.type as 'DashX' | 'dashpro' | 'dashpass' | 'dashgo'}
+                          branch_name={card.vendor_name || ''}
+                          branch_location=""
                           description={card.description || ''}
-                          expiry_date={card.expiry_date || ''}
-                          terms_and_conditions={(card.terms_and_conditions || []) as []}
-                          created_at={card.created_at || new Date().toISOString()}
-                          base_price={card.price || ''}
+                          price={card.price}
+                          base_price={card.price}
                           markup_price={null}
                           service_fee="0"
+                          currency={card.currency}
+                          expiry_date={card.expiry_date || ''}
                           status={card.status || 'active'}
-                          recipient_count="0"
+                          rating={card.rating || 0}
+                          created_at={card.created_at || ''}
+                          recipient_count={card.recipient_count || '0'}
                           images={(card.images || []) as []}
-                          updated_at={
-                            card.updated_at || card.created_at || new Date().toISOString()
-                          }
+                          terms_and_conditions={(card.terms_and_conditions || []) as []}
+                          type={card.type}
+                          updated_at={card.updated_at || card.created_at || ''}
                           vendor_id={card.vendor_id}
                           onGetQard={() => onGetCard(card)}
                         />
