@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { cn } from '@/libs'
 import { Button } from '@/components'
 import { generateDottedPages } from '@/utils/constants'
@@ -7,20 +7,11 @@ const DOT_REPRESENTATION = '...'
 
 type Props = Readonly<{
   limit: number
-  page: number
-  setPage: (page: number) => void
   total: number
 }>
 
-export function Pagination({ limit = 10, page = 1, setPage, total }: Props) {
-  const [goToPage, setGoToPage] = useState(page)
-  useEffect(() => {
-    if (page !== goToPage) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setGoToPage(page)
-    }
-  }, [page, goToPage])
-
+export function Pagination({ limit = 10, total }: Props) {
+  const [page, setPage] = useState(1)
   const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit])
   const pageList = useMemo(() => {
     return generateDottedPages({

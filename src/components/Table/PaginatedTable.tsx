@@ -53,6 +53,13 @@ type Props = Readonly<{
   ) => void
 }>
 
+// Helper to remove page from query object
+const removePageFromQuery = (query: QueryType): Omit<QueryType, 'page'> => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { page, ...queryWithoutPage } = query as QueryType & { page?: number }
+  return queryWithoutPage
+}
+
 export function PaginatedTable({
   data,
   loading,
@@ -78,17 +85,6 @@ export function PaginatedTable({
   const memoisedColumns = React.useMemo(() => columns, [columns])
   const memoisedData = React.useMemo(() => data ?? [], [data])
 
-  function onSearch(search: string) {
-    setQuery({ ...query, page: 1, search: search.trim() })
-  }
-  function onPageChange(page: number) {
-    setQuery({ ...query, page })
-  }
-
-  function onPageSizeChange(limit: number) {
-    setQuery({ ...query, page: 1, limit })
-  }
-
   const actions = [
     ...(csvHeaders
       ? [
@@ -97,7 +93,8 @@ export function PaginatedTable({
             onClickFn: () => {
               setExportPending('csv')
               setPreviousLimit(query.limit)
-              onPageSizeChange(Number(total))
+              const queryWithoutPage = removePageFromQuery(query)
+              setQuery({ ...queryWithoutPage, limit: Number(total) } as QueryType)
             },
           },
         ]
@@ -107,7 +104,8 @@ export function PaginatedTable({
       onClickFn: () => {
         setExportPending('pdf')
         setPreviousLimit(query.limit)
-        onPageSizeChange(Number(total))
+        const queryWithoutPage = removePageFromQuery(query)
+        setQuery({ ...queryWithoutPage, limit: Number(total) } as QueryType)
       },
     },
   ]
@@ -124,9 +122,11 @@ export function PaginatedTable({
     // 4. Data length matches total (all records fetched)
     if (exportPending && !loading && data && query.limit === total && data.length === total) {
       if (exportPending === 'csv') {
+        const queryWithoutPage = removePageFromQuery(query)
         generateAndDownloadCsv({
           data: data ?? [],
-          fileName: printTitle ?? `Afri-transfer${printTitle ?? ''}-${getQueryString(query)}`,
+          fileName:
+            printTitle ?? `Afri-transfer${printTitle ?? ''}-${getQueryString(queryWithoutPage)}`,
           headers: csvHeaders ?? [],
         })
       } else if (exportPending === 'pdf') {
@@ -135,7 +135,8 @@ export function PaginatedTable({
 
       // Reset the limit to previous value after export
       if (previousLimit !== null) {
-        setQuery({ ...query, limit: previousLimit })
+        const queryWithoutPage = removePageFromQuery(query)
+        setQuery({ ...queryWithoutPage, limit: previousLimit } as QueryType)
       }
 
       setExportPending(null)
@@ -149,7 +150,10 @@ export function PaginatedTable({
         {noSearch ? null : (
           <DebouncedSearch
             value={query.search}
-            onChange={onSearch}
+            onChange={(value) => {
+              const queryWithoutPage = removePageFromQuery(query)
+              setQuery({ ...queryWithoutPage, search: value } as QueryType)
+            }}
             placeholder={searchPlaceholder ?? 'Search...'}
             className="md:w-[343px]"
           />
@@ -179,11 +183,13 @@ export function PaginatedTable({
                 ...item.options.map((x) => (typeof x === 'string' ? { label: x, value: x } : x)),
               ].map((option) => ({
                 label: option.label,
-                onClickFn: () =>
+                onClickFn: () => {
+                  const queryWithoutPage = removePageFromQuery(query)
                   setQuery({
-                    ...query,
+                    ...queryWithoutPage,
                     [item.label]: option.value,
-                  }),
+                  } as QueryType)
+                },
               }))}
             >
               <Button
@@ -250,12 +256,7 @@ export function PaginatedTable({
             )}
 
             <div className="no-print mt-5">
-              <Pagination
-                total={Number(total)}
-                page={Number((query as any).page || 1)}
-                setPage={onPageChange}
-                limit={Number(query.limit)}
-              />
+              <Pagination total={Number(total)} limit={Number(query.limit)} />
             </div>
           </div>
         </PrintView>
