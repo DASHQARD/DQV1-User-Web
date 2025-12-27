@@ -1,2 +1,3 @@
 export * from './useDashboardMetrics'
-export * from './useCorporate'
+export * from './useCorporateQueries'
+export * from './useCorporateMutations'

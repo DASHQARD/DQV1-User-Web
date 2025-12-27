@@ -25,10 +25,38 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
       if (hasHyphen) {
         return selectedVal.split('-')[0]
       }
-      // Extract country code (starts with +, followed by 1-4 digits)
-      const match = selectedVal.match(/^(\+\d{1,4})/)
-      return match ? match[1] : ''
-    }, [selectedVal])
+      // Extract country code by matching against available options first
+      // This ensures we get the correct code (e.g., +233 instead of +2335)
+      if (options && options.length > 0) {
+        // Sort options by code length (longest first) to match longer codes first
+        const sortedOptions = [...options].sort(
+          (a, b) => (b.code?.length || 0) - (a.code?.length || 0),
+        )
+        for (const option of sortedOptions) {
+          if (option.code && selectedVal.startsWith(option.code)) {
+            return option.code
+          }
+        }
+      }
+      // Fallback: Extract country code (starts with +, followed by 1-4 digits)
+      // Try shorter codes first to avoid matching too many digits
+      const match1 = selectedVal.match(/^(\+\d{1})/)
+      const match2 = selectedVal.match(/^(\+\d{2})/)
+      const match3 = selectedVal.match(/^(\+\d{3})/)
+      const match4 = selectedVal.match(/^(\+\d{4})/)
+
+      // Return the shortest match that makes sense
+      // Prefer 3-digit codes for common ones like +233 (Ghana)
+      if (match3 && (match3[1] === '+233' || match3[1] === '+234' || match3[1] === '+255')) {
+        return match3[1]
+      }
+      // Then try 2-digit codes
+      if (match2) return match2[1]
+      // Then try 1-digit codes
+      if (match1) return match1[1]
+      // Finally try 4-digit codes
+      return match4 ? match4[1] : match3 ? match3[1] : ''
+    }, [selectedVal, options])
 
     const number = useMemo(() => {
       if (!selectedVal) return ''
@@ -38,9 +66,15 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
         return selectedVal.split('-')[1] || ''
       }
       // Remove country code to get just the number
+      // Use the extracted code to remove it from selectedVal
+      const extractedCode = code
+      if (extractedCode && selectedVal.startsWith(extractedCode)) {
+        return selectedVal.slice(extractedCode.length)
+      }
+      // Fallback: try to match and remove country code
       const match = selectedVal.match(/^\+\d{1,4}(.+)$/)
       return match ? match[1] : ''
-    }, [selectedVal])
+    }, [selectedVal, code])
 
     const [isOpen, setIsOpen] = useState(false)
     const [displayImage, setDisplayImage] = useState('')
@@ -73,6 +107,24 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [options])
+
+    // Sync internal state when selectedVal prop changes
+    useEffect(() => {
+      if (selectedVal) {
+        const newCode = code
+        const newNumber = number
+        if (newCode !== countryCode) {
+          setCountryCode(newCode)
+        }
+        if (newNumber !== value) {
+          setValue(newNumber)
+        }
+      } else {
+        if (value) setValue('')
+        if (countryCode) setCountryCode('')
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedVal])
 
     useEffect(() => {
       if (value) handleChange(countryCode + value)
@@ -127,10 +179,14 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
         ) : null}
         <div
           ref={inputRef}
-          className={`dropdown flex gap-4 border border-[#CDD3D3] rounded-lg h-12 items-center px-6 relative`}
+          className={cn(
+            `flex gap-2 border border-gray-300 rounded-lg h-12 items-center px-3 relative`,
+            `focus-within:border-primary-400`,
+            error && 'border-red-500',
+          )}
         >
-          <div className={cn(`relative  rounded-md bg-white-100`)}>
-            <div className={cn(`flex items-center gap-2 py-1 cursor-pointer`)} onClick={toggle}>
+          <div className={cn(`relative shrink-0`)}>
+            <div className={cn(`flex items-center gap-2 cursor-pointer`)} onClick={toggle}>
               {displayImage && (
                 <img
                   className="image shrink-0"
@@ -142,29 +198,27 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
               )}
               <input
                 className={cn(
-                  `font-light bg-transparent cursor-pointer outline-none w-[50px] shrink-0`,
+                  `font-light bg-transparent cursor-pointer outline-none w-[50px] shrink-0 text-sm px-0`,
                 )}
                 type="text"
                 value={getDisplayValue()}
                 onClick={toggle}
                 name={name}
-                placeholder="Select..."
+                placeholder="+233"
                 onChange={(e) => {
                   setQuery(e.target.value)
                   setCountryCode('')
                 }}
                 readOnly
               />
-              <div
-                className={cn(`caret transition-all -ml-4 shrink-0 ${isOpen ? 'rotate-180' : ''}`)}
-              >
-                <Icon icon="bi:caret-down-fill" className="size-4" />
+              <div className={cn(`caret transition-all shrink-0 ${isOpen ? 'rotate-180' : ''}`)}>
+                <Icon icon="bi:caret-down-fill" className="size-4 text-gray-500" />
               </div>
             </div>
             {isOpen && (
               <div
                 className={cn(
-                  `absolute left-0 top-full mt-1 w-full bg-white border border-[#CDD3D3] rounded-lg shadow-lg z-50 max-h-[200px] overflow-y-auto`,
+                  `absolute left-0 top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-[200px] overflow-y-auto`,
                 )}
               >
                 {options?.length ? (
@@ -190,12 +244,13 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
               </div>
             )}
           </div>
+          <div className="h-6 w-px bg-gray-300 shrink-0" />
           <input
             ref={ref}
             maxLength={maxLength}
             value={value}
             data-testid={'phoneNumber'}
-            className={cn(`w-full font-light bg-transparent outline-none`)}
+            className={cn(`flex-1 font-light bg-transparent outline-none text-sm`)}
             name={name}
             placeholder="Enter number"
             onChange={(e) => {

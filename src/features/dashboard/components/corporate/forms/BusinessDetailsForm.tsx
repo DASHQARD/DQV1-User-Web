@@ -98,12 +98,6 @@ export default function BusinessDetailsForm() {
 
   const onSubmit = async (data: z.infer<typeof CombinedBusinessSchema>) => {
     try {
-      // Extract country and country_code from phone number
-      // Phone format is like "+233559617908" (country code + number)
-      const phoneMatch = data.phone.match(/^(\+\d{1,4})(.+)$/)
-      const countryCode = phoneMatch ? phoneMatch[1] : '+233'
-      const country = countries?.find((c) => c.code === countryCode)?.label || 'Ghana'
-
       // Upload all business documents
       type DocumentType =
         | 'certificate_of_incorporation'
@@ -134,23 +128,28 @@ export default function BusinessDetailsForm() {
       )
 
       // Submit business details with documents in a single request
-      await submitBusinessDetails({
-        name: data.name,
-        type: data.type,
-        phone: data.phone,
-        email: data.email,
-        street_address: data.street_address,
-        digital_address: data.digital_address,
-        registration_number: data.registration_number,
-        country,
-        country_code: countryCode.replace('+', ''),
-        employer_identification_number: data.employer_identification_number,
-        business_industry: data.business_industry,
-        files,
-      })
-
-      // Navigate after successful submission
-      navigate(ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.ROOT)
+      await submitBusinessDetails(
+        {
+          name: data.name,
+          type: data.type,
+          phone: data.phone,
+          email: data.email,
+          street_address: data.street_address,
+          digital_address: data.digital_address,
+          registration_number: data.registration_number,
+          country: 'Ghana',
+          country_code: '01',
+          employer_identification_number: data.employer_identification_number,
+          business_industry: data.business_industry,
+          files,
+        },
+        {
+          onSuccess: () => {
+            const DashboardUrl = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME}?account=corporate`
+            navigate(DashboardUrl)
+          },
+        },
+      )
     } catch (error: any) {
       console.error('Submission failed:', error)
       // Error toast is already shown by the mutation's onError handler
@@ -248,7 +247,7 @@ export default function BusinessDetailsForm() {
             placeholder="Enter your business registration number"
             {...form.register('registration_number')}
             error={form.formState.errors.registration_number?.message}
-            maxLength={10}
+            maxLength={11}
           />
         </section>
       </section>

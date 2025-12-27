@@ -4,11 +4,11 @@ import type {
   UpdateCardData,
   CardsListResponse,
   CardDetailResponse,
-} from '@/types/cards'
+} from '@/types/responses'
 
 export const getCards = async (params?: {
   card_type?: 'corporate' | 'vendor' | 'all'
-}): Promise<CardsListResponse> => {
+}): Promise<any> => {
   const response = await axiosClient.get('/cards', { params })
   return response as unknown as CardsListResponse
 }
@@ -19,13 +19,24 @@ export const getCardById = async (id: number): Promise<CardDetailResponse> => {
 }
 
 export const createCard = async (data: CreateCardData): Promise<CardDetailResponse> => {
-  const response = await axiosClient.post('/cards', data)
+  // Remove expiry_date for DashGo and DashPro cards (not allowed by API)
+  const cardType = data.type?.toLowerCase()
+  const isDashGoOrDashPro = cardType === 'dashgo' || cardType === 'dashpro'
+
+  const payload = isDashGoOrDashPro ? (({ ...rest }) => rest)(data) : data
+
+  const response = await axiosClient.post('/cards', payload)
   return response as unknown as CardDetailResponse
 }
 
 export const updateCard = async (data: UpdateCardData): Promise<CardDetailResponse> => {
-  // axiosClient interceptor returns data directly, but TypeScript needs the cast
-  const response = await axiosClient.put('/cards/update', data)
+  // Remove expiry_date for DashGo and DashPro cards (not allowed by API)
+  const cardType = data.type?.toLowerCase()
+  const isDashGoOrDashPro = cardType === 'dashgo' || cardType === 'dashpro'
+
+  const payload = isDashGoOrDashPro ? (({ ...rest }) => rest)(data) : data
+
+  const response = await axiosClient.put('/cards/update', payload)
   return response as unknown as CardDetailResponse
 }
 

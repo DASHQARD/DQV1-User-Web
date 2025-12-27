@@ -5,3 +5,6 @@ export { default as UserUploadIDForm } from '../../dashboard/components/UserUplo
 export { default as OtpLoginModal } from './OtpLoginModal'
 export { default as ForgotPasswordForm } from './ForgotPasswordForm'
 export { default as ResetPasswordForm } from './ResetPasswordForm'
+export { default as InviteCorporateAdminForm } from './InviteCorporateAdminForm'
+export { default as AcceptVendorAdminForm } from './AcceptVendorAdminForm'
+export { default as AcceptBranchManagerForm } from './AcceptBranchManagerForm'

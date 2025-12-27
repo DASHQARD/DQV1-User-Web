@@ -78,7 +78,6 @@ export type CreateVendorData = {
 export type AcceptVendorInvitationData = {
   token: string
   password: string
-  confirm_password: string
 }
 
 export type CancelVendorInvitationPayload = {
@@ -99,4 +98,17 @@ export type ApproveVendorAdminPayload = {
   vendor_account_id: string
   approval_status: string
   rejection_reason: string
+}
+
+export type CreateExperienceData = {
+  product: string
+  description: string
+  type: string
+  price: number
+  currency: string
+  issue_date: string
+  expiry_date: string
+  redemption_branches: { branch_id: number }[]
+  images: { file_url: string; file_name: string }[]
+  terms_and_conditions: { file_url: string; file_name: string }[]
 }

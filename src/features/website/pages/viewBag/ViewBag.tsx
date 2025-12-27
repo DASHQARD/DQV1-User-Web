@@ -7,7 +7,7 @@ import { useCart } from '../../hooks/useCart'
 import { usePersistedModalState } from '@/hooks'
 import { MODAL_NAMES } from '@/utils/constants'
 import { deleteRecipient, getRecipients } from '@/features/dashboard/services'
-import type { RecipientResponse, CartItemResponse } from '@/types/cart'
+import type { RecipientResponse } from '@/types/responses'
 import { useToast } from '@/hooks'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
@@ -120,7 +120,7 @@ export default function ViewBag() {
 
     const flattened: FlattenedCartItem[] = []
 
-    cartItems.forEach((cart: CartItemResponse) => {
+    cartItems.forEach((cart) => {
       // Each cart has an items array
       if (cart.items && Array.isArray(cart.items)) {
         cart.items.forEach((item) => {
@@ -228,7 +228,7 @@ export default function ViewBag() {
   }
 
   const subtotal = Array.isArray(cartItems)
-    ? cartItems.reduce((total: number, cart: CartItemResponse) => {
+    ? cartItems.reduce((total: number, cart) => {
         const amount = parseFloat(cart.total_amount || '0')
         return total + amount
       }, 0)
@@ -464,7 +464,7 @@ export default function ViewBag() {
                 <div className="border-t border-gray-200 pt-4 mt-4">
                   <div className="flex justify-between">
                     <span className="text-lg font-bold text-gray-900">Total</span>
-                    <span className="text-lg font-bold text-gray-900">{formatPrice(subtotal)}</span>
+                    <span className="text-lg font-bold text-gray-900">{formatPrice(Number(subtotal))}</span>
                   </div>
                 </div>
               </div>

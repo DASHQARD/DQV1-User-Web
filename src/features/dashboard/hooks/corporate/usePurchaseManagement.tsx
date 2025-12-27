@@ -1,7 +1,7 @@
 import { usePersistedModalState, useReducerSpread } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
-import { BulkPurchase, IndividualPurchase, PastPurchase } from '../../components/corporate/purchase'
+import { PastPurchase } from '../../components/corporate/purchase'
 
 export function usePurchaseManagement() {
   const [query, setQuery] = useReducerSpread(DEFAULT_QUERY)
@@ -12,16 +12,6 @@ export function usePurchaseManagement() {
   })
 
   const purchaseTabConfig = [
-    {
-      key: 'individual' as const,
-      label: 'Individual Purchase',
-      component: IndividualPurchase,
-    },
-    {
-      key: 'bulk' as const,
-      label: 'Bulk Purchase',
-      component: BulkPurchase,
-    },
     {
       key: 'past' as const,
       label: 'Past Purchases',

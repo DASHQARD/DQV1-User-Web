@@ -1,17 +1,25 @@
-import { Text } from '@/components'
+import { DateCell, StatusCell, Text } from '@/components'
 import { PaginatedTable } from '@/components/Table'
 import { cn } from '@/libs'
-import { DEFAULT_QUERY } from '@/utils/constants/shared'
+import { DEFAULT_QUERY } from '@/utils/constants'
+import type { QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
-
-type QueryType = typeof DEFAULT_QUERY
+import { vendorQueries } from '../../hooks'
 
 type ActivityData = {
-  id: string
-  actor_name?: string
-  actor_type?: string
+  id: number
   action: string
-  new_values?: Record<string, any>
+  module: string
+  user_id: string | null
+  name: string | null
+  user_email: string | null
+  user_type: string
+  ip_address: string
+  country: string | null
+  location: string | null
+  description: string
+  status: string
+  error_message: string | null
   created_at: string
 }
 
@@ -34,48 +42,15 @@ function getActionType(action: string): 'Create' | 'Modify' {
   return 'Modify'
 }
 
-function formatActivityDate(timestamp: string): string {
-  if (!timestamp) return 'N/A'
-  const dateObj = new Date(timestamp)
-  if (isNaN(dateObj.getTime())) return 'N/A'
-
-  const day = dateObj.getDate().toString().padStart(2, '0')
-  const month = dateObj.toLocaleDateString('en-US', { month: 'short' })
-  const year = dateObj.getFullYear()
-  const hours = dateObj.getHours()
-  const minutes = dateObj.getMinutes().toString().padStart(2, '0')
-  const ampm = hours >= 12 ? 'PM' : 'AM'
-  const displayHours = hours % 12 || 12
-
-  return `${day} ${month} ${year} ${displayHours}:${minutes} ${ampm}`
-}
-
 function formatActorType(actorType: string): string {
   if (!actorType) return 'Admin'
   return actorType.charAt(0).toUpperCase() + actorType.slice(1)
 }
 
-function getActivityDescription(action: string, newValues?: Record<string, any>): string {
-  const lowerAction = action.toLowerCase()
-
-  // For savings type updates, show the display_name or description
-  if (lowerAction.includes('savings_type')) {
-    if (newValues?.display_name) {
-      return newValues.display_name
-    }
-    if (newValues?.description) {
-      return newValues.description
-    }
-  }
-
-  // For gift card related actions
-  if (lowerAction.includes('gift_card') || lowerAction.includes('card')) {
-    if (newValues?.card_type) {
-      return `${newValues.card_type} Gift Card`
-    }
-    if (newValues?.title) {
-      return newValues.title
-    }
+function getActivityDescription(description: string, action: string): string {
+  // Use description if available, otherwise format the action
+  if (description) {
+    return description.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
   }
 
   // Fallback: create a readable description from the action
@@ -85,92 +60,6 @@ function getActivityDescription(action: string, newValues?: Record<string, any>)
     .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
-// Mock data for vendor audit logs
-const MOCK_ACTIVITIES: ActivityData[] = [
-  {
-    id: '1',
-    actor_name: 'Vendor Admin',
-    actor_type: 'vendor',
-    action: 'Created Branch Location',
-    new_values: {
-      branch_name: 'Accra Main Branch',
-      location: 'Accra, Ghana',
-    },
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-  },
-  {
-    id: '2',
-    actor_name: 'Branch Manager',
-    actor_type: 'vendor',
-    action: 'Modified Redemption Settings',
-    new_values: {
-      setting: 'Auto-approve redemptions',
-    },
-    created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-  },
-  {
-    id: '3',
-    actor_name: 'Vendor Admin',
-    actor_type: 'vendor',
-    action: 'Added New Experience',
-    new_values: {
-      experience_name: 'ShopRite Gift Card Experience',
-    },
-    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-  },
-  {
-    id: '4',
-    actor_name: 'System',
-    actor_type: 'system',
-    action: 'Updated Payment Method',
-    new_values: {
-      payment_type: 'Mobile Money',
-    },
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-  },
-  {
-    id: '5',
-    actor_name: 'Vendor Admin',
-    actor_type: 'vendor',
-    action: 'Modified Branch Details',
-    new_values: {
-      branch_name: 'Kumasi Branch',
-    },
-    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-  },
-  {
-    id: '6',
-    actor_name: 'Branch Manager',
-    actor_type: 'vendor',
-    action: 'Created Redemption Request',
-    new_values: {
-      amount: '500',
-      currency: 'GHS',
-    },
-    created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
-  },
-  {
-    id: '7',
-    actor_name: 'Vendor Admin',
-    actor_type: 'vendor',
-    action: 'Updated Experience Status',
-    new_values: {
-      status: 'active',
-    },
-    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-  },
-  {
-    id: '8',
-    actor_name: 'System',
-    actor_type: 'system',
-    action: 'Processed Redemption',
-    new_values: {
-      transaction_id: 'TXN-12345',
-    },
-    created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(), // 6 days ago
-  },
-]
-
 // Table columns for audit logs
 const auditLogsColumns = [
   {
@@ -178,10 +67,10 @@ const auditLogsColumns = [
     accessorKey: 'actor',
     cell: ({ row }: any) => {
       const activity = row.original as ActivityData
-      const actor = activity.actor_name || 'Admin'
-      const role = formatActorType(activity.actor_type || 'admin')
+      const actor = activity.name || activity.user_email || 'System'
+      const role = formatActorType(activity.user_type || 'admin')
       return (
-        <div>
+        <div className="flex items-center gap-2">
           <Text variant="span" className="text-sm text-gray-800">
             {actor}
           </Text>
@@ -210,7 +99,7 @@ const auditLogsColumns = [
     accessorKey: 'description',
     cell: ({ row }: any) => {
       const activity = row.original as ActivityData
-      const description = getActivityDescription(activity.action, activity.new_values)
+      const description = getActivityDescription(activity.description, activity.action)
       return (
         <Text variant="span" className="text-sm text-gray-600 line-clamp-1">
           {description}
@@ -219,29 +108,31 @@ const auditLogsColumns = [
     },
   },
   {
+    header: 'Status',
+    accessorKey: 'status',
+    cell: StatusCell,
+  },
+  {
     header: 'Date',
     accessorKey: 'created_at',
-    cell: ({ row }: any) => {
-      const activity = row.original as ActivityData
-      const date = formatActivityDate(activity.created_at)
-      return (
-        <Text variant="span" className="text-xs text-gray-400">
-          {date}
-        </Text>
-      )
-    },
+    cell: DateCell,
   },
 ]
 
 const auditLogsCsvHeaders = [
-  { name: 'Actor', accessor: 'actor_name' },
-  { name: 'Role', accessor: 'actor_type' },
+  { name: 'Actor', accessor: 'name' },
+  { name: 'Email', accessor: 'user_email' },
+  { name: 'Role', accessor: 'user_type' },
   { name: 'Action', accessor: 'action' },
+  { name: 'Description', accessor: 'description' },
+  { name: 'Status', accessor: 'status' },
   { name: 'Date', accessor: 'created_at' },
 ]
 
 export default function AuditLogs() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
+  const { useGetAuditLogsVendorService } = vendorQueries()
+  const { data: auditLogsResponse, isLoading } = useGetAuditLogsVendorService()
 
   return (
     <div className="py-10">
@@ -260,9 +151,9 @@ export default function AuditLogs() {
           <PaginatedTable
             filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
             columns={auditLogsColumns}
-            data={MOCK_ACTIVITIES}
-            total={MOCK_ACTIVITIES.length}
-            loading={false}
+            data={auditLogsResponse}
+            total={auditLogsResponse?.length || 0}
+            loading={isLoading}
             query={query}
             setQuery={setQuery}
             csvHeaders={auditLogsCsvHeaders}

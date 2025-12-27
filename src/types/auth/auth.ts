@@ -116,5 +116,5 @@ export type UploadBusinessIDData = {
 export type ChangePasswordData = {
   currentPassword: string
   newPassword: string
-  confirmNewPassword: string
+  confirmPassword: string
 }

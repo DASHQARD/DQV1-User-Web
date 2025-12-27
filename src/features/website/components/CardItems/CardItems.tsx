@@ -6,57 +6,46 @@ import DashpassBg from '@/assets/svgs/Dashpass_bg.svg'
 import { useCart } from '../../hooks/useCart'
 import { useCartStore } from '@/stores/cart'
 import { formatCurrency } from '@/utils/format'
+import { Text } from '@/components'
 
 type FeaturedCardProps = {
-  created_at: string
-  created_by: string | null
-  currency: string
-  description: string
-  expiry_date: string
-  fraud_flag: boolean
-  fraud_notes: string | null
-  id: number
-  images: {
-    created_at: string
-    file_name: string
-    file_url: string
-    id: number
-    updated_at: string
-  }[]
-  is_activated: boolean
-  issue_date: string
-  last_modified_by: string | null
-  price: string
+  card_id: number
   product: string
-  rating: number
+  description: string
+  price: string
+  base_price: string
+  markup_price: number | null
+  service_fee: string
+  currency: string
+  expiry_date: string
   status: string
-  terms_and_conditions: {
-    created_at: string
-    file_name: string
-    file_url: string
-    id: number
-    updated_at: string
-  }[]
-  type: 'DashX' | 'dashpro' | 'dashpass' | 'dashgo'
+  rating: number
+  created_at: string
+  recipient_count: string
+  images: []
+  terms_and_conditions: []
+  type: string
   updated_at: string
   vendor_id: number
   vendor_name: string
+  buttonText?: string
   onGetQard?: () => void
 }
 
 export const CardItems = ({
-  id,
+  card_id,
   product,
   vendor_name,
-  // rating = 0,
+  buttonText = 'Quick Add',
+  rating = 0,
   price,
-  // currency = 'GHS',
+  currency = 'GHS',
   type,
   onGetQard,
 }: FeaturedCardProps) => {
   // const { id, product, vendor_name, rating = 0, price, currency = 'GHS', type, onGetQard } = props
 
-  // const roundedRating = Math.round(rating)
+  const roundedRating = Math.round(rating)
   const [isHovered, setIsHovered] = useState(false)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
@@ -80,10 +69,10 @@ export const CardItems = ({
   }
 
   const cardBackground = getCardBackground()
-  const displayPrice = parseFloat(price) || 0
+  const displayPrice = formatCurrency(price, currency) || 0
 
   // Generate QR code for the card
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`${product}-${id}`)}&bgcolor=FFFFFF&color=000000&margin=0`
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`${product}-${card_id}`)}&bgcolor=FFFFFF&color=000000&margin=0`
 
   // Get card type display name
   const getCardTypeName = () => {
@@ -104,14 +93,20 @@ export const CardItems = ({
 
   const handleQuickAdd = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
-    if (!id) {
-      console.error('card id is required to add item to cart')
+
+    // If onGetQard is provided, use it instead of adding to cart
+    if (onGetQard) {
+      onGetQard()
+      return
+    }
+
+    if (!card_id) {
+      console.error('Card ID is required to add item to cart')
       return
     }
 
     await addToCartAsync({
-      card_id: id,
-      amount: displayPrice,
+      card_id: card_id,
       quantity: 1,
     })
     openCart()
@@ -158,9 +153,7 @@ export const CardItems = ({
 
             {/* Right: Price */}
             <div className="text-right">
-              <span className="text-2xl font-extrabold">
-                {formatCurrency(displayPrice.toFixed(2), 'GHS')}
-              </span>
+              <span className="text-2xl font-extrabold">{displayPrice}</span>
             </div>
           </div>
 
@@ -185,36 +178,41 @@ export const CardItems = ({
       <div className="pt-2 px-1 flex flex-col h-full">
         {/* Header */}
         <header className="flex flex-col gap-2 text-[#030303]">
-          <p className="text-sm hover:underline">
-            {vendor_name} - {product}
-          </p>
+          <Text variant="p" weight="semibold" className="hover:underline">
+            {vendor_name}
+          </Text>
 
-          {price && <p className="font-medium">{formatCurrency(displayPrice.toFixed(2), 'GHS')}</p>}
+          <Text variant="span" className="text-[#666]">
+            {product}
+          </Text>
+
+          {rating > 0 && (
+            <div className="mt-2.5 flex items-center justify-start">
+              <div
+                className="inline-flex items-center gap-1.5 text-[0.95rem] text-yellow-500"
+                aria-label={`Rating ${rating} out of 5`}
+              >
+                {Array.from({ length: 5 }).map((_, n) => {
+                  const starNumber = n + 1
+                  return (
+                    <Icon
+                      key={starNumber}
+                      icon={starNumber <= roundedRating ? 'bi:star-fill' : 'bi:star'}
+                      className="size-4 text-yellow-500"
+                    />
+                  )
+                })}
+                <span className="ml-1.5 text-[0.85rem] font-semibold text-[#7a7a7a]">
+                  {rating.toFixed(1)}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {price && <p className="font-medium">{displayPrice}</p>}
         </header>
 
         {/* Meta */}
-        {/* {rating > 0 && (
-          <div className="mt-2.5 flex items-center justify-start">
-            <div
-              className="inline-flex items-center gap-1.5 text-[0.95rem] text-yellow-500"
-              aria-label={`Rating ${rating} out of 5`}
-            >
-              {Array.from({ length: 5 }).map((_, n) => {
-                const starNumber = n + 1
-                return (
-                  <Icon
-                    key={starNumber}
-                    icon={starNumber <= roundedRating ? 'bi:star-fill' : 'bi:star'}
-                    className="size-4 text-yellow-500"
-                  />
-                )
-              })}
-              <span className="ml-1.5 text-[0.85rem] font-semibold text-[#7a7a7a]">
-                {rating.toFixed(1)}
-              </span>
-            </div>
-          </div>
-        )} */}
 
         {/* Actions */}
         <div className="mt-auto pt-3.5">
@@ -228,7 +226,7 @@ export const CardItems = ({
                 : 'opacity-0 translate-y-2 pointer-events-none'
             }`}
           >
-            {isAdding ? 'Adding...' : 'Quick Add'}
+            {isAdding ? 'Adding...' : buttonText}
           </button>
         </div>
       </div>

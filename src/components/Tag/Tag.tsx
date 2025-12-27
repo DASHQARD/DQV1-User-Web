@@ -10,7 +10,7 @@ export function Tag({ value, variant, className }: Props) {
   const colorVariants: Record<typeof type, string[]> = {
     success: ['bg-success-100', 'bg-success', 'text-success-800'],
     warning: ['bg-warning-100', 'bg-warning', 'text-warning'],
-    error: ['bg-error-100', 'bg-error', 'text-error-800'],
+    error: ['bg-error-100', 'bg-error', 'text-white'],
     gray: ['bg-gray-100', 'bg-gray', 'text-gray'],
   }
   return (

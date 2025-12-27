@@ -26,11 +26,15 @@ export default function Navbar() {
     },
     {
       label: 'Gift Cards',
-      path: ROUTES.IN_APP.ABOUT,
+      path: ROUTES.IN_APP.SEARCH_CARDS,
     },
     {
       label: 'Vendors',
       path: ROUTES.IN_APP.VENDORS,
+    },
+    {
+      label: 'Redeem',
+      path: ROUTES.IN_APP.REDEEM,
     },
     {
       label: 'Contact',

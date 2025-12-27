@@ -2,11 +2,11 @@ import { Icon } from '@/libs'
 
 type VendorItemProps = {
   name: string
-  shops?: number
+  branches?: number
   rating?: number
 }
 
-export const VendorItems = ({ name, shops = 1, rating = 4.5 }: VendorItemProps) => {
+export const VendorItems = ({ name, branches = 1, rating = 4.5 }: VendorItemProps) => {
   const roundedRating = Math.round(rating)
 
   return (
@@ -15,7 +15,7 @@ export const VendorItems = ({ name, shops = 1, rating = 4.5 }: VendorItemProps) 
       <div className="mb-2.5 flex items-center justify-between">
         <h4 className="m-0 text-base font-bold text-[#212529]">{name}</h4>
         <span className="rounded-full bg-gray-200 px-2.5 py-1.5 text-xs font-semibold text-[#555]">
-          {shops} Shops
+          {branches} {branches > 1 ? 'Branches' : 'Branch'}
         </span>
       </div>
 

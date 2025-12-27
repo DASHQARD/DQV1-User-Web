@@ -1,61 +1,22 @@
-import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Icon } from '@/libs'
-import { Loader, Text } from '@/components'
+import { Text, TabbedView } from '@/components'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { cn } from '@/libs/clsx'
-import { userProfile } from '@/hooks'
-import { UpdateUserInfoSchema } from '@/utils/schemas'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
+import { BusinessDetailsSettings } from './BusinessDetailsSettings'
+import { PaymentDetailsSettings } from './PaymentDetailsSettings'
 
 export default function Settings() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { useGetUserProfileService } = userProfile()
-  const { data: userProfileData } = useGetUserProfileService()
   const { logout } = useAuthStore()
-
-  const form = useForm<z.infer<typeof UpdateUserInfoSchema>>({
-    resolver: zodResolver(UpdateUserInfoSchema),
-  })
-  const [isLoading] = useState(false)
-
-  // Update profile when user info changes
-  React.useEffect(() => {
-    if (userProfileData) {
-      form.reset({
-        fullname: userProfileData?.fullname || '',
-        dob: userProfileData?.dob || '',
-      })
-    }
-  }, [userProfileData, form])
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] bg-white rounded-xl">
-        <Loader />
-      </div>
-    )
-  }
 
   const ACCOUNT_SETTINGS = [
     {
-      label: 'Account',
-      icon: 'bi:person-badge',
-      path: ROUTES.IN_APP.DASHBOARD.SETTINGS.PERSONAL_INFORMATION,
-    },
-    {
-      label: 'Security Settings',
-      icon: 'bi:shield-lock',
-      path: ROUTES.IN_APP.DASHBOARD.SETTINGS.SECURITY_SETTINGS,
-    },
-    {
-      label: 'Payout Accounts',
-      icon: 'bi:credit-card-fill',
-      path: ROUTES.IN_APP.DASHBOARD.VENDOR.PAYMENT_METHODS,
+      label: 'Business Details',
+      icon: 'bi:building',
+      path: ROUTES.IN_APP.DASHBOARD.SETTINGS.ROOT,
     },
     {
       label: 'Log Out',
@@ -69,18 +30,53 @@ export default function Settings() {
   ]
 
   const isActive = (path: string) => {
+    if (path === ROUTES.IN_APP.DASHBOARD.SETTINGS.ROOT) {
+      return (
+        location.pathname === path ||
+        location.pathname === ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS
+      )
+    }
     return location.pathname === path || location.pathname.startsWith(path + '/')
   }
 
+  const settingsTabs = [
+    {
+      key: 'business-details' as const,
+      component: () => <BusinessDetailsSettings />,
+      label: 'Business Details',
+    },
+    {
+      key: 'payment-details' as const,
+      component: () => <PaymentDetailsSettings />,
+      label: 'Payment Details',
+    },
+  ]
+
   return (
     <div className="min-h-[600px] bg-gray-50 rounded-xl overflow-hidden flex max-h-[calc(100vh-8rem)]">
-      <div className="flex flex-col gap-2 min-w-[240px] p-4 bg-white shrink-0">
+      <div className="flex flex-col gap-2 min-w-[240px] p-4 bg-white shrink-0 border-r border-gray-200">
+        <div className="mb-4">
+          <Text variant="h3" weight="semibold" className="text-[#402D87]">
+            Settings
+          </Text>
+          <Text variant="span" className="text-sm text-gray-600">
+            Manage your account
+          </Text>
+        </div>
         {ACCOUNT_SETTINGS.map((setting) => {
           const active = isActive(setting.path)
           return (
             <button
               key={setting.label}
-              onClick={() => navigate(setting.path)}
+              onClick={() => {
+                if (setting.onClick) {
+                  setting.onClick()
+                } else if (setting.path === ROUTES.IN_APP.DASHBOARD.SETTINGS.ROOT) {
+                  navigate(ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS)
+                } else {
+                  navigate(setting.path)
+                }
+              }}
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-left w-full',
                 'hover:bg-gray-50',
@@ -101,69 +97,26 @@ export default function Settings() {
         })}
       </div>
 
-      <div className="bg-white flex flex-col px-4 sm:px-8 py-10 overflow-y-auto flex-1">
-        {/* Header Section */}
-
-        {/* Settings Section */}
-        <div className="flex-1">
-          {/* Personal Details Section */}
-          <div className="flex flex-col gap-6 max-w-[607px] w-full border border-[#e5e7eb] py-5 px-[30px] rounded-xl">
-            <Text variant="h2" weight="semibold">
-              Account Information
+      <div className="bg-white flex flex-col flex-1 overflow-y-auto">
+        <div className="p-6 sm:p-8">
+          <div className="mb-6">
+            <Text variant="h2" weight="semibold" className="text-primary-900">
+              Settings
             </Text>
+            <Text variant="span" className="text-gray-600 text-sm">
+              Manage your business information and payment methods
+            </Text>
+          </div>
 
-            <div className="flex flex-col gap-8">
-              <div>
-                <Text variant="p" weight="semibold">
-                  Email
-                </Text>
-                <Text variant="span" className="text-[#14171f]">
-                  {userProfileData?.email}
-                </Text>
-              </div>
-
-              <div>
-                <Text variant="p" weight="semibold">
-                  Birthdate
-                </Text>
-                <Text variant="span" className="text-[#14171f]">
-                  {userProfileData?.dob ? userProfileData?.dob : 'MM/YYYY/DD'}
-                </Text>
-              </div>
-
-              <hr className="border-[#e5e7eb]" />
-
-              <div>
-                <Text variant="h2" weight="semibold">
-                  Personal Information
-                </Text>
-                <Text variant="span" className="text-[#4a5264]">
-                  This information will appear on all future invoices
-                </Text>
-              </div>
-
-              <div>
-                <Text variant="p" weight="semibold">
-                  Your address
-                </Text>
-                <Text variant="span" className="text-[#14171f]">
-                  {userProfileData?.street_address
-                    ? userProfileData?.street_address
-                    : 'No address provided'}
-                </Text>
-              </div>
-
-              <div>
-                <Text variant="p" weight="semibold">
-                  Your phone number
-                </Text>
-                <Text variant="span" className="text-[#14171f]">
-                  {userProfileData?.phonenumber
-                    ? userProfileData?.phonenumber
-                    : 'No phone number provided'}
-                </Text>
-              </div>
-            </div>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <TabbedView
+              tabs={settingsTabs}
+              defaultTab="business-details"
+              urlParam="tab"
+              containerClassName="p-6"
+              btnClassName="pb-3"
+              tabsClassName="gap-6 border-b border-gray-200"
+            />
           </div>
         </div>
       </div>

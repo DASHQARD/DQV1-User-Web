@@ -1,4 +1,26 @@
 export const MODALS = {
+  REQUEST_CORPORATE_MANAGEMENT: {
+    ROOT: 'request-corporate-management-modal',
+    CHILDREN: {
+      VIEW: 'view',
+      APPROVE: 'approve',
+      REJECT: 'reject',
+    },
+  },
+  CORPORATE_ADMIN: {
+    PARAM_NAME: 'corporate-admin',
+    CHILDREN: {
+      VIEW: 'view',
+      DELETE_INVITATION: 'delete-invitation',
+      DELETE: 'delete',
+      REMOVE_ADMIN: 'remove-admin',
+      UPDATE_INVITATION: 'update-invitation',
+      CANCEL_INVITATION: 'cancel-invitation',
+      CREATE_VENDOR_ACCOUNT: 'create-vendor-account',
+      CREATE_RECIPIENT: 'create-recipient',
+      CREATE_DASHPRO: 'create-dashpro',
+    },
+  },
   BROWSE_CARDS: {
     ROOT: 'browse-cards-modal',
   },
@@ -45,6 +67,9 @@ export const MODALS = {
   EXPERIENCE: {
     ROOT: 'experience-modal',
     CREATE: 'create-experience',
+    VIEW: 'view-experience',
+    EDIT: 'edit-experience',
+    DELETE: 'delete-experience',
     APPROVAL: 'experience-approval',
   },
   PAYMENT: {

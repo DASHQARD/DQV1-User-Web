@@ -5,8 +5,8 @@ import { TransactionActionCell } from './TransactionActionCell'
 
 export const transactionsListColumns = [
   {
-    header: 'Transaction ID',
-    accessorKey: 'id',
+    header: 'Receipt ID',
+    accessorKey: 'receipt_number',
   },
   {
     header: 'Type',
@@ -23,13 +23,8 @@ export const transactionsListColumns = [
     cell: StatusCell,
   },
   {
-    header: 'Date',
-    accessorKey: 'date',
-    cell: DateCell,
-  },
-  {
     header: 'Created At',
-    accessorKey: 'createdAt',
+    accessorKey: 'created_at',
     cell: DateCell,
   },
   {
@@ -42,8 +37,8 @@ export const transactionsListColumns = [
 
 export const transactionListCsvHeaders: Array<CsvHeader> = [
   {
-    name: 'Transaction ID',
-    accessor: 'id',
+    name: 'Receipt ID',
+    accessor: 'receipt_number',
   },
   {
     name: 'Type',
@@ -62,13 +57,8 @@ export const transactionListCsvHeaders: Array<CsvHeader> = [
     accessor: 'status',
   },
   {
-    name: 'Date',
-    accessor: 'date',
-    transform: (value) => formatDate(value),
-  },
-  {
     name: 'Created At',
-    accessor: 'createdAt',
+    accessor: 'created_at',
     transform: (value) => formatDate(value),
   },
 ]

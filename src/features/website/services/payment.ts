@@ -1,7 +1,6 @@
-import { axiosClient } from '@/libs'
-import type { CheckoutPayload, CheckoutResponse } from '@/types'
+import { postMethod } from '@/services/requests'
+import type { CheckoutPayload } from '@/types'
 
-export const checkout = async (data: CheckoutPayload): Promise<CheckoutResponse> => {
-  const response = await axiosClient.post<CheckoutResponse>('/payments/checkout', data)
-  return response.data
+export const checkout = async (data: CheckoutPayload): Promise<any> => {
+  return await postMethod('/payments/checkout', data)
 }

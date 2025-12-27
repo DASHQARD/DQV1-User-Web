@@ -6,7 +6,7 @@ import { usePersistedModalState } from '@/hooks'
 import { MODALS, REJECT_REASON_OPTIONS } from '@/utils/constants'
 import { useCustomForm } from '@/libs'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { toggleCustomerStatusSchema } from '@/types'
+import { ToggleCustomerStatusSchema } from '@/utils/schemas'
 
 export function RejectAction() {
   const modal = usePersistedModalState<{ id: string }>({
@@ -14,7 +14,7 @@ export function RejectAction() {
   })
 
   const form = useCustomForm({
-    resolver: zodResolver(toggleCustomerStatusSchema),
+    resolver: zodResolver(ToggleCustomerStatusSchema),
     defaultValues: {
       reason: '',
     },

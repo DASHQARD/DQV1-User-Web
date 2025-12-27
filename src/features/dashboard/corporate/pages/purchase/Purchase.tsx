@@ -15,19 +15,19 @@ export default function Purchase() {
   const { purchaseTabConfig } = usePurchaseManagement()
   const location = useLocation()
   const searchParams = new URLSearchParams(location.search)
-  const currentTab = searchParams.get('tab') || 'individual'
+  const currentTab = searchParams.get('tab') || 'bulk'
 
   const bulkPurchaseModal = usePersistedModalState({
     paramName: MODALS.BULK_EMPLOYEE_PURCHASE.PARAM_NAME,
   })
 
-  const individualPurchaseModal = usePersistedModalState({
-    paramName: MODALS.PURCHASE.INDIVIDUAL.ROOT,
-  })
+  // const individualPurchaseModal = usePersistedModalState({
+  //   paramName: MODALS.PURCHASE.INDIVIDUAL.ROOT,
+  // })
 
-  const handleIndividualPurchase = () => {
-    individualPurchaseModal.openModal(MODALS.PURCHASE.INDIVIDUAL.CREATE)
-  }
+  // const handleIndividualPurchase = () => {
+  //   individualPurchaseModal.openModal(MODALS.PURCHASE.INDIVIDUAL.CREATE)
+  // }
 
   const handleBulkPurchase = () => {
     bulkPurchaseModal.openModal(MODALS.BULK_EMPLOYEE_PURCHASE.CHILDREN.CREATE)
@@ -42,7 +42,7 @@ export default function Purchase() {
               Purchases
             </Text>
             <div className="flex items-center gap-3">
-              <Button
+              {/* <Button
                 variant={currentTab === 'individual' ? 'primary' : 'outline'}
                 size="medium"
                 onClick={handleIndividualPurchase}
@@ -50,7 +50,7 @@ export default function Purchase() {
               >
                 <Icon icon="bi:person-fill" className="w-4 h-4" />
                 Individual Purchase
-              </Button>
+              </Button> */}
               <Button
                 variant={currentTab === 'bulk' ? 'secondary' : 'outline'}
                 size="medium"
@@ -65,7 +65,7 @@ export default function Purchase() {
 
           <TabbedView
             tabs={purchaseTabConfig}
-            defaultTab="individual"
+            defaultTab="bulk"
             urlParam="tab"
             containerClassName="space-y-6"
             btnClassName="pb-2"

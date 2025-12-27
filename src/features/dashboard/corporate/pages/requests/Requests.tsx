@@ -7,14 +7,19 @@ import {
   requestListCsvHeaders,
   requestsListColumns,
 } from '@/features/dashboard/components'
-import { MOCK_REQUESTS } from '@/mocks'
+import { useCorporateRequests } from '@/features/dashboard/hooks'
 import { OPTIONS } from '@/utils/constants/filter'
-import { DEFAULT_QUERY } from '@/utils/constants'
-import type { QueryType } from '@/types'
-import { useReducerSpread } from '@/hooks'
 
 export default function Requests() {
-  const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
+  const {
+    query,
+    requestCorporatesList,
+    // getRequestCorporateOptions,
+    isLoadingRequestCorporatesList,
+    setQuery,
+  } = useCorporateRequests()
+
+  console.log('requestCorporatesList', requestCorporatesList)
 
   return (
     <>
@@ -34,9 +39,9 @@ export default function Requests() {
             <PaginatedTable
               filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
               columns={requestsListColumns}
-              data={MOCK_REQUESTS}
-              total={MOCK_REQUESTS.length}
-              loading={false}
+              data={requestCorporatesList}
+              total={requestCorporatesList?.length}
+              loading={isLoadingRequestCorporatesList}
               query={query}
               setQuery={setQuery}
               csvHeaders={requestListCsvHeaders}

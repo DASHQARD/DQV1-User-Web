@@ -23,7 +23,7 @@ import { Icon } from '@/libs'
 import { cn } from '@/libs'
 import type { BranchData } from '@/utils/schemas/vendor/branches'
 import { GHANA_BANKS } from '@/assets/data/banks'
-import { useBranches } from '@/features/dashboard/hooks/vendor/useBranches'
+import { useVendorMutations } from '../vendor/hooks/useVendorMutations'
 
 export default function AddBranchForm() {
   const navigate = useNavigate()
@@ -33,7 +33,7 @@ export default function AddBranchForm() {
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData, isLoading } = useGetUserProfileService()
   const { useGetCountriesService } = useAuth()
-  const { useAddBranchService } = useBranches()
+  const { useAddBranchService } = useVendorMutations()
   const { mutate, isPending } = useAddBranchService()
   const { data: countries } = useGetCountriesService()
   const { countries: countriesData } = useCountriesData()

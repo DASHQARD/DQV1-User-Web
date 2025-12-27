@@ -1,36 +1,34 @@
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import React from 'react'
+import { Controller, useFormContext } from 'react-hook-form'
 import { Button, Text, Input, Checkbox } from '@/components'
-
-const vendorNameSchema = z.object({
-  vendor_name: z.string().min(1, 'Vendor name is required'),
-})
-
-type VendorNameFormData = z.infer<typeof vendorNameSchema>
+import type { UserProfileResponse } from '@/types/user'
 
 interface VendorNameFormProps {
-  onSubmit: (data: VendorNameFormData) => void
-  sameAsCorporate: boolean
-  onSameAsCorporateChange: (value: boolean) => void
-  initialValue?: string
+  onSubmit: () => void
+  corporateUser?: UserProfileResponse | null
 }
 
-export function VendorNameForm({
-  onSubmit,
-  sameAsCorporate,
-  onSameAsCorporateChange,
-  initialValue,
-}: VendorNameFormProps) {
-  const form = useForm<VendorNameFormData>({
-    resolver: zodResolver(vendorNameSchema),
-    defaultValues: {
-      vendor_name: initialValue || '',
-    },
-  })
+export function VendorNameForm({ onSubmit, corporateUser }: VendorNameFormProps) {
+  const form = useFormContext()
+
+  const useCorporateInfo = form.watch('use_corporate_info')
+  const vendorName = form.watch('vendor_name')
+  const vendorNameError = form.formState.errors.vendor_name
+
+  React.useEffect(() => {
+    if (useCorporateInfo && corporateUser?.business_details?.[0]?.name) {
+      form.setValue('vendor_name', corporateUser.business_details[0].name, {
+        shouldValidate: true,
+      })
+    } else if (!useCorporateInfo) {
+      form.setValue('vendor_name', '', {
+        shouldValidate: false,
+      })
+    }
+  }, [useCorporateInfo, corporateUser])
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 mt-[120px]">
+    <div className="flex flex-col gap-6 mt-[120px]">
       <div className="flex flex-col gap-4">
         <p className="text-xs text-gray-500">Step 1/3</p>
         <Text variant="h2" weight="semibold" className="text-gray-900 mb-2">
@@ -44,25 +42,31 @@ export function VendorNameForm({
         className="w-full"
         {...form.register('vendor_name')}
         error={form.formState.errors.vendor_name?.message}
-        disabled={sameAsCorporate}
+        disabled={useCorporateInfo}
       />
-
-      <Checkbox
-        id="vendor-name-same-as-corporate"
-        checked={sameAsCorporate}
-        onChange={(e) => onSameAsCorporateChange(e.target.checked)}
-        label="Same as corporate"
+      <Controller
+        control={form.control}
+        name="use_corporate_info"
+        render={({ field }) => (
+          <Checkbox
+            id="vendor-name-same-as-corporate"
+            checked={field.value}
+            onChange={(e) => field.onChange(e.target.checked)}
+            label="Same as corporate"
+          />
+        )}
       />
 
       <Button
         size="small"
-        type="submit"
+        type="button"
         variant="secondary"
-        disabled={!form.formState.isValid}
+        onClick={onSubmit}
+        disabled={!vendorName || !!vendorNameError}
         className="w-fit rounded-full"
       >
         Continue
       </Button>
-    </form>
+    </div>
   )
 }

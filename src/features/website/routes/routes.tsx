@@ -3,8 +3,11 @@ import {
   AboutUs,
   CardDetails,
   Checkout,
+  ContactPage,
   DashQards,
   LandingPage,
+  OrdersPage,
+  RedemptionPage,
   WebsiteVendors,
   VendorsProfile,
   ViewBag,
@@ -18,6 +21,14 @@ export const websiteRoutes: RouteObject[] = [
   {
     path: 'about',
     element: <AboutUs />,
+  },
+  {
+    path: 'contact',
+    element: <ContactPage />,
+  },
+  {
+    path: 'orders',
+    element: <OrdersPage />,
   },
   {
     path: 'dashqards',
@@ -42,5 +53,9 @@ export const websiteRoutes: RouteObject[] = [
   {
     path: 'card/:id',
     element: <CardDetails />,
+  },
+  {
+    path: 'redeem',
+    element: <RedemptionPage />,
   },
 ]

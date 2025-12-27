@@ -11,7 +11,7 @@ import { AssignRecipientSchema } from '@/utils/schemas/cards'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input } from '../Input'
-import type { AssignRecipientPayload } from '@/types/cart'
+import type { AssignRecipientPayload } from '@/types/responses'
 import { usePersistedModalState, userProfile } from '@/hooks'
 import { MODAL_NAMES } from '@/utils/constants'
 

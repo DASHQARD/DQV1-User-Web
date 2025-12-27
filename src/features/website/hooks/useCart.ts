@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores'
-import { addToCart, deleteCartItem, deleteCartItemRecipient, getCartItems } from '../services/cart'
-import type { AddToCartPayload } from '@/types/cart'
+import {
+  addToCart,
+  deleteCartItem,
+  deleteCartItemRecipient,
+  getCartItems,
+  updateCartItem,
+} from '../services/cart'
+import type { AddToCartPayload } from '@/types/responses'
 import { useToast } from '@/hooks'
 
 export function useCart(query?: Record<string, any>) {
@@ -51,8 +57,21 @@ export function useCart(query?: Record<string, any>) {
     },
   })
 
+  // Update cart item quantity
+  const updateCartItemMutation = useMutation({
+    mutationFn: (data: { cart_item_id: number; quantity: number; amount: number }) =>
+      updateCartItem(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+      success('Cart updated')
+    },
+    onError: (error: { status: number; message: string }) => {
+      toastError(error.message || 'Failed to update cart item')
+    },
+  })
+
   return {
-    cartItems: cartItemsQuery.data?.data || cartItemsQuery.data || [],
+    cartItems: cartItemsQuery.data || [],
     isLoading: cartItemsQuery.isLoading,
     isFetching: cartItemsQuery.isFetching,
     addToCart: addToCartMutation.mutate,
@@ -64,6 +83,9 @@ export function useCart(query?: Record<string, any>) {
     deleteCart: deleteCartMutation.mutate, // Deletes entire cart (cart_id)
     deleteCartAsync: deleteCartMutation.mutateAsync,
     isDeletingCart: deleteCartMutation.isPending,
+    updateCartItem: updateCartItemMutation.mutate,
+    updateCartItemAsync: updateCartItemMutation.mutateAsync,
+    isUpdating: updateCartItemMutation.isPending,
     refetch: cartItemsQuery.refetch,
   }
 }

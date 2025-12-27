@@ -2,9 +2,10 @@ import { z } from 'zod'
 import {
   getRequiredAlphaNumericStringSchema,
   getRequiredEmailSchema,
-  getRequiredNumberSchema,
   getRequiredStringSchema,
 } from '../shared'
+
+export { ChangePasswordSchema } from './changePassword'
 
 export const LoginSchema = z.object({
   email: getRequiredEmailSchema('Email'),
@@ -107,7 +108,7 @@ const BranchManagerSchema = z.object({
 
 export const AddBranchSchema = z
   .object({
-    country: getRequiredNumberSchema('Country'),
+    country: getRequiredStringSchema('Country'),
     country_code: getRequiredStringSchema('Country Code'),
     main_branch: z.boolean(),
     is_single_branch: z.boolean(),
@@ -180,73 +181,6 @@ export const AddMainBranchSchema = z.object({
   branch_manager_name: getRequiredStringSchema('Branch Manager Name'),
   branch_manager_email: getRequiredEmailSchema('Branch Manager Email'),
 })
-
-// Branch form schema with payment details
-export const CreateBranchFormSchema = z
-  .object({
-    country: getRequiredNumberSchema('Country'),
-    country_code: z.string().optional(),
-    branch_name: getRequiredStringSchema('Branch Name'),
-    branch_location: getRequiredStringSchema('Branch Location'),
-    branch_manager_name: getRequiredStringSchema('Branch Manager Name'),
-    branch_manager_email: getRequiredEmailSchema('Branch Manager Email'),
-    phone_number: getRequiredStringSchema('Phone Number'),
-    same_as_corporate: z.boolean().optional(),
-    payment_method: z.string().optional(),
-    mobile_money_provider: z.string().optional(),
-    mobile_money_number: z.string().optional(),
-    bank_name: z.string().optional(),
-    account_number: z.string().optional(),
-    account_name: z.string().optional(),
-    sort_code: z.string().optional(),
-    swift_code: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      // If same_as_corporate is true, payment details are not required
-      if (data.same_as_corporate) {
-        return true
-      }
-      // Otherwise, payment_method is required
-      return !!data.payment_method
-    },
-    {
-      message: 'Payment method is required',
-      path: ['payment_method'],
-    },
-  )
-  .refine(
-    (data) => {
-      // If same_as_corporate is false and payment_method is mobile_money
-      if (!data.same_as_corporate && data.payment_method === 'mobile_money') {
-        return !!(data.mobile_money_provider && data.mobile_money_number)
-      }
-      return true
-    },
-    {
-      message: 'Mobile Money Provider and Mobile Money Number are required',
-      path: ['mobile_money_provider'],
-    },
-  )
-  .refine(
-    (data) => {
-      // If same_as_corporate is false and payment_method is bank
-      if (!data.same_as_corporate && data.payment_method === 'bank') {
-        return !!(
-          data.bank_name &&
-          data.account_number &&
-          data.account_name &&
-          data.sort_code &&
-          data.swift_code
-        )
-      }
-      return true
-    },
-    {
-      message: 'All bank details are required',
-      path: ['bank_name'],
-    },
-  )
 
 export const UpdateUserInfoSchema = z.object({
   fullname: getRequiredStringSchema('Full Name'),

@@ -1,6 +1,5 @@
-import { Controller, useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import React from 'react'
+import { Controller, useFormContext } from 'react-hook-form'
 import {
   Button,
   Text,
@@ -13,9 +12,9 @@ import {
   CreatableCombobox,
 } from '@/components'
 import { Icon } from '@/libs'
-import { BusinessDetailsSchema, UploadBusinessIDSchema } from '@/utils/schemas'
 import { useCountriesData } from '@/hooks'
 import type { DropdownOption } from '@/types'
+import type { UserProfileResponse } from '@/types/user'
 
 const businessIndustryOptions: DropdownOption[] = [
   { value: 'retail', label: 'Retail' },
@@ -35,46 +34,70 @@ const businessIndustryOptions: DropdownOption[] = [
   { value: 'agriculture', label: 'Agriculture' },
 ]
 
-const vendorDetailsSchema = BusinessDetailsSchema.merge(UploadBusinessIDSchema)
-
-type VendorDetailsFormData = z.infer<typeof vendorDetailsSchema>
-
 interface VendorDetailsFormProps {
-  onSubmit: (data: VendorDetailsFormData) => void
+  onSubmit: (data: any) => void
   onCancel: () => void
-  sameAsCorporate: boolean
-  onSameAsCorporateChange: (value: boolean) => void
-  initialValues?: Partial<VendorDetailsFormData>
+  corporateUser?: UserProfileResponse | null
 }
 
-export function VendorDetailsForm({
-  onSubmit,
-  onCancel,
-  sameAsCorporate,
-  onSameAsCorporateChange,
-  initialValues,
-}: VendorDetailsFormProps) {
+export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorDetailsFormProps) {
   const { countries } = useCountriesData()
-  const form = useForm<VendorDetailsFormData>({
-    resolver: zodResolver(vendorDetailsSchema),
-    defaultValues: {
-      name: initialValues?.name || '',
-      type: initialValues?.type,
-      phone: initialValues?.phone || '',
-      email: initialValues?.email || '',
-      street_address: initialValues?.street_address || '',
-      digital_address: initialValues?.digital_address || '',
-      registration_number: initialValues?.registration_number || '',
-      employer_identification_number: initialValues?.employer_identification_number || '',
-      business_industry: initialValues?.business_industry || '',
-    },
-  })
+  const form = useFormContext()
+
+  console.log('form errors', form.formState.errors)
+
+  const checkboxVendorDetailsSameAsCorporate = form.watch(
+    'checkbox_vendor_details_same_as_corporate',
+  )
+  const type = form.watch('type')
+  const phone = form.watch('phone')
+  const email = form.watch('email')
+  const streetAddress = form.watch('street_address')
+  const digitalAddress = form.watch('digital_address')
+  const registrationNumber = form.watch('registration_number')
+  const employerIdentificationNumber = form.watch('employer_identification_number')
+  const businessIndustry = form.watch('business_industry')
+
+  // Update vendor details fields when checkbox is toggled
+  React.useEffect(() => {
+    if (checkboxVendorDetailsSameAsCorporate && corporateUser?.business_details?.[0]) {
+      const business = corporateUser.business_details[0]
+
+      form.setValue('type', (business.type as 'llc' | 'sole_proprietor' | 'partnership') || 'llc', {
+        shouldValidate: true,
+      })
+      form.setValue('phone', corporateUser?.phonenumber || '', { shouldValidate: true })
+      form.setValue('email', business.email || '', { shouldValidate: true })
+      form.setValue('street_address', business.street_address || '', { shouldValidate: true })
+      form.setValue('digital_address', business.digital_address || '', { shouldValidate: true })
+      form.setValue('registration_number', business.registration_number || '', {
+        shouldValidate: true,
+      })
+      form.setValue(
+        'employer_identification_number',
+        corporateUser?.employee_identification_number || '',
+        {
+          shouldValidate: true,
+        },
+      )
+      form.setValue('business_industry', corporateUser?.business_industry || '', {
+        shouldValidate: true,
+      })
+    } else if (!checkboxVendorDetailsSameAsCorporate) {
+      // Clear fields when unchecked
+      form.setValue('type', 'llc', { shouldValidate: false })
+      form.setValue('phone', '', { shouldValidate: false })
+      form.setValue('email', '', { shouldValidate: false })
+      form.setValue('street_address', '', { shouldValidate: false })
+      form.setValue('digital_address', '', { shouldValidate: false })
+      form.setValue('registration_number', '', { shouldValidate: false })
+      form.setValue('employer_identification_number', '', { shouldValidate: false })
+      form.setValue('business_industry', '', { shouldValidate: false })
+    }
+  }, [checkboxVendorDetailsSameAsCorporate, corporateUser])
 
   return (
-    <form
-      onSubmit={form.handleSubmit(onSubmit)}
-      className="flex flex-col gap-6 max-w-[448px] w-full"
-    >
+    <div className="flex flex-col gap-6 max-w-[448px] w-full">
       <div className="flex flex-col gap-4">
         <p className="text-xs text-gray-500">Step 3/3</p>
         <div>
@@ -88,11 +111,17 @@ export function VendorDetailsForm({
       </div>
 
       {/* Same as Corporate Checkbox at the top */}
-      <Checkbox
-        id="vendor-details-same-as-corporate"
-        checked={sameAsCorporate}
-        onChange={(e) => onSameAsCorporateChange(e.target.checked)}
-        label="Same as corporate"
+      <Controller
+        control={form.control}
+        name="checkbox_vendor_details_same_as_corporate"
+        render={({ field }) => (
+          <Checkbox
+            id="vendor-details-same-as-corporate"
+            checked={field.value}
+            onChange={(e) => field.onChange(e.target.checked)}
+            label="Same as corporate"
+          />
+        )}
       />
 
       {/* Vendor Details Section */}
@@ -102,7 +131,7 @@ export function VendorDetailsForm({
           name="type"
           render={({ field: { value, onChange }, fieldState: { error } }) => (
             <div
-              className={`flex flex-col gap-1 ${sameAsCorporate ? 'opacity-50 pointer-events-none' : ''}`}
+              className={`flex flex-col gap-1 ${checkboxVendorDetailsSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}`}
             >
               <Text as="label" className="text-sm font-medium text-gray-700">
                 Vendor Type
@@ -137,7 +166,11 @@ export function VendorDetailsForm({
           name="phone"
           render={({ field: { value, onChange } }) => {
             return (
-              <div className={sameAsCorporate ? 'opacity-50 pointer-events-none' : ''}>
+              <div
+                className={
+                  checkboxVendorDetailsSameAsCorporate ? 'opacity-50 pointer-events-none' : ''
+                }
+              >
                 <BasePhoneInput
                   placeholder="Enter number eg. 5512345678"
                   options={countries}
@@ -158,7 +191,7 @@ export function VendorDetailsForm({
           {...form.register('email')}
           type="email"
           error={form.formState.errors.email?.message}
-          disabled={sameAsCorporate}
+          disabled={checkboxVendorDetailsSameAsCorporate}
         />
 
         <Input
@@ -166,7 +199,7 @@ export function VendorDetailsForm({
           placeholder="Enter your vendor street address"
           {...form.register('street_address')}
           error={form.formState.errors.street_address?.message}
-          disabled={sameAsCorporate}
+          disabled={checkboxVendorDetailsSameAsCorporate}
         />
 
         <Input
@@ -174,7 +207,7 @@ export function VendorDetailsForm({
           placeholder="Enter your Ghana Post Digital Address"
           {...form.register('digital_address')}
           error={form.formState.errors.digital_address?.message}
-          disabled={sameAsCorporate}
+          disabled={checkboxVendorDetailsSameAsCorporate}
         />
         <div className="grid grid-cols-2 gap-4">
           <Input
@@ -183,14 +216,14 @@ export function VendorDetailsForm({
             {...form.register('registration_number')}
             error={form.formState.errors.registration_number?.message}
             maxLength={10}
-            disabled={sameAsCorporate}
+            disabled={checkboxVendorDetailsSameAsCorporate}
           />
           <Input
             label="Employer Identification Number"
             placeholder="Enter your employer identification number"
             {...form.register('employer_identification_number')}
             error={form.formState.errors.employer_identification_number?.message}
-            disabled={sameAsCorporate}
+            disabled={checkboxVendorDetailsSameAsCorporate}
           />
         </div>
 
@@ -206,110 +239,131 @@ export function VendorDetailsForm({
               value={value}
               onChange={onChange}
               error={error?.message}
-              {...(sameAsCorporate ? { isDisabled: true } : {})}
+              {...(checkboxVendorDetailsSameAsCorporate ? { isDisabled: true } : {})}
             />
           )}
         />
       </section>
 
-      {/* Documentation Section */}
-      <section className="flex flex-col gap-4">
-        <div>
-          <Text variant="h2" weight="semibold" className="text-gray-900">
-            Documentation
-          </Text>
-          <Text variant="span" weight="normal" className="text-gray-500 text-sm">
-            Upload required documents
-          </Text>
-        </div>
+      {!checkboxVendorDetailsSameAsCorporate && (
+        <section className="flex flex-col gap-4">
+          <div>
+            <Text variant="h2" weight="semibold" className="text-gray-900">
+              Documentation
+            </Text>
+            <Text variant="span" weight="normal" className="text-gray-500 text-sm">
+              Upload required documents
+            </Text>
+          </div>
 
-        <div className="space-y-4">
-          <Controller
-            control={form.control}
-            name="certificate_of_incorporation"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <div className={sameAsCorporate ? 'opacity-50 pointer-events-none' : ''}>
-                <FileUploader
-                  label="Certificate of Incorporation"
-                  value={value || null}
-                  onChange={onChange}
-                  error={error?.message}
-                  id="certificate_of_incorporation"
-                  accept=".pdf,.doc,.docx,image/*"
-                />
-              </div>
-            )}
-          />
+          <div className="space-y-4">
+            <Controller
+              control={form.control}
+              name="certificate_of_incorporation"
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
+                <div
+                  className={
+                    checkboxVendorDetailsSameAsCorporate ? 'opacity-50 pointer-events-none' : ''
+                  }
+                >
+                  <FileUploader
+                    label="Certificate of Incorporation"
+                    value={value || null}
+                    onChange={onChange}
+                    error={error?.message}
+                    id="certificate_of_incorporation"
+                    accept=".pdf,.doc,.docx,image/*"
+                  />
+                </div>
+              )}
+            />
 
-          <Controller
-            control={form.control}
-            name="business_license"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <div className={sameAsCorporate ? 'opacity-50 pointer-events-none' : ''}>
-                <FileUploader
-                  label="Business License"
-                  value={value || null}
-                  onChange={onChange}
-                  error={error?.message}
-                  id="business_license"
-                  accept=".pdf,.doc,.docx,image/*"
-                />
-              </div>
-            )}
-          />
+            <Controller
+              control={form.control}
+              name="business_license"
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
+                <div
+                  className={
+                    checkboxVendorDetailsSameAsCorporate ? 'opacity-50 pointer-events-none' : ''
+                  }
+                >
+                  <FileUploader
+                    label="Business License"
+                    value={value || null}
+                    onChange={onChange}
+                    error={error?.message}
+                    id="business_license"
+                    accept=".pdf,.doc,.docx,image/*"
+                  />
+                </div>
+              )}
+            />
 
-          <Controller
-            control={form.control}
-            name="articles_of_incorporation"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <div className={sameAsCorporate ? 'opacity-50 pointer-events-none' : ''}>
-                <FileUploader
-                  label="Articles of Incorporation (Optional)"
-                  value={value || null}
-                  onChange={onChange}
-                  error={error?.message}
-                  id="articles_of_incorporation"
-                  accept=".pdf,.doc,.docx,image/*"
-                />
-              </div>
-            )}
-          />
+            <Controller
+              control={form.control}
+              name="articles_of_incorporation"
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
+                <div
+                  className={
+                    checkboxVendorDetailsSameAsCorporate ? 'opacity-50 pointer-events-none' : ''
+                  }
+                >
+                  <FileUploader
+                    label="Articles of Incorporation (Optional)"
+                    value={value || null}
+                    onChange={onChange}
+                    error={error?.message}
+                    id="articles_of_incorporation"
+                    accept=".pdf,.doc,.docx,image/*"
+                  />
+                </div>
+              )}
+            />
 
-          <Controller
-            control={form.control}
-            name="utility_bill"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <div className={sameAsCorporate ? 'opacity-50 pointer-events-none' : ''}>
-                <FileUploader
-                  label="Utility Bill"
-                  value={value || null}
-                  onChange={onChange}
-                  error={error?.message}
-                  id="utility_bill"
-                  accept=".pdf,.doc,.docx,image/*"
-                />
-              </div>
-            )}
-          />
+            <Controller
+              control={form.control}
+              name="utility_bill"
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
+                <div
+                  className={
+                    checkboxVendorDetailsSameAsCorporate ? 'opacity-50 pointer-events-none' : ''
+                  }
+                >
+                  <FileUploader
+                    label="Utility Bill"
+                    value={value || null}
+                    onChange={onChange}
+                    error={error?.message}
+                    id="utility_bill"
+                    accept=".pdf,.doc,.docx,image/*"
+                  />
+                </div>
+              )}
+            />
 
-          <Controller
-            control={form.control}
-            name="logo"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <div className={sameAsCorporate ? 'opacity-50 pointer-events-none' : ''}>
-                <FileUploader
-                  label="Logo (Optional)"
-                  value={value || null}
-                  onChange={onChange}
-                  error={error?.message}
-                  id="logo"
-                  accept="image/*"
-                />
-              </div>
-            )}
-          />
-        </div>
-      </section>
+            <Controller
+              control={form.control}
+              name="logo"
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
+                <div
+                  className={
+                    checkboxVendorDetailsSameAsCorporate ? 'opacity-50 pointer-events-none' : ''
+                  }
+                >
+                  <FileUploader
+                    label="Logo (Optional)"
+                    value={value || null}
+                    onChange={onChange}
+                    error={error?.message}
+                    id="logo"
+                    accept="image/*"
+                  />
+                </div>
+              )}
+            />
+          </div>
+        </section>
+      )}
 
       {/* Action Buttons */}
       <div className="flex items-center gap-4 mt-4">
@@ -321,8 +375,34 @@ export function VendorDetailsForm({
           <Icon icon="hugeicons:arrow-left-01" className="text-gray-600" />
         </button>
         <Button
-          disabled={!form.formState.isValid}
-          type="submit"
+          disabled={
+            !type ||
+            !phone ||
+            !email ||
+            !streetAddress ||
+            !digitalAddress ||
+            !registrationNumber ||
+            !employerIdentificationNumber ||
+            !businessIndustry ||
+            (!checkboxVendorDetailsSameAsCorporate &&
+              (!form.watch('certificate_of_incorporation') ||
+                !form.watch('business_license') ||
+                !form.watch('utility_bill'))) ||
+            !!form.formState.errors.type ||
+            !!form.formState.errors.phone ||
+            !!form.formState.errors.email ||
+            !!form.formState.errors.street_address ||
+            !!form.formState.errors.digital_address ||
+            !!form.formState.errors.registration_number ||
+            !!form.formState.errors.employer_identification_number ||
+            !!form.formState.errors.business_industry ||
+            (!checkboxVendorDetailsSameAsCorporate &&
+              (!!form.formState.errors.certificate_of_incorporation ||
+                !!form.formState.errors.business_license ||
+                !!form.formState.errors.utility_bill))
+          }
+          type="button"
+          onClick={form.handleSubmit(onSubmit)}
           size="medium"
           variant="secondary"
           className="w-fit rounded-full"
@@ -330,6 +410,6 @@ export function VendorDetailsForm({
           Complete
         </Button>
       </div>
-    </form>
+    </div>
   )
 }

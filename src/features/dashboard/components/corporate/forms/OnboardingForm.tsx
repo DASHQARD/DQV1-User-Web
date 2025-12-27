@@ -113,12 +113,13 @@ export default function OnboardingForm() {
         identification_photos: identificationPhotos,
       }
 
-      await submitPersonalDetailsWithID(onboardingPayload)
-
-      // Navigate to business details after successful submission
-      navigate(ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS)
+      await submitPersonalDetailsWithID(onboardingPayload, {
+        onSuccess: () => {
+          const businessDetailsUrl = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS}?account=corporate`
+          navigate(businessDetailsUrl)
+        },
+      })
     } catch (error: any) {
-      console.error('Submission failed:', error)
       toast.error(error?.message || 'Failed to save. Please try again.')
     }
   }
@@ -135,7 +136,7 @@ export default function OnboardingForm() {
           </Text>
         </div>
 
-        <section className="grid grid-cols-2 gap-4 flex-1 max-w-[554px]">
+        <section className="grid grid-cols-2 gap-4 flex-1">
           <Input
             label="First Name"
             placeholder="Enter your first name"
@@ -247,7 +248,7 @@ export default function OnboardingForm() {
             </div>
           </section>
         ) : (
-          <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1 max-w-[554px]">
+          <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
             <Controller
               control={form.control}
               name="front_id"
@@ -290,7 +291,7 @@ export default function OnboardingForm() {
           variant="secondary"
           className="w-fit"
         >
-          Save Changes
+          Submit & Continue
         </Button>
       </div>
     </form>

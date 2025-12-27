@@ -1,30 +1,15 @@
-import React from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { Text, Tag } from '@/components'
 import { ROUTES } from '@/utils/constants'
-import { MOCK_REQUESTS } from '@/mocks'
+
 import { getStatusVariant } from '@/utils/helpers'
 import { formatRelativeTime } from '@/utils/format'
-
-const addAccountParam = (path: string): string => {
-  const separator = path?.includes('?') ? '&' : '?'
-  return `${path}${separator}account=corporate`
-}
-
-function formatRequestType(type: string): string {
-  return type
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
+import { corporateQueries } from '../../corporate'
 
 export default function RecentRequests() {
-  const recentRequests = React.useMemo(() => {
-    return MOCK_REQUESTS.slice(0, 4).sort((a, b) => {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    })
-  }, [])
+  const { useGetRequestsCorporateService } = corporateQueries()
+  const { data: recentRequests } = useGetRequestsCorporateService()
 
   return (
     <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
@@ -33,8 +18,9 @@ export default function RecentRequests() {
           <Icon icon="bi:clipboard-check" className="text-[#402D87] mr-2" />
           Requests
         </h5>
+
         <Link
-          to={addAccountParam(ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS)}
+          to={`${ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS}?account=corporate`}
           className="text-[#402D87] no-underline text-sm font-medium flex items-center transition-colors duration-200 hover:text-[#2d1a72]"
         >
           View all <Icon icon="bi:arrow-right" className="ml-1" />
@@ -42,14 +28,16 @@ export default function RecentRequests() {
       </div>
 
       <div className="px-6 pb-6">
-        {recentRequests.length === 0 ? (
-          <div className="text-center py-10 text-[#6c757d]">
-            <Icon icon="bi:inbox" className="text-5xl text-[#e9ecef] mb-4" />
-            <p className="m-0 text-sm">No requests to display</p>
+        {recentRequests?.length === 0 ? (
+          <div className="text-center py-12 flex flex-col items-center justify-center">
+            <Icon icon="bi:inbox" className="text-6xl text-[#e9ecef] mb-3" />
+            <Text variant="p" className="text-sm text-[#6c757d] m-0">
+              No requests to display
+            </Text>
           </div>
         ) : (
           <div className="divide-y divide-[#F2F4F7]">
-            {recentRequests.map((request) => (
+            {recentRequests?.map((request: any) => (
               <article
                 key={request.id}
                 className="flex flex-wrap items-center gap-4 py-4 text-sm text-[#475467]"
@@ -59,7 +47,7 @@ export default function RecentRequests() {
                     {request.id}
                   </Text>
                   <Text variant="span" className="text-xs text-gray-500">
-                    {formatRequestType(request.type)}
+                    {request.request_type}
                   </Text>
                 </div>
 

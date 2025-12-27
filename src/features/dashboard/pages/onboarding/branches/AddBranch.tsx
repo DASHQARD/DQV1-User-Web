@@ -13,35 +13,34 @@ import {
 } from '@/components'
 import { Icon } from '@/libs'
 import { useToast, userProfile } from '@/hooks'
-import { AddMainBranchForm } from '@/features/dashboard/components'
 import React from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { bulkUploadBranches } from '@/features/dashboard/services/vendor/branches'
+// import { useMutation, useQueryClient } from '@tanstack/react-query'
+// import { bulkUploadBranches } from '@/features/dashboard/services/vendor/branches'
 
 export default function AddBranch() {
   const navigate = useNavigate()
   const toast = useToast()
-  const queryClient = useQueryClient()
+  // const queryClient = useQueryClient()
   const { useGetUserProfileService } = userProfile()
-  const { data: userProfileData, isLoading, refetch } = useGetUserProfileService()
+  const { data: userProfileData, isLoading } = useGetUserProfileService()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  const bulkUploadMutation = useMutation({
-    mutationFn: bulkUploadBranches,
-    onSuccess: (response: any) => {
-      const message =
-        response.data?.successful && response.data?.total
-          ? `Successfully uploaded ${response.data.successful} of ${response.data.total} branches`
-          : 'Branches uploaded successfully'
-      toast.success(message)
-      queryClient.invalidateQueries({ queryKey: ['branches'] })
-      refetch()
-      navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT)
-    },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to upload branches. Please try again.')
-    },
-  })
+  // const bulkUploadMutation = useMutation({
+  //   mutationFn: bulkUploadBranches,
+  //   onSuccess: (response: any) => {
+  //     const message =
+  //       response.data?.successful && response.data?.total
+  //         ? `Successfully uploaded ${response.data.successful} of ${response.data.total} branches`
+  //         : 'Branches uploaded successfully'
+  //     toast.success(message)
+  //     queryClient.invalidateQueries({ queryKey: ['branches'] })
+  //     refetch()
+  //     navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT)
+  //   },
+  //   onError: (error: any) => {
+  //     toast.error(error?.message || 'Failed to upload branches. Please try again.')
+  //   },
+  // })
 
   // Check if user has any branches (main branch exists)
   const hasBranches =
@@ -72,11 +71,7 @@ export default function AddBranch() {
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-    bulkUploadMutation.mutate(file)
-  }
-
-  const handleMainBranchSuccess = () => {
-    refetch()
+    // bulkUploadMutation.mutate(file)
   }
 
   if (isLoading) {
@@ -134,8 +129,8 @@ export default function AddBranch() {
                 className="w-fit !rounded-none"
                 size="small"
                 onClick={handleImportClick}
-                disabled={bulkUploadMutation.isPending || !hasBranches}
-                loading={bulkUploadMutation.isPending}
+                // disabled={bulkUploadMutation.isPending || !hasBranches}
+                // loading={bulkUploadMutation.isPending}
                 title={
                   !hasBranches ? 'Please add a main branch first' : 'Import branches from Excel'
                 }
@@ -166,7 +161,6 @@ export default function AddBranch() {
               : 'Update your main branch details or add additional branches.'}
           </Text>
         </div>
-        <AddMainBranchForm onSuccess={handleMainBranchSuccess} />
       </div>
     </section>
   )

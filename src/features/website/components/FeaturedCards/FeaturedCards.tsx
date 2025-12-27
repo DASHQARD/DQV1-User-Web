@@ -1,13 +1,11 @@
 import { CardItems } from '../CardItems'
 import { useNavigate } from 'react-router-dom'
-import { useCards } from '../../hooks/useCards'
-import type { PublicCardResponse } from '@/types/cards'
 import { Loader, Text } from '@/components'
+import { usePublicCatalog } from '../../hooks/website'
 
 export const FeaturedCards = () => {
   const navigate = useNavigate()
-  const { usePublicCardsService } = useCards()
-  const { data: cards, isLoading } = usePublicCardsService()
+  const { publicCards, isLoading } = usePublicCatalog()
 
   return (
     <section className="py-12">
@@ -17,7 +15,12 @@ export const FeaturedCards = () => {
             <Text variant="h3" weight="medium" className="text-gray-900">
               Featured Cards
             </Text>
-            <button className="text-sm font-medium text-[#014fd3]">See more</button>
+            <button
+              onClick={() => navigate('/dashqards')}
+              className="text-sm font-medium text-[#014fd3] hover:underline"
+            >
+              See more
+            </button>
           </div>
         </div>
 
@@ -28,39 +31,14 @@ export const FeaturedCards = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {cards?.data?.map((card: PublicCardResponse) => (
-                <CardItems
-                  key={card.card_id}
-                  id={card.card_id}
-                  product={card.product}
-                  vendor_name={card.vendor_name || ''}
-                  rating={card.rating || 0}
-                  price={card.price}
-                  currency={card.currency}
-                  type={card.type as 'DashX' | 'dashpro' | 'dashpass' | 'dashgo'}
-                  description={card.description}
-                  expiry_date={card.expiry_date}
-                  terms_and_conditions={card.terms_and_conditions || []}
-                  created_at={card.created_at || new Date().toISOString()}
-                  created_by={null}
-                  fraud_flag={false}
-                  fraud_notes={null}
-                  images={(card.images || []).map((img) => ({
-                    id: img.id,
-                    file_url: img.file_url,
-                    file_name: img.file_name,
-                    created_at: img.created_at || new Date().toISOString(),
-                    updated_at: img.updated_at || new Date().toISOString(),
-                  }))}
-                  is_activated={false}
-                  issue_date={card.created_at || new Date().toISOString()}
-                  last_modified_by={null}
-                  status={card.status || 'active'}
-                  updated_at={card.updated_at || new Date().toISOString()}
-                  vendor_id={card.vendor_id}
-                  onGetQard={() => navigate(`/card/${card.card_id}`)}
-                />
-              ))}
+              {publicCards
+                ?.filter(
+                  (card: any) =>
+                    card.type.toLowerCase() === 'dashx' || card.type.toLowerCase() === 'dashpass',
+                )
+                .map((card: any) => (
+                  <CardItems {...card} onGetQard={() => navigate(`/card/${card.card_id}`)} />
+                ))}
             </div>
           )}
         </div>

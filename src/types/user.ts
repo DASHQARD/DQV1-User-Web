@@ -1,4 +1,8 @@
 export type UserProfileResponse = {
+  vendor_id: number
+  corporate_id: string
+  employee_identification_number: string
+  business_industry: 'retail'
   avatar: string | null
   bank_accounts: any[] | null
   branches:

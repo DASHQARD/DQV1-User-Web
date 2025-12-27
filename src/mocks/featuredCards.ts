@@ -2,7 +2,18 @@
 import DashXImage from '@/assets/images/DashX.png'
 import DashGoImage from '@/assets/images/DashGo.png'
 import DashProImage from '@/assets/images/DashPro.png'
-import type { FeaturedCardProps } from '@/types'
+// FeaturedCardProps is defined in CardItems component
+type FeaturedCardProps = {
+  title: string
+  subtitle: string
+  imageUrl: string
+  rating: number
+  reviews: number
+  qrUrl: string
+  price?: number
+  category?: string
+  type?: string
+}
 
 const cardImages = {
   // Order: DashPro (back), DashGo (middle), DashX (front)

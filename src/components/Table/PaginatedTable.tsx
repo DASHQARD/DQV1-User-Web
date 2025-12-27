@@ -252,7 +252,7 @@ export function PaginatedTable({
             <div className="no-print mt-5">
               <Pagination
                 total={Number(total)}
-                page={Number(query.page)}
+                page={Number((query as any).page || 1)}
                 setPage={onPageChange}
                 limit={Number(query.limit)}
               />

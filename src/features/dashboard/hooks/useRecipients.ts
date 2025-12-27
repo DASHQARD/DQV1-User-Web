@@ -33,6 +33,7 @@ export function useRecipients() {
         toast.success(response.message || 'Recipient assigned successfully')
         queryClient.invalidateQueries({ queryKey: ['user-recipients'] })
         queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+        // Invalidate all cart-recipients queries to refresh the checkout page
         queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
       },
       onError: (error: { status: number; message: string }) => {

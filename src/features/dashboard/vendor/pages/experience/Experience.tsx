@@ -1,29 +1,23 @@
 import { Text, PaginatedTable } from '@/components'
-import { useReducerSpread, userProfile } from '@/hooks'
+import { useReducerSpread } from '@/hooks'
 import {
   CreateExperience,
+  ViewExperience,
+  EditExperience,
+  DeleteExperience,
   experienceListColumns,
   experienceListCsvHeaders,
 } from '../../../components'
 import { OPTIONS } from '@/utils/constants/filter'
 import { DEFAULT_QUERY } from '@/utils/constants/shared'
 import type { QueryType } from '@/types/shared'
-import { useCards } from '@/features/website'
+import { vendorQueries } from '../../hooks'
 
 export default function Experience() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
-  const cardsService = useCards()
-  const cardsQuery = cardsService.useCardsService(query)
-  const cardsResponse = cardsQuery.data
-  const isLoading = cardsQuery.isLoading
 
-  console.log('cardsResponse', cardsResponse)
-
-  const { useGetUserProfileService } = userProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
-
-  console.log('userProfile', userProfile)
+  const { useGetCardsByVendorIdService } = vendorQueries()
+  const { data: cards, isLoading } = useGetCardsByVendorIdService()
 
   return (
     <>
@@ -40,15 +34,15 @@ export default function Experience() {
           <div className="relative space-y-[37px]">
             <div className="text-[#0c4b77] py-2 border-b-2 border-[#0c4b77] w-fit">
               <Text variant="h6" weight="medium">
-                My Experiences ({cardsResponse?.data?.length || 0})
+                My Experiences ({cards?.length})
               </Text>
             </div>
             <PaginatedTable
               filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
               columns={experienceListColumns}
-              data={cardsResponse?.data || []}
+              data={cards}
               loading={isLoading}
-              total={cardsResponse?.data?.length || 0}
+              total={cards?.length}
               query={query}
               setQuery={setQuery}
               searchPlaceholder="Search by product name or type..."
@@ -61,6 +55,9 @@ export default function Experience() {
           </div>
         </div>
       </div>
+      <ViewExperience />
+      <EditExperience />
+      <DeleteExperience />
     </>
   )
 }

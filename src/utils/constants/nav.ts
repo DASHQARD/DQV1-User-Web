@@ -52,10 +52,11 @@ export const USER_NAV_ITEMS = [
   {
     section: 'Gift Cards',
     items: [
+      { path: ROUTES.IN_APP.DASHQARDS, label: 'Cards', icon: 'bi:credit-card-2-front' },
       { path: ROUTES.IN_APP.DASHBOARD.ORDERS, label: 'My Orders', icon: 'bi:gift' },
       { path: ROUTES.IN_APP.DASHBOARD.REDEEM, label: 'Redeem', icon: 'bi:card-checklist' },
-      { path: ROUTES.IN_APP.DASHBOARD.RECIPIENTS, label: 'Recipients', icon: 'bi:people-fill' },
-      { path: ROUTES.IN_APP.DASHBOARD.TRANSACTIONS, label: 'Transactions', icon: 'bi:receipt' },
+      // { path: ROUTES.IN_APP.DASHBOARD.RECIPIENTS, label: 'Recipients', icon: 'bi:people-fill' },
+      // { path: ROUTES.IN_APP.DASHBOARD.TRANSACTIONS, label: 'Transactions', icon: 'bi:receipt' },
     ],
   },
   {
@@ -128,13 +129,6 @@ export const VENDOR_NAV_ITEMS = [
         label: 'Audit Logs',
         icon: 'bi:journal-text',
       },
-    ],
-  },
-  {
-    section: 'Settings & Support',
-    items: [
-      { path: '/dashboard/settings', label: 'Settings', icon: 'bi:gear-fill' },
-      { path: 'logout', label: 'Log Out', icon: 'bi:box-arrow-right' },
     ],
   },
 ]

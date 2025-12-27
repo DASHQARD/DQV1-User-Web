@@ -21,14 +21,6 @@ export default function BranchManagement() {
   // const branches = branchesResponse?.data || []
   // const total = branchesResponse?.pagination?.limit ? branches.length : branches.length
 
-  // if (isLoading) {
-  //   return (
-  //     <div className="flex justify-center items-center h-full">
-  //       <Loader />
-  //     </div>
-  //   )
-  // }
-
   return (
     <>
       <div className="lg:py-10">

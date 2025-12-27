@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
 import { getCards, getCardById, createCard, updateCard, deleteCard } from '../services/cards'
-import type { CreateCardData, UpdateCardData } from '@/types/cards'
+import type { CreateCardData, UpdateCardData } from '@/types/responses'
 
 export function useCards() {
   return useQuery({

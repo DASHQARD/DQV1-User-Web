@@ -220,8 +220,7 @@ export function useAuth() {
     return useMutation({
       mutationFn: businessDetailsWithDocuments,
       onSuccess: (response: any) => {
-        console.log('response', response)
-        success(response.message || 'Business details with documents updated successfully')
+        success(response.data.message || 'Business details with documents updated successfully')
       },
     })
   }
@@ -230,8 +229,7 @@ export function useAuth() {
     return useMutation({
       mutationFn: businessUploadID,
       onSuccess: (response: any) => {
-        console.log('response', response)
-        success(response.message || 'Identification photos added successfully')
+        success(response.data.message || 'Identification photos added successfully')
       },
       onError: (err: { status: number; message: string }) => {
         const errorMessage = err?.message || 'Onboarding failed. Please try again.'
@@ -325,13 +323,15 @@ export function useAuth() {
           refreshToken: string
         }
       }) => {
-        console.log('response', response)
         useAuthStore.getState().authenticate({
           token: response.tokens.accessToken,
           refreshToken: response.tokens.refreshToken,
         })
         success('Login successful')
-        if (response.user.user_type === 'corporate super admin') {
+        if (
+          response.user.user_type === 'corporate super admin' ||
+          response.user.user_type === 'corporate admin'
+        ) {
           navigate(`${ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME}?account=corporate`)
         } else if (response.user.user_type === 'vendor') {
           navigate(`${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor`)

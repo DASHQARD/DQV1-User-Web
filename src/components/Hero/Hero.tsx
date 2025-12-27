@@ -123,7 +123,7 @@ export default function Hero() {
               </section>
               <animated.div style={buttonsSpring} className="flex gap-4">
                 <Button
-                  className="!rounded-4xl max-w-[220px] w-full"
+                  className="rounded-4xl! max-w-[220px] w-full"
                   icon="mdi:arrow-right-thin"
                   iconPosition="right"
                   iconProps={{ className: 'size-5 text-primary-500' }}
@@ -131,8 +131,8 @@ export default function Hero() {
                   Get Started
                 </Button>
                 <Button
-                  onClick={() => navigate(ROUTES.IN_APP.VENDORS)}
-                  className="!rounded-4xl max-w-[220px] w-full"
+                  onClick={() => navigate(ROUTES.IN_APP.DASHQARDS)}
+                  className="rounded-4xl! max-w-[220px] w-full"
                 >
                   Get a Card
                 </Button>

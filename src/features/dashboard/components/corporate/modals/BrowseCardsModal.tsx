@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Button, Input, Modal, Text, Tabs } from '@/components'
+import { Button, Input, Modal, Text, Tabs, Loader } from '@/components'
 import { DebouncedSearch } from '@/components/SearchBox'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
@@ -9,233 +9,8 @@ import DashProPurchase from '@/features/website/components/DashProPurchase/DashP
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import { Icon } from '@/libs'
 import { useForm, useWatch } from 'react-hook-form'
-
-// Example vendors data - no API integration
-const EXAMPLE_VENDORS = [
-  {
-    id: 1,
-    vendor_id: '1',
-    branch_name: 'DashQards',
-    shops: 5,
-    rating: 4.8,
-  },
-  {
-    id: 2,
-    vendor_id: '2',
-    branch_name: 'Travel Partners',
-    shops: 3,
-    rating: 4.6,
-  },
-  {
-    id: 3,
-    vendor_id: '3',
-    branch_name: 'Business Solutions',
-    shops: 8,
-    rating: 4.9,
-  },
-  {
-    id: 4,
-    vendor_id: '4',
-    branch_name: 'Retail Partners',
-    shops: 12,
-    rating: 4.5,
-  },
-  {
-    id: 5,
-    vendor_id: '5',
-    branch_name: 'Adventure Tours',
-    shops: 2,
-    rating: 4.7,
-  },
-]
-
-// Example cards data - no API integration
-const EXAMPLE_CARDS = [
-  {
-    id: 1,
-    product: 'DashX Classic Gift Card',
-    vendor_name: 'DashQards',
-    rating: 4.5,
-    price: '500.00',
-    currency: 'GHS',
-    type: 'DashX' as const,
-    description: 'Perfect for everyday purchases and gifting',
-    expiry_date: '2025-12-31',
-    terms_and_conditions: [],
-    created_at: new Date().toISOString(),
-    created_by: null,
-    fraud_flag: false,
-    fraud_notes: null,
-    images: [],
-    is_activated: false,
-    issue_date: new Date().toISOString(),
-    last_modified_by: null,
-    status: 'active',
-    updated_at: new Date().toISOString(),
-    vendor_id: 1,
-  },
-  {
-    id: 2,
-    product: 'DashGo Travel Card',
-    vendor_name: 'Travel Partners',
-    rating: 4.8,
-    price: '750.00',
-    currency: 'GHS',
-    type: 'dashgo' as const,
-    description: 'Your perfect travel companion for hotels and flights',
-    expiry_date: '2025-12-31',
-    terms_and_conditions: [],
-    created_at: new Date().toISOString(),
-    created_by: null,
-    fraud_flag: false,
-    fraud_notes: null,
-    images: [],
-    is_activated: false,
-    issue_date: new Date().toISOString(),
-    last_modified_by: null,
-    status: 'active',
-    updated_at: new Date().toISOString(),
-    vendor_id: 2,
-  },
-  {
-    id: 3,
-    product: 'DashPro Business Premium',
-    vendor_name: 'Business Solutions',
-    rating: 4.9,
-    price: '1000.00',
-    currency: 'GHS',
-    type: 'dashpro' as const,
-    description: 'Premium business gift card for corporate gifting',
-    expiry_date: '2025-12-31',
-    terms_and_conditions: [],
-    created_at: new Date().toISOString(),
-    created_by: null,
-    fraud_flag: false,
-    fraud_notes: null,
-    images: [],
-    is_activated: false,
-    issue_date: new Date().toISOString(),
-    last_modified_by: null,
-    status: 'active',
-    updated_at: new Date().toISOString(),
-    vendor_id: 3,
-  },
-  {
-    id: 4,
-    product: 'DashPass Membership Card',
-    vendor_name: 'DashQards',
-    rating: 4.7,
-    price: '300.00',
-    currency: 'GHS',
-    type: 'dashpass' as const,
-    description: 'Exclusive membership benefits and rewards',
-    expiry_date: '2025-12-31',
-    terms_and_conditions: [],
-    created_at: new Date().toISOString(),
-    created_by: null,
-    fraud_flag: false,
-    fraud_notes: null,
-    images: [],
-    is_activated: false,
-    issue_date: new Date().toISOString(),
-    last_modified_by: null,
-    status: 'active',
-    updated_at: new Date().toISOString(),
-    vendor_id: 1,
-  },
-  {
-    id: 5,
-    product: 'DashX Everyday Card',
-    vendor_name: 'Retail Partners',
-    rating: 4.6,
-    price: '250.00',
-    currency: 'GHS',
-    type: 'DashX' as const,
-    description: 'For all your daily shopping needs',
-    expiry_date: '2025-12-31',
-    terms_and_conditions: [],
-    created_at: new Date().toISOString(),
-    created_by: null,
-    fraud_flag: false,
-    fraud_notes: null,
-    images: [],
-    is_activated: false,
-    issue_date: new Date().toISOString(),
-    last_modified_by: null,
-    status: 'active',
-    updated_at: new Date().toISOString(),
-    vendor_id: 4,
-  },
-  {
-    id: 6,
-    product: 'DashGo Adventure Card',
-    vendor_name: 'Adventure Tours',
-    rating: 4.4,
-    price: '600.00',
-    currency: 'GHS',
-    type: 'dashgo' as const,
-    description: 'Explore the world with travel benefits',
-    expiry_date: '2025-12-31',
-    terms_and_conditions: [],
-    created_at: new Date().toISOString(),
-    created_by: null,
-    fraud_flag: false,
-    fraud_notes: null,
-    images: [],
-    is_activated: false,
-    issue_date: new Date().toISOString(),
-    last_modified_by: null,
-    status: 'active',
-    updated_at: new Date().toISOString(),
-    vendor_id: 5,
-  },
-  {
-    id: 7,
-    product: 'DashGo Premium Travel',
-    vendor_name: 'DashQards',
-    rating: 4.9,
-    price: '1200.00',
-    currency: 'GHS',
-    type: 'dashgo' as const,
-    description: 'Premium travel card for luxury experiences',
-    expiry_date: '2025-12-31',
-    terms_and_conditions: [],
-    created_at: new Date().toISOString(),
-    created_by: null,
-    fraud_flag: false,
-    fraud_notes: null,
-    images: [],
-    is_activated: false,
-    issue_date: new Date().toISOString(),
-    last_modified_by: null,
-    status: 'active',
-    updated_at: new Date().toISOString(),
-    vendor_id: 1,
-  },
-  {
-    id: 8,
-    product: 'DashGo Business Travel',
-    vendor_name: 'Business Solutions',
-    rating: 4.7,
-    price: '900.00',
-    currency: 'GHS',
-    type: 'dashgo' as const,
-    description: 'Corporate travel solutions for business trips',
-    expiry_date: '2025-12-31',
-    terms_and_conditions: [],
-    created_at: new Date().toISOString(),
-    created_by: null,
-    fraud_flag: false,
-    fraud_notes: null,
-    images: [],
-    is_activated: false,
-    issue_date: new Date().toISOString(),
-    last_modified_by: null,
-    status: 'active',
-    updated_at: new Date().toISOString(),
-    vendor_id: 3,
-  },
-]
+import { corporateQueries } from '@/features/dashboard/corporate/hooks'
+import { vendorQueries } from '@/features/dashboard/vendor/hooks'
 
 export function BrowseCardsModal() {
   const modal = usePersistedModalState({
@@ -246,38 +21,81 @@ export function BrowseCardsModal() {
   const [vendorSearch, setVendorSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'vendors' | 'dashpro'>('vendors')
 
+  // Fetch vendors and cards from API
+  const { useGetAllVendorsDetailsService } = vendorQueries()
+  const { useGetCardsService } = corporateQueries()
+
+  const { data: vendorsResponse, isLoading: isLoadingVendors } = useGetAllVendorsDetailsService()
+  console.log('vendorsResponse', vendorsResponse)
+  const { data: cardsResponse, isLoading: isLoadingCards } = useGetCardsService()
+
+  // Extract vendors from API response
+  const vendors = useMemo(() => {
+    const vendorsData = vendorsResponse || []
+    return vendorsData?.map((vendor: any) => ({
+      id: vendor.vendor_id,
+      vendor_id: String(vendor.vendor_id),
+      branch_name: vendor.vendor_name || vendor.business_name || 'Unknown Vendor',
+      shops: parseInt(vendor.branch_count || '0', 10),
+      rating: 0, // Rating not available in API response
+    }))
+  }, [vendorsResponse])
+
+  // Extract cards from API response
+  const allCards = useMemo(() => {
+    const cardsData = cardsResponse?.data || []
+    return cardsData.map((card: any) => ({
+      id: card.id,
+      product: card.product,
+      vendor_name: card.vendor_name || 'Unknown Vendor',
+      rating: card.rating || 0,
+      price: card.price,
+      currency: card.currency,
+      type: card.type,
+      description: card.description,
+      expiry_date: card.expiry_date,
+      terms_and_conditions: card.terms_and_conditions || [],
+      created_at: card.created_at,
+      created_by: card.created_by,
+      fraud_flag: card.fraud_flag || false,
+      fraud_notes: card.fraud_notes,
+      images: card.images || [],
+      is_activated: card.is_activated || false,
+      issue_date: card.issue_date,
+      last_modified_by: card.last_modified_by,
+      status: card.status,
+      updated_at: card.updated_at,
+      vendor_id: card.vendor_id,
+    }))
+  }, [cardsResponse])
+
   // Filter vendors based on search
   const filteredVendors = useMemo(() => {
-    if (!vendorSearch) return EXAMPLE_VENDORS
+    if (!vendorSearch) return vendors
     const searchLower = vendorSearch.toLowerCase()
-    return EXAMPLE_VENDORS.filter((vendor) =>
-      vendor.branch_name.toLowerCase().includes(searchLower),
-    )
-  }, [vendorSearch])
+    return vendors.filter((vendor: any) => vendor.branch_name.toLowerCase().includes(searchLower))
+  }, [vendorSearch, vendors])
 
   // Get cards for selected vendor (excluding DashPro and DashGo)
   const vendorCards = useMemo(() => {
     if (!selectedVendor) return []
     // Filter cards by vendor_id and exclude DashPro and DashGo
-    return EXAMPLE_CARDS.filter(
-      (card) =>
+    return allCards.filter(
+      (card: any) =>
         card.vendor_id === selectedVendor &&
         card.type.toLowerCase() !== 'dashpro' &&
         card.type.toLowerCase() !== 'dashgo',
     )
-  }, [selectedVendor])
+  }, [selectedVendor, allCards])
 
-  // Check if vendor has DashGo
+  // Every vendor has DashGo available
   const hasDashGo = useMemo(() => {
-    if (!selectedVendor) return false
-    return EXAMPLE_CARDS.some(
-      (card) => card.vendor_id === selectedVendor && card.type.toLowerCase() === 'dashgo',
-    )
+    return !!selectedVendor
   }, [selectedVendor])
 
   const selectedVendorName = useMemo(() => {
-    return EXAMPLE_VENDORS.find((v) => v.id === selectedVendor)?.branch_name || ''
-  }, [selectedVendor])
+    return vendors.find((v: any) => v.id === selectedVendor)?.branch_name || ''
+  }, [selectedVendor, vendors])
 
   // Form for DashGo amount
   const dashGoForm = useForm<{ amount: string }>({
@@ -349,29 +167,37 @@ export function BrowseCardsModal() {
                   className="w-full"
                 />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
-                  {filteredVendors.length === 0 ? (
-                    <div className="col-span-full text-center py-12">
-                      <Text variant="p" className="text-gray-500">
-                        No vendors found
-                      </Text>
-                    </div>
-                  ) : (
-                    filteredVendors.map((vendor) => (
-                      <div
-                        key={vendor.id}
-                        onClick={() => handleVendorSelect(vendor.id)}
-                        className="cursor-pointer transition-all hover:scale-105"
-                      >
-                        <VendorItems
-                          name={vendor.branch_name}
-                          shops={vendor.shops}
-                          rating={vendor.rating}
-                        />
+                {isLoadingVendors ? (
+                  <div className="col-span-full text-center py-12">
+                    <Text variant="p" className="text-gray-500">
+                      Loading vendors...
+                    </Text>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
+                    {filteredVendors.length === 0 ? (
+                      <div className="col-span-full text-center py-12">
+                        <Text variant="p" className="text-gray-500">
+                          No vendors found
+                        </Text>
                       </div>
-                    ))
-                  )}
-                </div>
+                    ) : (
+                      filteredVendors.map((vendor: any) => (
+                        <div
+                          key={vendor.id}
+                          onClick={() => handleVendorSelect(vendor.id)}
+                          className="cursor-pointer transition-all hover:scale-105"
+                        >
+                          <VendorItems
+                            name={vendor.branch_name}
+                            branches={vendor.shops || vendor.branches_with_cards?.length || 0}
+                            rating={vendor.rating}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </>
             ) : (
               <div className="py-8">
@@ -394,7 +220,7 @@ export function BrowseCardsModal() {
                   Back to Vendors
                 </Button>
                 <Text variant="span" weight="semibold" className="text-gray-900">
-                  {EXAMPLE_VENDORS.find((v) => v.id === selectedVendor)?.branch_name}
+                  {vendors.find((v: any) => v.id === selectedVendor)?.branch_name}
                 </Text>
               </div>
             </div>
@@ -403,8 +229,8 @@ export function BrowseCardsModal() {
               Select a card to assign to the selected employees
             </Text>
 
-            {/* DashGo Featured Section */}
-            {hasDashGo && (
+            {/* DashGo Featured Section - Always shown for selected vendor */}
+            {selectedVendor && (
               <div className="bg-linear-to-br from-[#f8f9fa] to-[#e9ecef] rounded-lg p-6 border border-gray-200">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
                   {/* Left Column - DashGo Card Visual */}
@@ -447,8 +273,9 @@ export function BrowseCardsModal() {
                         Description
                       </Text>
                       <Text variant="p" className="text-sm text-gray-600">
-                        Create a custom DashGo travel card with your desired amount for the selected
-                        employees
+                        DashGo is a vendor-locked monetary gift card redeemable only at{' '}
+                        {selectedVendorName}. Enter your desired amount to create a custom gift card
+                        that can be used at this vendor's locations. Partial redemption is allowed.
                       </Text>
                     </div>
 
@@ -486,15 +313,17 @@ export function BrowseCardsModal() {
             )}
 
             {/* Other Vendor Cards (DashX, DashPass, etc.) */}
-            {vendorCards.length > 0 ? (
+            {isLoadingCards ? (
+              <div className="text-center py-12">
+                <Loader />
+              </div>
+            ) : vendorCards.length > 0 ? (
               <div className="space-y-3">
-                {hasDashGo && (
-                  <Text variant="span" weight="semibold" className="text-gray-900">
-                    Other Cards
-                  </Text>
-                )}
+                <Text variant="span" weight="semibold" className="text-gray-900">
+                  Other Cards
+                </Text>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[50vh] overflow-y-auto">
-                  {vendorCards.map((card) => (
+                  {vendorCards.map((card: any) => (
                     <div
                       key={card.id}
                       onClick={() => handleCardSelect(card.id)}
@@ -503,26 +332,24 @@ export function BrowseCardsModal() {
                       }`}
                     >
                       <CardItems
-                        id={card.id}
+                        card_id={card.id || card.card_id}
                         product={card.product}
                         vendor_name={card.vendor_name}
                         rating={card.rating}
                         price={card.price}
                         currency={card.currency}
                         type={card.type}
-                        description={card.description}
-                        expiry_date={card.expiry_date}
-                        terms_and_conditions={card.terms_and_conditions}
-                        created_at={card.created_at}
-                        created_by={card.created_by}
-                        fraud_flag={card.fraud_flag}
-                        fraud_notes={card.fraud_notes}
-                        images={card.images}
-                        is_activated={card.is_activated}
-                        issue_date={card.issue_date}
-                        last_modified_by={card.last_modified_by}
-                        status={card.status}
-                        updated_at={card.updated_at}
+                        description={card.description || ''}
+                        expiry_date={card.expiry_date || ''}
+                        terms_and_conditions={card.terms_and_conditions || []}
+                        created_at={card.created_at || ''}
+                        base_price={card.price || ''}
+                        markup_price={null}
+                        service_fee="0"
+                        status={card.status || 'active'}
+                        recipient_count="0"
+                        images={card.images || []}
+                        updated_at={card.updated_at || card.created_at || ''}
                         vendor_id={card.vendor_id}
                       />
                     </div>

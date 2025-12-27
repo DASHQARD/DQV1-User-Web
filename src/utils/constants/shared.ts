@@ -20,6 +20,7 @@ export const ROUTES = {
         ADMINS: '/dashboard/corporate/admins',
         NOTIFICATIONS: '/dashboard/corporate/notifications',
         RECIPIENTS: '/dashboard/corporate/recipients',
+        SETTINGS: '/dashboard/corporate/settings',
         COMPLIANCE: {
           ROOT: '/dashboard/corporate/compliance',
           PROFILE_INFORMATION: '/dashboard/corporate/compliance/profile',
@@ -39,6 +40,13 @@ export const ROUTES = {
         PAYMENT_METHODS: '/dashboard/vendor/payment-methods',
         INVITE_BRANCH_MANAGER: '/dashboard/vendor/invite-branch-manager',
         INVITE_ADMIN: '/dashboard/vendor/invite-admin',
+        COMPLIANCE: {
+          ROOT: '/dashboard/vendor/compliance',
+          PROFILE_INFORMATION: '/dashboard/vendor/compliance/profile',
+          UPLOAD_ID: '/dashboard/vendor/compliance/upload-id',
+          BUSINESS_DETAILS: '/dashboard/vendor/compliance/business-details',
+        },
+        SETTINGS: '/dashboard/vendor/settings',
       },
       SETTINGS: {
         ROOT: '/dashboard/settings',
@@ -67,6 +75,7 @@ export const ROUTES = {
     HOME: '/',
     ABOUT: '/about',
     GIFT_CARDS: '/gift-cards',
+    SEARCH_CARDS: 'dashqards',
     CONTACT: '/contact',
     FAQ: '/faq',
     PURCHASE: '/purchase',
@@ -127,20 +136,11 @@ export const ENV_VARS = {
 export const isTesting = ENVIRONMENT === 'test'
 
 export const DEFAULT_QUERY = {
-  page: 1,
   limit: 10,
-  search: '',
+  after: '',
   status: '',
-  vendor_id: '',
-  branch_type: '',
-  is_single_branch: '',
-  parent_branch_id: '',
-  card_type: '',
-  card_id: '',
-  date_from: '',
-  date_to: '',
-  min_amount: '',
-  max_amount: '',
+  page: 1,
+  search: '',
 }
 
 export const MODAL_NAMES = {

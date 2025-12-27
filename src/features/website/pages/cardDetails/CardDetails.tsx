@@ -1,74 +1,149 @@
+import React from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Loader, Button, Text } from '@/components'
+import { ROUTES } from '@/utils/constants/shared'
 import { Icon } from '@/libs'
-import { useCards } from '../../hooks/useCards'
+import { formatCurrency } from '@/utils/format'
+import { usePublicCatalogQueries } from '../../hooks/website'
 import { useCart } from '../../hooks/useCart'
 import { useCartStore } from '@/stores/cart'
 import { usePresignedURL } from '@/hooks'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
 import DashpassBg from '@/assets/svgs/Dashpass_bg.svg'
-import { ROUTES } from '@/utils/constants/shared'
-import type { PublicCardResponse } from '@/types/cards'
-import { formatCurrency } from '@/utils/format'
-import React from 'react'
+import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 
 export default function CardDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { usePublicCardById } = useCards()
-  const { data: cardResponse, isLoading, error } = usePublicCardById(id || null)
+  const { usePublicCardsService } = usePublicCatalogQueries()
+  const { data: cardsResponse, isLoading } = usePublicCardsService()
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
-  const { mutateAsync: fetchPresignedURL, isPending: isFetchingPresignedURL } = usePresignedURL()
-  const [imageUrls, setImageUrls] = React.useState<Record<number, string>>({})
+  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
 
-  const card = cardResponse as unknown as PublicCardResponse
+  // Find card by ID - handle both string and number comparison
+  const card = React.useMemo(() => {
+    if (!cardsResponse || !id) return null
+    const cards = Array.isArray(cardsResponse) ? cardsResponse : []
+    return (
+      cards.find((c: any) => c.card_id?.toString() === id || (c as any).id?.toString() === id) ||
+      null
+    )
+  }, [cardsResponse, id])
 
-  // Fetch presigned URLs for card images
+  // Fetch presigned URLs for images and terms
+  const [imageUrls, setImageUrls] = React.useState<Record<number | string, string>>({})
+  const [termsUrls, setTermsUrls] = React.useState<Record<number | string, string>>({})
+  const [isLoadingImages, setIsLoadingImages] = React.useState(false)
+  const [isLoadingTerms, setIsLoadingTerms] = React.useState(false)
+
   React.useEffect(() => {
-    if (!card?.images?.length) {
+    if (!card) {
+      setImageUrls({})
+      setTermsUrls({})
+      setIsLoadingImages(false)
+      setIsLoadingTerms(false)
       return
     }
 
     let cancelled = false
 
-    const loadImages = async () => {
-      try {
-        const urlPromises = card.images.map(async (image) => {
-          if (image.id && image.file_url) {
-            const url = await fetchPresignedURL(image.file_url)
-            return { id: image.id, url }
+    // Fetch image URLs
+    if (card.images && card.images.length > 0) {
+      setIsLoadingImages(true)
+
+      const fetchImageUrls = async () => {
+        try {
+          const imagePromises = card.images.map(async (image: any, index: number) => {
+            try {
+              const response = await fetchPresignedURL(image.file_url)
+              // Handle both string response and object with url property
+              const url =
+                typeof response === 'string' ? response : (response as any)?.url || response
+              return { key: image.id || image.file_name || index, url }
+            } catch (error) {
+              console.error('Failed to fetch presigned URL for image:', error)
+              return { key: image.id || image.file_name || index, url: null }
+            }
+          })
+
+          const results = await Promise.all(imagePromises)
+          if (!cancelled) {
+            const urlMap: Record<number | string, string> = {}
+            results.forEach((result) => {
+              if (result.url) {
+                urlMap[result.key] = result.url
+              }
+            })
+            setImageUrls(urlMap)
+            setIsLoadingImages(false)
           }
-          return null
-        })
-
-        const results = await Promise.all(urlPromises)
-
-        if (cancelled) return
-
-        const urlMap: Record<number, string> = {}
-        results.forEach((result) => {
-          if (result) {
-            urlMap[result.id] = result.url
+        } catch (error) {
+          console.error('Failed to fetch image URLs:', error)
+          if (!cancelled) {
+            setIsLoadingImages(false)
           }
-        })
-
-        setImageUrls(urlMap)
-      } catch (error) {
-        console.error('Failed to fetch card images', error)
+        }
       }
+
+      fetchImageUrls()
+    } else {
+      setImageUrls({})
+      setIsLoadingImages(false)
     }
 
-    loadImages()
+    // Fetch terms URLs
+    if (card.terms_and_conditions && card.terms_and_conditions.length > 0) {
+      setIsLoadingTerms(true)
+
+      const fetchTermsUrls = async () => {
+        try {
+          const termsPromises = card.terms_and_conditions.map(async (term: any, index: number) => {
+            try {
+              const response = await fetchPresignedURL(term.file_url)
+              // Handle both string response and object with url property
+              const url =
+                typeof response === 'string' ? response : (response as any)?.url || response
+              return { key: term.id || term.file_name || index, url }
+            } catch (error) {
+              console.error('Failed to fetch presigned URL for term:', error)
+              return { key: term.id || term.file_name || index, url: null }
+            }
+          })
+
+          const results = await Promise.all(termsPromises)
+          if (!cancelled) {
+            const urlMap: Record<number | string, string> = {}
+            results.forEach((result) => {
+              if (result.url) {
+                urlMap[result.key] = result.url
+              }
+            })
+            setTermsUrls(urlMap)
+            setIsLoadingTerms(false)
+          }
+        } catch (error) {
+          console.error('Failed to fetch terms URLs:', error)
+          if (!cancelled) {
+            setIsLoadingTerms(false)
+          }
+        }
+      }
+
+      fetchTermsUrls()
+    } else {
+      setTermsUrls({})
+      setIsLoadingTerms(false)
+    }
 
     return () => {
       cancelled = true
     }
-  }, [card?.images, fetchPresignedURL])
+  }, [card, fetchPresignedURL])
 
   // Get card background based on type
-  const getCardBackground = () => {
+  const getCardBackground = React.useCallback(() => {
     if (!card?.type) return DashxBg
     const normalizedType = card.type.toLowerCase()
     switch (normalizedType) {
@@ -79,14 +154,14 @@ export default function CardDetails() {
       case 'dashpass':
         return DashpassBg
       case 'dashgo':
-        return DashxBg // fallback for now
+        return DashGoBg
       default:
         return DashxBg
     }
-  }
+  }, [card?.type])
 
   // Get card type display name
-  const getCardTypeName = () => {
+  const getCardTypeName = React.useCallback(() => {
     if (!card?.type) return 'DASHQARD'
     const normalizedType = card.type.toLowerCase()
     switch (normalizedType) {
@@ -101,28 +176,43 @@ export default function CardDetails() {
       default:
         return 'DASHQARD'
     }
-  }
+  }, [card?.type])
 
   const handleAddToCart = async () => {
     if (!card || !id) return
 
-    const cardAmount = parseFloat(card.price) || 0
-    if (isNaN(cardAmount) || cardAmount <= 0) {
-      return
-    }
-
     await addToCartAsync({
-      card_id: card.card_id,
-      amount: cardAmount,
+      card_id: card.card_id || (card as any).id,
       quantity: 1,
-    })
+    } as any)
     openCart()
   }
 
   // Generate QR code for the card
   const qrCodeUrl = card
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${card.product}-${card.card_id}`)}&bgcolor=FFFFFF&color=402D87&margin=10`
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${card.product}-${card.card_id || (card as any).id}`)}&bgcolor=FFFFFF&color=402D87&margin=10`
     : ''
+
+  // Get image URL from presigned URLs or fallback
+  const getImageUrl = React.useCallback(
+    (image: any, index: number) => {
+      const key = image.id || image.file_name || index
+      // Use presigned URL if available
+      if (imageUrls[key]) {
+        return imageUrls[key]
+      }
+      // Fallback: if file_url is already a full URL, use it
+      if (image.file_url?.startsWith('http://') || image.file_url?.startsWith('https://')) {
+        return image.file_url
+      }
+      // Fallback: if it's a base64 data URL, use it
+      if (image.file_url?.startsWith('data:')) {
+        return image.file_url
+      }
+      return ''
+    },
+    [imageUrls],
+  )
 
   if (isLoading) {
     return (
@@ -132,7 +222,7 @@ export default function CardDetails() {
     )
   }
 
-  if (error || !card) {
+  if (!card) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -223,42 +313,36 @@ export default function CardDetails() {
             {/* Additional Images */}
             {card.images && card.images.length > 0 && (
               <div className="grid grid-cols-4 gap-2">
-                {isFetchingPresignedURL ? (
-                  <div className="col-span-4 flex items-center justify-center py-8">
-                    <Loader />
-                  </div>
-                ) : (
-                  card.images.slice(0, 4).map((image, index) => {
-                    const imageUrl =
-                      image.id && imageUrls[image.id] ? imageUrls[image.id] : image.file_url
-                    return (
-                      <div
-                        key={image.id || index}
-                        className="relative overflow-hidden rounded-lg bg-gray-200"
-                        style={{ paddingTop: '100%' }}
-                      >
-                        {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={`${card.product} image ${index + 1}`}
-                            className="absolute inset-0 h-full w-full object-cover"
-                            onError={(e) => {
-                              // Fallback to file_url if presigned URL fails
-                              const target = e.target as HTMLImageElement
-                              if (imageUrl !== image.file_url) {
-                                target.src = image.file_url
-                              }
-                            }}
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                            <Icon icon="bi:image" className="size-8" />
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })
-                )}
+                {card.images.slice(0, 4).map((image: any, index: number) => {
+                  const imageUrl = getImageUrl(image, index)
+                  return (
+                    <div
+                      key={image.id || image.file_name || index}
+                      className="relative overflow-hidden rounded-lg bg-gray-200"
+                      style={{ paddingTop: '100%' }}
+                    >
+                      {isLoadingImages ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader />
+                        </div>
+                      ) : imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={`${card.product} image ${index + 1}`}
+                          className="absolute inset-0 h-full w-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                          <Icon icon="bi:image" className="size-8" />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -283,8 +367,8 @@ export default function CardDetails() {
               </section>
 
               <Text variant="h2" weight="semibold" className="text-primary-500">
-                {card.vendor_name} - {formatCurrency(displayPrice.toFixed(2), 'GHS')} {card.product}{' '}
-                Gift Card
+                {card.vendor_name} - {formatCurrency(displayPrice, card.currency || 'GHS')}{' '}
+                {card.product} Gift Card
               </Text>
             </div>
 
@@ -346,19 +430,45 @@ export default function CardDetails() {
                   Terms & Conditions
                 </Text>
                 <div className="space-y-2">
-                  {card.terms_and_conditions.map((term, index) => (
-                    <a
-                      key={term.id || index}
-                      href={term.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-primary-500 hover:text-primary-700 text-sm"
-                    >
-                      <Icon icon="bi:file-earmark-text" className="size-4" />
-                      <span>{term.file_name || `Terms ${index + 1}`}</span>
-                      <Icon icon="bi:box-arrow-up-right" className="size-3" />
-                    </a>
-                  ))}
+                  {card.terms_and_conditions.map((term: any, index: number) => {
+                    const termKey = term.id || term.file_name || index
+                    const termUrl =
+                      termsUrls[termKey] ||
+                      (term.file_url?.startsWith('http://') || term.file_url?.startsWith('https://')
+                        ? term.file_url
+                        : null)
+
+                    return (
+                      <a
+                        key={termKey}
+                        href={termUrl || '#'}
+                        target={termUrl ? '_blank' : undefined}
+                        rel={termUrl ? 'noopener noreferrer' : undefined}
+                        className={`flex items-center gap-2 text-sm ${
+                          termUrl
+                            ? 'text-primary-500 hover:text-primary-700 cursor-pointer'
+                            : 'text-gray-400 cursor-not-allowed'
+                        }`}
+                        onClick={(e) => {
+                          if (!termUrl) {
+                            e.preventDefault()
+                          }
+                        }}
+                      >
+                        <Icon icon="bi:file-earmark-text" className="size-4" />
+                        <span>{term.file_name || `Terms ${index + 1}`}</span>
+                        {isLoadingTerms ? (
+                          <div className="size-3">
+                            <Loader />
+                          </div>
+                        ) : termUrl ? (
+                          <Icon icon="bi:box-arrow-up-right" className="size-3" />
+                        ) : (
+                          <Icon icon="bi:x-circle" className="size-3" />
+                        )}
+                      </a>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -368,21 +478,11 @@ export default function CardDetails() {
               <Button
                 onClick={handleAddToCart}
                 disabled={isAdding}
+                loading={isAdding}
                 className="flex-1 bg-primary-500 hover:bg-primary-700 text-white font-bold py-3 px-6 rounded-full shadow-lg"
               >
-                {isAdding ? (
-                  <>
-                    <div className="mr-2">
-                      <Loader />
-                    </div>
-                    Adding...
-                  </>
-                ) : (
-                  <>
-                    <Icon icon="bi:cart-plus" className="size-5 mr-2" />
-                    Add to Cart
-                  </>
-                )}
+                <Icon icon="bi:cart-plus" className="size-5 mr-2" />
+                Add to Cart
               </Button>
               <Button
                 onClick={() => navigate(ROUTES.IN_APP.DASHQARDS)}

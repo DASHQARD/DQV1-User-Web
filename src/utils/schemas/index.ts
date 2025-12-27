@@ -1,4 +1,4 @@
-export * from './admin'
+export * from './corporate/admin'
 export * from './auth'
 export * from './cards'
 export * from './contact'

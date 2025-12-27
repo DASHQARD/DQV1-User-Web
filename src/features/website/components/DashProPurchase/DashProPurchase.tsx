@@ -74,14 +74,9 @@ export default function DashProPurchase() {
   }
 
   const onSubmit = (data: z.infer<typeof AssignRecipientSchema>) => {
-    // Calculate dates in YYYY-MM-DD format
+    // Calculate issue date in YYYY-MM-DD format
     const today = new Date()
     const issueDate = today.toISOString().split('T')[0] // YYYY-MM-DD format
-
-    // Add 1 year (handles leap years correctly)
-    const expiryDate = new Date(today)
-    expiryDate.setFullYear(expiryDate.getFullYear() + 1)
-    const expiryDateFormatted = expiryDate.toISOString().split('T')[0] // YYYY-MM-DD format
 
     createDashProCard(
       {
@@ -91,7 +86,6 @@ export default function DashProPurchase() {
         price: amount,
         currency: 'GHS',
         issue_date: issueDate,
-        expiry_date: expiryDateFormatted,
         images: [],
         terms_and_conditions: [],
       },
@@ -100,9 +94,9 @@ export default function DashProPurchase() {
           console.log('response', response)
           addToCart({
             card_id: response.card_id,
-            amount: amount,
             quantity: 1,
-          })
+            ...(amount ? { amount } : {}),
+          } as any)
         },
       },
     )

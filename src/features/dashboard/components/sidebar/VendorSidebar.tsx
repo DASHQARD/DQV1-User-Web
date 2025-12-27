@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { VENDOR_NAV_ITEMS, ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
@@ -9,14 +9,15 @@ import { PaymentChangeNotifications } from '../corporate/notifications/PaymentCh
 import { ExperienceApprovalNotifications } from '../corporate/notifications/ExperienceApprovalNotifications'
 import { CreateVendorAccount } from '../corporate/modals'
 import { MODALS } from '@/utils/constants'
-import { usePersistedModalState } from '@/hooks'
+import { usePersistedModalState, userProfile, usePresignedURL } from '@/hooks'
 import { useAuthStore } from '@/stores'
-import { MOCK_BRANCHES } from '@/mocks'
 import Logo from '@/assets/images/logo-placeholder.png'
+import { vendorQueries } from '@/features'
 
 export default function VendorSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { logout, user } = useAuthStore()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
@@ -24,15 +25,163 @@ export default function VendorSidebar() {
     paramName: MODALS.VENDOR_ACCOUNT.CREATE,
   })
 
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
+  const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
+
   const displayName = (user as any)?.fullname || (user as any)?.name || 'User'
   const discoveryScore = 0 // TODO: Get actual discovery score from API
   const userType = (user as any)?.user_type
-  // Check if user can access corporate workspace (corporate_vendor users can switch between vendor and corporate)
-  const canAccessCorporate = userType === 'corporate_vendor'
+  // Check if user can access corporate workspace (corporate_vendor or corporate super admin)
+  const canAccessCorporate = userType === 'corporate_vendor' || userType === 'corporate super admin'
+
+  const { useBranchesService, useGetAllVendorsDetailsService } = vendorQueries()
+  const { data: branches } = useBranchesService()
+  const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
+
+  // Handle branches data structure (array or wrapped response)
+  const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
+
+  // Get vendors created by this corporate user
+  const vendorsCreatedByCorporate = React.useMemo(() => {
+    const vendorsData = Array.isArray(allVendorsDetails)
+      ? allVendorsDetails
+      : allVendorsDetails?.data || []
+    return vendorsData.filter(
+      (vendor: any) =>
+        vendor.corporate_user_id === userProfileData?.id &&
+        vendor.approval_status === 'auto_approved',
+    )
+  }, [allVendorsDetails, userProfileData?.id])
+
+  // State for vendor logo URLs
+  const [vendorLogoUrls, setVendorLogoUrls] = React.useState<Record<number, string>>({})
+
+  // Fetch vendor logo presigned URLs
+  React.useEffect(() => {
+    if (vendorsCreatedByCorporate.length === 0) return
+
+    const fetchLogos = async () => {
+      const logoPromises = vendorsCreatedByCorporate.map(async (vendor: any) => {
+        if (!vendor.vendor_logo) return null
+        try {
+          const url = await fetchPresignedURL(vendor.vendor_logo)
+          return { vendorId: vendor.vendor_id, url }
+        } catch (error) {
+          console.error(`Failed to fetch logo for vendor ${vendor.vendor_id}`, error)
+          return null
+        }
+      })
+
+      const results = await Promise.all(logoPromises)
+      const logoMap: Record<number, string> = {}
+      results.forEach((result) => {
+        if (result) {
+          logoMap[result.vendorId] = result.url
+        }
+      })
+      setVendorLogoUrls(logoMap)
+    }
+
+    fetchLogos()
+  }, [vendorsCreatedByCorporate, fetchPresignedURL])
+
+  // Fetch corporate logo presigned URL
+  React.useEffect(() => {
+    const logoDocument = userProfileData?.business_documents?.find(
+      (doc: any) => doc.type === 'logo',
+    )
+
+    if (!logoDocument?.file_url) {
+      setLogoUrl(null)
+      return
+    }
+
+    let cancelled = false
+
+    const loadLogo = async () => {
+      try {
+        const url = await fetchPresignedURL(logoDocument.file_url)
+        if (!cancelled) {
+          setLogoUrl(url)
+        }
+      } catch (error) {
+        console.error('Failed to fetch logo presigned URL', error)
+        if (!cancelled) {
+          setLogoUrl(null)
+        }
+      }
+    }
+
+    loadLogo()
+
+    return () => {
+      cancelled = true
+    }
+  }, [userProfileData?.business_documents, fetchPresignedURL])
+
+  // Get corporate business details
+  const corporateBusiness = userProfileData?.business_details?.[0]
+  const corporateName = corporateBusiness?.name || 'Corporate Account'
+  const corporateId = userProfileData?.corporate_id || ''
+
+  // Get current vendor from URL params
+  const currentVendorId = searchParams.get('vendor_id')
+  const currentVendor = React.useMemo(() => {
+    if (!currentVendorId || vendorsCreatedByCorporate.length === 0) return null
+    return vendorsCreatedByCorporate.find(
+      (vendor: any) =>
+        String(vendor.vendor_id) === currentVendorId || String(vendor.id) === currentVendorId,
+    )
+  }, [currentVendorId, vendorsCreatedByCorporate])
+
+  // Filter out current vendor from the list of vendors to switch to
+  const vendorsToSwitchTo = React.useMemo(() => {
+    if (!currentVendorId) return vendorsCreatedByCorporate
+    return vendorsCreatedByCorporate.filter(
+      (vendor: any) =>
+        String(vendor.vendor_id) !== currentVendorId && String(vendor.id) !== currentVendorId,
+    )
+  }, [vendorsCreatedByCorporate, currentVendorId])
+
+  // Get current vendor information
+  const vendorName = currentVendor?.vendor_name || currentVendor?.business_name || 'Vendor Account'
+  const vendorGvid = currentVendor?.gvid || ''
+  const [currentVendorLogoUrl, setCurrentVendorLogoUrl] = React.useState<string | null>(null)
+
+  // Fetch current vendor logo presigned URL
+  React.useEffect(() => {
+    if (!currentVendor?.vendor_logo) {
+      setCurrentVendorLogoUrl(null)
+      return
+    }
+
+    let cancelled = false
+
+    const loadVendorLogo = async () => {
+      try {
+        const url = await fetchPresignedURL(currentVendor.vendor_logo)
+        if (!cancelled) {
+          setCurrentVendorLogoUrl(url)
+        }
+      } catch (error) {
+        console.error('Failed to fetch vendor logo presigned URL', error)
+        if (!cancelled) {
+          setCurrentVendorLogoUrl(null)
+        }
+      }
+    }
+
+    loadVendorLogo()
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentVendor?.vendor_logo, fetchPresignedURL])
 
   // Branches state
   const [isBranchesExpanded, setIsBranchesExpanded] = React.useState(false)
-  const branches = MOCK_BRANCHES
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -117,10 +266,10 @@ export default function VendorSidebar() {
           {/* Header */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <Avatar size="sm" />
+              <Avatar size="sm" src={currentVendorLogoUrl} name={vendorName} />
               <div className="flex-1 min-w-0">
-                <Text variant="span" weight="semibold" className="block text-sm">
-                  Vendor Account
+                <Text variant="span" weight="semibold" className="block text-sm truncate">
+                  {vendorName}
                 </Text>
               </div>
             </div>
@@ -165,6 +314,41 @@ export default function VendorSidebar() {
             >
               Switch Workspace
             </Text>
+
+            {/* List of vendor accounts */}
+            {vendorsToSwitchTo && vendorsToSwitchTo.length > 0 && (
+              <div className="mb-3 space-y-1 max-h-[200px] overflow-y-auto">
+                {vendorsToSwitchTo.map((vendor: any) => (
+                  <button
+                    key={vendor.vendor_id || vendor.id}
+                    onClick={() => {
+                      setIsPopoverOpen(false)
+                      const vendorId = vendor.vendor_id || vendor.id
+                      navigate(
+                        `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor${vendorId ? `&vendor_id=${vendorId}` : ''}`,
+                      )
+                    }}
+                    className="flex items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors"
+                  >
+                    <Avatar
+                      size="sm"
+                      src={vendorLogoUrls[vendor.vendor_id]}
+                      name={vendor.vendor_name || vendor.business_name}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <Text variant="span" weight="semibold" className="block text-sm truncate">
+                        {vendor.vendor_name || vendor.business_name}
+                      </Text>
+                      <Text variant="span" className="block text-xs text-gray-500 truncate">
+                        {vendor.gvid || `ID: ${vendor.vendor_id || vendor.id}`}
+                      </Text>
+                    </div>
+                    <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
+                  </button>
+                ))}
+              </div>
+            )}
+
             {canAccessCorporate && (
               <button
                 onClick={() => {
@@ -173,16 +357,16 @@ export default function VendorSidebar() {
                 }}
                 className="flex items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors mb-3"
               >
-                <Avatar size="sm" />
+                <Avatar size="sm" src={logoUrl} name={corporateName} />
                 <div className="flex-1 min-w-0">
-                  <Text variant="span" weight="semibold" className="block text-sm">
-                    Acme Corporation
+                  <Text variant="span" weight="semibold" className="block text-sm truncate">
+                    {corporateName}
                   </Text>
-                  <Text variant="span" className="block text-xs text-gray-500 mt-0.5">
-                    ID: CORP-001234
+                  <Text variant="span" className="block text-xs text-gray-500 mt-0.5 truncate">
+                    {corporateId ? `ID: ${corporateId}` : 'Corporate Account'}
                   </Text>
                 </div>
-                <Icon icon="bi:chevron-right" className="text-gray-400 text-sm" />
+                <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
               </button>
             )}
             <button
@@ -271,14 +455,17 @@ export default function VendorSidebar() {
               {/* Top Section - Workspace Info */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Avatar size="sm" />
+                  <Avatar size="sm" src={currentVendorLogoUrl} name={vendorName} />
                   <div className="flex-1 min-w-0">
                     <Text
                       variant="span"
                       weight="bold"
                       className="block text-sm text-gray-900 truncate"
                     >
-                      Vendor Account
+                      {vendorName}{' '}
+                      {vendorGvid && (
+                        <span className="text-gray-500 font-normal text-xs">({vendorGvid})</span>
+                      )}
                     </Text>
                     <Text variant="span" className="block text-xs text-gray-500 truncate">
                       {displayName}
@@ -392,12 +579,12 @@ export default function VendorSidebar() {
                         </button>
                         {isBranchesExpanded && (
                           <div className="pl-4 pb-2">
-                            {branches.length === 0 ? (
+                            {branchesArray.length === 0 ? (
                               <div className="px-4 py-2 text-xs text-gray-500">
                                 No branches available
                               </div>
                             ) : (
-                              branches.map((branch) => (
+                              branchesArray.map((branch: any) => (
                                 <Link
                                   key={branch.id}
                                   to={addAccountParam(
@@ -550,6 +737,62 @@ export default function VendorSidebar() {
           ))}
         </ul>
       </nav>
+
+      {/* Footer - Settings and Log Out */}
+      <div className="border-t border-gray-200 p-3 space-y-2">
+        {/* Settings */}
+        <Link
+          to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS)}
+          className={cn(
+            'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
+            isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
+              'text-[#402D87] font-bold bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
+            !isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
+              'hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.04)]',
+            isCollapsed && 'justify-center px-2',
+          )}
+        >
+          <Icon
+            icon="bi:gear"
+            className={cn(
+              'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+              isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) && 'text-[#402D87]',
+              !isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
+                'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+            )}
+          />
+          {!isCollapsed && <span>Settings</span>}
+        </Link>
+
+        {/* Log Out */}
+        {isCollapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => {
+                  logout()
+                  navigate(ROUTES.IN_APP.AUTH.LOGIN)
+                }}
+                className="flex items-center justify-center p-3 w-full text-red-600 hover:bg-red-50 rounded-[10px] transition-colors"
+              >
+                <Icon icon="bi:box-arrow-right" className="text-lg" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Log Out</TooltipContent>
+          </Tooltip>
+        ) : (
+          <button
+            onClick={() => {
+              logout()
+              navigate(ROUTES.IN_APP.AUTH.LOGIN)
+            }}
+            className="flex items-center gap-3.5 text-red-600 font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] hover:bg-red-50 hover:text-red-700"
+          >
+            <Icon icon="bi:box-arrow-right" className="w-5 h-5 text-base" />
+            <span>Log Out</span>
+          </button>
+        )}
+      </div>
     </aside>
   )
 }

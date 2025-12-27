@@ -5,14 +5,16 @@ import {
   transactionListCsvHeaders,
   transactionsListColumns,
 } from '@/features/dashboard/components'
-import { MOCK_TRANSACTIONS } from '@/mocks'
 import { OPTIONS } from '@/utils/constants/filter'
 import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
+import { corporateQueries } from '../../hooks'
 
 export default function Transactions() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
+  const { useGetAllCorporatePaymentsService } = corporateQueries()
+  const { data: allCorporatePayments } = useGetAllCorporatePaymentsService()
 
   return (
     <>
@@ -32,8 +34,8 @@ export default function Transactions() {
             <PaginatedTable
               filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
               columns={transactionsListColumns}
-              data={MOCK_TRANSACTIONS}
-              total={MOCK_TRANSACTIONS.length}
+              data={allCorporatePayments}
+              total={allCorporatePayments?.length}
               loading={false}
               query={query}
               setQuery={setQuery}

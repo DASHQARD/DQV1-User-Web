@@ -2,12 +2,12 @@ import React from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button, Modal, Input, Combobox } from '@/components'
-import { usePersistedModalState } from '@/hooks'
+import { Button, Modal, Input, Combobox, BasePhoneInput } from '@/components'
+import { useCountriesData, usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { Icon } from '@/libs'
-import { useToast } from '@/hooks'
 import { InviteAdminSchema } from '@/utils/schemas'
+import { corporateMutations } from '@/features/dashboard/corporate/hooks'
 
 type InviteAdminFormData = z.infer<typeof InviteAdminSchema>
 
@@ -15,43 +15,24 @@ export function InviteAdmin() {
   const modal = usePersistedModalState({
     paramName: MODALS.INVITE_ADMIN.CREATE,
   })
-  const toast = useToast()
 
   const form = useForm<InviteAdminFormData>({
     resolver: zodResolver(InviteAdminSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      role: '',
-    },
   })
 
-  const roles = [
-    { label: 'Super Admin', value: 'super_admin' },
-    { label: 'Admin', value: 'admin' },
-    { label: 'Viewer', value: 'viewer' },
-  ]
+  const { countries: phoneCountries } = useCountriesData()
 
   const handleCloseModal = React.useCallback(() => {
     modal.closeModal()
     form.reset()
   }, [modal, form])
 
+  const { useInviteAdminForCorporateService } = corporateMutations()
+  const inviteAdminForCorporateMutation = useInviteAdminForCorporateService()
+
   const onSubmit = async (data: InviteAdminFormData) => {
-    try {
-      // TODO: Replace with actual API call
-      console.log('Inviting admin:', data)
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      toast.success(`Invitation sent to ${data.email}`)
-      form.reset()
-      handleCloseModal()
-    } catch (error: any) {
-      console.error('Error inviting admin:', error)
-      toast.error(error?.message || 'Failed to send invitation. Please try again.')
-    }
+    inviteAdminForCorporateMutation.mutate(data)
+    handleCloseModal()
   }
 
   return (
@@ -73,15 +54,22 @@ export function InviteAdmin() {
         panelClass="!w-[500px] max-w-[90vw]"
       >
         <form onSubmit={form.handleSubmit(onSubmit)} className="w-full flex flex-col gap-6 p-6">
-          <div className="space-y-4">
+          <div className="space-y-4 grid grid-cols-2 gap-4">
             <Input
-              label="Full Name"
-              placeholder="Enter admin's full name"
-              {...form.register('name')}
-              error={form.formState.errors.name?.message}
+              label="First Name"
+              placeholder="Enter admin's first name"
+              {...form.register('first_name')}
+              error={form.formState.errors.first_name?.message}
+            />
+            <Input
+              label="Last Name"
+              placeholder="Enter admin's last name"
+              {...form.register('last_name')}
+              error={form.formState.errors.last_name?.message}
             />
 
             <Input
+              className="col-span-full"
               label="Email Address"
               type="email"
               placeholder="Enter admin's email address"
@@ -89,13 +77,37 @@ export function InviteAdmin() {
               error={form.formState.errors.email?.message}
             />
 
+            <div className="flex flex-col gap-1 col-span-full">
+              <Controller
+                control={form.control}
+                name="phone_number"
+                render={({ field: { onChange } }) => {
+                  return (
+                    <BasePhoneInput
+                      placeholder="Enter number eg. 5512345678"
+                      options={phoneCountries}
+                      maxLength={9}
+                      handleChange={onChange}
+                      label="Phone Number"
+                      error={form.formState.errors.phone_number?.message}
+                    />
+                  )
+                }}
+              />
+              <p className="text-xs text-gray-500">
+                Please enter your number in the format:{' '}
+                <span className="font-medium">+2335512345678</span>
+              </p>
+            </div>
+
             <Controller
               control={form.control}
               name="role"
               render={({ field, fieldState: { error } }) => (
                 <Combobox
                   label="Role"
-                  options={roles}
+                  className="col-span-full"
+                  options={[{ label: 'Admin', value: 'admin' }]}
                   {...field}
                   error={error?.message}
                   placeholder="Select role"
@@ -113,8 +125,13 @@ export function InviteAdmin() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? 'Sending...' : 'Send Invitation'}
+            <Button
+              variant="secondary"
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              loading={inviteAdminForCorporateMutation.isPending}
+            >
+              {inviteAdminForCorporateMutation.isPending ? 'Sending...' : 'Send Invitation'}
             </Button>
           </div>
         </form>

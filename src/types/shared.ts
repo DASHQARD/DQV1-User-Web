@@ -1,101 +1,27 @@
-import isEmail from 'validator/es/lib/isEmail'
-import z from 'zod'
+import type { Tag } from '@/components'
+import type { DEFAULT_QUERY } from '@/utils/constants'
 
-export function getOptionalStringSchema() {
-  return z.string().optional().nullable()
-}
+import type { IconNames } from './icon-names'
 
-export function getRequiredStringSchema(label: string = 'Field', message?: string) {
-  return z.string().min(1, message || `${label} is required`)
-}
-export function getRequiredNumberSchema(label: string = 'Field') {
-  return z.number().min(1, `${label} is required`)
-}
-
-export function getRequiredEmailSchema(label: string = 'Email') {
-  return getRequiredStringSchema(label).refine((val) => isEmail(val), 'Invalid email')
-}
-
-export function getRequiredAlphaNumericStringSchema(label: string = 'Field') {
-  return z
-    .string()
-    .min(8, { message: `${label} must be at least 8 characters long.` })
-    .refine((val) => /\d/.test(val), {
-      message: `${label} must include at least one number.`,
-    })
-    .refine((val) => /[a-zA-Z]/.test(val), {
-      message: `${label} must include at least one letter.`,
-    })
-    .refine((val) => /[!@#$%^&*]/.test(val), {
-      message: `${label} must contain at least one symbol.`,
-    })
-}
-
-export function getRequiredOTPSchema(label: string = 'OTP') {
-  return z.string().min(6, `${label} must be 6 digits`)
-}
-
-const nigerianPhoneRegex =
-  /^(?:\+234|0)(?:070|080|081|090|091|70[1-9]|80[2-9]|81[0-9]|90[1-9]|91[0-2])\d{7}$/
-
-export function getOptionalNigerianPhoneSchema() {
-  return z
-    .string()
-    .trim()
-    .optional()
-    .nullable()
-    .refine((val) => !val || nigerianPhoneRegex.test(val), 'Invalid Nigerian phone number format')
-}
-
-export function getFullNameSchema() {
-  return z.string().refine(
-    (value) => {
-      const names = value.trim().split(/\s+/)
-      return names.length >= 2 && names[0] && names[names.length - 1]
-    },
-    {
-      message: 'Please provide both first name and last name.',
-    },
-  )
-}
-
-export function getValidNigerianPhoneNumber() {
-  return z.string().regex(/^(\+?234|0)?[789]\d{9}$/, { message: 'Invalid phone number' })
-}
-
-export const getDigitSchema = (field = 'Field', minLength = 1) => {
-  return z.string().refine((val) => /^\d+$/.test(val) && val.length >= minLength, {
-    message: `The ${field} must be at least ${minLength} digits long`,
-  })
-}
-
-export const freezeWalletSchema = z.object({
-  frozen: z.boolean(),
-  reason: getRequiredStringSchema('Reason'),
-})
-export const dailyLimitSchema = z.object({
-  approved: z.boolean(),
-  reason: getRequiredStringSchema('Reason'),
-})
-
-export const toggleCustomerStatusSchema = z.object({
-  status: getRequiredStringSchema('Status'),
-  reason: getRequiredStringSchema('Reason'),
-})
-export const deleteCustomerSchema = z.object({
-  reason: getRequiredStringSchema('Reason'),
-})
-
-export const toggleSavingsStatusSchema = z.object({
-  status: getRequiredStringSchema('Status'),
-})
-
-export type TierType = '1' | '2' | '3' | 'M1' | 'M2' | 'M3' | 'A1' | 'A2' | 'A3'
+import type { PageType } from './search'
 
 export type DropdownOption = {
   label: string
   value: string
 }
+
+export type MenuItem = {
+  label: string
+  children: {
+    icon: IconNames
+    name: PageType
+    path: string
+    // permission: PermissionType
+  }[]
+}
+
+export type QueryType = typeof DEFAULT_QUERY
+export type Func = (...args: any[]) => any
 
 export type TableCellProps<T extends Record<string, any> = { id: string }> = Readonly<{
   getValue: () => any
@@ -107,39 +33,13 @@ export type TableCellProps<T extends Record<string, any> = { id: string }> = Rea
   }
 }>
 
-export type CsvHeader = {
-  name: string
-  accessor: string
-  transform?: (v: any) => string
+export interface PersistedModalStateOptions {
+  paramName?: string // URL parameter name (default: 'modal')
+  defaultValue?: string | null // Default modal state
+  resetOnRouteChange?: boolean // Reset modal when route changes (default: false)
 }
 
-export type QueryType = {
-  page: number
-  limit: number
-  search: string
-  status: string
-  vendor_id: string
-  branch_type: string
-  is_single_branch: string
-  parent_branch_id: string
-  card_type: string
-  card_id: string
-  date_from: string
-  date_to: string
-  min_amount: string
-  max_amount: string
-  [key: string]: string | number
-}
-
-export type NativeEventHandler = (event: React.ChangeEvent<HTMLInputElement>) => void
-
-export type PersistedModalStateOptions = {
-  paramName?: string
-  defaultValue?: string | null
-  resetOnRouteChange?: boolean
-}
-
-export type PersistedModalStateReturn<TModalData = unknown> = {
+export interface PersistedModalStateReturn<TModalData = unknown> {
   modalState: string | null
   modalData: TModalData | null
   openModal: (modalName: string, data?: TModalData) => void
@@ -147,9 +47,82 @@ export type PersistedModalStateReturn<TModalData = unknown> = {
   isModalOpen: (modalName?: string) => boolean
 }
 
+export interface ConfirmModalStateReturn {
+  accept?: Func
+  reject?: Func
+  confirmAction: () => Promise<boolean>
+  isOpen: boolean
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>
+}
+
+export type RoleStatus = 'active' | 'inactive' | 'deactivated' | 'deactivate'
+
+export type Role = {
+  id: string
+  name: string
+  description: string
+  permissions: string[]
+  admins: any[]
+  admin_count: number
+  status: RoleStatus
+  created_at: string
+  updated_at: string
+}
+
+export const TagVariants: Record<string, React.ComponentProps<typeof Tag>['variant']> = {
+  active: 'success',
+  inactive: 'error',
+  deactivated: 'error',
+  deactivate: 'error',
+  neutral: undefined,
+  approved: 'success',
+  pending: 'warning',
+  reviewed: 'warning',
+  declined: 'error',
+  rejected: 'error',
+  paid: 'success',
+  running: 'success',
+  sent: 'success',
+  completed: 'success',
+  failed: 'error',
+  'pending approval': 'warning',
+  draft: 'warning',
+}
+
+export type NativeEventHandler = (e: Event & { target: HTMLInputElement }) => void
+
+export type FileType = {
+  id: string
+  file_name: string
+  file_type: string
+  file_url: string
+  uploaded_at: string
+  status: string
+}
+
+export type TierType = '1' | '2' | '3' | 'M1' | 'M2' | 'M3' | 'A1' | 'A2' | 'A3'
+
+export type OptionsConfigType = {
+  hasView?: boolean
+  hasDelete?: boolean
+  hasActivate?: boolean
+  hasDeactivate?: boolean
+  hasFreeze?: boolean
+  hasUnfreeze?: boolean
+  hasUpdateProfile?: boolean
+  hasClose?: boolean
+  hasRestore?: boolean
+}
+
 export type generateCsvParams = {
-  headers: CsvHeader[]
-  data: Record<string, any>[]
-  fileName: string
+  headers: Array<CsvHeader>
+  data: Array<any>
   separator?: string
+  fileName?: string
+}
+
+export type CsvHeader = {
+  name: string
+  accessor: string
+  transform?: (v: any) => string
 }

@@ -2,6 +2,8 @@ import { Button, Modal, PrintView, Tag } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { getStatusVariant } from '@/utils/helpers'
+import type { PaymentInfoData } from '@/types/user'
+import { corporateQueries } from '@/features/dashboard/corporate/hooks'
 
 import { formatCurrency, formatFullDate } from '@/utils/format'
 
@@ -29,151 +31,86 @@ function PurchaseDetailsSkeleton() {
 }
 // --- End Skeleton Loader ---
 
-// Mock purchase detail data structure
-interface PurchaseDetail {
-  id: string
-  status: string
-  purchase_type: string
-  amount: number
-  payment_source: string
-  recipient_name: string
-  recipient_email: string
-  recipient_phone: string
-  card_number: string
-  message: string
-  transaction_reference: string
-  created_at: string
-}
-
-// Mock purchase details data
-const MOCK_PURCHASE_DETAILS: Record<string, PurchaseDetail> = {
-  '1': {
-    id: '1',
-    status: 'completed',
-    purchase_type: 'gift_card_purchase',
-    amount: 100.0,
-    payment_source: 'Mobile Money',
-    recipient_name: 'John Doe',
-    recipient_email: 'john.doe@example.com',
-    recipient_phone: '+233241234567',
-    card_number: '12345678',
-    message: 'Happy Birthday!',
-    transaction_reference: 'PUR-REF-2024-001',
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-  },
-  '2': {
-    id: '2',
-    status: 'pending',
-    purchase_type: 'gift_card_purchase',
-    amount: 250.0,
-    payment_source: 'Bank Transfer',
-    recipient_name: 'Jane Smith',
-    recipient_email: 'jane.smith@example.com',
-    recipient_phone: '+233241234568',
-    card_number: '87654321',
-    message: 'Thank you for your service',
-    transaction_reference: 'PUR-REF-2024-002',
-    created_at: new Date(Date.now() - 7200000).toISOString(),
-  },
-  '3': {
-    id: '3',
-    status: 'completed',
-    purchase_type: 'gift_card_purchase',
-    amount: 50.0,
-    payment_source: 'Credit Card',
-    recipient_name: 'Bob Johnson',
-    recipient_email: 'bob.johnson@example.com',
-    recipient_phone: '+233241234569',
-    card_number: '11223344',
-    message: '',
-    transaction_reference: 'PUR-REF-2024-003',
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  '4': {
-    id: '4',
-    status: 'completed',
-    purchase_type: 'gift_card_purchase',
-    amount: 500.0,
-    payment_source: 'Mobile Money',
-    recipient_name: 'Alice Williams',
-    recipient_email: 'alice.williams@example.com',
-    recipient_phone: '+233241234570',
-    card_number: '55667788',
-    message: 'Congratulations on your promotion!',
-    transaction_reference: 'PUR-REF-2024-004',
-    created_at: new Date(Date.now() - 172800000).toISOString(),
-  },
-  '5': {
-    id: '5',
-    status: 'failed',
-    purchase_type: 'gift_card_purchase',
-    amount: 75.0,
-    payment_source: 'Bank Transfer',
-    recipient_name: 'Charlie Brown',
-    recipient_email: 'charlie.brown@example.com',
-    recipient_phone: '+233241234571',
-    card_number: '99887766',
-    message: '',
-    transaction_reference: 'PUR-REF-2024-005',
-    created_at: new Date(Date.now() - 259200000).toISOString(),
-  },
-}
-
 export function PurchaseDetails() {
-  const modal = usePersistedModalState<{ id: string }>({
+  const modal = usePersistedModalState<PaymentInfoData>({
     paramName: MODALS.PURCHASE.PARAM_NAME,
   })
 
-  // Mock data - replace with actual API call
-  const purchaseId = modal.modalData?.id || '1'
-  const data = MOCK_PURCHASE_DETAILS[purchaseId] || MOCK_PURCHASE_DETAILS['1']
-  const isPending = false
+  // Get payment ID from modal data (could be id, trans_id)
+  const paymentIdFromModal = modal.modalData
+  const paymentId = paymentIdFromModal?.id?.toString() || paymentIdFromModal?.trans_id || null
 
+  // Fetch payment details by ID
+  const { useGetPaymentByIdService } = corporateQueries()
+  const { data: paymentDetailsResponse, isLoading } = useGetPaymentByIdService(paymentId)
+
+  // Extract payment data from response
+  const paymentData = paymentDetailsResponse
+  const isPending = isLoading
+
+  // Console log the response
+  console.log('Payment Details Response:', paymentDetailsResponse)
+
+  // Map payment data to display format
   const purchaseInfo = [
     {
       label: 'Status',
-      value: <Tag variant={getStatusVariant(data?.status)} value={data?.status || ''} />,
+      value: (
+        <Tag
+          variant={getStatusVariant(paymentData?.status || '')}
+          value={paymentData?.status || ''}
+        />
+      ),
     },
-    { label: 'Purchase ID', value: data?.id },
     {
-      label: 'Purchase type',
-      value: data?.purchase_type?.split('_').join(' '),
+      label: 'Transaction ID',
+      value: paymentData?.trans_id || paymentData?.id?.toString() || '-',
+    },
+    {
+      label: 'Purchase Type',
+      value: paymentData?.type
+        ? paymentData.type
+            .split('_')
+            .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ')
+        : '-',
     },
     {
       label: 'Amount',
-      value: `${formatCurrency(Number(data?.amount) || 0, 'GHS')}`,
+      value: formatCurrency(paymentData?.amount || 0),
     },
     {
-      label: 'Payment source',
-      value: data?.payment_source,
+      label: 'Card Type',
+      value: paymentData?.card_type || '-',
     },
     {
-      label: 'Recipient name',
-      value: data?.recipient_name,
+      label: 'Recipient Name',
+      value: paymentData?.user_name || '-',
     },
     {
-      label: 'Recipient email',
-      value: data?.recipient_email,
+      label: 'Recipient Phone',
+      value: paymentData?.phone || '-',
     },
     {
-      label: 'Recipient phone',
-      value: data?.recipient_phone,
+      label: 'Receipt Number',
+      value: paymentData?.receipt_number || '-',
     },
     {
-      label: 'Card number',
-      value: data?.card_number,
+      label: 'User Type',
+      value: paymentData?.user_type
+        ? paymentData.user_type
+            .split('_')
+            .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ')
+        : '-',
     },
     {
-      label: 'Message',
-      value: data?.message || '-',
+      label: 'Created At',
+      value: paymentData?.created_at ? formatFullDate(paymentData.created_at) : '-',
     },
     {
-      label: 'Reference number',
-      value: data?.transaction_reference,
-    },
-    {
-      label: 'Timestamp',
-      value: formatFullDate(data?.created_at),
+      label: 'Updated At',
+      value: paymentData?.updated_at ? formatFullDate(paymentData.updated_at) : '-',
     },
   ]
 

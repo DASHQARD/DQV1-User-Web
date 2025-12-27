@@ -1,32 +1,52 @@
 import { useMemo } from 'react'
 import { PaginatedTable } from '@/components/Table'
 import { purchaseListCsvHeaders, purchasesListColumns } from '@/features/dashboard/components'
-import { MOCK_PURCHASES } from '@/mocks'
 import { OPTIONS } from '@/utils/constants/filter'
 import { DEFAULT_QUERY } from '@/utils/constants'
 import { useReducerSpread } from '@/hooks'
 import { Text } from '@/components'
+import { corporateQueries } from '@/features/dashboard/corporate/hooks'
 
 type QueryType = typeof DEFAULT_QUERY
 
 export default function PastPurchase() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
+  const { useGetAllCorporatePaymentsService } = corporateQueries()
+  const { data: paymentsResponse, isLoading } = useGetAllCorporatePaymentsService()
 
-  // Filter past purchases - completed purchases older than 7 days, or any purchase older than 30 days
+  // Transform payment data to match table column structure
   const pastPurchases = useMemo(() => {
-    const now = new Date()
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    if (!paymentsResponse) {
+      return []
+    }
 
-    return MOCK_PURCHASES.filter((purchase) => {
-      const purchaseDate = new Date(purchase.date)
-      // Include if: (completed and older than 7 days) OR (any status older than 30 days)
-      return (
-        (purchase.status === 'completed' && purchaseDate < sevenDaysAgo) ||
-        purchaseDate < thirtyDaysAgo
-      )
-    })
-  }, [])
+    // Handle both direct array response and wrapped response with data property
+    const paymentsData = Array.isArray(paymentsResponse)
+      ? paymentsResponse
+      : paymentsResponse?.data || []
+
+    if (!Array.isArray(paymentsData) || paymentsData.length === 0) {
+      return []
+    }
+
+    // Filter for purchase/checkout type payments and add date field for sorting
+    return paymentsData
+      .filter((payment: any) => {
+        const paymentType = payment.type?.toLowerCase()
+        // Include purchase, bulk_purchase, and checkout types
+        return (
+          paymentType === 'purchase' ||
+          paymentType === 'bulk_purchase' ||
+          paymentType === 'checkout'
+        )
+      })
+      .map((payment: any) => ({
+        ...payment,
+        // Add date field for DateCell component
+        date: payment.created_at || payment.updated_at || '',
+      }))
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }, [paymentsResponse])
 
   return (
     <div className="relative space-y-[37px]">
@@ -38,7 +58,7 @@ export default function PastPurchase() {
         columns={purchasesListColumns}
         data={pastPurchases}
         total={pastPurchases.length}
-        loading={false}
+        loading={isLoading}
         query={query}
         setQuery={setQuery}
         csvHeaders={purchaseListCsvHeaders}

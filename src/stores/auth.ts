@@ -66,7 +66,7 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
 
 const useAuthStore = create(
   persist(authStore, {
-    name: 'dashqard-auth-store',
+    name: 'dashqard-web-auth-store',
   }),
 )
 

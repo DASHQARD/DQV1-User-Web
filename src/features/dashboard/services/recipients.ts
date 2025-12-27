@@ -5,7 +5,7 @@ import type {
   CreateRecipientPayload,
   UpdateRecipientPayload,
   UpdateRecipientAmountPayload,
-} from '@/types/cart'
+} from '@/types/responses'
 
 export const assignRecipient = async (
   data: AssignRecipientPayload,

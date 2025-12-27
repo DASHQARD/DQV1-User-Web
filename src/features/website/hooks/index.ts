@@ -1,6 +1,3 @@
-export * from './useCards'
 export * from './useCart'
-export * from './useVendorsFilters'
-export * from './vendors'
 export * from '../../dashboard/hooks/useRecipients'
 export * from './usePayments'

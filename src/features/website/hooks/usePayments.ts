@@ -9,7 +9,8 @@ export function usePayments() {
     return useMutation({
       mutationFn: checkout,
       onSuccess: (data: any) => {
-        window.open(data, '_blank', 'noopener,noreferrer')
+        console.log('data', data)
+        window.open(data?.data, '_blank', 'noopener,noreferrer')
         queryClient.invalidateQueries({ queryKey: ['cart-items'] })
         queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
       },

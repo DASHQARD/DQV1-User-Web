@@ -1,11 +1,12 @@
-import React from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { Text, Table } from '@/components'
 import { StatusCell, DateCell, CurrencyCell } from '@/components/Cells'
 import { ROUTES } from '@/utils/constants'
-import { MOCK_TRANSACTIONS } from '@/mocks'
+import { corporateQueries } from '@/features/dashboard/corporate/hooks'
 import type { ColumnDef } from '@tanstack/react-table'
+import type { PaymentInfoData } from '@/types/user'
 
 type Transaction = {
   id: string
@@ -58,11 +59,37 @@ const recentTransactionsColumns: ColumnDef<Transaction>[] = [
 ]
 
 export default function RecentTransactions() {
-  const recentTransactions = React.useMemo(() => {
-    return (MOCK_TRANSACTIONS as Transaction[])
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5)
-  }, [])
+  const { useGetAllCorporatePaymentsService } = corporateQueries()
+  const { data: allCorporatePayments, isLoading } = useGetAllCorporatePaymentsService()
+
+  // Transform API data to Transaction format and limit to 5 most recent
+  const recentTransactions = useMemo(() => {
+    if (!allCorporatePayments) {
+      return []
+    }
+
+    // Handle both direct array response and wrapped response with data property
+    const paymentsData = Array.isArray(allCorporatePayments)
+      ? allCorporatePayments
+      : allCorporatePayments?.data || []
+
+    if (!Array.isArray(paymentsData) || paymentsData.length === 0) {
+      return []
+    }
+
+    return paymentsData
+      .slice(0, 5) // Get first 5 transactions (most recent)
+      .map((payment: PaymentInfoData) => ({
+        id: payment.trans_id || String(payment.id),
+        type: (payment.type?.toLowerCase() === 'redemption' ? 'redemption' : 'purchase') as
+          | 'purchase'
+          | 'redemption',
+        amount: payment.amount || 0,
+        date: payment.created_at || '',
+        createdAt: payment.created_at || '',
+        status: payment.status || '',
+      }))
+  }, [allCorporatePayments])
 
   return (
     <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
@@ -80,10 +107,15 @@ export default function RecentTransactions() {
       </div>
 
       <div className="px-6 pb-6">
-        {recentTransactions.length === 0 ? (
+        {isLoading ? (
           <div className="text-center py-10 text-[#6c757d]">
-            <Icon icon="bi:inbox" className="text-5xl text-[#e9ecef] mb-4" />
-            <p className="m-0 text-sm">No recent transactions to display</p>
+            <Icon icon="bi:arrow-repeat" className="text-5xl text-[#e9ecef] mb-4 animate-spin" />
+            <p className="m-0 text-sm">Loading transactions...</p>
+          </div>
+        ) : recentTransactions.length === 0 ? (
+          <div className="flex items-center justify-center py-10">
+            <Icon icon="bi:inbox" className="text-4xl text-[#e9ecef] mr-3" />
+            <p className="m-0 text-sm text-[#9ca3af]">No recent transactions to display</p>
           </div>
         ) : (
           <Table columns={recentTransactionsColumns} data={recentTransactions} />

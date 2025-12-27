@@ -1,11 +1,11 @@
 import React from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+// import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { Button, FileUploader, Modal, Text } from '@/components'
-import { usePersistedModalState, useToast } from '@/hooks'
+import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
-import { bulkUploadBranches } from '@/features/dashboard/services/vendor'
+// import { bulkUploadBranches } from '@/features/dashboard/services/vendor'
 
 export function BulkUploadBranches() {
   const modal = usePersistedModalState({
@@ -30,30 +30,30 @@ export function BulkUploadBranches() {
 
 function BulkUploadModal({ modal }: { modal: ReturnType<typeof usePersistedModalState> }) {
   const [bulkFile, setBulkFile] = React.useState<File | null>(null)
-  const queryClient = useQueryClient()
-  const toast = useToast()
+  // const queryClient = useQueryClient()
+  // const toast = useToast()
 
-  const bulkUploadMutation = useMutation({
-    mutationFn: bulkUploadBranches,
-    onSuccess: (response) => {
-      const message =
-        response.data?.successful && response.data?.total
-          ? `Successfully uploaded ${response.data.successful} of ${response.data.total} branches`
-          : 'Branches uploaded successfully'
-      toast.success(message)
-      queryClient.invalidateQueries({ queryKey: ['branches'] })
-      setBulkFile(null)
-      modal.closeModal()
-    },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to upload branches. Please try again.')
-    },
-  })
+  // const bulkUploadMutation = useMutation({
+  //   mutationFn: bulkUploadBranches,
+  //   onSuccess: (response) => {
+  //     const message =
+  //       response.data?.successful && response.data?.total
+  //         ? `Successfully uploaded ${response.data.successful} of ${response.data.total} branches`
+  //         : 'Branches uploaded successfully'
+  //     toast.success(message)
+  //     queryClient.invalidateQueries({ queryKey: ['branches'] })
+  //     setBulkFile(null)
+  //     modal.closeModal()
+  //   },
+  //   onError: (error: any) => {
+  //     toast.error(error?.message || 'Failed to upload branches. Please try again.')
+  //   },
+  // })
 
-  const handleBulkUpload = () => {
-    if (!bulkFile) return
-    bulkUploadMutation.mutate(bulkFile)
-  }
+  // const handleBulkUpload = () => {
+  //   if (!bulkFile) return
+  //   bulkUploadMutation.mutate(bulkFile)
+  // }
 
   const handleClose = () => {
     setBulkFile(null)
@@ -185,9 +185,9 @@ South Branch,Kumasi,Bob Johnson,bob.johnson@example.com,+233551234569`
           </Button>
           <Button
             variant="secondary"
-            onClick={handleBulkUpload}
-            disabled={!bulkFile || bulkUploadMutation.isPending}
-            loading={bulkUploadMutation.isPending}
+            // onClick={handleBulkUpload}
+            // disabled={!bulkFile || bulkUploadMutation.isPending}
+            // loading={bulkUploadMutation.isPending}
           >
             Upload Branches
           </Button>

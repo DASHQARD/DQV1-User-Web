@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router-dom'
 import { Text, TabbedView } from '@/components'
-import { InviteBranchManager } from './InviteBranchManager'
 import { InviteAdmin } from './InviteAdmin'
+import { CreateBranch } from '../branches'
 
 export default function Invite() {
   const location = useLocation()
@@ -23,7 +23,7 @@ export default function Invite() {
             {
               key: 'branch-manager',
               label: 'Create Branch',
-              component: InviteBranchManager,
+              component: CreateBranch,
             },
             {
               key: 'admin',

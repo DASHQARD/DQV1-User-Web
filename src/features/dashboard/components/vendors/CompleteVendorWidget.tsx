@@ -19,34 +19,37 @@ export default function CompleteVendorWidget() {
     return `${path}${separator}account=vendor`
   }
 
-  // Check completion status for vendor onboarding steps
-  // Step 1: Profile Information & ID Upload (combined in one form)
-  const hasProfile =
-    Boolean(userProfileData?.fullname) &&
-    Boolean(userProfileData?.street_address) &&
-    Boolean(userProfileData?.dob) &&
-    Boolean(userProfileData?.id_number)
-  const hasID = Boolean(userProfileData?.id_images?.length)
-  const hasProfileAndID = hasProfile && hasID
+  // Check completion status for vendor onboarding steps using onboarding_progress
+  const onboardingProgress = {
+    hasProfile: Boolean(userProfileData?.onboarding_progress?.personal_details_completed),
+    hasID: Boolean(userProfileData?.onboarding_progress?.upload_id_completed),
+    hasProfileAndID: Boolean(
+      userProfileData?.onboarding_progress?.personal_details_completed &&
+        userProfileData?.onboarding_progress?.upload_id_completed,
+    ),
+    hasBusinessDetails: Boolean(userProfileData?.onboarding_progress?.business_details_completed),
+    hasBusinessDocs: Boolean(userProfileData?.onboarding_progress?.business_documents_completed),
+    hasBusinessDetailsAndDocs: Boolean(
+      userProfileData?.onboarding_progress?.business_details_completed &&
+        userProfileData?.onboarding_progress?.business_documents_completed,
+    ),
+  }
 
-  // Step 2: Business Details & Business Documents (combined flow)
-  const hasBusinessDetails = Boolean(userProfileData?.business_details?.length)
-  const hasBusinessDocs = Boolean(userProfileData?.business_documents?.length)
-  const hasBusinessDetailsAndDocs = hasBusinessDetails && hasBusinessDocs
+  const { hasProfileAndID, hasBusinessDetailsAndDocs } = onboardingProgress
 
   const completedCount = (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0)
   const totalCount = 2
   const progressPercentage = (completedCount / totalCount) * 100
 
-  // Find the first incomplete step - use compliance routes which work for vendors too
+  // Find the first incomplete step - use vendor compliance routes
   const getNextIncompleteStep = () => {
     if (!hasProfileAndID) {
-      return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.PROFILE_INFORMATION
+      return ROUTES.IN_APP.DASHBOARD.VENDOR.COMPLIANCE.PROFILE_INFORMATION
     }
     if (!hasBusinessDetailsAndDocs) {
-      return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_DETAILS
+      return ROUTES.IN_APP.DASHBOARD.VENDOR.COMPLIANCE.BUSINESS_DETAILS
     }
-    return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT
+    return ROUTES.IN_APP.DASHBOARD.VENDOR.COMPLIANCE.ROOT
   }
 
   const handleContinue = () => {
@@ -143,7 +146,7 @@ export default function CompleteVendorWidget() {
           {/* Requirements Checklist */}
           <div className="space-y-3 mb-6">
             <Link
-              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.PROFILE_INFORMATION)}
+              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.COMPLIANCE.PROFILE_INFORMATION)}
               className={cn(
                 'flex items-center gap-3 p-3 rounded-lg transition-colors',
                 hasProfileAndID ? 'bg-gray-50 opacity-75' : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
@@ -174,7 +177,7 @@ export default function CompleteVendorWidget() {
             </Link>
 
             <Link
-              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_DETAILS)}
+              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.COMPLIANCE.BUSINESS_DETAILS)}
               className={cn(
                 'flex items-center gap-3 p-3 rounded-lg transition-colors',
                 hasBusinessDetailsAndDocs

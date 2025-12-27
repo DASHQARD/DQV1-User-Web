@@ -1,46 +1,65 @@
-import { Controller, useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import React from 'react'
+import { Controller, useFormContext } from 'react-hook-form'
 import { Button, Text, Input, Checkbox, FileUploader, Combobox } from '@/components'
 import { Icon } from '@/libs'
-import { ProfileAndIdentitySchema } from '@/utils/schemas'
-
-type VendorProfileFormData = z.infer<typeof ProfileAndIdentitySchema>
+import type { UserProfileResponse } from '@/types/user'
 
 interface VendorProfileFormProps {
-  onSubmit: (data: VendorProfileFormData) => void
+  onSubmit: () => void
   onCancel: () => void
-  sameAsCorporate: boolean
-  onSameAsCorporateChange: (value: boolean) => void
-  initialValues?: Partial<VendorProfileFormData>
+  corporateUser?: UserProfileResponse | null
 }
 
-export function VendorProfileForm({
-  onSubmit,
-  onCancel,
-  sameAsCorporate,
-  onSameAsCorporateChange,
-  initialValues,
-}: VendorProfileFormProps) {
-  const form = useForm<VendorProfileFormData>({
-    resolver: zodResolver(ProfileAndIdentitySchema),
-    defaultValues: {
-      first_name: initialValues?.first_name || '',
-      last_name: initialValues?.last_name || '',
-      street_address: initialValues?.street_address || '',
-      dob: initialValues?.dob || '',
-      id_type: initialValues?.id_type || '',
-      id_number: initialValues?.id_number || '',
-      front_id: initialValues?.front_id,
-      back_id: initialValues?.back_id,
-    },
-  })
+export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorProfileFormProps) {
+  const form = useFormContext()
+
+  const checkboxProfileSameAsCorporate = form.watch('checkbox_profile_same_as_corporate')
+  const firstName = form.watch('first_name')
+  const lastName = form.watch('last_name')
+  const dob = form.watch('dob')
+  const idType = form.watch('id_type')
+  const idNumber = form.watch('id_number')
+  const frontId = form.watch('front_id')
+  const backId = form.watch('back_id')
+
+  // Update profile fields when checkbox is toggled
+  React.useEffect(() => {
+    if (checkboxProfileSameAsCorporate && corporateUser) {
+      // Split fullname into first and last name
+      const nameParts = corporateUser.fullname?.split(' ') || []
+      const firstNameValue = nameParts[0] || ''
+      const lastNameValue = nameParts.slice(1).join(' ') || ''
+
+      form.setValue('first_name', firstNameValue, { shouldValidate: true })
+      form.setValue('last_name', lastNameValue, { shouldValidate: true })
+      form.setValue('dob', corporateUser.dob || '', { shouldValidate: true })
+      form.setValue('street_address', corporateUser.street_address || '', {
+        shouldValidate: true,
+      })
+      form.setValue('id_type', corporateUser.id_type || '', { shouldValidate: true })
+      form.setValue('id_number', corporateUser.id_number || '', { shouldValidate: true })
+
+      // Set ID images if available
+      if (corporateUser.id_images?.[0]?.file_url) {
+        // Note: We can't directly set File objects from URLs, but we can set the URL
+        // The backend might need to handle this differently
+        // For now, we'll leave these empty as they need to be File objects
+      }
+    } else if (!checkboxProfileSameAsCorporate) {
+      // Clear fields when unchecked
+      form.setValue('first_name', '', { shouldValidate: false })
+      form.setValue('last_name', '', { shouldValidate: false })
+      form.setValue('dob', '', { shouldValidate: false })
+      form.setValue('street_address', '', { shouldValidate: false })
+      form.setValue('id_type', '', { shouldValidate: false })
+      form.setValue('id_number', '', { shouldValidate: false })
+      form.setValue('front_id', undefined, { shouldValidate: false })
+      form.setValue('back_id', undefined, { shouldValidate: false })
+    }
+  }, [checkboxProfileSameAsCorporate, corporateUser])
 
   return (
-    <form
-      onSubmit={form.handleSubmit(onSubmit)}
-      className="flex flex-col gap-6 max-w-[448px] w-full"
-    >
+    <div className="flex flex-col gap-6 max-w-[448px] w-full">
       <div className="flex flex-col gap-4">
         <p className="text-xs text-gray-500">Step 2/3</p>
         <div>
@@ -54,11 +73,17 @@ export function VendorProfileForm({
       </div>
 
       {/* Same as Corporate Checkbox */}
-      <Checkbox
-        id="vendor-profile-same-as-corporate"
-        checked={sameAsCorporate}
-        onChange={(e) => onSameAsCorporateChange(e.target.checked)}
-        label="Same as corporate"
+      <Controller
+        control={form.control}
+        name="checkbox_profile_same_as_corporate"
+        render={({ field }) => (
+          <Checkbox
+            id="vendor-profile-same-as-corporate"
+            checked={field.value}
+            onChange={(e) => field.onChange(e.target.checked)}
+            label="Same as corporate"
+          />
+        )}
       />
 
       {/* Key Person Details Section */}
@@ -78,14 +103,14 @@ export function VendorProfileForm({
             placeholder="Enter your first name"
             {...form.register('first_name')}
             error={form.formState.errors.first_name?.message}
-            disabled={sameAsCorporate}
+            disabled={checkboxProfileSameAsCorporate}
           />
           <Input
             label="Last Name"
             placeholder="Enter your last name"
             {...form.register('last_name')}
             error={form.formState.errors.last_name?.message}
-            disabled={sameAsCorporate}
+            disabled={checkboxProfileSameAsCorporate}
           />
           <Input
             type="date"
@@ -94,7 +119,7 @@ export function VendorProfileForm({
             className="col-span-full"
             {...form.register('dob')}
             error={form.formState.errors.dob?.message}
-            disabled={sameAsCorporate}
+            disabled={checkboxProfileSameAsCorporate}
           />
           <Input
             label="Street Address"
@@ -102,7 +127,7 @@ export function VendorProfileForm({
             className="col-span-full"
             {...form.register('street_address')}
             error={form.formState.errors.street_address?.message}
-            disabled={sameAsCorporate}
+            disabled={checkboxProfileSameAsCorporate}
           />
           <Controller
             name="id_type"
@@ -120,7 +145,7 @@ export function VendorProfileForm({
                   { label: "Driver's License", value: 'drivers_license' },
                   { label: 'Other', value: 'other' },
                 ]}
-                isDisabled={sameAsCorporate}
+                isDisabled={checkboxProfileSameAsCorporate}
               />
             )}
           />
@@ -130,60 +155,64 @@ export function VendorProfileForm({
             className="col-span-full"
             {...form.register('id_number')}
             error={form.formState.errors.id_number?.message}
-            disabled={sameAsCorporate}
+            disabled={checkboxProfileSameAsCorporate}
           />
         </div>
       </section>
 
-      {/* Identity Documents Section */}
-      <section className="flex flex-col gap-4">
-        <div>
-          <Text variant="h2" weight="semibold" className="text-gray-900">
-            Identity Documents
-          </Text>
-          <Text variant="span" weight="normal" className="text-gray-500 text-sm">
-            Upload pictures of your identification (front and back)
-          </Text>
-        </div>
+      {!checkboxProfileSameAsCorporate && (
+        <section className="flex flex-col gap-4">
+          <div>
+            <Text variant="h2" weight="semibold" className="text-gray-900">
+              Identity Documents
+            </Text>
+            <Text variant="span" weight="normal" className="text-gray-500 text-sm">
+              Upload pictures of your identification (front and back)
+            </Text>
+          </div>
 
-        <div className="space-y-4">
-          <Controller
-            control={form.control}
-            name="front_id"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <div className={sameAsCorporate ? 'opacity-50 pointer-events-none' : ''}>
-                <FileUploader
-                  label="Front of Identification"
-                  value={value || null}
-                  onChange={onChange}
-                  error={error?.message}
-                  id="front_id"
-                  accept="image/*"
-                />
-              </div>
-            )}
-          />
+          <div className="space-y-4">
+            <Controller
+              control={form.control}
+              name="front_id"
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
+                <div
+                  className={checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}
+                >
+                  <FileUploader
+                    label="Front of Identification"
+                    value={value || null}
+                    onChange={onChange}
+                    error={error?.message}
+                    id="front_id"
+                    accept="image/*"
+                  />
+                </div>
+              )}
+            />
 
-          <Controller
-            control={form.control}
-            name="back_id"
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <div className={sameAsCorporate ? 'opacity-50 pointer-events-none' : ''}>
-                <FileUploader
-                  label="Back of Identification"
-                  value={value || null}
-                  onChange={onChange}
-                  error={error?.message}
-                  id="back_id"
-                  accept="image/*"
-                />
-              </div>
-            )}
-          />
-        </div>
-      </section>
+            <Controller
+              control={form.control}
+              name="back_id"
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
+                <div
+                  className={checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}
+                >
+                  <FileUploader
+                    label="Back of Identification"
+                    value={value || null}
+                    onChange={onChange}
+                    error={error?.message}
+                    id="back_id"
+                    accept="image/*"
+                  />
+                </div>
+              )}
+            />
+          </div>
+        </section>
+      )}
 
-      {/* Action Buttons */}
       <div className="flex items-center gap-4 mt-4">
         <button
           type="button"
@@ -193,8 +222,23 @@ export function VendorProfileForm({
           <Icon icon="hugeicons:arrow-left-01" className="text-gray-600" />
         </button>
         <Button
-          disabled={!form.formState.isValid}
-          type="submit"
+          disabled={
+            !firstName ||
+            !lastName ||
+            !dob ||
+            !idType ||
+            !idNumber ||
+            (!checkboxProfileSameAsCorporate && (!frontId || !backId)) ||
+            !!form.formState.errors.first_name ||
+            !!form.formState.errors.last_name ||
+            !!form.formState.errors.dob ||
+            !!form.formState.errors.id_type ||
+            !!form.formState.errors.id_number ||
+            (!checkboxProfileSameAsCorporate &&
+              (!!form.formState.errors.front_id || !!form.formState.errors.back_id))
+          }
+          type="button"
+          onClick={onSubmit}
           size="medium"
           variant="secondary"
           className="w-fit rounded-full"
@@ -202,6 +246,6 @@ export function VendorProfileForm({
           Continue
         </Button>
       </div>
-    </form>
+    </div>
   )
 }

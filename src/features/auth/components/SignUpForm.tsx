@@ -96,12 +96,11 @@ export default function SignUpForm() {
           <Controller
             control={form.control}
             name="phone_number"
-            render={({ field: { value, onChange } }) => {
+            render={({ field: { onChange } }) => {
               return (
                 <BasePhoneInput
                   placeholder="Enter number eg. 5512345678"
                   options={phoneCountries}
-                  selectedVal={value || '+233'}
                   maxLength={9}
                   handleChange={onChange}
                   label="Phone Number"
@@ -111,8 +110,7 @@ export default function SignUpForm() {
             }}
           />
           <p className="text-xs text-gray-500">
-            Please enter your number in the format:{' '}
-            <span className="font-medium">+2335512345678</span>
+            Please enter your number in the format: <span className="font-medium">5512345678</span>
           </p>
         </div>
 

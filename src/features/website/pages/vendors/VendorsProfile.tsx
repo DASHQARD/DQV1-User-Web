@@ -1,81 +1,86 @@
-import { Loader, Button, Text, Input } from '@/components'
+import { Loader, Button, Text, Input, EmptyState } from '@/components'
 import { ROUTES } from '@/utils/constants/shared'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/libs'
 import React from 'react'
 import { CardItems } from '../../components'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
-import { useCards, usePublicVendors } from '../../hooks'
-import { useCart } from '../../hooks/useCart'
-import { useCartStore } from '@/stores/cart'
 import { useForm } from 'react-hook-form'
 
-type SortOption = 'popular' | 'price-low' | 'price-high' | 'newest' | 'rating'
-type ViewMode = 'grid' | 'list'
+import { usePublicCatalogQueries } from '../../hooks/website'
+import { EmptyStateImage } from '@/assets/images'
 
 export default function VendorsProfile() {
   const [searchParams] = useSearchParams()
   const vendor_id = searchParams.get('vendor_id') || ''
-  const { data: vendorDetailsResponse, isLoading: isLoadingVendor } = usePublicVendors()
-  const vendorDetails = vendorDetailsResponse?.data?.[0]
-  console.log('vendorDetails', vendorDetails)
-  const { usePublicVendorCardsService } = useCards()
-  const { data: vendorCardsResponse } = usePublicVendorCardsService(vendor_id || '')
-  const vendorCards = React.useMemo(() => vendorCardsResponse?.data || [], [vendorCardsResponse])
-  const { addToCartAsync, isAdding } = useCart()
-  const { openCart } = useCartStore()
+  const { usePublicVendorsService, useVendorQrCodeService, usePublicCardsService } =
+    usePublicCatalogQueries()
+  const { data: vendorDetailsResponse, isLoading: isLoadingVendor } = usePublicVendorsService({
+    limit: 1,
+    vendor_ids: vendor_id || '',
+  })
+  const { data: qrCodeData, isLoading: isLoadingQrCode } = useVendorQrCodeService(vendor_id || null)
+  const { data: vendorCardsResponse, isLoading: isLoadingVendorCards } = usePublicCardsService({
+    vendor_ids: vendor_id || '',
+  })
 
-  // Get featured card - prioritize DashGo card, otherwise use first card
-  const featuredCard = React.useMemo(() => {
-    if (vendorCards.length === 0) return null
-    // Find first DashGo card
-    const dashGoCard = vendorCards.find((card: any) => card.type?.toLowerCase() === 'dashgo')
-    // Return DashGo card if found, otherwise return first card
-    return dashGoCard || vendorCards[0]
-  }, [vendorCards])
+  // Extract vendor from response - VendorDetailsResponse is an array
+  const vendorDetails = React.useMemo(() => {
+    if (!vendorDetailsResponse?.[0]) return null
+    return vendorDetailsResponse[0] || null
+  }, [vendorDetailsResponse])
+
+  // Extract vendor cards and filter out DashGo cards
+  const vendorCards = React.useMemo(() => {
+    if (!vendorCardsResponse) return []
+    // Handle both array response and object with data property
+    const cards = vendorCardsResponse
+    // Filter out DashGo cards - DashGo is static, not fetched from backend
+    return cards.filter((card: any) => {
+      const isDashGo = card.type?.toLowerCase() === 'dashgo'
+      const matchesVendor = !vendor_id || card.vendor_id === parseInt(vendor_id, 10)
+      return !isDashGo && matchesVendor
+    })
+  }, [vendorCardsResponse, vendor_id])
 
   const form = useForm<{ amount: string }>({
     defaultValues: {
-      amount: '',
+      amount: '100',
     },
   })
 
-  const onSubmit = async (data: { amount: string }) => {
-    if (!featuredCard) return
+  const isLoading = isLoadingVendor || isLoadingVendorCards || isLoadingQrCode
 
-    const cardAmount = data.amount ? parseFloat(data.amount) : parseFloat(featuredCard.price)
+  const quickAmounts = [100, 200, 300, 400, 500]
+  const selectedAmount = form.watch('amount')
+
+  const onSubmit = async (data: { amount: string }) => {
+    const cardAmount = parseFloat(data.amount)
     if (isNaN(cardAmount) || cardAmount <= 0) {
       return
     }
 
-    await addToCartAsync({
-      card_id: featuredCard.card_id,
-      amount: cardAmount,
-      quantity: 1,
-    })
-    openCart()
+    // TODO: Handle DashGo card creation/adding to cart
+    // DashGo cards need to be created with the custom amount and vendor_id
+    console.log('DashGo card with amount:', cardAmount, 'for vendor:', vendor_id)
+    // await addToCartAsync({
+    //   card_id: featuredCard.card_id,
+    //   amount: cardAmount,
+    //   quantity: 1,
+    // })
+    // openCart()
   }
 
-  // State variables
-  const [viewMode, setViewMode] = React.useState<ViewMode>('grid')
-  const [sortBy, setSortBy] = React.useState<SortOption>('popular')
-
-  // Get vendor details
-  const branchName = vendorDetails?.branch_name || ''
+  // Get vendor details - use business_name or vendor_name as fallback
+  const branchName = vendorDetails?.business_name || vendorDetails?.vendor_name || ''
   const vendorName = branchName || 'Vendor'
   const vendorDescription =
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
+    'Explore our wide range of gift cards and services. We offer quality products and exceptional customer service to meet all your needs.'
 
-  // Generate QR code URLs
-  const vendorProfileUrl = `${window.location.origin}/vendor?vendor_id=${vendor_id}&name=${encodeURIComponent(branchName)}`
-  const vendorQrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(vendorProfileUrl)}&bgcolor=FFFFFF&color=402D87&margin=10&format=png`
-  // const featuredCardQrCode = featuredCard
-  //   ? `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`${featuredCard.product}-${featuredCard.id}`)}&bgcolor=FFFFFF&color=402D87&margin=0`
-  //   : ''
+  // Get QR code from backend - it's a base64 data URL
+  const vendorQrCode = qrCodeData?.qr_code || ''
 
-  // Get card background based on type
-
-  if (isLoadingVendor) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <Loader />
@@ -142,8 +147,9 @@ export default function VendorsProfile() {
                   <div className="flex items-start justify-between">
                     <div className="text-2xl font-black tracking-[0.3em]">DASHGO</div>
                     <div className="text-right text-2xl font-semibold">
-                      {featuredCard?.currency || 'GHS'}{' '}
-                      {featuredCard ? parseFloat(featuredCard.price).toFixed(2) : '0.00'}
+                      {form.watch('amount')
+                        ? `GHS ${parseFloat(form.watch('amount')).toFixed(2)}`
+                        : 'GHS'}
                     </div>
                   </div>
                   {/* Bottom Section */}
@@ -158,7 +164,7 @@ export default function VendorsProfile() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="flex flex-col gap-1">
                 <Text variant="h1" className="capitalize">
-                  {featuredCard?.product || vendorName} Gift Qard
+                  DashGo Gift Qard
                 </Text>
                 <Text variant="p" className="text-grey-500">
                   Vendor: {vendorName}
@@ -166,7 +172,9 @@ export default function VendorsProfile() {
                 <div className="flex items-center gap-1">
                   <Icon icon="bi:geo-alt-fill" className="size-4 text-grey-500" />
                   <Text variant="p" className="text-grey-500">
-                    {vendorDetails?.branch_location || 'Location not available'}
+                    {(vendorDetails as any)?.country ||
+                      (vendorDetails as any)?.branch_location ||
+                      'Location not available'}
                   </Text>
                 </div>
               </div>
@@ -176,27 +184,69 @@ export default function VendorsProfile() {
                   Description
                 </Text>
                 <Text variant="p" className="text-grey-600 leading-relaxed">
-                  {featuredCard?.description || vendorDescription}
+                  Create a custom DashGo gift card with your desired amount for {vendorName}. Use
+                  this card at {vendorName} locations.
                 </Text>
               </div>
 
               {/* Amount Input */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Enter Amount
-                </label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-primary-500">
-                    {featuredCard?.currency || 'GHS'}
-                  </span>
-                  <Input
-                    type="number"
-                    {...form.register('amount')}
-                    placeholder="0.00"
-                    className="w-full rounded-lg border border-gray-200 px-4 py-3 pl-16 text-lg font-semibold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-                    error={form.formState.errors.amount?.message}
-                  />
+                <Text variant="h3" weight="bold" className="text-gray-900 mb-4">
+                  Select Amount
+                </Text>
+
+                {/* Quick Selection Buttons */}
+                <div className="flex gap-3 mb-4 flex-wrap">
+                  {quickAmounts.map((amount) => {
+                    const isSelected = parseFloat(selectedAmount || '0') === amount
+                    return (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => form.setValue('amount', amount.toString())}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                          isSelected
+                            ? 'bg-primary-500 text-white shadow-md'
+                            : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-primary-300'
+                        }`}
+                      >
+                        GHS {amount.toLocaleString()}
+                      </button>
+                    )
+                  })}
                 </div>
+
+                {/* Amount Input Field */}
+
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  max="10000"
+                  prefix={
+                    <span className="pointer-events-none font-bold text-primary-500 text-lg">
+                      GHS
+                    </span>
+                  }
+                  {...form.register('amount', {
+                    required: 'Amount is required',
+                    validate: (value) => {
+                      const numValue = parseFloat(value)
+                      if (isNaN(numValue) || numValue <= 0) {
+                        return 'Please enter a valid amount greater than 0'
+                      }
+                      if (numValue > 10000) {
+                        return `Maximum amount is GHS 10000`
+                      }
+                      return true
+                    },
+                  })}
+                  placeholder="0.00"
+                  innerClassName="h-[56px]!"
+                  error={form.formState.errors.amount?.message}
+                />
+
+                <p className="mt-2 text-sm text-gray-500">Maximum amount: GHS 10000</p>
               </div>
 
               {/* Action Buttons */}
@@ -204,10 +254,10 @@ export default function VendorsProfile() {
                 <Button
                   variant="secondary"
                   type="submit"
-                  disabled={isAdding || !featuredCard}
-                  loading={isAdding}
+                  disabled={!form.watch('amount') || parseFloat(form.watch('amount') || '0') <= 0}
                   className="flex-1"
                 >
+                  <Icon icon="bi:cart-plus" className="size-5 mr-2" />
                   Add to Cart
                 </Button>
               </div>
@@ -238,14 +288,27 @@ export default function VendorsProfile() {
                   <Icon icon="bi:star-fill" className="size-5 text-yellow-500" />
                   <span className="font-semibold text-[#212529]">4.5</span>
                 </div>
-                <p className="text-sm text-grey-500">[Vendor ID here]</p>
+                <p className="text-sm text-grey-500">
+                  Vendor ID:{' '}
+                  {(vendorDetails as any)?.gvid || (vendorDetails as any)?.vendor_id || 'N/A'}
+                </p>
                 <p className="text-grey-600 leading-relaxed">{vendorDescription}</p>
               </div>
 
               {/* Right - Vendor QR Code */}
               <div className="flex justify-center md:justify-end">
                 <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                  <img src={vendorQrCode} alt="Vendor QR Code" className="w-32 h-32" />
+                  {isLoadingQrCode ? (
+                    <div className="w-32 h-32 flex items-center justify-center">
+                      <Loader />
+                    </div>
+                  ) : vendorQrCode ? (
+                    <img src={vendorQrCode} alt="Vendor QR Code" className="w-32 h-32" />
+                  ) : (
+                    <div className="w-32 h-32 flex items-center justify-center text-grey-500 text-sm">
+                      QR Code unavailable
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -256,74 +319,31 @@ export default function VendorsProfile() {
       {/* Qards from vendor Section */}
       <section className="py-12 bg-white">
         <div className="wrapper">
-          <div className="flex justify-between items-end mb-8 gap-6 max-md:flex-col max-md:items-stretch max-md:gap-4">
-            <div>
-              <h2 className="text-[clamp(28px,4vw,36px)] font-extrabold mb-2 text-[#212529]">
-                Qards from vendor ({vendorCards.length} Qards)
-              </h2>
-            </div>
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex bg-[#f0f0f0] rounded-lg p-0.5">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  aria-label="Grid view"
-                  className={`p-2 rounded-md transition-all ${
-                    viewMode === 'grid'
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-transparent text-grey-500 hover:bg-white/50'
-                  }`}
-                >
-                  <Icon icon="bi:grid-3x3-gap" className="size-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  aria-label="List view"
-                  className={`p-2 rounded-md transition-all ${
-                    viewMode === 'list'
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-transparent text-grey-500 hover:bg-white/50'
-                  }`}
-                >
-                  <Icon icon="bi:list" className="size-4" />
-                </button>
-              </div>
-              <div>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="px-3 py-2 border-2 border-[#e6e6e6] rounded-lg bg-white font-semibold text-[#212529] cursor-pointer transition-colors focus:outline-none focus:border-primary-500"
-                >
-                  <option value="popular">Most Popular</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="newest">Newest First</option>
-                  <option value="rating">Highest Rated</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className={`${
-              viewMode === 'grid'
-                ? 'grid grid-cols-4 gap-6 max-xl:grid-cols-3 max-md:grid-cols-2 max-[480px]:grid-cols-1 max-md:gap-4'
-                : 'flex flex-col gap-4'
-            }`}
-          >
-            {vendorCards.map((card: any, idx: number) => (
-              <CardItems
-                key={idx}
-                {...card}
-                type={(card.type as 'dashpro' | 'dashpass' | 'dashgo' | 'DashX') || 'DashX'}
+          <h2 className="text-[clamp(28px,4vw,36px)] font-extrabold mb-2 text-[#212529]">
+            Cards from vendor ({vendorCards.length} Cards)
+          </h2>
+          {vendorCards.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <EmptyState
+                image={EmptyStateImage}
+                title="No cards available"
+                description="No cards available for this vendor"
               />
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-6 max-xl:grid-cols-3 max-md:grid-cols-2 max-[480px]:grid-cols-1 max-md:gap-4">
+              {vendorCards?.map((card: any) => (
+                <CardItems
+                  key={card.card_id}
+                  {...card}
+                  id={card.card_id}
+                  type={(card.type as 'dashpro' | 'dashpass' | 'dashgo' | 'DashX') || 'DashX'}
+                />
+              ))}
+            </div>
+          )}
 
-          {/* Load More and Terms */}
           <div className="flex justify-between items-center mt-12 pt-8 border-t border-gray-200">
-            <button className="text-primary-500 font-semibold hover:text-primary-700 transition-colors">
-              Load More
-            </button>
             <Link
               to={ROUTES.IN_APP.TERMS_OF_SERVICE}
               className="text-grey-500 font-semibold hover:text-primary-500 transition-colors"
