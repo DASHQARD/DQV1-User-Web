@@ -333,6 +333,8 @@ export function BrowseCardsModal() {
                     >
                       <CardItems
                         card_id={card.id || card.card_id}
+                        branch_name={card.branch_name || ''}
+                        branch_location={card.branch_location || ''}
                         product={card.product}
                         vendor_name={card.vendor_name}
                         rating={card.rating}

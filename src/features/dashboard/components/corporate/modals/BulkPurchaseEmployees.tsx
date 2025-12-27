@@ -1242,6 +1242,8 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
                             }`}
                           >
                             <CardItems
+                              branch_name={card.branch_name || ''}
+                              branch_location={card.branch_location || ''}
                               card_id={card.card_id}
                               product={card.product}
                               vendor_name={card.vendor_name}

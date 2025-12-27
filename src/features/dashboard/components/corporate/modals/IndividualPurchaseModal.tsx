@@ -305,6 +305,8 @@ export function IndividualPurchaseModal() {
                       <CardItems
                         card_id={card.card_id || card.id}
                         product={card.product}
+                        branch_name={card.branch_name}
+                        branch_location={card.branch_location}
                         vendor_name={selectedVendorName}
                         rating={card.rating}
                         price={card.price}
