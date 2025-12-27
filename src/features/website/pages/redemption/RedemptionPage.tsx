@@ -147,7 +147,9 @@ export default function RedemptionPage() {
                         type="tel"
                         placeholder="Enter the phone number you received the gift card on"
                         value={phoneNumber}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handlePhoneNumberChange(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          handlePhoneNumberChange(e.target.value)
+                        }
                       />
                     </div>
                   )}
@@ -156,11 +158,11 @@ export default function RedemptionPage() {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Vendor Mobile Money Number <span className="text-red-500">*</span>
                     </label>
-                      <Input
-                        type="tel"
-                        placeholder="Enter vendor mobile money number"
-                        value={vendorMobileMoney}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    <Input
+                      type="tel"
+                      placeholder="Enter vendor mobile money number"
+                      value={vendorMobileMoney}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         handleVendorMobileMoneyChange(e.target.value)
                       }
                     />
@@ -251,7 +253,9 @@ export default function RedemptionPage() {
                         type="tel"
                         placeholder="Enter the phone number you received the gift card on"
                         value={phoneNumber}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handlePhoneNumberChange(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          handlePhoneNumberChange(e.target.value)
+                        }
                       />
                     </div>
                   )}
@@ -377,4 +381,3 @@ export default function RedemptionPage() {
     </div>
   )
 }
-

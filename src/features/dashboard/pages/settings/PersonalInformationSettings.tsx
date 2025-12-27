@@ -124,9 +124,7 @@ export function PersonalInformationSettings() {
               {...form.register('dob')}
               error={form.formState.errors.dob?.message}
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Format: YYYY-MM-DD (e.g., 1990-01-15)
-            </p>
+            <p className="text-xs text-gray-500 mt-1">Format: YYYY-MM-DD (e.g., 1990-01-15)</p>
           </div>
 
           <div>
@@ -176,12 +174,7 @@ export function PersonalInformationSettings() {
             <Icon icon="bi:check-circle" className="size-4 mr-2" />
             Save Changes
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => form.reset()}
-            disabled={isPending}
-          >
+          <Button type="button" variant="outline" onClick={() => form.reset()} disabled={isPending}>
             Cancel
           </Button>
         </div>
@@ -189,4 +182,3 @@ export function PersonalInformationSettings() {
     </div>
   )
 }
-

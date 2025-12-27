@@ -139,7 +139,6 @@ export const DEFAULT_QUERY = {
   limit: 10,
   after: '',
   status: '',
-  page: 1,
   search: '',
 }
 

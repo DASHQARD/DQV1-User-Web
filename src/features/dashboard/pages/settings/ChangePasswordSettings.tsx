@@ -104,12 +104,7 @@ export function ChangePasswordSettings() {
             <Icon icon="bi:check-circle" className="size-4 mr-2" />
             Update Password
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => form.reset()}
-            disabled={isPending}
-          >
+          <Button type="button" variant="outline" onClick={() => form.reset()} disabled={isPending}>
             Cancel
           </Button>
         </div>
@@ -117,4 +112,3 @@ export function ChangePasswordSettings() {
     </div>
   )
 }
-

@@ -22,7 +22,11 @@ import {
 import { useToast } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import { useNavigate } from 'react-router-dom'
-import type { CreateRecipientPayload, AssignRecipientPayload, AddToCartPayload } from '@/types/responses'
+import type {
+  CreateRecipientPayload,
+  AssignRecipientPayload,
+  AddToCartPayload,
+} from '@/types/responses'
 
 export function corporateMutations() {
   function useInviteAdminForCorporateService() {

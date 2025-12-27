@@ -464,7 +464,9 @@ export default function ViewBag() {
                 <div className="border-t border-gray-200 pt-4 mt-4">
                   <div className="flex justify-between">
                     <span className="text-lg font-bold text-gray-900">Total</span>
-                    <span className="text-lg font-bold text-gray-900">{formatPrice(Number(subtotal))}</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      {formatPrice(Number(subtotal))}
+                    </span>
                   </div>
                 </div>
               </div>

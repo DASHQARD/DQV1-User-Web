@@ -21,11 +21,7 @@ const ContactFormSchema = z.object({
 
 type ContactFormData = z.infer<typeof ContactFormSchema>
 
-const contactUsForm = async (payload: {
-  to: string
-  subject: string
-  message: string
-}) => {
+const contactUsForm = async (payload: { to: string; subject: string; message: string }) => {
   return await postMethod('/contact/send', payload)
 }
 
@@ -133,7 +129,10 @@ ${data.message}
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between items-center pb-3 border-b border-primary-500/10">
                   <strong className="text-primary-500">Phone:</strong>
-                  <a href="tel:+233542022245" className="text-primary-500 font-semibold hover:underline">
+                  <a
+                    href="tel:+233542022245"
+                    className="text-primary-500 font-semibold hover:underline"
+                  >
                     +233 (0)542 022 245
                   </a>
                 </div>
@@ -275,7 +274,10 @@ ${data.message}
                 {errorMessage && (
                   <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
                     <div className="flex items-center">
-                      <Icon icon="bi:exclamation-triangle-fill" className="size-5 text-red-600 mr-2" />
+                      <Icon
+                        icon="bi:exclamation-triangle-fill"
+                        className="size-5 text-red-600 mr-2"
+                      />
                       <span className="text-red-800">{errorMessage}</span>
                     </div>
                     <button
@@ -508,7 +510,10 @@ ${data.message}
               <p className="mb-4">
                 <strong className="text-yellow-500">Interested in bulk gifting solutions?</strong>{' '}
                 Contact our corporate team for a customized quote and consultation.{' '}
-                <Link to="/#bulk-gifting" className="text-yellow-500 hover:text-yellow-400 underline">
+                <Link
+                  to="/#bulk-gifting"
+                  className="text-yellow-500 hover:text-yellow-400 underline"
+                >
                   Learn more about bulk gifting
                 </Link>
               </p>
@@ -563,11 +568,36 @@ ${data.message}
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon: 'bi:youtube', label: '@dashqard', href: 'https://www.youtube.com/@dashqard', color: 'text-red-600 bg-red-50 border-red-200' },
-                  { icon: 'bi:twitter-x', label: '@dashqard', href: 'https://x.com/dashqard', color: 'text-black bg-gray-50 border-gray-200' },
-                  { icon: 'bi:instagram', label: '@dashqard', href: 'https://www.instagram.com/dashqard/', color: 'text-pink-600 bg-pink-50 border-pink-200' },
-                  { icon: 'bi:linkedin', label: '@dashqard', href: 'https://www.linkedin.com/company/dashqard/?viewAsMember=true', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-                  { icon: 'bi:tiktok', label: '@dashqard', href: 'https://www.tiktok.com/@dashqard?lang=en', color: 'text-black bg-gray-50 border-gray-200' },
+                  {
+                    icon: 'bi:youtube',
+                    label: '@dashqard',
+                    href: 'https://www.youtube.com/@dashqard',
+                    color: 'text-red-600 bg-red-50 border-red-200',
+                  },
+                  {
+                    icon: 'bi:twitter-x',
+                    label: '@dashqard',
+                    href: 'https://x.com/dashqard',
+                    color: 'text-black bg-gray-50 border-gray-200',
+                  },
+                  {
+                    icon: 'bi:instagram',
+                    label: '@dashqard',
+                    href: 'https://www.instagram.com/dashqard/',
+                    color: 'text-pink-600 bg-pink-50 border-pink-200',
+                  },
+                  {
+                    icon: 'bi:linkedin',
+                    label: '@dashqard',
+                    href: 'https://www.linkedin.com/company/dashqard/?viewAsMember=true',
+                    color: 'text-blue-600 bg-blue-50 border-blue-200',
+                  },
+                  {
+                    icon: 'bi:tiktok',
+                    label: '@dashqard',
+                    href: 'https://www.tiktok.com/@dashqard?lang=en',
+                    color: 'text-black bg-gray-50 border-gray-200',
+                  },
                 ].map((social) => (
                   <a
                     key={social.href}
@@ -588,4 +618,3 @@ ${data.message}
     </div>
   )
 }
-
