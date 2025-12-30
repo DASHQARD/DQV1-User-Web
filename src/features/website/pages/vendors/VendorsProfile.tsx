@@ -34,7 +34,6 @@ export default function VendorsProfile() {
     return vendorDetailsResponse[0] || null
   }, [vendorDetailsResponse])
 
-  // Extract vendor cards and filter out DashGo cards
   const vendorCards = React.useMemo(() => {
     if (!vendorCardsResponse) return []
     // Handle both array response and object with data property
