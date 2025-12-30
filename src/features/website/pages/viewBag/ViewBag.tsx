@@ -12,7 +12,7 @@ import { useToast } from '@/hooks'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/svgs/dashpass_bg.svg'
+import DashpassBg from '@/assets/svgs/Dashx_bg.svg'
 import { ENV_VARS } from '@/utils/constants'
 import { deleteCartItem } from '../../services/cart'
 
