@@ -171,12 +171,6 @@ export default function CartPopoverContent() {
                     return
                   }
                   if (item.cart_item_id) {
-                    // amount should be the unit price (per item), not total
-                    console.log('Updating cart item:', {
-                      cart_item_id: item.cart_item_id,
-                      quantity: newQuantity,
-                      amount: unitPrice,
-                    })
                     updateCartItem({
                       cart_item_id: item.cart_item_id,
                       quantity: newQuantity,
