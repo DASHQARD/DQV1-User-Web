@@ -1,11 +1,24 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Input, Text, RadioGroup, RadioGroupItem, Combobox, Loader } from '@/components'
+import {
+  Button,
+  Input,
+  Text,
+  RadioGroup,
+  RadioGroupItem,
+  Combobox,
+  Loader,
+  OTPInput,
+  ResendCode,
+} from '@/components'
 import { Icon } from '@/libs'
 import { useAuthStore } from '@/stores'
 import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
-import { useDebouncedState } from '@/hooks'
+import { useDebouncedState, useCountdown } from '@/hooks'
 import type { DropdownOption } from '@/types'
+import { useMutation } from '@tanstack/react-query'
+import { axiosClient } from '@/libs'
+import { useToast } from '@/hooks'
 
 type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
@@ -50,6 +63,35 @@ const getCardBalance = async (
   }
 }
 
+// Service function to send redemption OTP
+const sendRedemptionOTP = async (data: {
+  phone_number?: string
+  user_id?: string | number
+  redemption_method: string
+  vendor_id?: string | number
+  card_type?: string
+  amount?: number
+  card_id?: number
+}): Promise<{ status: string; message: string }> => {
+  const response = await axiosClient.post('/redemptions/send-otp', data)
+  return response.data
+}
+
+// Service function to verify redemption OTP
+const verifyRedemptionOTP = async (data: {
+  otp: string
+  phone_number?: string
+  user_id?: string | number
+  redemption_method: string
+  vendor_id?: string | number
+  card_type?: string
+  amount?: number
+  card_id?: number
+}): Promise<{ status: string; message: string; data?: any }> => {
+  const response = await axiosClient.post('/redemptions/verify-otp', data)
+  return response.data
+}
+
 export default function RedemptionPage() {
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuthStore()
@@ -69,7 +111,10 @@ export default function RedemptionPage() {
   const [vendorName, setVendorName] = useState('')
   const [selectedCard, setSelectedCard] = useState<VendorCard | null>(null)
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
-  const [step, setStep] = useState<'method' | 'details' | 'confirm' | 'success'>('method')
+  const [step, setStep] = useState<'method' | 'details' | 'otp' | 'confirm' | 'success'>('method')
+  const [otp, setOtp] = useState('')
+  const [otpError, setOtpError] = useState('')
+  const toast = useToast()
 
   // Debounced vendor search
   const { value: debouncedVendorSearch } = useDebouncedState({
@@ -224,6 +269,8 @@ export default function RedemptionPage() {
     setBalance(null)
     setSelectedCard(null)
     setVendorSearch('')
+    setOtp('')
+    setOtpError('')
   }
 
   // Handle vendor mobile money validation
@@ -244,8 +291,57 @@ export default function RedemptionPage() {
     setAmount(value)
   }
 
-  // Handle redemption submission
-  const handleRedeem = () => {
+  // Send OTP mutation
+  const sendOTPMutation = useMutation({
+    mutationFn: sendRedemptionOTP,
+    onSuccess: () => {
+      toast.success('OTP sent successfully')
+      setStep('otp')
+    },
+    onError: (error: { status: number; message: string }) => {
+      toast.error(error?.message || 'Failed to send OTP. Please try again.')
+    },
+  })
+
+  // Verify OTP mutation
+  const verifyOTPMutation = useMutation({
+    mutationFn: verifyRedemptionOTP,
+    onSuccess: () => {
+      toast.success('OTP verified successfully')
+      setStep('confirm')
+      setOtpError('')
+    },
+    onError: (error: { status: number; message: string }) => {
+      setOtpError(error?.message || 'Invalid OTP. Please try again.')
+      toast.error(error?.message || 'Invalid OTP. Please try again.')
+    },
+  })
+
+  // Countdown for resending OTP
+  const { resendOtp, formatCountdown, countdown, startCountdown } = useCountdown({
+    sendOtp: async () => {
+      await sendOTPMutation.mutateAsync({
+        phone_number: !isAuthenticated ? phoneNumber : undefined,
+        user_id: isAuthenticated ? user?.user_id : undefined,
+        redemption_method: redemptionMethod,
+        vendor_id: selectedVendor?.vendor_id,
+        card_type: cardType || undefined,
+        amount: amount ? parseFloat(amount) : undefined,
+        card_id: selectedCard?.card_id,
+      })
+    },
+    countdown: 120,
+  })
+
+  // Start countdown when OTP step is reached
+  useEffect(() => {
+    if (step === 'otp') {
+      startCountdown()
+    }
+  }, [step, startCountdown])
+
+  // Handle redemption submission - send OTP
+  const handleRedeem = async () => {
     if (
       redemptionMethod === 'vendor_id' &&
       !selectedCard &&
@@ -255,8 +351,55 @@ export default function RedemptionPage() {
       // For DashX and DashPass, a card must be selected
       return
     }
-    setStep('confirm')
+
+    // Send OTP
+    sendOTPMutation.mutate({
+      phone_number: !isAuthenticated ? phoneNumber : undefined,
+      user_id: isAuthenticated ? user?.user_id : undefined,
+      redemption_method: redemptionMethod,
+      vendor_id: selectedVendor?.vendor_id,
+      card_type: cardType || undefined,
+      amount: amount ? parseFloat(amount) : undefined,
+      card_id: selectedCard?.card_id,
+    })
   }
+
+  // Handle OTP verification
+  const handleVerifyOTP = useCallback(() => {
+    if (otp.length !== 6) {
+      setOtpError('Please enter a valid 6-digit OTP')
+      return
+    }
+
+    verifyOTPMutation.mutate({
+      otp,
+      phone_number: !isAuthenticated ? phoneNumber : undefined,
+      user_id: isAuthenticated ? user?.user_id : undefined,
+      redemption_method: redemptionMethod,
+      vendor_id: selectedVendor?.vendor_id,
+      card_type: cardType || undefined,
+      amount: amount ? parseFloat(amount) : undefined,
+      card_id: selectedCard?.card_id,
+    })
+  }, [
+    otp,
+    isAuthenticated,
+    phoneNumber,
+    user?.user_id,
+    redemptionMethod,
+    selectedVendor?.vendor_id,
+    cardType,
+    amount,
+    selectedCard?.card_id,
+    verifyOTPMutation,
+  ])
+
+  // Auto-submit when OTP is complete
+  useEffect(() => {
+    if (otp.length === 6 && step === 'otp') {
+      handleVerifyOTP()
+    }
+  }, [otp, step, handleVerifyOTP])
 
   // Handle confirmation
   const handleConfirm = async () => {
@@ -744,6 +887,75 @@ export default function RedemptionPage() {
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {step === 'otp' && (
+            <div className="space-y-6">
+              <button
+                onClick={() => {
+                  setStep('details')
+                  setOtp('')
+                  setOtpError('')
+                }}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+              >
+                <Icon icon="bi:arrow-left" className="text-lg" />
+                <span>Back</span>
+              </button>
+
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto">
+                  <Icon icon="bi:shield-check" className="text-3xl text-primary-600" />
+                </div>
+                <Text variant="h3" weight="semibold" className="text-gray-900">
+                  Verify OTP
+                </Text>
+                <Text variant="p" className="text-gray-600">
+                  We've sent a 6-digit OTP to{' '}
+                  <span className="font-semibold text-gray-900">
+                    {isAuthenticated
+                      ? user?.email || user?.phonenumber || 'your registered contact'
+                      : phoneNumber || 'your phone number'}
+                  </span>
+                  . Please enter it below to continue with your redemption.
+                </Text>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Enter OTP <span className="text-red-500">*</span>
+                  </label>
+                  <OTPInput
+                    length={6}
+                    value={otp}
+                    onChange={(value) => {
+                      setOtp(value)
+                      setOtpError('')
+                    }}
+                    error={otpError}
+                    inputListClassName="grid grid-cols-6 gap-2"
+                  />
+                </div>
+
+                <ResendCode
+                  countdown={countdown}
+                  formatCountdown={formatCountdown}
+                  onResend={resendOtp}
+                  isLoading={sendOTPMutation.isPending}
+                />
+
+                <Button
+                  variant="primary"
+                  onClick={handleVerifyOTP}
+                  disabled={otp.length !== 6 || verifyOTPMutation.isPending}
+                  loading={verifyOTPMutation.isPending}
+                  className="w-full"
+                >
+                  Verify OTP
+                </Button>
+              </div>
             </div>
           )}
 

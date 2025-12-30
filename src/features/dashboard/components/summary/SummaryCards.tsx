@@ -1,17 +1,21 @@
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router'
 
 import DashXIllustration from '@/assets/svgs/Dashx_bg.svg'
 import DashGoIllustration from '@/assets/svgs/dashgo_bg.svg'
 import DashProIllustration from '@/assets/svgs/dashpro_bg.svg'
 import DashPassIllustration from '@/assets/svgs/dashpass_bg.svg'
-import { CustomIcon, Dropdown, Text } from '@/components'
+import { CustomIcon, Dropdown, Text, Loader } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
 import { cn } from '@/libs/clsx'
 import { MODALS, ROUTES } from '@/utils/constants'
+import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
 
 export default function SummaryCards() {
   const navigate = useNavigate()
+  const { data: metricsResponse, isLoading } = useGiftCardMetrics()
+  console.log('metricsResponse', metricsResponse)
 
   const modal = usePersistedModalState<{
     id: string
@@ -31,52 +35,80 @@ export default function SummaryCards() {
     paramName: MODALS.SUMMARY_CARDS.ROOT,
   })
 
-  const CARD_INFO = [
-    {
-      id: '1',
-      title: 'DashX Gift Cards',
-      value: 0,
-      totalSavers: 0,
-      IconName: 'hugeicons:money-bag-01',
-      active: false,
-      savingsType: null,
-      IconBg: 'bg-[#402D87]/[60%] group-hover:bg-[#402D87]',
-      image: DashXIllustration,
-    },
-    {
-      id: '2',
-      title: 'DashGo Gift Cards',
-      value: 0,
-      totalSavers: 0,
-      IconName: 'hugeicons:money-bag-01',
-      active: false,
-      savingsType: null,
-      IconBg: 'bg-[#ED186A]/[60%] group-hover:bg-[#ED186A]',
-      image: DashGoIllustration,
-    },
-    {
-      id: '3',
-      title: 'DashPro Gift Cards',
-      value: 0,
-      totalSavers: 0,
-      IconName: 'hugeicons:money-bag-01',
-      active: false,
-      savingsType: null,
-      IconBg: 'bg-[#FAC203]/[60%] group-hover:bg-[#FAC203]',
-      image: DashProIllustration,
-    },
-    {
-      id: '4',
-      title: 'DashPass Gift Cards',
-      value: 0,
-      totalSavers: 0,
-      IconName: 'hugeicons:money-bag-01',
-      active: false,
-      savingsType: null,
-      IconBg: 'bg-[#402D87]/[60%] group-hover:bg-[#402D87]',
-      image: DashPassIllustration,
-    },
-  ]
+  // Get metrics data or default to 0
+  const metrics = useMemo(() => {
+    return (
+      metricsResponse?.data || {
+        DashX: 0,
+        DashGo: 0,
+        DashPass: 0,
+        DashPro: 0,
+      }
+    )
+  }, [metricsResponse])
+
+  const CARD_INFO = useMemo(
+    () => [
+      {
+        id: '1',
+        title: 'DashX Gift Cards',
+        value: metrics.DashX,
+        totalGiftCards: 0,
+        IconName: 'hugeicons:money-bag-01',
+        active: false,
+        savingsType: null,
+        IconBg: 'bg-[#402D87]/[60%] group-hover:bg-[#402D87]',
+        image: DashXIllustration,
+      },
+      {
+        id: '2',
+        title: 'DashGo Gift Cards',
+        value: metrics.DashGo,
+        totalGiftCards: 0,
+        IconName: 'hugeicons:money-bag-01',
+        active: false,
+        savingsType: null,
+        IconBg: 'bg-[#ED186A]/[60%] group-hover:bg-[#ED186A]',
+        image: DashGoIllustration,
+      },
+      {
+        id: '3',
+        title: 'DashPro Gift Cards',
+        value: metrics.DashPro,
+        totalGiftCards: 0,
+        IconName: 'hugeicons:money-bag-01',
+        active: false,
+        savingsType: null,
+        IconBg: 'bg-[#FAC203]/[60%] group-hover:bg-[#FAC203]',
+        image: DashProIllustration,
+      },
+      {
+        id: '4',
+        title: 'DashPass Gift Cards',
+        value: metrics.DashPass,
+        totalGiftCards: 0,
+        IconName: 'hugeicons:money-bag-01',
+        active: false,
+        savingsType: null,
+        IconBg: 'bg-[#402D87]/[60%] group-hover:bg-[#402D87]',
+        image: DashPassIllustration,
+      },
+    ],
+    [metrics],
+  )
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Text variant="h6" weight="normal" className="text-gray-400">
+          My Gift Cards
+        </Text>
+        <div className="flex items-center justify-center py-8">
+          <Loader />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -180,7 +212,8 @@ export default function SummaryCards() {
                     </div>
                     <div className="flex flex-col gap-1">
                       <p className="text-xs text-gray-500">
-                        {card.totalSavers} {card.totalSavers === 1 ? 'Saver' : 'Savers'}
+                        Total {card.totalGiftCards}{' '}
+                        {card.totalGiftCards === 1 ? 'Gift Card' : 'Gift Cards'}
                       </p>
                       <p className="text-gray-800 text-xs">{card.value}</p>
                     </div>

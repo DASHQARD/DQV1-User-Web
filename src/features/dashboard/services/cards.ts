@@ -44,3 +44,20 @@ export const deleteCard = async (id: number): Promise<{ status: string; message:
   const response = await axiosClient.delete(`/cards/${id}`)
   return response as unknown as { status: string; message: string }
 }
+
+export interface GiftCardMetricsResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: {
+    DashX: number
+    DashGo: number
+    DashPass: number
+    DashPro: number
+  }
+}
+
+export const getGiftCardMetrics = async (): Promise<GiftCardMetricsResponse> => {
+  const response = await axiosClient.get('/cards/users/metrics')
+  return response as unknown as GiftCardMetricsResponse
+}

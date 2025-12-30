@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
-import { getCards, getCardById, createCard, updateCard, deleteCard } from '../services/cards'
+import {
+  getCards,
+  getCardById,
+  createCard,
+  updateCard,
+  deleteCard,
+  getGiftCardMetrics,
+} from '../services/cards'
 import type { CreateCardData, UpdateCardData } from '@/types/responses'
 
 export function useCards() {
@@ -60,10 +67,18 @@ export function useDeleteCard() {
     mutationFn: (id: number) => deleteCard(id),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['cards'] })
+      queryClient.invalidateQueries({ queryKey: ['gift-card-metrics'] })
       toast.success(response.message || 'Card deleted successfully')
     },
     onError: (error: { status: number; message: string }) => {
       toast.error(error?.message || 'Failed to delete card')
     },
+  })
+}
+
+export function useGiftCardMetrics() {
+  return useQuery({
+    queryKey: ['gift-card-metrics'],
+    queryFn: getGiftCardMetrics,
   })
 }

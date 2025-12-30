@@ -198,12 +198,6 @@ export default function CreateExperienceForm() {
         redemption_branches: branchIds.length > 0 ? branchIds.map((id) => ({ branch_id: id })) : [],
       }
 
-      // If branch manager creates experience, it needs approval
-      if (isBranchManager) {
-        payload.requires_approval = true
-        payload.status = 'pending'
-      }
-
       await createExperience(payload)
 
       form.reset()
