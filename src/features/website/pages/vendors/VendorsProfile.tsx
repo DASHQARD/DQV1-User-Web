@@ -28,7 +28,6 @@ export default function VendorsProfile() {
     vendor_ids: vendor_id || '',
   })
 
-  // Extract vendor from response - VendorDetailsResponse is an array
   const vendorDetails = React.useMemo(() => {
     if (!vendorDetailsResponse?.[0]) return null
     return vendorDetailsResponse[0] || null
@@ -36,9 +35,7 @@ export default function VendorsProfile() {
 
   const vendorCards = React.useMemo(() => {
     if (!vendorCardsResponse) return []
-    // Handle both array response and object with data property
     const cards = vendorCardsResponse
-    // Filter out DashGo cards - DashGo is static, not fetched from backend
     return cards.filter((card: any) => {
       const isDashGo = card.type?.toLowerCase() === 'dashgo'
       const matchesVendor = !vendor_id || card.vendor_id === parseInt(vendor_id, 10)
@@ -83,7 +80,6 @@ export default function VendorsProfile() {
       return
     }
 
-    // Get branches from vendor details for redemption_branches
     const vendorBranches = (vendorDetails as any)?.branches_with_cards || []
     const redemptionBranches =
       vendorBranches.length > 0
@@ -92,9 +88,8 @@ export default function VendorsProfile() {
           }))
         : []
 
-    // Create DashGo card and add to cart using the endpoint
     createDashGoMutation.mutate({
-      recipient_ids: [], // Empty array for now - recipients can be assigned later
+      recipient_ids: [],
       vendor_id: parseInt(vendor_id, 10),
       product: 'DashGo Gift Card',
       description: `Custom DashGo card for ${vendorName}`,
@@ -105,13 +100,11 @@ export default function VendorsProfile() {
     })
   }
 
-  // Get vendor details - use business_name or vendor_name as fallback
   const branchName = vendorDetails?.business_name || vendorDetails?.vendor_name || ''
   const vendorName = branchName || 'Vendor'
   const vendorDescription =
     'Explore our wide range of gift cards and services. We offer quality products and exceptional customer service to meet all your needs.'
 
-  // Get QR code from backend - it's a base64 data URL
   const vendorQrCode = qrCodeData?.qr_code || ''
 
   if (isLoading) {
