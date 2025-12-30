@@ -193,7 +193,10 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
         >
           <div className={cn(`relative shrink-0`)}>
             <div
-              className={cn(`flex items-center gap-2`, disabled ? 'cursor-not-allowed' : 'cursor-pointer')}
+              className={cn(
+                `flex items-center gap-2`,
+                disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+              )}
               onClick={disabled ? undefined : toggle}
             >
               {displayImage && (
