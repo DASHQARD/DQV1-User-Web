@@ -1,31 +1,229 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Input, Text, RadioGroup, RadioGroupItem } from '@/components'
+import { Button, Input, Text, RadioGroup, RadioGroupItem, Combobox, Loader } from '@/components'
 import { Icon } from '@/libs'
 import { useAuthStore } from '@/stores'
+import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
+import { useDebouncedState } from '@/hooks'
+import type { DropdownOption } from '@/types'
 
 type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
 
+interface VendorCard {
+  card_id: number
+  card_name: string
+  card_type: string
+  card_price: number
+  currency: string
+  status: string
+}
+
+interface BalanceResponse {
+  balance: number
+  card_type: string
+}
+
+// Service function to fetch balance
+const getCardBalance = async (
+  phoneNumber?: string,
+  userId?: string | number,
+  cardType?: string,
+  vendorId?: string | number,
+): Promise<BalanceResponse | null> => {
+  try {
+    const params: Record<string, any> = {}
+    if (phoneNumber) params.phone_number = phoneNumber
+    if (userId) params.user_id = userId
+    if (cardType) params.card_type = cardType
+    if (vendorId) params.vendor_id = vendorId
+
+    // TODO: Replace with actual API endpoint when available
+    // For now, this is a placeholder that returns null
+    // const response = await getList('/gift-cards/balance', params)
+    // return response
+
+    return null
+  } catch (error) {
+    console.error('Error fetching balance:', error)
+    return null
+  }
+}
+
 export default function RedemptionPage() {
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
+  const { usePublicVendorsService } = usePublicCatalogQueries()
 
   // State management
   const [redemptionMethod, setRedemptionMethod] = useState<RedemptionMethod | ''>('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [vendorMobileMoney, setVendorMobileMoney] = useState('')
+  const [vendorSearch, setVendorSearch] = useState('')
+  const [selectedVendor, setSelectedVendor] = useState<any>(null)
   const [selectedVendorId, setSelectedVendorId] = useState('')
   const [cardType, setCardType] = useState<CardType | ''>('')
   const [amount, setAmount] = useState('')
-  const [balance] = useState<number | null>(null)
-  const [vendorName] = useState('')
+  const [balance, setBalance] = useState<number | null>(null)
+  const [balanceLoading, setBalanceLoading] = useState(false)
+  const [vendorName, setVendorName] = useState('')
+  const [selectedCard, setSelectedCard] = useState<VendorCard | null>(null)
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
   const [step, setStep] = useState<'method' | 'details' | 'confirm' | 'success'>('method')
+
+  // Debounced vendor search
+  const { value: debouncedVendorSearch } = useDebouncedState({
+    initialValue: vendorSearch,
+    onChange: setVendorSearch,
+    debounceTime: 500,
+  })
+
+  // Fetch vendors based on search
+  const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService(
+    debouncedVendorSearch
+      ? {
+          search: debouncedVendorSearch,
+          limit: 20,
+        }
+      : undefined,
+  )
+
+  // Extract vendors from response
+  const vendors = useMemo(() => {
+    if (!vendorsResponse) return []
+    if (Array.isArray(vendorsResponse)) return vendorsResponse
+    if (vendorsResponse && typeof vendorsResponse === 'object' && 'data' in vendorsResponse) {
+      return (vendorsResponse as any).data || []
+    }
+    return []
+  }, [vendorsResponse])
+
+  // Convert vendors to dropdown options
+  const vendorOptions: DropdownOption[] = useMemo(() => {
+    return vendors.map((vendor: any) => ({
+      label: vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
+      value: vendor.vendor_id?.toString() || '',
+    }))
+  }, [vendors])
+
+  // Extract cards from selected vendor
+  const vendorCards = useMemo(() => {
+    if (!selectedVendor) return []
+    const cards: VendorCard[] = []
+
+    // Extract cards from branches_with_cards
+    if (selectedVendor.branches_with_cards && Array.isArray(selectedVendor.branches_with_cards)) {
+      selectedVendor.branches_with_cards.forEach((branch: any) => {
+        if (branch.cards && Array.isArray(branch.cards)) {
+          branch.cards.forEach((card: any) => {
+            cards.push({
+              card_id: card.card_id,
+              card_name: card.card_name || card.product || 'Unknown Card',
+              card_type: card.card_type?.toLowerCase() || '',
+              card_price: card.card_price || 0,
+              currency: card.currency || 'GHS',
+              status: card.status || 'active',
+            })
+          })
+        }
+      })
+    }
+
+    // Extract cards from vendor_cards if available
+    if (selectedVendor.vendor_cards && Array.isArray(selectedVendor.vendor_cards)) {
+      selectedVendor.vendor_cards.forEach((card: any) => {
+        cards.push({
+          card_id: card.card_id || card.id,
+          card_name: card.card_name || card.product || 'Unknown Card',
+          card_type: card.card_type?.toLowerCase() || card.type?.toLowerCase() || '',
+          card_price: card.card_price || card.price || 0,
+          currency: card.currency || 'GHS',
+          status: card.status || 'active',
+        })
+      })
+    }
+
+    return cards
+  }, [selectedVendor])
+
+  // Filter cards by selected card type
+  const filteredCards = useMemo(() => {
+    if (!cardType) return vendorCards
+    return vendorCards.filter((card) => card.card_type === cardType)
+  }, [vendorCards, cardType])
+
+  // Fetch balance when phone number or vendor changes
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!selectedVendor) {
+        setBalance(null)
+        return
+      }
+
+      // Only fetch balance if we have the required info
+      if (redemptionMethod === 'vendor_mobile_money') {
+        // For vendor mobile money, we need phone number if not authenticated
+        if (!isAuthenticated && !phoneNumber) {
+          setBalance(null)
+          return
+        }
+      } else if (redemptionMethod === 'vendor_id') {
+        // For vendor ID, we need phone number if not authenticated and card type
+        if (!isAuthenticated && !phoneNumber) {
+          setBalance(null)
+          return
+        }
+        if (!cardType) {
+          setBalance(null)
+          return
+        }
+      }
+
+      setBalanceLoading(true)
+      try {
+        const balanceData = await getCardBalance(
+          !isAuthenticated ? phoneNumber : undefined,
+          isAuthenticated ? user?.user_id : undefined,
+          cardType || 'dashpro',
+          selectedVendor.vendor_id,
+        )
+        setBalance(balanceData?.balance || null)
+      } catch (error) {
+        console.error('Error fetching balance:', error)
+        setBalance(null)
+      } finally {
+        setBalanceLoading(false)
+      }
+    }
+
+    fetchBalance()
+  }, [phoneNumber, selectedVendor, cardType, isAuthenticated, user, redemptionMethod])
+
+  // Handle vendor selection
+  const handleVendorSelect = (vendorId: string) => {
+    const vendor = vendors.find((v: any) => v.vendor_id?.toString() === vendorId)
+    if (vendor) {
+      setSelectedVendor(vendor)
+      setSelectedVendorId(vendorId)
+      setVendorName(vendor.business_name || vendor.vendor_name || 'Unknown Vendor')
+      setSelectedCard(null)
+      setSelectedBranchId(null)
+    }
+  }
 
   // Handle method selection
   const handleMethodSelect = (method: RedemptionMethod) => {
     setRedemptionMethod(method)
     setStep('details')
+    // Reset state when changing methods
+    setSelectedVendor(null)
+    setSelectedVendorId('')
+    setVendorName('')
+    setCardType('')
+    setAmount('')
+    setBalance(null)
+    setSelectedCard(null)
+    setVendorSearch('')
   }
 
   // Handle vendor mobile money validation
@@ -38,21 +236,25 @@ export default function RedemptionPage() {
   // Handle phone number entry (for guest users)
   const handlePhoneNumberChange = async (value: string) => {
     setPhoneNumber(value)
-    // TODO: Fetch card balances based on phone number and vendor
-    // This would call an API endpoint to get balances
+    // Balance will be fetched automatically via useEffect
   }
 
   // Handle amount validation
   const handleAmountChange = (value: string) => {
     setAmount(value)
-    // Validate amount against balance
-    if (balance && parseFloat(value) > balance) {
-      // Show insufficient balance message
-    }
   }
 
   // Handle redemption submission
   const handleRedeem = () => {
+    if (
+      redemptionMethod === 'vendor_id' &&
+      !selectedCard &&
+      cardType !== 'dashpro' &&
+      cardType !== 'dashgo'
+    ) {
+      // For DashX and DashPass, a card must be selected
+      return
+    }
     setStep('confirm')
   }
 
@@ -61,6 +263,18 @@ export default function RedemptionPage() {
     // TODO: Call redemption API
     // On success, navigate to success page
     setStep('success')
+  }
+
+  // Reset vendor selection
+  const handleResetVendor = () => {
+    setSelectedVendor(null)
+    setSelectedVendorId('')
+    setVendorName('')
+    setVendorSearch('')
+    setCardType('')
+    setSelectedCard(null)
+    setSelectedBranchId(null)
+    setBalance(null)
   }
 
   return (
@@ -171,7 +385,14 @@ export default function RedemptionPage() {
                     )}
                   </div>
 
-                  {balance !== null && (
+                  {balanceLoading ? (
+                    <div className="p-4 bg-gray-50 rounded-lg flex items-center gap-2">
+                      <Loader />
+                      <Text variant="span" className="text-gray-600 text-sm">
+                        Loading balance...
+                      </Text>
+                    </div>
+                  ) : balance !== null ? (
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                         DashPro Balance
@@ -182,7 +403,16 @@ export default function RedemptionPage() {
                         </Text>
                       </div>
                     </div>
-                  )}
+                  ) : (!isAuthenticated && !phoneNumber) ||
+                    (isAuthenticated && vendorMobileMoney) ? (
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <Text variant="span" className="text-gray-600 text-sm">
+                        {!isAuthenticated && !phoneNumber
+                          ? 'Enter phone number to view balance'
+                          : 'Enter vendor mobile money number to view balance'}
+                      </Text>
+                    </div>
+                  ) : null}
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -223,26 +453,8 @@ export default function RedemptionPage() {
               {redemptionMethod === 'vendor_id' && (
                 <div className="space-y-6">
                   <Text variant="h3" weight="semibold" className="text-gray-900">
-                    Vendor ID Redemption
+                    Vendor Redemption
                   </Text>
-
-                  {/* TODO: Implement vendor ID search and branch selection */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Vendor ID <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="Enter vendor ID or search"
-                      value={selectedVendorId}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setSelectedVendorId(e.target.value)
-                      }
-                    />
-                    <p className="mt-2 text-sm text-gray-500">
-                      Use the search function to find vendors by name
-                    </p>
-                  </div>
 
                   {!isAuthenticated && (
                     <div>
@@ -260,58 +472,276 @@ export default function RedemptionPage() {
                     </div>
                   )}
 
-                  {/* Card type selection */}
+                  {/* Vendor search and selection */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Select Card Type <span className="text-red-500">*</span>
+                      Search Vendor by Name <span className="text-red-500">*</span>
                     </label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
-                        onClick={() => setCardType('dashpro')}
-                        className={`p-4 border-2 rounded-lg ${
-                          cardType === 'dashpro'
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200'
-                        }`}
-                      >
-                        DashPro
-                      </button>
-                      <button
-                        onClick={() => setCardType('dashgo')}
-                        className={`p-4 border-2 rounded-lg ${
-                          cardType === 'dashgo'
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200'
-                        }`}
-                      >
-                        DashGo
-                      </button>
-                      <button
-                        onClick={() => setCardType('dashx')}
-                        className={`p-4 border-2 rounded-lg ${
-                          cardType === 'dashx'
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200'
-                        }`}
-                      >
-                        DashX
-                      </button>
-                      <button
-                        onClick={() => setCardType('dashpass')}
-                        className={`p-4 border-2 rounded-lg ${
-                          cardType === 'dashpass'
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200'
-                        }`}
-                      >
-                        DashPass
-                      </button>
-                    </div>
+                    {!selectedVendor ? (
+                      <>
+                        <Combobox
+                          options={vendorOptions}
+                          value={selectedVendorId}
+                          onChange={(e: any) => {
+                            const vendorId = e.target.value
+                            if (vendorId) {
+                              handleVendorSelect(vendorId)
+                            }
+                          }}
+                          placeholder="Search for a vendor by name..."
+                          isLoading={isLoadingVendors}
+                        />
+                        {vendorSearch && vendors.length === 0 && !isLoadingVendors && (
+                          <p className="mt-2 text-sm text-gray-500">No vendors found</p>
+                        )}
+                      </>
+                    ) : (
+                      <div className="p-4 bg-gray-50 rounded-lg flex items-center justify-between">
+                        <div>
+                          <Text variant="span" weight="semibold" className="text-gray-900">
+                            {vendorName}
+                          </Text>
+                          {vendorCards.length > 0 && (
+                            <Text variant="span" className="text-gray-600 text-sm ml-2">
+                              ({vendorCards.length} card{vendorCards.length !== 1 ? 's' : ''}{' '}
+                              available)
+                            </Text>
+                          )}
+                        </div>
+                        <button
+                          onClick={handleResetVendor}
+                          className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  {/* TODO: Add branch selection when vendor is selected */}
-                  {/* TODO: Add amount input for DashPro and DashGo */}
-                  {/* TODO: Add card ID input for DashX and DashPass */}
+                  {/* Card type selection - only show if vendor is selected */}
+                  {selectedVendor && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Select Card Type <span className="text-red-500">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <button
+                            onClick={() => {
+                              setCardType('dashpro')
+                              setSelectedCard(null)
+                            }}
+                            className={`p-4 border-2 rounded-lg transition-colors ${
+                              cardType === 'dashpro'
+                                ? 'border-primary-500 bg-primary-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            DashPro
+                          </button>
+                          <button
+                            onClick={() => {
+                              setCardType('dashgo')
+                              setSelectedCard(null)
+                            }}
+                            className={`p-4 border-2 rounded-lg transition-colors ${
+                              cardType === 'dashgo'
+                                ? 'border-primary-500 bg-primary-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            DashGo
+                          </button>
+                          <button
+                            onClick={() => {
+                              setCardType('dashx')
+                              setSelectedCard(null)
+                            }}
+                            className={`p-4 border-2 rounded-lg transition-colors ${
+                              cardType === 'dashx'
+                                ? 'border-primary-500 bg-primary-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            DashX
+                          </button>
+                          <button
+                            onClick={() => {
+                              setCardType('dashpass')
+                              setSelectedCard(null)
+                            }}
+                            className={`p-4 border-2 rounded-lg transition-colors ${
+                              cardType === 'dashpass'
+                                ? 'border-primary-500 bg-primary-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            DashPass
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Show cards for selected card type (DashX and DashPass) */}
+                      {cardType && (cardType === 'dashx' || cardType === 'dashpass') && (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Select Card <span className="text-red-500">*</span>
+                          </label>
+                          {filteredCards.length === 0 ? (
+                            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <Text variant="span" className="text-yellow-800 text-sm">
+                                No {cardType} cards available for this vendor
+                              </Text>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
+                              {filteredCards.map((card) => (
+                                <button
+                                  key={card.card_id}
+                                  onClick={() => setSelectedCard(card)}
+                                  className={`p-4 border-2 rounded-lg text-left transition-colors ${
+                                    selectedCard?.card_id === card.card_id
+                                      ? 'border-primary-500 bg-primary-50'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <div>
+                                      <Text
+                                        variant="span"
+                                        weight="semibold"
+                                        className="text-gray-900"
+                                      >
+                                        {card.card_name}
+                                      </Text>
+                                      <Text
+                                        variant="span"
+                                        className="text-gray-600 text-sm block mt-1"
+                                      >
+                                        {card.currency} {card.card_price.toFixed(2)}
+                                      </Text>
+                                    </div>
+                                    {selectedCard?.card_id === card.card_id && (
+                                      <Icon
+                                        icon="bi:check-circle-fill"
+                                        className="text-primary-600 text-xl"
+                                      />
+                                    )}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Amount input for DashPro and DashGo */}
+                      {(cardType === 'dashpro' || cardType === 'dashgo') && (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Amount <span className="text-red-500">*</span>
+                          </label>
+                          <Input
+                            type="number"
+                            placeholder="Enter amount to redeem"
+                            value={amount}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                              handleAmountChange(e.target.value)
+                            }
+                          />
+                        </div>
+                      )}
+
+                      {/* Balance display */}
+                      {balanceLoading ? (
+                        <div className="p-4 bg-gray-50 rounded-lg flex items-center gap-2">
+                          <Loader />
+                          <Text variant="span" className="text-gray-600 text-sm">
+                            Loading balance...
+                          </Text>
+                        </div>
+                      ) : balance !== null ? (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Available Balance
+                          </label>
+                          <div className="p-4 bg-gray-50 rounded-lg">
+                            <Text variant="h4" weight="semibold" className="text-primary-600">
+                              GHS {balance.toFixed(2)}
+                            </Text>
+                          </div>
+                          {amount && parseFloat(amount) > balance && (
+                            <p className="mt-2 text-sm text-red-600">Insufficient balance</p>
+                          )}
+                          {amount && parseFloat(amount) <= balance && parseFloat(amount) > 0 && (
+                            <p className="mt-2 text-sm text-green-600">Amount valid</p>
+                          )}
+                        </div>
+                      ) : (
+                        cardType && (
+                          <div className="p-4 bg-gray-50 rounded-lg">
+                            <Text variant="span" className="text-gray-600 text-sm">
+                              {!isAuthenticated && !phoneNumber
+                                ? 'Enter phone number to view balance'
+                                : 'No balance available for this card type'}
+                            </Text>
+                          </div>
+                        )
+                      )}
+
+                      {/* Branch selection if multiple branches */}
+                      {selectedVendor.branches_with_cards &&
+                        selectedVendor.branches_with_cards.length > 1 && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Select Branch <span className="text-red-500">*</span>
+                            </label>
+                            <div className="space-y-2">
+                              {selectedVendor.branches_with_cards.map((branch: any) => (
+                                <button
+                                  key={branch.branch_id}
+                                  onClick={() => setSelectedBranchId(branch.branch_id)}
+                                  className={`w-full p-3 border-2 rounded-lg text-left transition-colors ${
+                                    selectedBranchId === branch.branch_id
+                                      ? 'border-primary-500 bg-primary-50'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
+                                  <Text variant="span" weight="semibold" className="text-gray-900">
+                                    {branch.branch_name}
+                                  </Text>
+                                  {branch.branch_location && (
+                                    <Text
+                                      variant="span"
+                                      className="text-gray-600 text-sm block mt-1"
+                                    >
+                                      {branch.branch_location}
+                                    </Text>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                      <Button
+                        variant="primary"
+                        onClick={handleRedeem}
+                        disabled={Boolean(
+                          !selectedVendor ||
+                            !cardType ||
+                            ((cardType === 'dashx' || cardType === 'dashpass') && !selectedCard) ||
+                            ((cardType === 'dashpro' || cardType === 'dashgo') &&
+                              (!amount || parseFloat(amount) <= 0)) ||
+                            (!isAuthenticated && !phoneNumber) ||
+                            (balance !== null && amount && parseFloat(amount) > balance),
+                        )}
+                        className="w-full"
+                      >
+                        Redeem
+                      </Button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -326,20 +756,64 @@ export default function RedemptionPage() {
               <div className="bg-gray-50 rounded-lg p-6 space-y-4">
                 <div className="flex justify-between">
                   <Text variant="span" className="text-gray-600">
-                    Redemption Amount:
+                    Redemption Method:
                   </Text>
                   <Text variant="span" weight="semibold" className="text-gray-900">
-                    GHS {parseFloat(amount).toFixed(2)}
+                    {redemptionMethod === 'vendor_mobile_money'
+                      ? 'Vendor Mobile Money'
+                      : 'Vendor Redemption'}
                   </Text>
                 </div>
+                {redemptionMethod === 'vendor_id' && cardType && (
+                  <div className="flex justify-between">
+                    <Text variant="span" className="text-gray-600">
+                      Card Type:
+                    </Text>
+                    <Text variant="span" weight="semibold" className="text-gray-900">
+                      {cardType.charAt(0).toUpperCase() + cardType.slice(1)}
+                    </Text>
+                  </div>
+                )}
+                {selectedCard && (
+                  <div className="flex justify-between">
+                    <Text variant="span" className="text-gray-600">
+                      Selected Card:
+                    </Text>
+                    <Text variant="span" weight="semibold" className="text-gray-900">
+                      {selectedCard.card_name}
+                    </Text>
+                  </div>
+                )}
+                {(cardType === 'dashpro' ||
+                  cardType === 'dashgo' ||
+                  redemptionMethod === 'vendor_mobile_money') && (
+                  <div className="flex justify-between">
+                    <Text variant="span" className="text-gray-600">
+                      Redemption Amount:
+                    </Text>
+                    <Text variant="span" weight="semibold" className="text-gray-900">
+                      GHS {parseFloat(amount || '0').toFixed(2)}
+                    </Text>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <Text variant="span" className="text-gray-600">
                     Vendor:
                   </Text>
                   <Text variant="span" weight="semibold" className="text-gray-900">
-                    {vendorName || selectedVendorId}
+                    {vendorName || 'N/A'}
                   </Text>
                 </div>
+                {balance !== null && (
+                  <div className="flex justify-between">
+                    <Text variant="span" className="text-gray-600">
+                      Available Balance:
+                    </Text>
+                    <Text variant="span" weight="semibold" className="text-gray-900">
+                      GHS {balance.toFixed(2)}
+                    </Text>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-4">
@@ -362,7 +836,19 @@ export default function RedemptionPage() {
                 Redemption Successful!
               </Text>
               <Text variant="p" className="text-gray-600">
-                GHS {parseFloat(amount).toFixed(2)} successfully redeemed to {vendorName}
+                {redemptionMethod === 'vendor_mobile_money' ? (
+                  <>
+                    GHS {parseFloat(amount || '0').toFixed(2)} successfully redeemed via vendor
+                    mobile money
+                  </>
+                ) : (
+                  <>
+                    {selectedCard
+                      ? `${selectedCard.card_name} successfully redeemed`
+                      : `GHS ${parseFloat(amount || '0').toFixed(2)} successfully redeemed`}{' '}
+                    at {vendorName}
+                  </>
+                )}
               </Text>
               {balance !== null && (
                 <div className="bg-gray-50 rounded-lg p-4">

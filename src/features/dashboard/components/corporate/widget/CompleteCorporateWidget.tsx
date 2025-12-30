@@ -10,7 +10,7 @@ export default function CompleteCorporateWidget() {
   const [isExpanded, setIsExpanded] = React.useState(false)
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
+
   const navigate = useNavigate()
 
   const addAccountParam = (path: string): string => {

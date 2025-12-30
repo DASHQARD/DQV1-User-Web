@@ -17,7 +17,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ options, id, error, selectedVal, handleChange, label, isRequired, name, maxLength }, ref) => {
+  (
+    { options, id, error, selectedVal, handleChange, label, isRequired, name, maxLength, disabled },
+    ref,
+  ) => {
     const code = useMemo(() => {
       if (!selectedVal) return ''
       // Handle both formats: "+233-559617908" or "+233559617908"
@@ -127,9 +130,11 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
     }, [selectedVal])
 
     useEffect(() => {
-      if (value) handleChange(countryCode + value)
-      else handleChange('')
-    }, [countryCode, value, handleChange])
+      if (!disabled && handleChange) {
+        if (value) handleChange(countryCode + value)
+        else handleChange('')
+      }
+    }, [countryCode, value, handleChange, disabled])
 
     const selectOption = (option: any) => {
       setQuery(() => '')
@@ -183,10 +188,14 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
             `flex gap-2 border border-gray-300 rounded-lg h-12 items-center px-3 relative`,
             `focus-within:border-primary-400`,
             error && 'border-red-500',
+            disabled && 'opacity-50 cursor-not-allowed bg-gray-50',
           )}
         >
           <div className={cn(`relative shrink-0`)}>
-            <div className={cn(`flex items-center gap-2 cursor-pointer`)} onClick={toggle}>
+            <div
+              className={cn(`flex items-center gap-2`, disabled ? 'cursor-not-allowed' : 'cursor-pointer')}
+              onClick={disabled ? undefined : toggle}
+            >
               {displayImage && (
                 <img
                   className="image shrink-0"
@@ -215,7 +224,7 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
                 <Icon icon="bi:caret-down-fill" className="size-4 text-gray-500" />
               </div>
             </div>
-            {isOpen && (
+            {isOpen && !disabled && (
               <div
                 className={cn(
                   `absolute left-0 top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-[200px] overflow-y-auto`,
@@ -253,8 +262,11 @@ export const BasePhoneInput = React.forwardRef<HTMLInputElement, InputProps>(
             className={cn(`flex-1 font-light bg-transparent outline-none text-sm`)}
             name={name}
             placeholder="Enter number"
+            disabled={disabled}
             onChange={(e) => {
-              if (isNumber.test(e.target.value) || e.target.value === '') setValue(e.target.value)
+              if (!disabled && (isNumber.test(e.target.value) || e.target.value === '')) {
+                setValue(e.target.value)
+              }
             }}
           />
         </div>

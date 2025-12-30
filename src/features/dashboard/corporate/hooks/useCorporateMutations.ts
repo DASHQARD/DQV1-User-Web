@@ -44,10 +44,12 @@ export function corporateMutations() {
 
   function useCreateVendorService() {
     const { success, error } = useToast()
+    const queryClient = useQueryClient()
     return useMutation({
       mutationFn: createVendor,
-      onSuccess: () => {
-        success('Vendor created successfully')
+      onSuccess: (response: any) => {
+        success(response?.message || 'Vendor created successfully')
+        queryClient.invalidateQueries({ queryKey: ['user-profile'] })
       },
 
       onError: (err: any) => {
@@ -279,7 +281,7 @@ export function corporateMutations() {
       }) => updateBusinessDetails(data),
       onSuccess: (response: any) => {
         success(response?.message || 'Business details updated successfully')
-        queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+        queryClient.invalidateQueries()
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to update business details. Please try again.')

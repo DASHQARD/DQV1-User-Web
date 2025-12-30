@@ -21,14 +21,6 @@ export default function Purchase() {
     paramName: MODALS.BULK_EMPLOYEE_PURCHASE.PARAM_NAME,
   })
 
-  // const individualPurchaseModal = usePersistedModalState({
-  //   paramName: MODALS.PURCHASE.INDIVIDUAL.ROOT,
-  // })
-
-  // const handleIndividualPurchase = () => {
-  //   individualPurchaseModal.openModal(MODALS.PURCHASE.INDIVIDUAL.CREATE)
-  // }
-
   const handleBulkPurchase = () => {
     bulkPurchaseModal.openModal(MODALS.BULK_EMPLOYEE_PURCHASE.CHILDREN.CREATE)
   }

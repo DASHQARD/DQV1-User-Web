@@ -12,6 +12,7 @@ import {
 } from '@/components'
 import { useVendorMutations } from '../../hooks/useVendorMutations'
 import { GHANA_BANKS } from '@/assets/data/banks'
+import { useCountriesData } from '@/hooks'
 
 const PaymentDetailsSchema = z
   .object({
@@ -91,6 +92,29 @@ export function PaymentDetailsSettings() {
     value: bank.name,
   }))
 
+  const { countries: phoneCountries } = useCountriesData()
+
+  // Convert international phone format (+233...) to local format (0...)
+  const convertPhoneToLocalFormat = (phoneNumber: string): string => {
+    if (!phoneNumber) return ''
+
+    // Remove all non-digit characters
+    const digitsOnly = phoneNumber.replace(/\D/g, '')
+
+    // If it starts with 233 (Ghana country code), replace with 0
+    if (digitsOnly.startsWith('233')) {
+      return '0' + digitsOnly.slice(3)
+    }
+
+    // If it already starts with 0, return as is
+    if (digitsOnly.startsWith('0')) {
+      return digitsOnly
+    }
+
+    // Otherwise, assume it's missing the leading 0
+    return '0' + digitsOnly
+  }
+
   const onSubmit = async (data: z.infer<typeof PaymentDetailsSchema>) => {
     try {
       // Prepare payload matching API structure
@@ -100,7 +124,8 @@ export function PaymentDetailsSettings() {
 
       if (data.payment_method === 'mobile_money') {
         payload.mobile_money_provider = data.mobile_money_provider
-        payload.mobile_money_number = data.mobile_money_number
+        // Convert phone number from international format to local format
+        payload.mobile_money_number = convertPhoneToLocalFormat(data.mobile_money_number || '')
       } else if (data.payment_method === 'bank') {
         payload.bank_name = data.bank_name
         payload.branch = data.branch
@@ -169,19 +194,27 @@ export function PaymentDetailsSettings() {
             />
           </div>
 
-          <div>
+          <div className="flex flex-col gap-1">
             <Controller
               control={form.control}
               name="mobile_money_number"
-              render={({ field, fieldState: { error } }) => (
-                <BasePhoneInput
-                  label="Mobile Money Number"
-                  value={field.value || ''}
-                  onChange={field.onChange}
-                  error={error?.message}
-                />
-              )}
+              render={({ field: { onChange } }) => {
+                return (
+                  <BasePhoneInput
+                    placeholder="Enter number eg. 5512345678"
+                    options={phoneCountries}
+                    maxLength={9}
+                    handleChange={onChange}
+                    label="Phone Number"
+                    error={form.formState.errors.mobile_money_number?.message}
+                  />
+                )
+              }}
             />
+            <p className="text-xs text-gray-500">
+              Please enter your number in the format:{' '}
+              <span className="font-medium">5512345678</span>
+            </p>
           </div>
         </div>
       )}

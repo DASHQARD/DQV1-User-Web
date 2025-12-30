@@ -30,9 +30,51 @@ export default function VendorSidebar() {
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
 
-  const displayName = (user as any)?.fullname || (user as any)?.name || 'User'
-  const discoveryScore = 0 // TODO: Get actual discovery score from API
   const userType = (user as any)?.user_type
+  const isBranchManager = userType === 'branch'
+
+  // Get branch name and branch manager name for branch managers
+  const branchName = React.useMemo(() => {
+    if (!isBranchManager) return null
+    return userProfileData?.branches?.[0]?.branch_name || null
+  }, [isBranchManager, userProfileData?.branches])
+
+  const branchManagerName = React.useMemo(() => {
+    if (!isBranchManager) return null
+    return userProfileData?.branches?.[0]?.branch_manager_name || null
+  }, [isBranchManager, userProfileData?.branches])
+
+  // Get display name - for branch managers, use branch_manager_name; otherwise use user's fullname
+  const displayName = React.useMemo(() => {
+    if (isBranchManager && branchManagerName) {
+      return branchManagerName
+    }
+    return (user as any)?.fullname || (user as any)?.name || 'User'
+  }, [isBranchManager, branchManagerName, user])
+
+  // Calculate discovery score based on onboarding progress
+  const discoveryScore = React.useMemo(() => {
+    const progress = userProfileData?.onboarding_progress
+    if (!progress) return 0
+
+    // For branch managers, only count personal details and upload ID
+    // For regular vendors, count all onboarding steps
+    const steps = isBranchManager
+      ? [progress.personal_details_completed, progress.upload_id_completed]
+      : [
+          progress.personal_details_completed,
+          progress.upload_id_completed,
+          progress.business_details_completed,
+          progress.business_documents_completed,
+          progress.branch_details_completed,
+          progress.payment_details_completed,
+        ]
+
+    const completedCount = steps.filter(Boolean).length
+    const totalCount = steps.length
+    return Math.round((completedCount / totalCount) * 100)
+  }, [userProfileData?.onboarding_progress, isBranchManager])
+
   // Check if user can access corporate workspace (corporate_vendor or corporate super admin)
   const canAccessCorporate = userType === 'corporate_vendor' || userType === 'corporate super admin'
 
@@ -146,13 +188,31 @@ export default function VendorSidebar() {
   }, [vendorsCreatedByCorporate, currentVendorId])
 
   // Get current vendor information
-  const vendorName = currentVendor?.vendor_name || currentVendor?.business_name || 'Vendor Account'
+  const vendorName = React.useMemo(() => {
+    // For branch managers, show branch name
+    if (isBranchManager && branchName) {
+      return branchName
+    }
+    // For regular vendors, show vendor name
+    return (
+      currentVendor?.vendor_name ||
+      currentVendor?.business_name ||
+      userProfileData?.business_details?.[0]?.name ||
+      'Vendor Account'
+    )
+  }, [isBranchManager, branchName, currentVendor, userProfileData?.business_details])
   const vendorGvid = currentVendor?.gvid || ''
   const [currentVendorLogoUrl, setCurrentVendorLogoUrl] = React.useState<string | null>(null)
 
   // Fetch current vendor logo presigned URL
   React.useEffect(() => {
-    if (!currentVendor?.vendor_logo) {
+    // First try to get logo from currentVendor (when switching between vendor accounts)
+    // Otherwise, get it from userProfileData business_documents (for current vendor account)
+    const logoSource = currentVendor?.vendor_logo
+      ? currentVendor.vendor_logo
+      : userProfileData?.business_documents?.find((doc: any) => doc.type === 'logo')?.file_url
+
+    if (!logoSource) {
       setCurrentVendorLogoUrl(null)
       return
     }
@@ -161,7 +221,7 @@ export default function VendorSidebar() {
 
     const loadVendorLogo = async () => {
       try {
-        const url = await fetchPresignedURL(currentVendor.vendor_logo)
+        const url = await fetchPresignedURL(logoSource)
         if (!cancelled) {
           setCurrentVendorLogoUrl(url)
         }
@@ -178,7 +238,7 @@ export default function VendorSidebar() {
     return () => {
       cancelled = true
     }
-  }, [currentVendor?.vendor_logo, fetchPresignedURL])
+  }, [currentVendor?.vendor_logo, userProfileData?.business_documents, fetchPresignedURL])
 
   // Branches state
   const [isBranchesExpanded, setIsBranchesExpanded] = React.useState(false)
@@ -271,6 +331,11 @@ export default function VendorSidebar() {
                 <Text variant="span" weight="semibold" className="block text-sm truncate">
                   {vendorName}
                 </Text>
+                {vendorGvid && (
+                  <Text variant="span" className="block text-xs text-gray-500 truncate">
+                    {vendorGvid}
+                  </Text>
+                )}
               </div>
             </div>
           </div>
@@ -472,7 +537,7 @@ export default function VendorSidebar() {
                     </Text>
                   </div>
                 </div>
-                {accountMenuContent && (
+                {!isBranchManager && accountMenuContent && (
                   <div className="flex items-center gap-2 mb-4">{accountMenuContent}</div>
                 )}
               </div>
@@ -483,29 +548,29 @@ export default function VendorSidebar() {
               {/* Bottom Section - Discovery Score */}
               <div className="flex items-center gap-3">
                 {/* Circular Score Indicator */}
-                <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
+                <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
                   <svg
                     className="absolute inset-0 -rotate-90"
-                    width="40"
-                    height="40"
-                    viewBox="0 0 40 40"
+                    width="48"
+                    height="48"
+                    viewBox="0 0 48 48"
                   >
                     {/* Background circle */}
-                    <circle cx="20" cy="20" r="17" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-                    {/* Progress ring (partial purple ring) */}
+                    <circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                    {/* Progress ring */}
                     <circle
-                      cx="20"
-                      cy="20"
-                      r="17"
+                      cx="24"
+                      cy="24"
+                      r="20"
                       fill="none"
                       stroke="#402D87"
                       strokeWidth="3"
-                      strokeDasharray={`${2 * Math.PI * 17 * 0.25} ${2 * Math.PI * 17}`}
+                      strokeDasharray={`${2 * Math.PI * 20 * (discoveryScore / 100)} ${2 * Math.PI * 20}`}
                       strokeLinecap="round"
                     />
                   </svg>
-                  <span className="text-sm font-semibold text-gray-700 relative z-10">
-                    {discoveryScore}
+                  <span className="text-xs font-semibold text-gray-700 relative z-10 leading-none">
+                    {discoveryScore}%
                   </span>
                 </div>
                 <Text variant="span" className="text-sm text-gray-600">
@@ -515,11 +580,20 @@ export default function VendorSidebar() {
             </div>
           </div>
         )}
-        {isCollapsed && accountMenuContent && (
+        {isCollapsed && !isBranchManager && accountMenuContent && (
           <div className="flex items-center justify-center w-full p-4">{accountMenuContent}</div>
         )}
         <ul className="py-2 px-3">
-          {VENDOR_NAV_ITEMS.map((section) => (
+          {VENDOR_NAV_ITEMS.filter((section) => {
+            // Hide Branch Management and Management sections for branch managers
+            if (
+              isBranchManager &&
+              (section.section === 'Branch Management' || section.section === 'Management')
+            ) {
+              return false
+            }
+            return true
+          }).map((section) => (
             <React.Fragment key={section.section}>
               {!isCollapsed && (
                 <li className="py-5 px-5 mt-5 first:mt-3">
@@ -740,29 +814,31 @@ export default function VendorSidebar() {
 
       {/* Footer - Settings and Log Out */}
       <div className="border-t border-gray-200 p-3 space-y-2">
-        {/* Settings */}
-        <Link
-          to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS)}
-          className={cn(
-            'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
-            isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
-              'text-[#402D87] font-bold bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
-            !isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
-              'hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.04)]',
-            isCollapsed && 'justify-center px-2',
-          )}
-        >
-          <Icon
-            icon="bi:gear"
+        {/* Settings - Hide for branch managers */}
+        {!isBranchManager && (
+          <Link
+            to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS)}
             className={cn(
-              'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-              isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) && 'text-[#402D87]',
+              'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
+              isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
+                'text-[#402D87] font-bold bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
               !isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
-                'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                'hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.04)]',
+              isCollapsed && 'justify-center px-2',
             )}
-          />
-          {!isCollapsed && <span>Settings</span>}
-        </Link>
+          >
+            <Icon
+              icon="bi:gear"
+              className={cn(
+                'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) && 'text-[#402D87]',
+                !isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
+                  'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+              )}
+            />
+            {!isCollapsed && <span>Settings</span>}
+          </Link>
+        )}
 
         {/* Log Out */}
         {isCollapsed ? (

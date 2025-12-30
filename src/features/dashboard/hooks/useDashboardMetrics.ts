@@ -39,9 +39,9 @@ export function useDashboardMetrics() {
         // Mock data for now
         setTimeout(() => {
           setMetrics({
-            redemptionBalance: 1250.75,
-            totalPurchased: 5430.5,
-            totalRedeemed: 4179.75,
+            redemptionBalance: 0.0,
+            totalPurchased: 0.0,
+            totalRedeemed: 0.0,
           })
           setRecentPurchases([
             { id: '1', amount: 100, updated_at: new Date(Date.now() - 3600000).toISOString() },

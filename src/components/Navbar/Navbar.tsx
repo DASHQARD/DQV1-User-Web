@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Logo from '../../assets/images/logo-placeholder.png'
 import { ROUTES } from '../../utils/constants'
@@ -8,6 +8,7 @@ import { useCartStore } from '@/stores/cart'
 import { useAuthStore } from '@/stores'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { CartPopoverContent } from '@/components/CartModal'
+import { userProfile } from '@/hooks'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -15,9 +16,154 @@ export default function Navbar() {
   // const { cartItems } = useCart()
   const { isAuthenticated, user, logout } = useAuthStore()
   const [accountPopoverOpen, setAccountPopoverOpen] = useState(false)
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
   // const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0)
   const displayName =
     user?.fullname || user?.name || user?.email?.split('@')[0] || user?.username || 'there'
+
+  // Get user type and status
+  const userType = (user as any)?.user_type || userProfileData?.user_type
+  const userStatus = (user as any)?.status || userProfileData?.status
+  const isCorporateAdmin = userType === 'corporate admin'
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
+  const isCorporate = userType === 'corporate' || isCorporateSuperAdmin
+  const isVendor = userType === 'vendor' || userType === 'corporate_vendor'
+  const isBranchManager = userType === 'branch'
+  const isApprovedOrVerified = userStatus === 'approved' || userStatus === 'verified'
+
+  // Menu items based on user type
+  const menuItems = useMemo(() => {
+    // Branch manager menu items
+    if (isBranchManager) {
+      return [
+        {
+          label: 'Dashboard',
+          icon: 'bi:speedometer2',
+          path: `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor`,
+        },
+        {
+          label: 'My Experience',
+          icon: 'bi:briefcase-fill',
+          path: `${ROUTES.IN_APP.DASHBOARD.VENDOR.EXPERIENCE}?account=vendor`,
+        },
+        {
+          label: 'Redemptions',
+          icon: 'bi:arrow-left-right',
+          path: `${ROUTES.IN_APP.DASHBOARD.VENDOR.REDEMPTIONS}?account=vendor`,
+        },
+      ]
+    }
+
+    // Vendor menu items
+    if (isVendor) {
+      return [
+        {
+          label: 'Dashboard',
+          icon: 'bi:speedometer2',
+          path: `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor`,
+        },
+        {
+          label: 'My Experience',
+          icon: 'bi:briefcase-fill',
+          path: `${ROUTES.IN_APP.DASHBOARD.VENDOR.EXPERIENCE}?account=vendor`,
+        },
+        {
+          label: 'Branches',
+          icon: 'bi:building',
+          path: `${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}?account=vendor`,
+        },
+        {
+          label: 'Redemptions',
+          icon: 'bi:arrow-left-right',
+          path: `${ROUTES.IN_APP.DASHBOARD.VENDOR.REDEMPTIONS}?account=vendor`,
+        },
+      ]
+    }
+
+    // Corporate menu items
+    if (isCorporate || isCorporateAdmin) {
+      const items = [
+        {
+          label: 'Dashboard',
+          icon: 'bi:grid',
+          path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME}?account=corporate`,
+        },
+        {
+          label: 'Transactions',
+          icon: 'bi:receipt',
+          path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.TRANSACTIONS}?account=corporate`,
+        },
+      ]
+
+      // Add purchase, requests if approved/verified
+      if (isApprovedOrVerified) {
+        items.push(
+          {
+            label: 'Purchase',
+            icon: 'bi:gift',
+            path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE}?account=corporate`,
+          },
+          {
+            label: 'Requests',
+            icon: 'bi:clipboard-check',
+            path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS}?account=corporate`,
+          },
+        )
+      }
+
+      items.push({
+        label: 'Audit Logs',
+        icon: 'bi:journal-text',
+        path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.AUDIT_LOGS}?account=corporate`,
+      })
+
+      // Only show Admins and Notifications for corporate super admin (not corporate admin)
+      if (isCorporateSuperAdmin && isApprovedOrVerified) {
+        items.push(
+          {
+            label: 'Admins',
+            icon: 'bi:people-fill',
+            path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS}?account=corporate`,
+          },
+          {
+            label: 'Notifications',
+            icon: 'bi:bell-fill',
+            path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS}?account=corporate`,
+          },
+        )
+      }
+
+      items.push({
+        label: 'Recipients',
+        icon: 'bi:person-lines-fill',
+        path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.RECIPIENTS}?account=corporate`,
+      })
+
+      return items
+    }
+
+    // Regular user menu items (default)
+    return [
+      {
+        label: 'Dashboard',
+        icon: 'bi:grid',
+        path: ROUTES.IN_APP.DASHBOARD.HOME,
+      },
+      {
+        label: 'My Orders',
+        icon: 'bi:box',
+        path: ROUTES.IN_APP.DASHBOARD.ORDERS,
+      },
+    ]
+  }, [
+    isCorporateAdmin,
+    isCorporateSuperAdmin,
+    isCorporate,
+    isVendor,
+    isBranchManager,
+    isApprovedOrVerified,
+  ])
 
   const navItems = [
     {
@@ -108,20 +254,7 @@ export default function Navbar() {
                   </p>
                 </div>
                 <div className="flex flex-col p-1 gap-1 text-sm text-gray-800">
-                  {[
-                    { label: 'My orders', icon: 'bi:box', path: ROUTES.IN_APP.DASHBOARD.ORDERS },
-                    {
-                      label: 'My Info',
-                      icon: 'bi:pencil-square',
-                      path: ROUTES.IN_APP.DASHBOARD.COMPLIANCE.PROFILE_INFORMATION,
-                    },
-                    { label: 'Notifications', icon: 'bi:bell', path: '/dashboard/notifications' },
-                    {
-                      label: 'Gift Cards',
-                      icon: 'bi:gift',
-                      path: ROUTES.IN_APP.DASHBOARD.REDEEM,
-                    },
-                  ].map((item) => (
+                  {menuItems.map((item) => (
                     <button
                       type="button"
                       key={item.label}

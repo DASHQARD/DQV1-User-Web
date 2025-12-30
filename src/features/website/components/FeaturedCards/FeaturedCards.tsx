@@ -6,6 +6,7 @@ import { usePublicCatalog } from '../../hooks/website'
 export const FeaturedCards = () => {
   const navigate = useNavigate()
   const { publicCards, isLoading } = usePublicCatalog()
+  console.log('publicCards', publicCards)
 
   return (
     <section className="py-12">

@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { FileUploader, Input, Combobox, Button, Text } from '@/components'
 import { useUploadFiles } from '@/hooks'
 import { useToast } from '@/hooks'
-import { usePersistedModalState } from '@/hooks'
+import { usePersistedModalState, userProfile } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { useAuthStore } from '@/stores'
 import { useVendorMutations, vendorQueries } from '@/features'
@@ -18,6 +18,8 @@ export default function CreateExperienceForm() {
   const { mutateAsync: createExperience, isPending: isCreating } = useCreateExperienceService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
   const { user } = useAuthStore()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
   const { useBranchesService } = vendorQueries()
   const { data: branches } = useBranchesService()
 
@@ -37,7 +39,7 @@ export default function CreateExperienceForm() {
   >([])
 
   const userType = (user as any)?.user_type
-  const isBranchManager = userType === 'branch_manager'
+  const isBranchManager = userType === 'branch'
   // const isVendor = userType === 'vendor' || userType === 'corporate_vendor'
   // const isCorporate = userType === 'corporate'
 
@@ -62,6 +64,20 @@ export default function CreateExperienceForm() {
   const isPending = isCreating || isUploading
 
   const isModalOpen = modal.isModalOpen(MODALS.EXPERIENCE.CREATE)
+
+  // Auto-select branch for branch managers
+  useEffect(() => {
+    if (isBranchManager && userProfileData?.branches?.[0]?.id && isModalOpen) {
+      const branchId = Number(userProfileData.branches[0].id)
+      setSelectedBranches([branchId])
+      setSelectedBranchOptions([
+        {
+          label: `${userProfileData.branches[0].branch_name} - ${userProfileData.branches[0].branch_location}`,
+          value: String(branchId),
+        },
+      ])
+    }
+  }, [isBranchManager, userProfileData?.branches, isModalOpen])
 
   useEffect(() => {
     if (!isModalOpen) {
@@ -304,7 +320,7 @@ export default function CreateExperienceForm() {
       </div>
 
       {/* Branch Selection */}
-      {branchesArray.length > 0 && (
+      {branchesArray.length > 0 && !isBranchManager && (
         <div className="border-t border-gray-200 pt-4">
           <Combobox
             label="Select Branches"
@@ -322,12 +338,23 @@ export default function CreateExperienceForm() {
                 : `${selectedBranchOptions.length} branch${selectedBranchOptions.length !== 1 ? 'es' : ''} selected`}
             </Text>
           )}
-          {isBranchManager && (
-            <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">
-              <strong>Note:</strong> Experiences created by branch managers require vendor admin
-              approval before they become active.
-            </p>
-          )}
+        </div>
+      )}
+
+      {/* Branch info for branch managers */}
+      {isBranchManager && userProfileData?.branches?.[0] && (
+        <div className="border-t border-gray-200 pt-4">
+          <Text as="p" className="text-sm font-medium text-gray-700 mb-2">
+            Branch
+          </Text>
+          <Text as="p" className="text-sm text-gray-600">
+            {userProfileData.branches[0].branch_name} -{' '}
+            {userProfileData.branches[0].branch_location}
+          </Text>
+          <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">
+            <strong>Note:</strong> Experiences created by branch managers require vendor admin
+            approval before they become active.
+          </p>
         </div>
       )}
 

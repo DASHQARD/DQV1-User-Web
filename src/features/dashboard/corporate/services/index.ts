@@ -81,11 +81,11 @@ export const getCorporatePaymentDetails = async () => {
 }
 
 export const getAllCorporatePayments = async () => {
-  return await getList(`/payments`)
+  return await getList(`/payments/users`)
 }
 
 export const getPaymentById = async (id: string | number): Promise<any> => {
-  return await getList(`/payments/${id}`)
+  return await getList(`/payments/users/${id}`)
 }
 
 export const addRecipient = async (data: CreateRecipientPayload): Promise<any> => {

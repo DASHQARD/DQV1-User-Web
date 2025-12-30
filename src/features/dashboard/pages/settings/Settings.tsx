@@ -5,7 +5,6 @@ import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { cn } from '@/libs/clsx'
 import { BusinessDetailsSettings } from './BusinessDetailsSettings'
-import { PaymentDetailsSettings } from './PaymentDetailsSettings'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -44,11 +43,6 @@ export default function Settings() {
       key: 'business-details' as const,
       component: () => <BusinessDetailsSettings />,
       label: 'Business Details',
-    },
-    {
-      key: 'payment-details' as const,
-      component: () => <PaymentDetailsSettings />,
-      label: 'Payment Details',
     },
   ]
 

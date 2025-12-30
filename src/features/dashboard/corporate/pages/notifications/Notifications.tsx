@@ -90,16 +90,6 @@ export default function Notifications() {
       label: 'All',
       count: pendingPaymentNotifications.length + pendingExperienceApprovals.length,
     },
-    {
-      id: 'payment-changes' as NotificationTab,
-      label: 'Payment Changes',
-      count: pendingPaymentNotifications.length,
-    },
-    {
-      id: 'experience-approvals' as NotificationTab,
-      label: 'Experience Approvals',
-      count: pendingExperienceApprovals.length,
-    },
   ]
 
   const isLoading = isLoadingPayments || isLoadingExperiences

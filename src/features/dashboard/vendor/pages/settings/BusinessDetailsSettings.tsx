@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button, Input, CreatableCombobox } from '@/components'
 import { useVendorMutations } from '../../hooks/useVendorMutations'
-import { userProfile } from '@/hooks'
+import { userProfile, useCountriesData } from '@/hooks'
 import { BasePhoneInput } from '@/components'
 
 const UpdateBusinessDetailsSchema = z.object({
@@ -23,6 +23,11 @@ export function BusinessDetailsSettings() {
   const { data: userProfileData } = useGetUserProfileService()
   const { useUpdateBusinessDetailsService } = useVendorMutations()
   const { mutateAsync: updateBusinessDetails, isPending } = useUpdateBusinessDetailsService()
+  const { countries: phoneCountries } = useCountriesData()
+
+  // Check if user status is approved or verified - if so, disable all inputs
+  const isApproved =
+    userProfileData?.status === 'approved' || userProfileData?.status === 'verified'
 
   type FormData = z.input<typeof UpdateBusinessDetailsSchema>
   const form = useForm<FormData>({
@@ -76,9 +81,9 @@ export function BusinessDetailsSettings() {
             placeholder="Enter business name"
             {...form.register('name')}
             error={form.formState.errors.name?.message}
+            disabled={isApproved}
           />
         </div>
-
         <div>
           <Controller
             control={form.control}
@@ -99,24 +104,33 @@ export function BusinessDetailsSettings() {
                 }}
                 error={error?.message}
                 placeholder="Select business type"
+                isDisabled={isApproved}
               />
             )}
           />
         </div>
 
-        <div>
+        <div className="flex flex-col gap-1">
           <Controller
             control={form.control}
             name="phone"
-            render={({ field, fieldState: { error } }) => (
-              <BasePhoneInput
-                label="Phone Number"
-                value={field.value || ''}
-                onChange={field.onChange}
-                error={error?.message}
-              />
-            )}
+            render={({ field: { onChange } }) => {
+              return (
+                <BasePhoneInput
+                  placeholder="Enter number eg. 5512345678"
+                  options={phoneCountries}
+                  maxLength={9}
+                  handleChange={onChange}
+                  label="Phone Number"
+                  error={form.formState.errors.phone?.message}
+                  disabled={isApproved}
+                />
+              )
+            }}
           />
+          <p className="text-xs text-gray-500">
+            Please enter your number in the format: <span className="font-medium">5512345678</span>
+          </p>
         </div>
 
         <div>
@@ -126,39 +140,40 @@ export function BusinessDetailsSettings() {
             placeholder="Enter email address"
             {...form.register('email')}
             error={form.formState.errors.email?.message}
+            disabled={isApproved}
           />
         </div>
-
         <div>
           <Input
             label="Street Address"
             placeholder="Enter street address"
             {...form.register('street_address')}
             error={form.formState.errors.street_address?.message}
+            disabled={isApproved}
           />
         </div>
-
         <div>
           <Input
             label="Digital Address"
             placeholder="Enter digital address (optional)"
             {...form.register('digital_address')}
             error={form.formState.errors.digital_address?.message}
+            disabled={isApproved}
           />
         </div>
-
         <div>
           <Input
             label="Registration Number"
             placeholder="Enter registration number"
             {...form.register('registration_number')}
             error={form.formState.errors.registration_number?.message}
+            disabled={isApproved}
           />
         </div>
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-        <Button type="submit" variant="secondary" loading={isPending}>
+        <Button type="submit" variant="secondary" loading={isPending} disabled={isApproved}>
           Save Changes
         </Button>
       </div>

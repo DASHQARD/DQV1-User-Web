@@ -22,6 +22,7 @@ export default function DashQards() {
   const { publicCards, query, setQuery, cardTabs, priceRanges } = usePublicCatalog()
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { data: vendorsResponse } = usePublicVendorsService({ limit: 100 })
+  console.log('vendorsResponse', vendorsResponse)
 
   // Extract vendors from response - VendorDetailsResponse is already an array
   const vendors = useMemo(() => {
@@ -30,7 +31,7 @@ export default function DashQards() {
     return vendorsData.map((vendor: any) => ({
       id: vendor.id || vendor.vendor_id,
       vendor_id: vendor.vendor_id,
-      name: vendor.branch_name || vendor.vendor_name || 'Unknown Vendor',
+      name: vendor.business_name || vendor.branch_name || vendor.vendor_name || 'Unknown Vendor',
     }))
   }, [vendorsResponse])
 

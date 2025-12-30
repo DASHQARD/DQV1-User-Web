@@ -1,17 +1,5 @@
 import React from 'react'
-import {
-  Button,
-  FileUploader,
-  Modal,
-  Text,
-  Input,
-  Combobox,
-  RadioGroup,
-  RadioGroupItem,
-  Checkbox,
-  Tabs,
-  Loader,
-} from '@/components'
+import { Button, FileUploader, Modal, Text, Input, Checkbox, Tabs, Loader } from '@/components'
 import { DebouncedSearch } from '@/components/SearchBox'
 import { CardItems } from '@/features/website/components/CardItems/CardItems'
 import { VendorItems } from '@/features/website/components/VendorItems/VendorItems'
@@ -22,13 +10,9 @@ import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
 import { corporateQueries, corporateMutations } from '@/features/dashboard/corporate/hooks'
 import { getCarts } from '@/features/dashboard/corporate/services'
-import { vendorQueries } from '@/features/dashboard/vendor/hooks'
 import { formatCurrency } from '@/utils/format'
-import { Controller, useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { GHANA_BANKS } from '@/assets/data/banks'
 import { useQueryClient } from '@tanstack/react-query'
+import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
 
 type RecipientRow = {
   id?: number
@@ -37,49 +21,6 @@ type RecipientRow = {
   phone: string
   message?: string
 }
-
-const PaymentDetailsSchema = z
-  .object({
-    payment_method: z.enum(['mobile_money', 'bank']),
-    mobile_money_provider: z.string().optional(),
-    mobile_money_number: z.string().optional(),
-    bank_name: z.string().optional(),
-    branch: z.string().optional(),
-    account_name: z.string().optional(),
-    account_number: z.string().optional(),
-    swift_code: z.string().optional(),
-    sort_code: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.payment_method === 'mobile_money') {
-        return !!(data.mobile_money_provider && data.mobile_money_number)
-      }
-      return true
-    },
-    {
-      message: 'Mobile Money Provider and Mobile Money Number are required',
-      path: ['mobile_money_provider'],
-    },
-  )
-  .refine(
-    (data) => {
-      if (data.payment_method === 'bank') {
-        return !!(
-          data.bank_name &&
-          data.account_number &&
-          data.account_name &&
-          data.sort_code &&
-          data.swift_code
-        )
-      }
-      return true
-    },
-    {
-      message: 'All bank details are required',
-      path: ['bank_name'],
-    },
-  )
 
 export function BulkPurchaseEmployees() {
   const modal = usePersistedModalState({
@@ -144,30 +85,23 @@ export function BulkPurchaseEmployeesModal({
     useCreateDashGoAndAssignService,
     useCreateDashProAndAssignService,
     useAddToCartService,
-    useAddPaymentDetailsService,
     useCheckoutService,
   } = corporateMutations()
-  const {
-    useGetCardsService,
-    useGetCartsService,
-    useGetPaymentDetailsService,
-    useGetAllRecipientsService,
-  } = corporateQueries()
-  const { useGetAllVendorsDetailsService, useBranchesService } = vendorQueries()
+  const { useGetCartsService, useGetAllRecipientsService } = corporateQueries()
 
   const uploadMutation = useUploadBulkRecipientsService()
   const assignCardToRecipientsMutation = useAssignCardToRecipientsService()
   const createDashGoMutation = useCreateDashGoAndAssignService()
   const createDashProMutation = useCreateDashProAndAssignService()
   const addToCartMutation = useAddToCartService()
-  const addPaymentMutation = useAddPaymentDetailsService()
   const checkoutMutation = useCheckoutService()
 
-  const { data: cardsResponse, isLoading: isLoadingCards } = useGetCardsService()
-  const { data: vendorsResponse, isLoading: isLoadingVendors } = useGetAllVendorsDetailsService()
-  const { data: branchesResponse } = useBranchesService()
+  const { usePublicVendorsService } = usePublicCatalogQueries()
+  const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService()
+  console.log('vendorsResponse', vendorsResponse)
+  const { usePublicCardsService } = usePublicCatalogQueries()
+  const { data: cardsResponse, isLoading: isLoadingCards } = usePublicCardsService()
   const { data: cartsResponse } = useGetCartsService()
-  const { data: paymentDetailsResponse } = useGetPaymentDetailsService()
   const { refetch: refetchRecipients } = useGetAllRecipientsService()
 
   // Filter past purchases (completed carts)
@@ -178,16 +112,28 @@ export function BulkPurchaseEmployeesModal({
     return vendorsData?.map((vendor: any) => ({
       id: vendor.vendor_id,
       vendor_id: String(vendor.vendor_id),
-      branch_name: vendor.vendor_name || vendor.business_name || 'Unknown Vendor',
-      shops: parseInt(vendor.branch_count || '0', 10),
+      branch_name: vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
+      shops: vendor.branches_with_cards?.length || 0,
       rating: 0,
     }))
   }, [vendorsResponse])
 
-  // Extract cards from API response
+  // Store full vendor data for later use (branches_with_cards)
+  const vendorsDataMap = React.useMemo(() => {
+    const vendorsData = vendorsResponse || []
+    const map = new Map()
+    vendorsData.forEach((vendor: any) => {
+      if (vendor.vendor_id) {
+        map.set(vendor.vendor_id, vendor)
+      }
+    })
+    return map
+  }, [vendorsResponse])
+
+  // Extract cards from API response (including vendor_cards from vendor data)
   const allCards = React.useMemo(() => {
-    const cardsData = cardsResponse?.data || []
-    return cardsData.map((card: any) => ({
+    const cardsData = cardsResponse || []
+    const cardsFromResponse = cardsData.map((card: any) => ({
       id: card.card_id || card.id,
       card_id: card.card_id || card.id,
       product: card.product,
@@ -203,7 +149,70 @@ export function BulkPurchaseEmployeesModal({
       images: card.images || [],
       issue_date: card.issue_date,
     }))
-  }, [cardsResponse])
+
+    // Also include cards from vendor_cards and branches_with_cards in vendor data
+    const vendorsData = vendorsResponse || []
+    const cardsFromVendors: any[] = []
+    vendorsData.forEach((vendor: any) => {
+      // Extract from vendor_cards array
+      if (vendor.vendor_cards && Array.isArray(vendor.vendor_cards)) {
+        vendor.vendor_cards.forEach((card: any) => {
+          cardsFromVendors.push({
+            id: card.card_id || card.id,
+            card_id: card.card_id || card.id,
+            product: card.product || card.card_name,
+            vendor_name: vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
+            vendor_id: vendor.vendor_id,
+            rating: card.rating || 0,
+            price: card.price || card.card_price,
+            currency: card.currency,
+            type: card.type || card.card_type,
+            description: card.description,
+            expiry_date: card.expiry_date,
+            terms_and_conditions: card.terms_and_conditions || [],
+            images: card.images || [],
+            issue_date: card.issue_date,
+          })
+        })
+      }
+
+      // Extract from branches_with_cards (cards nested within branches)
+      if (vendor.branches_with_cards && Array.isArray(vendor.branches_with_cards)) {
+        vendor.branches_with_cards.forEach((branch: any) => {
+          if (branch.cards && Array.isArray(branch.cards)) {
+            branch.cards.forEach((card: any) => {
+              cardsFromVendors.push({
+                id: card.card_id || card.id,
+                card_id: card.card_id || card.id,
+                product: card.card_name || card.product,
+                vendor_name: vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
+                vendor_id: vendor.vendor_id,
+                rating: 0,
+                price: card.card_price || card.price,
+                currency: card.currency || 'GHS',
+                type: card.card_type || card.type,
+                description: card.description || '',
+                expiry_date: card.expiry_date || '',
+                terms_and_conditions: card.terms_and_conditions || [],
+                images: card.images || [],
+                issue_date: card.issue_date || '',
+              })
+            })
+          }
+        })
+      }
+    })
+
+    // Combine and deduplicate by card_id
+    const allCardsMap = new Map()
+    ;[...cardsFromResponse, ...cardsFromVendors].forEach((card) => {
+      if (card.card_id && !allCardsMap.has(card.card_id)) {
+        allCardsMap.set(card.card_id, card)
+      }
+    })
+
+    return Array.from(allCardsMap.values())
+  }, [cardsResponse, vendorsResponse])
 
   // Filter vendors based on search
   const filteredVendors = React.useMemo(() => {
@@ -227,11 +236,6 @@ export function BulkPurchaseEmployeesModal({
     return vendors.find((v: any) => v.id === selectedVendor)?.branch_name || ''
   }, [selectedVendor, vendors])
 
-  // Extract payment details from nested structure
-  const paymentDetailsData = paymentDetailsResponse?.data || paymentDetailsResponse || {}
-  const bankAccounts = paymentDetailsData?.bank_accounts || []
-  const mobileMoneyAccounts = paymentDetailsData?.mobile_money_accounts || []
-  const hasPaymentDetails = bankAccounts.length > 0 || mobileMoneyAccounts.length > 0
   // Get or create cart
   React.useEffect(() => {
     const cartsData = cartsResponse?.data || []
@@ -359,14 +363,9 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
     // For DashGo and DashPro, we'll create and assign immediately
     if (selectedCardType === 'dashgo' || selectedCardType === 'dashpro') {
       try {
-        const branchesArray = Array.isArray(branchesResponse)
-          ? branchesResponse
-          : branchesResponse?.data || []
-
-        // Filter branches to only include those belonging to the selected vendor
-        const vendorBranches = branchesArray.filter(
-          (branch: any) => Number(branch.vendor_id) === Number(selectedVendor),
-        )
+        // Get branches from vendor data (branches_with_cards)
+        const selectedVendorData = vendorsDataMap.get(selectedVendor)
+        const vendorBranches = selectedVendorData?.branches_with_cards || []
 
         if (selectedCardType === 'dashgo') {
           const payload = {
@@ -379,11 +378,18 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
             issue_date: new Date().toISOString().split('T')[0],
             redemption_branches:
               vendorBranches.length > 0
-                ? vendorBranches.map((branch: any) => ({ branch_id: Number(branch.id) }))
+                ? vendorBranches.map((branch: any) => ({
+                    branch_id: Number(branch.branch_id || branch.id),
+                  }))
                 : [],
           }
 
-          await createDashGoMutation.mutateAsync(payload)
+          const dashGoResponse = await createDashGoMutation.mutateAsync(payload)
+
+          // Try to get cart_id from response if available
+          if (dashGoResponse?.cart_id && !cartId) {
+            setCartId(dashGoResponse.cart_id)
+          }
         } else if (selectedCardType === 'dashpro') {
           const payload = {
             recipient_ids: recipientIds,
@@ -394,7 +400,12 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
             issue_date: new Date().toISOString().split('T')[0],
           }
 
-          await createDashProMutation.mutateAsync(payload)
+          const dashProResponse = await createDashProMutation.mutateAsync(payload)
+
+          // Try to get cart_id from response if available
+          if (dashProResponse?.cart_id && !cartId) {
+            setCartId(dashProResponse.cart_id)
+          }
         }
 
         // Store assignment for summary
@@ -543,19 +554,19 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
       queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
       queryClient.invalidateQueries({ queryKey: ['all-corporate-recipients'] })
 
-      // Check if there are only DashGo/DashPro assignments (already created)
+      // Check if there are DashGo/DashPro assignments (already created)
       const dashGoDashProAssignments = Object.entries(cardRecipientAssignments).filter(
         ([, assignment]) => assignment.cardType === 'dashgo' || assignment.cardType === 'dashpro',
       )
 
-      if (regularCardAssignments.length === 0 && dashGoDashProAssignments.length > 0) {
-        // Only DashGo/DashPro cards - they're already created, just proceed to checkout
-        toast.success('Cards created and assigned successfully')
-      } else if (regularCardAssignments.length > 0) {
+      if (regularCardAssignments.length > 0) {
         toast.success('Cards added to cart and recipients assigned successfully')
+      } else if (dashGoDashProAssignments.length > 0) {
+        toast.success('Cards created and assigned successfully')
       }
 
-      setStep(3)
+      // Proceed to checkout for all card types (including DashGo)
+      handleCheckout()
     } catch (error: any) {
       toast.error(error?.message || 'Failed to add cards to cart')
     }
@@ -572,29 +583,40 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
       ([, assignment]) => assignment.cardType === 'card',
     )
 
-    // If there are no regular cards (only DashGo/DashPro), show success and close
-    if (regularCardAssignments.length === 0) {
-      toast.success('All cards have been created and assigned successfully!')
-      setTimeout(() => {
-        handleClose()
-      }, 2000)
+    // Check if there are DashGo/DashPro cards
+    const dashGoDashProAssignments = Object.entries(cardRecipientAssignments).filter(
+      ([, assignment]) => assignment.cardType === 'dashgo' || assignment.cardType === 'dashpro',
+    )
+
+    // If there are no cards at all, return early
+    if (regularCardAssignments.length === 0 && dashGoDashProAssignments.length === 0) {
+      toast.error('No cards to checkout')
       return
     }
 
-    // If there are regular cards but no cartId, try to get it from cartsResponse
+    // Try to get cartId if not set (might have been created by DashGo/DashPro creation)
     if (!cartId) {
-      const cartsData = cartsResponse?.data || []
-      if (cartsData.length > 0) {
+      // Refetch carts to get the latest cart (DashGo creation might have created/updated a cart)
+      await queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
+      const updatedCartsResponse = await queryClient.fetchQuery({
+        queryKey: ['corporate-carts'],
+        queryFn: getCarts,
+      })
+      const cartsData = (updatedCartsResponse as any)?.data || updatedCartsResponse || []
+      if (Array.isArray(cartsData) && cartsData.length > 0) {
         setCartId(cartsData[0].cart_id)
         // Retry checkout after setting cartId
         setTimeout(() => {
           handleCheckout()
         }, 100)
         return
-      } else {
-        toast.error('Missing cart information. Please try adding cards to cart again.')
-        return
       }
+    }
+
+    // Ensure we have a cart_id before proceeding (required for checkout)
+    if (!cartId) {
+      toast.error('Missing cart information. Please try again.')
+      return
     }
 
     // Calculate total amount from cardRecipientAssignments
@@ -649,34 +671,6 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
     modal.closeModal()
   }
 
-  const paymentForm = useForm<z.infer<typeof PaymentDetailsSchema>>({
-    resolver: zodResolver(PaymentDetailsSchema),
-    defaultValues: {
-      payment_method: 'mobile_money',
-      mobile_money_provider: '',
-      mobile_money_number: '',
-      bank_name: '',
-      branch: '',
-      account_name: '',
-      account_number: '',
-      swift_code: '',
-      sort_code: '',
-    },
-  })
-
-  const paymentMethod = paymentForm.watch('payment_method')
-
-  const mobileMoneyProviders = [
-    { label: 'MTN', value: 'mtn' },
-    { label: 'Vodafone', value: 'vodafone' },
-    { label: 'AirtelTigo', value: 'airteltigo' },
-  ]
-
-  // Calculate total amount from cardRecipientAssignments for display
-  const totalAmount = Object.values(cardRecipientAssignments).reduce((sum, assignment) => {
-    return sum + (assignment.cardPrice || 0) * assignment.recipientIds.length
-  }, 0)
-
   return (
     <Modal
       isOpen={modal.isModalOpen(MODALS.BULK_EMPLOYEE_PURCHASE.CHILDREN.CREATE)}
@@ -688,7 +682,7 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
       <div className="p-6 space-y-6">
         {/* Step Indicator */}
         <div className="flex items-center justify-between mb-6">
-          {[1, 2, 3].map((s) => (
+          {[1, 2].map((s) => (
             <React.Fragment key={s}>
               <div className="flex items-center">
                 <div
@@ -699,10 +693,10 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
                   {s}
                 </div>
                 <span className="ml-2 text-sm font-medium">
-                  {s === 1 ? 'Upload' : s === 2 ? 'Select Cards' : 'Checkout'}
+                  {s === 1 ? 'Upload' : 'Select Cards'}
                 </span>
               </div>
-              {s < 3 && (
+              {s < 2 && (
                 <div
                   className={`flex-1 h-0.5 mx-4 ${step > s ? 'bg-primary-600' : 'bg-gray-200'}`}
                 />
@@ -1104,7 +1098,11 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
                     <Button
                       variant="secondary"
                       onClick={handleAddCardsToCart}
-                      disabled={Object.keys(cardRecipientAssignments).length === 0}
+                      disabled={
+                        Object.keys(cardRecipientAssignments).length === 0 ||
+                        addToCartMutation.isPending
+                      }
+                      loading={addToCartMutation.isPending}
                     >
                       Proceed to Checkout
                     </Button>
@@ -1291,8 +1289,8 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
                           : selectedCardType === 'dashpro'
                             ? 'DashPro'
                             : selectedCardType === 'card'
-                              ? cardsResponse?.data?.find((c: any) => c.card_id === selectedCardId)
-                                  ?.product || 'this Card'
+                              ? allCards.find((c: any) => c.card_id === selectedCardId)?.product ||
+                                'this Card'
                               : 'this Card'}
                       </Text>
                       <Button variant="outline" size="small" onClick={handleSelectAllRecipients}>
@@ -1481,239 +1479,11 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
                     }
                     loading={addToCartMutation.isPending}
                   >
-                    Add to Cart & Continue
+                    Proceed to Checkout
                   </Button>
                 </div>
               </>
             )}
-          </div>
-        )}
-
-        {/* Step 3: Payment & Checkout */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <Text variant="h6" weight="semibold" className="text-gray-900">
-              Review & Payment
-            </Text>
-
-            {/* Cart Summary */}
-            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-              <Text variant="span" weight="semibold" className="text-gray-900 block">
-                Cart Summary
-              </Text>
-              <div className="space-y-1">
-                {Object.entries(cardRecipientAssignments).map(([key, assignment]) => {
-                  return (
-                    <div key={key} className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        {assignment.cardName || 'Unknown Card'} × {assignment.recipientIds.length}{' '}
-                        recipient(s)
-                      </span>
-                      <span className="text-gray-900">
-                        {formatCurrency(
-                          (assignment.cardPrice || 0) * assignment.recipientIds.length,
-                          assignment.cardCurrency || 'GHS',
-                        )}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="flex justify-between items-center pt-2 border-t border-gray-300">
-                <Text variant="span" weight="semibold" className="text-gray-900">
-                  Total:
-                </Text>
-                <Text variant="span" weight="bold" className="text-lg text-primary-600">
-                  {formatCurrency(totalAmount, 'GHS')}
-                </Text>
-              </div>
-            </div>
-
-            {/* Payment Details */}
-            {!hasPaymentDetails ? (
-              <form
-                onSubmit={paymentForm.handleSubmit(async (data) => {
-                  try {
-                    await addPaymentMutation.mutateAsync(data)
-                    toast.success('Payment details added successfully')
-                    // Refresh payment details
-                    queryClient.invalidateQueries({ queryKey: ['corporate-payment-details'] })
-                  } catch (error: any) {
-                    toast.error(error?.message || 'Failed to add payment details')
-                  }
-                })}
-                className="space-y-4 border border-gray-200 rounded-lg p-4"
-              >
-                <Text variant="h6" weight="semibold" className="text-gray-900">
-                  Add Payment Details
-                </Text>
-
-                <Controller
-                  control={paymentForm.control}
-                  name="payment_method"
-                  render={({ field }) => (
-                    <div>
-                      <Text variant="span" className="text-sm font-medium text-gray-700 block mb-2">
-                        Payment Method
-                      </Text>
-                      <RadioGroup value={field.value} onValueChange={field.onChange}>
-                        <div className="flex gap-6">
-                          <div className="flex items-center gap-2">
-                            <RadioGroupItem value="mobile_money" id="mobile-money" />
-                            <label htmlFor="mobile-money" className="cursor-pointer text-sm">
-                              Mobile Money
-                            </label>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <RadioGroupItem value="bank" id="bank" />
-                            <label htmlFor="bank" className="cursor-pointer text-sm">
-                              Bank Account
-                            </label>
-                          </div>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                  )}
-                />
-
-                {paymentMethod === 'mobile_money' && (
-                  <div className="space-y-4">
-                    <Controller
-                      control={paymentForm.control}
-                      name="mobile_money_provider"
-                      render={({ field, fieldState: { error } }) => (
-                        <Combobox
-                          label="Mobile Money Provider"
-                          options={mobileMoneyProviders}
-                          {...field}
-                          error={error?.message}
-                          placeholder="Select provider"
-                        />
-                      )}
-                    />
-                    <Input
-                      label="Mobile Money Number"
-                      placeholder="Enter mobile money number"
-                      {...paymentForm.register('mobile_money_number')}
-                      error={paymentForm.formState.errors.mobile_money_number?.message}
-                    />
-                  </div>
-                )}
-
-                {paymentMethod === 'bank' && (
-                  <div className="space-y-4">
-                    <Controller
-                      control={paymentForm.control}
-                      name="bank_name"
-                      render={({ field, fieldState: { error } }) => (
-                        <Combobox
-                          label="Bank Name"
-                          options={GHANA_BANKS.map((bank) => ({
-                            label: bank.name,
-                            value: bank.name,
-                          }))}
-                          {...field}
-                          error={error?.message}
-                          placeholder="Select bank"
-                        />
-                      )}
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Bank Branch"
-                        placeholder="Enter bank branch"
-                        {...paymentForm.register('branch')}
-                        error={paymentForm.formState.errors.branch?.message}
-                      />
-                      <Input
-                        label="Account Number"
-                        placeholder="Enter account number"
-                        {...paymentForm.register('account_number')}
-                        error={paymentForm.formState.errors.account_number?.message}
-                      />
-                    </div>
-                    <Input
-                      label="Account Name"
-                      placeholder="Enter account holder name"
-                      {...paymentForm.register('account_name')}
-                      error={paymentForm.formState.errors.account_name?.message}
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Sort Code"
-                        placeholder="Enter sort code"
-                        {...paymentForm.register('sort_code')}
-                        error={paymentForm.formState.errors.sort_code?.message}
-                      />
-                      <Input
-                        label="SWIFT Code"
-                        placeholder="Enter SWIFT code"
-                        {...paymentForm.register('swift_code')}
-                        error={paymentForm.formState.errors.swift_code?.message}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  variant="secondary"
-                  disabled={addPaymentMutation.isPending}
-                  loading={addPaymentMutation.isPending}
-                >
-                  Save Payment Details
-                </Button>
-              </form>
-            ) : (
-              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
-                <Text variant="h6" weight="semibold" className="text-gray-900 mb-2">
-                  Payment Details
-                </Text>
-                {bankAccounts.length > 0 && (
-                  <div className="space-y-2">
-                    <Text variant="span" weight="medium" className="text-sm text-gray-700 block">
-                      Bank Accounts:
-                    </Text>
-                    {bankAccounts.map((account: any, idx: number) => (
-                      <div key={idx} className="text-sm text-gray-600 pl-4">
-                        <Text variant="span">
-                          {account.bank_name} - {account.account_number} (
-                          {account.account_holder_name})
-                        </Text>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {mobileMoneyAccounts.length > 0 && (
-                  <div className="space-y-2">
-                    <Text variant="span" weight="medium" className="text-sm text-gray-700 block">
-                      Mobile Money Accounts:
-                    </Text>
-                    {mobileMoneyAccounts.map((account: any, idx: number) => (
-                      <div key={idx} className="text-sm text-gray-600 pl-4">
-                        <Text variant="span" className="capitalize">
-                          {account.mobile_money_provider} - {account.mobile_money_number}
-                        </Text>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
-              <Button variant="outline" onClick={() => setStep(2)}>
-                Back
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={handleCheckout}
-                // disabled={!cartId || !hasPaymentDetails || checkoutMutation.isPending}
-                loading={checkoutMutation.isPending}
-              >
-                Proceed to Checkout
-              </Button>
-            </div>
           </div>
         )}
       </div>

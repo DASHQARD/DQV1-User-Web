@@ -96,7 +96,7 @@ export function InviteAdmin() {
               />
               <p className="text-xs text-gray-500">
                 Please enter your number in the format:{' '}
-                <span className="font-medium">+2335512345678</span>
+                <span className="font-medium">5512345678</span>
               </p>
             </div>
 

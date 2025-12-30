@@ -13,7 +13,10 @@ export default function Sidebar() {
   // Check if user can switch profiles (show switcher for vendor/corporate/corporate_vendor users)
   const userType = (user as any)?.user_type
   const canSwitchProfiles =
-    userType === 'vendor' || userType === 'corporate' || userType === 'corporate_vendor'
+    userType === 'vendor' ||
+    userType === 'corporate' ||
+    userType === 'corporate_vendor' ||
+    userType === 'corporate super admin'
 
   // Determine profile from URL, localStorage, or user type
   const currentProfile = React.useMemo((): 'vendor' | 'corporate' | null => {
@@ -38,7 +41,7 @@ export default function Sidebar() {
     if (userType === 'corporate_vendor') {
       return 'vendor'
     }
-    if (userType === 'corporate') {
+    if (userType === 'corporate' || userType === 'corporate super admin') {
       return 'corporate'
     }
     if (userType === 'vendor') {

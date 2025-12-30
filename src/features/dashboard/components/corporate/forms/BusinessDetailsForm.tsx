@@ -1,5 +1,5 @@
 import { Button } from '@/components/Button'
-import { Input, FileUploader, CreatableCombobox, Text } from '@/components'
+import { Input, FileUploader, CreatableCombobox, Text, Modal } from '@/components'
 import { BUSINESS_INDUSTRY_OPTIONS, ROUTES } from '@/utils/constants'
 import { BusinessDetailsSchema, UploadBusinessIDSchema } from '@/utils/schemas'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import { BasePhoneInput, RadioGroup, RadioGroupItem } from '@/components'
 import { useCountriesData, userProfile, useUploadFiles, usePresignedURL, useToast } from '@/hooks'
 import React from 'react'
+import LoaderGif from '@/assets/gifs/loader.gif'
 
 const CombinedBusinessSchema = BusinessDetailsSchema.merge(UploadBusinessIDSchema)
 
@@ -20,11 +21,11 @@ export default function BusinessDetailsForm() {
   const { mutateAsync: submitBusinessDetails, isPending: isSubmittingDetails } =
     useBusinessDetailsWithDocumentsService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
+  const { mutateAsync: fetchPresignedURL, isPending: isFetchingPresignedURL } = usePresignedURL()
   const toast = useToast()
   const [documentUrls, setDocumentUrls] = React.useState<Record<string, string | null>>({})
 
-  const { countries } = useCountriesData()
+  const { countries: phoneCountries } = useCountriesData()
   const navigate = useNavigate()
 
   const form = useForm<z.infer<typeof CombinedBusinessSchema>>({
@@ -71,6 +72,7 @@ export default function BusinessDetailsForm() {
     }
   }, [fetchPresignedURL, toast, userProfileData])
 
+  const isPending = isSubmittingDetails || isUploading || isFetchingPresignedURL
   // Pre-fill form with existing business details and documents data
   React.useEffect(() => {
     if (
@@ -93,8 +95,6 @@ export default function BusinessDetailsForm() {
       })
     }
   }, [userProfileData, form])
-
-  const isPending = isSubmittingDetails || isUploading
 
   const onSubmit = async (data: z.infer<typeof CombinedBusinessSchema>) => {
     try {
@@ -203,23 +203,29 @@ export default function BusinessDetailsForm() {
               </div>
             )}
           />
-          <Controller
-            control={form.control}
-            name="phone"
-            render={({ field: { value, onChange } }) => {
-              return (
-                <BasePhoneInput
-                  placeholder="Enter number eg. 5512345678"
-                  options={countries}
-                  selectedVal={value}
-                  maxLength={10}
-                  handleChange={onChange}
-                  label="Business Phone Number"
-                  error={form.formState.errors.phone?.message}
-                />
-              )
-            }}
-          />
+
+          <div className="flex flex-col gap-1">
+            <Controller
+              control={form.control}
+              name="phone"
+              render={({ field: { onChange } }) => {
+                return (
+                  <BasePhoneInput
+                    placeholder="Enter number eg. 5512345678"
+                    options={phoneCountries}
+                    maxLength={9}
+                    handleChange={onChange}
+                    label="Phone Number"
+                    error={form.formState.errors.phone?.message}
+                  />
+                )
+              }}
+            />
+            <p className="text-xs text-gray-500">
+              Please enter your number in the format:{' '}
+              <span className="font-medium">5512345678</span>
+            </p>
+          </div>
           <Input
             label="Email"
             placeholder="Enter your email"
@@ -247,7 +253,6 @@ export default function BusinessDetailsForm() {
             placeholder="Enter your business registration number"
             {...form.register('registration_number')}
             error={form.formState.errors.registration_number?.message}
-            maxLength={11}
           />
         </section>
       </section>
@@ -493,7 +498,6 @@ export default function BusinessDetailsForm() {
         </Button>
         <Button
           disabled={!form.formState.isValid || isPending}
-          loading={isPending}
           type="submit"
           variant="secondary"
           className="w-fit"
@@ -501,6 +505,24 @@ export default function BusinessDetailsForm() {
           Save Changes
         </Button>
       </div>
+
+      {/* Submission Modal with Loader */}
+      <Modal
+        isOpen={isPending}
+        setIsOpen={() => {}} // Prevent closing during submission
+        title="Saving Business Details"
+        showClose={false}
+        position="center"
+      >
+        <div className="flex flex-col items-center justify-center py-12 px-6 min-h-[200px]">
+          <div className="flex justify-center items-center mb-6">
+            <img src={LoaderGif} alt="Loading..." className="w-20 h-auto" />
+          </div>
+          <Text variant="p" className="text-center text-gray-600">
+            Please wait while we save your business details and upload your documents...
+          </Text>
+        </div>
+      </Modal>
     </form>
   )
 }

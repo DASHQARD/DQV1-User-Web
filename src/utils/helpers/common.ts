@@ -25,6 +25,8 @@ export function getTarget(inputObj: Record<string, any>, path: string | string[]
 export function getStatusVariant(status?: string) {
   console.log('status', status)
   switch (status) {
+    case 'success':
+      return 'success'
     case 'active':
       return 'success'
     case 'accepted':

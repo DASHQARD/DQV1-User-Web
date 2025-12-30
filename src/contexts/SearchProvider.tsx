@@ -1,8 +1,14 @@
 import React, { useCallback, useMemo } from 'react'
 
-import type { PageType } from '@/types'
+import type { PageType, SearchState } from '@/types'
 
-import { SearchContext, initialState, searchReducer } from './search-context'
+import { SearchContext } from './search-context-value'
+import { searchReducer } from './search-reducer'
+
+const initialState: SearchState = {
+  searchQuery: '',
+  currentPage: 'Dashboard',
+}
 
 // Context Provider Component
 export function SearchProvider({ children }: Readonly<React.PropsWithChildren>) {

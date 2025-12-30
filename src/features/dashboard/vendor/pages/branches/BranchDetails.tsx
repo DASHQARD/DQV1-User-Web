@@ -1,14 +1,14 @@
 import React from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { CustomIcon, Loader, PaginatedTable, Text, Button } from '@/components'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
-import { MOCK_BRANCHES } from '@/mocks'
 import { formatCurrency } from '@/utils/format'
 import { DEFAULT_QUERY } from '@/utils/constants/shared'
-import { useReducerSpread, usePersistedModalState } from '@/hooks'
+import { useReducerSpread, usePersistedModalState, userProfile } from '@/hooks'
 import { RedemptionDetails, BranchDetailsModal } from '@/features/dashboard/components'
 import { ROUTES, MODALS } from '@/utils/constants'
+import { vendorQueries } from '@/features'
 
 type QueryType = typeof DEFAULT_QUERY
 
@@ -23,72 +23,72 @@ type ActivityData = {
 }
 
 // Mock redemption data with gift card types
-type Redemption = {
-  id: string
-  giftCardType: 'DashX' | 'DashPro' | 'DashGo' | 'DashPass'
-  amount: number
-  updated_at: string
-  branch_id?: string
-}
+// type Redemption = {
+//   id: string
+//   giftCardType: 'DashX' | 'DashPro' | 'DashGo' | 'DashPass'
+//   amount: number
+//   updated_at: string
+//   branch_id?: string
+// }
 
-const MOCK_REDEMPTIONS: Redemption[] = [
-  {
-    id: '1',
-    giftCardType: 'DashX',
-    amount: 150.0,
-    updated_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    branch_id: '1',
-  },
-  {
-    id: '2',
-    giftCardType: 'DashPro',
-    amount: 250.0,
-    updated_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    branch_id: '1',
-  },
-  {
-    id: '3',
-    giftCardType: 'DashGo',
-    amount: 100.0,
-    updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    branch_id: '1',
-  },
-  {
-    id: '4',
-    giftCardType: 'DashX',
-    amount: 75.0,
-    updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    branch_id: '1',
-  },
-  {
-    id: '5',
-    giftCardType: 'DashPass',
-    amount: 300.0,
-    updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    branch_id: '1',
-  },
-  {
-    id: '6',
-    giftCardType: 'DashPro',
-    amount: 200.0,
-    updated_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    branch_id: '1',
-  },
-  {
-    id: '7',
-    giftCardType: 'DashX',
-    amount: 125.0,
-    updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    branch_id: '1',
-  },
-  {
-    id: '8',
-    giftCardType: 'DashGo',
-    amount: 180.0,
-    updated_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    branch_id: '1',
-  },
-]
+// const MOCK_REDEMPTIONS: Redemption[] = [
+//   {
+//     id: '1',
+//     giftCardType: 'DashX',
+//     amount: 150.0,
+//     updated_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+//     branch_id: '1',
+//   },
+//   {
+//     id: '2',
+//     giftCardType: 'DashPro',
+//     amount: 250.0,
+//     updated_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+//     branch_id: '1',
+//   },
+//   {
+//     id: '3',
+//     giftCardType: 'DashGo',
+//     amount: 100.0,
+//     updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+//     branch_id: '1',
+//   },
+//   {
+//     id: '4',
+//     giftCardType: 'DashX',
+//     amount: 75.0,
+//     updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+//     branch_id: '1',
+//   },
+//   {
+//     id: '5',
+//     giftCardType: 'DashPass',
+//     amount: 300.0,
+//     updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+//     branch_id: '1',
+//   },
+//   {
+//     id: '6',
+//     giftCardType: 'DashPro',
+//     amount: 200.0,
+//     updated_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+//     branch_id: '1',
+//   },
+//   {
+//     id: '7',
+//     giftCardType: 'DashX',
+//     amount: 125.0,
+//     updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+//     branch_id: '1',
+//   },
+//   {
+//     id: '8',
+//     giftCardType: 'DashGo',
+//     amount: 180.0,
+//     updated_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+//     branch_id: '1',
+//   },
+// ]
 
 // Helper functions for audit logs
 const actionStyles: Record<'Create' | 'Edit' | 'Request' | 'Approve' | 'Reject', string> = {
@@ -395,13 +395,44 @@ const auditLogsCsvHeaders = [
 
 export function BranchDetails() {
   const navigate = useNavigate()
-  const { id } = useParams<{ id: string }>()
+  // const { id } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
   const branchModal = usePersistedModalState({
     paramName: MODALS.BRANCH.VIEW,
   })
 
-  // Mock experiences data
+  // Get user profile and vendor ID
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const { useGetBranchesByVendorIdService } = vendorQueries()
+
+  // Get vendor_id from URL params or user profile
+  const vendorIdFromParams = searchParams.get('vendor_id')
+  const vendorIdFromProfile = userProfileData?.vendor_id
+  const vendorId = vendorIdFromParams
+    ? Number(vendorIdFromParams)
+    : vendorIdFromProfile
+      ? Number(vendorIdFromProfile)
+      : null
+
+  // Fetch branches for the vendor
+  const {
+    data: branchData,
+    isLoading: isLoadingBranches,
+    isError: isErrorBranches,
+  } = useGetBranchesByVendorIdService(vendorId, false)
+
+  const branchesResponse = branchData?.[0]
+
+  console.log('branchesResponse', branchesResponse)
+
+  const branches = React.useMemo(() => {
+    if (!branchesResponse) return []
+    return branchesResponse
+  }, [branchesResponse])
+
+  // Mock experiences data (to be replaced with API call later)
   const MOCK_EXPERIENCES = [
     {
       id: '1',
@@ -430,32 +461,11 @@ export function BranchDetails() {
   ]
   const experiences = MOCK_EXPERIENCES
 
-  // Find branch from mock data
-  const branch = React.useMemo(() => {
-    return MOCK_BRANCHES.find((b) => b.id === id) || null
-  }, [id])
-
   // Get all redemptions for this branch, sorted by most recent first
-  const allBranchRedemptions = React.useMemo(() => {
-    const filtered = MOCK_REDEMPTIONS.filter((r) => r.branch_id === branch?.id)
-    return filtered.sort(
-      (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-    )
-  }, [branch?.id])
 
   // Filter redemptions by selected card type from query
-  const cardTypeFilter = (query as any).cardType
-  const branchRedemptions = React.useMemo(() => {
-    if (cardTypeFilter === 'all' || !cardTypeFilter) {
-      return allBranchRedemptions
-    }
-    return allBranchRedemptions.filter((r) => r.giftCardType === cardTypeFilter)
-  }, [allBranchRedemptions, cardTypeFilter])
 
   // Get recent redemptions (first 5) - always from all redemptions
-  const recentRedemptions = React.useMemo(() => {
-    return allBranchRedemptions.slice(0, 5)
-  }, [allBranchRedemptions])
 
   // Get audit logs for this branch
   const branchAuditLogs = React.useMemo(() => {
@@ -464,31 +474,29 @@ export function BranchDetails() {
     )
   }, [])
 
-  // Calculate metrics based on filtered data
-  const metrics = React.useMemo(() => {
-    if (!branchRedemptions.length) {
-      return {
-        totalRedemptions: 0,
-        totalPayouts: 0,
-        totalPayoutsDashX: 0,
-      }
-    }
-
-    const totalPayouts = branchRedemptions.reduce((sum, r) => sum + r.amount, 0)
-    const dashXRedemptions = branchRedemptions.filter((r) => r.giftCardType === 'DashX')
-    const totalPayoutsDashX = dashXRedemptions.reduce((sum, r) => sum + r.amount, 0)
-
-    return {
-      totalRedemptions: branchRedemptions.length,
-      totalPayouts,
-      totalPayoutsDashX,
-    }
-  }, [branchRedemptions])
-
-  if (!branch) {
+  // Show loading state
+  if (isLoadingBranches) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader />
+      </div>
+    )
+  }
+
+  // Show error state
+  if (isErrorBranches || !branches) {
+    return (
+      <div className="flex flex-col justify-center items-center h-full gap-4">
+        <Icon icon="bi:exclamation-circle" className="text-4xl text-red-500" />
+        <Text variant="h3" className="text-gray-700">
+          {isErrorBranches ? 'Error loading branch details' : 'Branch not found'}
+        </Text>
+        <Button
+          variant="secondary"
+          onClick={() => navigate(ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES)}
+        >
+          Back to Branches
+        </Button>
       </div>
     )
   }
@@ -530,15 +538,15 @@ export function BranchDetails() {
               <Icon icon="bi:credit-card-2-front" />
             </div>
             <div className="flex-1">
-              <div className="text-2xl font-bold mb-1 leading-none text-[#402D87]">
+              {/* <div className="text-2xl font-bold mb-1 leading-none text-[#402D87]">
                 {metrics.totalRedemptions}
-              </div>
+              </div> */}
               <div className="text-sm text-[#6c757d] mb-2 font-medium">Total Redemptions</div>
             </div>
           </div>
 
           {/* Total Payouts */}
-          <div className="bg-white rounded-xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] flex items-center gap-5">
+          {/* <div className="bg-white rounded-xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] flex items-center gap-5">
             <div className="w-16 h-16 rounded-xl bg-linear-to-br from-[#402D87] to-[#2d1a72] flex items-center justify-center text-white text-3xl shrink-0">
               <Icon icon="bi:currency-exchange" />
             </div>
@@ -548,10 +556,10 @@ export function BranchDetails() {
               </div>
               <div className="text-sm text-[#6c757d] mb-2 font-medium">Total Payouts</div>
             </div>
-          </div>
+          </div> */}
 
           {/* Total Payouts - DashX */}
-          <div className="bg-white rounded-xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] flex items-center gap-5">
+          {/* <div className="bg-white rounded-xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] flex items-center gap-5">
             <div className="w-16 h-16 rounded-xl bg-linear-to-br from-[#402D87] to-[#2d1a72] flex items-center justify-center text-white text-3xl shrink-0">
               <Icon icon="bi:wallet2" />
             </div>
@@ -561,7 +569,7 @@ export function BranchDetails() {
               </div>
               <div className="text-sm text-[#6c757d] mb-2 font-medium">Total Payouts - DashX</div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Recent Redemptions */}
@@ -577,7 +585,7 @@ export function BranchDetails() {
               View all <Icon icon="bi:arrow-right" className="ml-1" />
             </Link>
           </div>
-          <div className="px-6 pb-6">
+          {/* <div className="px-6 pb-6">
             {recentRedemptions.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Icon icon="bi:inbox" className="text-4xl mb-2 opacity-50" />
@@ -610,7 +618,7 @@ export function BranchDetails() {
                 ))}
               </div>
             )}
-          </div>
+          </div> */}
         </div>
 
         {/* Experiences */}
@@ -704,7 +712,7 @@ export function BranchDetails() {
         </div>
       </div>
 
-      <BranchDetailsModal branch={branch} />
+      <BranchDetailsModal branch={branches} />
       <RedemptionDetails />
     </>
   )

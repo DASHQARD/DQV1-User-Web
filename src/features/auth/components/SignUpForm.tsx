@@ -17,10 +17,11 @@ export default function SignUpForm() {
   const { mutate, isPending } = useSignUpMutation()
   const { data: countries } = useGetCountriesService()
   const { countries: phoneCountries } = useCountriesData()
+  const SPECIAL_CHARACTERS = '!@#$%^&*()'
 
   const form = useForm<z.infer<typeof CreateAccountSchema>>({
     resolver: zodResolver(CreateAccountSchema),
-    mode: 'onChange',
+    // mode: 'onTouched',
     defaultValues: {
       country: 'Ghana',
       country_code: '01',
@@ -40,6 +41,12 @@ export default function SignUpForm() {
     }
   }, [countries, form])
 
+  const password = form.watch('password') || ''
+  const hasMinLength = password.length >= 8
+  const hasNumber = /\d/.test(password)
+  const hasUppercase = /[A-Z]/.test(password)
+  const hasSpecialChar = /[!@#$%^&*()]/.test(password)
+
   const onSubmit = (data: z.infer<typeof CreateAccountSchema>) => {
     mutate(data)
   }
@@ -47,7 +54,7 @@ export default function SignUpForm() {
   return (
     <form
       onSubmit={form.handleSubmit(onSubmit)}
-      className="max-w-[470.61px] w-full flex flex-col gap-10"
+      className="max-w-[470.61px] w-full flex flex-col gap-6"
     >
       <div className="flex items-center gap-3">
         <div className="bg-primary-500 rounded-full p-2 h-10 w-10 flex items-center justify-center">
@@ -114,13 +121,59 @@ export default function SignUpForm() {
           </p>
         </div>
 
-        <Input
-          label="Password"
-          placeholder="Enter your password"
-          {...form.register('password')}
-          type="password"
-          error={form.formState.errors.password?.message}
-        />
+        <div className="flex flex-col gap-2">
+          <Input
+            label="Password"
+            placeholder="Enter your password"
+            {...form.register('password')}
+            type="password"
+            error={form.formState.errors.password?.message}
+          />
+          <section className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-gray-500">
+              <div
+                className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold ${
+                  hasMinLength ? 'bg-primary-400 text-white' : 'bg-gray-300 text-gray-600'
+                }`}
+              >
+                {hasMinLength ? '✓' : '✗'}
+              </div>
+              <p className="text-xs leading-[18px]">Minimum 8 characters</p>
+            </div>
+            <div className="flex items-center gap-2 text-gray-500">
+              <div
+                className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold ${
+                  hasNumber ? 'bg-primary-400 text-white' : 'bg-gray-300 text-gray-600'
+                }`}
+              >
+                {hasNumber ? '✓' : '✗'}
+              </div>
+              <p className="text-xs leading-[18px]">One number</p>
+            </div>
+            <div className="flex items-center gap-2 text-gray-500">
+              <div
+                className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold ${
+                  hasUppercase ? 'bg-primary-400 text-white' : 'bg-gray-300 text-gray-600'
+                }`}
+              >
+                {hasUppercase ? '✓' : '✗'}
+              </div>
+              <p className="text-xs leading-[18px]">One Uppercase character</p>
+            </div>
+            <div className="flex items-center gap-2 text-gray-500">
+              <div
+                className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold ${
+                  hasSpecialChar ? 'bg-primary-400 text-white' : 'bg-gray-300 text-gray-600'
+                }`}
+              >
+                {hasSpecialChar ? '✓' : '✗'}
+              </div>
+              <p className="text-xs leading-[18px]">
+                One special character {`(${SPECIAL_CHARACTERS})`}
+              </p>
+            </div>
+          </section>
+        </div>
 
         <Button
           disabled={!form.formState.isValid || isPending}

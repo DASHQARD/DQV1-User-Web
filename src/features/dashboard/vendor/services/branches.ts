@@ -12,6 +12,15 @@ export const getBranches = async (): Promise<BranchesListResponse> => {
   return await getList<any>(`${commonUrl}/branches`)
 }
 
+export const getBranchesByVendorId = async (
+  vendorId: number,
+  includeRelatedVendors: boolean = false,
+): Promise<any> => {
+  return await getList<any>(`/branches/vendor/${vendorId}`, {
+    include_related_vendors: includeRelatedVendors,
+  })
+}
+
 export const deleteBranch = async (id: string) => {
   return await deleteMethod(`/branches/${id}`)
 }

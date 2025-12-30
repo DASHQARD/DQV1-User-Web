@@ -5,6 +5,21 @@ export const addToCart = async (data: AddToCartPayload): Promise<any> => {
   return await postMethod('/carts', data)
 }
 
+export const createDashGoAndAssign = async (data: {
+  recipient_ids: number[]
+  vendor_id: number
+  product: string
+  description: string
+  price: number
+  currency: string
+  images?: Array<{ file_url: string; file_name: string }>
+  terms_and_conditions?: Array<{ file_url: string; file_name: string }>
+  issue_date: string
+  redemption_branches: Array<{ branch_id: number }>
+}): Promise<any> => {
+  return await postMethod('/carts/create-dashgo-and-assign', data)
+}
+
 export const getCartItems = async (query?: Record<string, any>): Promise<CartListResponse[]> => {
   return await getList('/carts', query)
 }

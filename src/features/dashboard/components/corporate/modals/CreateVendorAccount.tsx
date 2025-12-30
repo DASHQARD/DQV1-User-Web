@@ -154,7 +154,7 @@ function CreateVendorAccountContent({
 
   const methods = useForm<CreateVendorFormData>({
     resolver: zodResolver(createVendorFormSchema),
-    mode: 'onChange',
+    mode: 'onTouched',
     defaultValues: {
       vendor_name: '',
       use_corporate_info: false,
@@ -166,7 +166,7 @@ function CreateVendorAccountContent({
       id_type: '',
       id_number: '',
       street_address: '',
-      type: 'llc',
+      type: undefined,
       phone: '',
       email: '',
       digital_address: '',
@@ -455,14 +455,11 @@ function CreateVendorAccountContent({
           },
         }
 
-        console.log('payload', payload)
-
         // Call the API
         await createVendor(payload)
 
         handleCloseModal()
       } catch (error: any) {
-        console.error('Failed to create vendor account:', error)
         toast.error(
           error?.response?.data?.message ||
             error?.message ||

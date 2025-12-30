@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import DashXIllustration from '@/assets/svgs/Dashx_bg.svg'
 import DashGoIllustration from '@/assets/svgs/dashgo_bg.svg'
 import DashProIllustration from '@/assets/svgs/dashpro_bg.svg'
+import DashPassIllustration from '@/assets/svgs/dashpass_bg.svg'
 import { CustomIcon, Dropdown, Text } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
@@ -64,16 +65,27 @@ export default function SummaryCards() {
       IconBg: 'bg-[#FAC203]/[60%] group-hover:bg-[#FAC203]',
       image: DashProIllustration,
     },
+    {
+      id: '4',
+      title: 'DashPass Gift Cards',
+      value: 0,
+      totalSavers: 0,
+      IconName: 'hugeicons:money-bag-01',
+      active: false,
+      savingsType: null,
+      IconBg: 'bg-[#402D87]/[60%] group-hover:bg-[#402D87]',
+      image: DashPassIllustration,
+    },
   ]
 
   return (
     <>
       <div className="flex flex-col gap-4">
         <Text variant="h6" weight="normal" className="text-gray-400">
-          Gift Cards
+          My Gift Cards
         </Text>
 
-        <section className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {CARD_INFO.map((card) => (
             <div
               id={card.title}

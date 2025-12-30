@@ -333,7 +333,7 @@ export function useAuth() {
           response.user.user_type === 'corporate admin'
         ) {
           navigate(`${ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME}?account=corporate`)
-        } else if (response.user.user_type === 'vendor') {
+        } else if (response.user.user_type === 'vendor' || response.user.user_type === 'branch') {
           navigate(`${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor`)
         } else {
           navigate(`${ROUTES.IN_APP.DASHBOARD.HOME}?account=user`)

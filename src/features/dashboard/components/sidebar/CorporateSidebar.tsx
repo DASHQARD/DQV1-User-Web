@@ -20,7 +20,6 @@ export default function CorporateSidebar() {
 
   const { useGetUserProfileService } = userProfile()
   const { data: user } = useGetUserProfileService()
-  console.log('user', user)
 
   const { useGetAllVendorsDetailsService } = vendorQueries()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
@@ -45,7 +44,28 @@ export default function CorporateSidebar() {
   })
 
   const displayName = user?.user_type
-  const discoveryScore = 0
+
+  // Calculate onboarding percentage
+  const onboardingProgress = React.useMemo(() => {
+    const isCorporateAdmin = user?.user_type === 'corporate admin'
+    const hasProfileAndID = Boolean(
+      user?.onboarding_progress?.personal_details_completed &&
+        user?.onboarding_progress?.upload_id_completed,
+    )
+    const hasBusinessDetailsAndDocs = Boolean(
+      user?.onboarding_progress?.business_details_completed &&
+        user?.onboarding_progress?.business_documents_completed,
+    )
+    // For corporate admins, only count Profile & ID step
+    // For regular corporate users, count both steps
+    const completedCount = isCorporateAdmin
+      ? hasProfileAndID
+        ? 1
+        : 0
+      : (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0)
+    const totalCount = isCorporateAdmin ? 1 : 2
+    return Math.round((completedCount / totalCount) * 100)
+  }, [user?.onboarding_progress, user?.user_type])
 
   // Fetch logo presigned URL
   React.useEffect(() => {
@@ -149,43 +169,15 @@ export default function CorporateSidebar() {
             <div className="flex items-center gap-3">
               <Avatar size="sm" src={logoUrl} name={user?.business_details?.[0]?.name} />
               <div className="flex-1 min-w-0">
-                <Text variant="span" weight="semibold" className="block text-sm">
-                  {user?.corporate_id}
+                <Text variant="span" weight="semibold" className="block text-sm truncate">
+                  {user?.business_details?.[0]?.name || 'Corporate Account'}
+                </Text>
+                <Text variant="span" className="block text-xs text-gray-500 truncate">
+                  {user?.corporate_id_from_business}
                 </Text>
               </div>
             </div>
           </div>
-
-          {/* Navigation Links */}
-          <div className="py-2">
-            <Link
-              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.CORPORATE.TRANSACTIONS)}
-              onClick={() => setIsPopoverOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <Icon icon="bi:bar-chart" className="text-lg text-[#677084]" />
-              <span>Analytics</span>
-            </Link>
-            <Link
-              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.RECIPIENTS)}
-              onClick={() => setIsPopoverOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <Icon icon="bi:people" className="text-lg text-[#677084]" />
-              <span>Network</span>
-            </Link>
-            <Link
-              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.GIFT_CARDS.ROOT)}
-              onClick={() => setIsPopoverOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <Icon icon="bi:briefcase" className="text-lg text-[#677084]" />
-              <span>Portfolio</span>
-            </Link>
-          </div>
-
-          {/* Separator */}
-          <div className="border-t border-gray-200 my-2"></div>
 
           {/* Switch Workspace */}
           <div className="px-4 py-2">
@@ -348,36 +340,36 @@ export default function CorporateSidebar() {
               {/* Divider */}
               <div className="border-t border-gray-200 my-1" />
 
-              {/* Bottom Section - Discovery Score */}
+              {/* Bottom Section - Onboarding Progress */}
               <div className="flex items-center gap-3">
-                {/* Circular Score Indicator */}
-                <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
+                {/* Circular Progress Indicator */}
+                <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
                   <svg
                     className="absolute inset-0 -rotate-90"
-                    width="40"
-                    height="40"
-                    viewBox="0 0 40 40"
+                    width="48"
+                    height="48"
+                    viewBox="0 0 48 48"
                   >
                     {/* Background circle */}
-                    <circle cx="20" cy="20" r="17" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-                    {/* Progress ring (partial purple ring) */}
+                    <circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                    {/* Progress ring */}
                     <circle
-                      cx="20"
-                      cy="20"
-                      r="17"
+                      cx="24"
+                      cy="24"
+                      r="20"
                       fill="none"
                       stroke="#402D87"
                       strokeWidth="3"
-                      strokeDasharray={`${2 * Math.PI * 17 * 0.25} ${2 * Math.PI * 17}`}
+                      strokeDasharray={`${2 * Math.PI * 20 * (onboardingProgress / 100)} ${2 * Math.PI * 20}`}
                       strokeLinecap="round"
                     />
                   </svg>
-                  <span className="text-sm font-semibold text-gray-700 relative z-10">
-                    {discoveryScore}
+                  <span className="text-xs font-semibold text-gray-700 relative z-10 leading-none">
+                    {onboardingProgress}%
                   </span>
                 </div>
                 <Text variant="span" className="text-sm text-gray-600">
-                  Discovery score
+                  Onboarding
                 </Text>
               </div>
             </div>
@@ -388,10 +380,27 @@ export default function CorporateSidebar() {
         )}
         <ul className="py-2 px-3">
           {CORPORATE_NAV_ITEMS.map((section) => {
-            // Filter out Admins item if user status is not approved
+            // Filter out Admins, Requests, Purchase, and Notifications items if user status is not approved or verified
+            // Also hide Admins and Notifications tabs for corporate admin users
             const filteredItems = section.items.filter((item) => {
-              if (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS) {
-                return user?.status === 'approved'
+              const isCorporateAdmin = user?.user_type === 'corporate admin'
+
+              // Hide Admins and Notifications for corporate admin users
+              if (
+                (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||
+                  item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS) &&
+                isCorporateAdmin
+              ) {
+                return false
+              }
+
+              if (
+                item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||
+                item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS ||
+                item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE ||
+                item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS
+              ) {
+                return user?.status === 'approved' || user?.status === 'verified'
               }
               return true
             })

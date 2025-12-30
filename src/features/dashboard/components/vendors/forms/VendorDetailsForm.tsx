@@ -44,8 +44,6 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
   const { countries } = useCountriesData()
   const form = useFormContext()
 
-  console.log('form errors', form.formState.errors)
-
   const checkboxVendorDetailsSameAsCorporate = form.watch(
     'checkbox_vendor_details_same_as_corporate',
   )

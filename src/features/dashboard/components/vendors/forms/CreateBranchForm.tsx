@@ -13,17 +13,17 @@ import {
   BasePhoneInput,
   // Checkbox,
 } from '@/components'
-import { useAuth } from '@/features/auth/hooks'
 import { useCountriesData, userProfile } from '@/hooks'
 import { GHANA_BANKS } from '@/assets/data/banks'
 import { CreateBranchFormSchema } from '@/utils/schemas'
 import { useVendorMutations } from '@/features/dashboard/vendor/hooks'
 import { Icon } from '@/libs'
+import { useAuth } from '@/features/auth/hooks'
 
 export default function CreateBranchForm() {
   const { useGetCountriesService } = useAuth()
   const { data: countries } = useGetCountriesService()
-  const { countries: countriesData } = useCountriesData()
+  const { countries: phoneCountries } = useCountriesData()
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
 
@@ -39,8 +39,8 @@ export default function CreateBranchForm() {
   const form = useForm<z.infer<typeof CreateBranchFormSchema>>({
     resolver: zodResolver(CreateBranchFormSchema),
     defaultValues: {
-      country: '',
-      country_code: '',
+      country: 'Ghana',
+      country_code: '01',
       branch_name: '',
       branch_location: '',
       branch_manager_name: '',
@@ -63,23 +63,6 @@ export default function CreateBranchForm() {
     name: 'payment_method',
   })
 
-  const selectedCountryId = form.watch('country')
-
-  // Update country_code when country changes
-  React.useEffect(() => {
-    if (selectedCountryId && countries) {
-      const selectedCountry = countries.find(
-        (c: any) => String(c.id) === selectedCountryId || c.name === selectedCountryId,
-      )
-      if (selectedCountry) {
-        const countryCode = selectedCountry.code || selectedCountry.iso_code || ''
-        form.setValue('country_code', countryCode, { shouldValidate: true })
-      }
-    } else if (!selectedCountryId) {
-      form.setValue('country_code', '', { shouldValidate: true })
-    }
-  }, [selectedCountryId, countries, form])
-
   // Clear payment fields when payment method changes
   React.useEffect(() => {
     if (paymentMethod === 'bank') {
@@ -96,6 +79,18 @@ export default function CreateBranchForm() {
       form.setValue('swift_code', '', { shouldValidate: false })
     }
   }, [paymentMethod, form])
+
+  React.useEffect(() => {
+    if (countries && !form.getValues('country')) {
+      const ghana = countries.find(
+        (country: any) =>
+          country.id === 1 || country.name === 'Ghana' || country.name?.toLowerCase() === 'ghana',
+      )
+      if (ghana) {
+        form.setValue('country', String(ghana.id))
+      }
+    }
+  }, [countries, form])
 
   // React.useEffect(() => {
   //   if (sameAsCorporate && userProfile) {
@@ -244,25 +239,21 @@ export default function CreateBranchForm() {
         <Controller
           control={form.control}
           name="country"
-          render={({ field, fieldState: { error } }) => (
-            <Combobox
-              label="Country"
-              options={
-                countries?.map((country: any) => ({
+          render={({ field, fieldState: { error } }) => {
+            return (
+              <Combobox
+                label="Country"
+                options={countries?.map((country: any) => ({
                   label: country.name,
                   value: country.name,
-                })) || []
-              }
-              value={field.value || undefined}
-              onChange={(e: { target: { value: string } }) => {
-                field.onChange(e.target.value || '')
-              }}
-              error={error?.message}
-              placeholder="Select country"
-              isSearchable={true}
-              isDisabled={isFormDisabled}
-            />
-          )}
+                }))}
+                value={field.value || undefined}
+                error={error?.message}
+                placeholder="Select country"
+                isDisabled={true}
+              />
+            )
+          }}
         />
 
         <Input
@@ -305,21 +296,27 @@ export default function CreateBranchForm() {
           disabled={isFormDisabled}
         />
 
-        <Controller
-          control={form.control}
-          name="branch_manager_phone"
-          render={({ field: { value, onChange } }) => (
-            <BasePhoneInput
-              placeholder="Enter branch manager phone number"
-              options={countriesData}
-              selectedVal={value}
-              maxLength={10}
-              handleChange={onChange}
-              label="Branch Manager Phone Number"
-              error={form.formState.errors.branch_manager_phone?.message}
-            />
-          )}
-        />
+        <div className="flex flex-col gap-1">
+          <Controller
+            control={form.control}
+            name="branch_manager_phone"
+            render={({ field: { onChange } }) => {
+              return (
+                <BasePhoneInput
+                  placeholder="Enter number eg. 5512345678"
+                  options={phoneCountries}
+                  maxLength={9}
+                  handleChange={onChange}
+                  label="Phone Number"
+                  error={form.formState.errors.branch_manager_phone?.message}
+                />
+              )
+            }}
+          />
+          <p className="text-xs text-gray-500">
+            Please enter your number in the format: <span className="font-medium">5512345678</span>
+          </p>
+        </div>
       </section>
 
       {/* Payment Method */}
@@ -370,21 +367,28 @@ export default function CreateBranchForm() {
                 )}
               />
 
-              <Controller
-                control={form.control}
-                name="mobile_money_number"
-                render={({ field: { value, onChange } }) => (
-                  <BasePhoneInput
-                    placeholder="Enter number eg. 5512345678"
-                    options={countriesData}
-                    selectedVal={value}
-                    maxLength={10}
-                    handleChange={onChange}
-                    label="Mobile Money Number"
-                    error={form.formState.errors.mobile_money_number?.message}
-                  />
-                )}
-              />
+              <div className="flex flex-col gap-1">
+                <Controller
+                  control={form.control}
+                  name="mobile_money_number"
+                  render={({ field: { onChange } }) => {
+                    return (
+                      <BasePhoneInput
+                        placeholder="Enter number eg. 5512345678"
+                        options={phoneCountries}
+                        maxLength={9}
+                        handleChange={onChange}
+                        label="Phone Number"
+                        error={form.formState.errors.mobile_money_number?.message}
+                      />
+                    )
+                  }}
+                />
+                <p className="text-xs text-gray-500">
+                  Please enter your number in the format:{' '}
+                  <span className="font-medium">5512345678</span>
+                </p>
+              </div>
             </div>
           )}
 

@@ -4,6 +4,7 @@ import {
   getAllVendors,
   getAllVendorsManagement,
   getBranches,
+  getBranchesByVendorId,
   getSingleVendorInfo,
   getAuditLogsVendor,
   getRequestsVendor,
@@ -50,6 +51,17 @@ export function vendorQueries() {
     })
   }
 
+  function useGetBranchesByVendorIdService(
+    vendorId: number | null | undefined,
+    includeRelatedVendors: boolean = false,
+  ) {
+    return useQuery({
+      queryKey: ['branches-by-vendor-id', vendorId, includeRelatedVendors],
+      queryFn: () => getBranchesByVendorId(vendorId!, includeRelatedVendors),
+      enabled: !!vendorId,
+    })
+  }
+
   function useGetAuditLogsVendorService() {
     return useQuery({
       queryKey: ['audit-logs-vendor'],
@@ -89,6 +101,7 @@ export function vendorQueries() {
     useGetAllVendorsDetailsService,
     useGetSingleVendorInfoService,
     useBranchesService,
+    useGetBranchesByVendorIdService,
     useGetAuditLogsVendorService,
     useGetRequestsVendorService,
     useGetCardsByVendorIdService,

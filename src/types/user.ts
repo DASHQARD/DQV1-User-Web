@@ -1,4 +1,5 @@
 export type UserProfileResponse = {
+  corporate_id_from_business: string
   vendor_id: number
   corporate_id: string
   employee_identification_number: string

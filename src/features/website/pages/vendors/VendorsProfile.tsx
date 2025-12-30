@@ -9,6 +9,10 @@ import { useForm } from 'react-hook-form'
 
 import { usePublicCatalogQueries } from '../../hooks/website'
 import { EmptyStateImage } from '@/assets/images'
+import { useCartStore } from '@/stores/cart'
+import { createDashGoAndAssign } from '../../services/cards'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useToast } from '@/hooks'
 
 export default function VendorsProfile() {
   const [searchParams] = useSearchParams()
@@ -49,6 +53,22 @@ export default function VendorsProfile() {
     },
   })
 
+  const { openCart } = useCartStore()
+  const queryClient = useQueryClient()
+  const { success, error: toastError } = useToast()
+
+  const createDashGoMutation = useMutation({
+    mutationFn: createDashGoAndAssign,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+      success('DashGo card added to cart successfully')
+      openCart()
+    },
+    onError: (error: any) => {
+      toastError(error?.message || 'Failed to add DashGo card to cart. Please try again.')
+    },
+  })
+
   const isLoading = isLoadingVendor || isLoadingVendorCards || isLoadingQrCode
 
   const quickAmounts = [100, 200, 300, 400, 500]
@@ -60,15 +80,30 @@ export default function VendorsProfile() {
       return
     }
 
-    // TODO: Handle DashGo card creation/adding to cart
-    // DashGo cards need to be created with the custom amount and vendor_id
-    console.log('DashGo card with amount:', cardAmount, 'for vendor:', vendor_id)
-    // await addToCartAsync({
-    //   card_id: featuredCard.card_id,
-    //   amount: cardAmount,
-    //   quantity: 1,
-    // })
-    // openCart()
+    if (!vendor_id) {
+      return
+    }
+
+    // Get branches from vendor details for redemption_branches
+    const vendorBranches = (vendorDetails as any)?.branches_with_cards || []
+    const redemptionBranches =
+      vendorBranches.length > 0
+        ? vendorBranches.map((branch: any) => ({
+            branch_id: Number(branch.branch_id || branch.id),
+          }))
+        : []
+
+    // Create DashGo card and add to cart using the endpoint
+    createDashGoMutation.mutate({
+      recipient_ids: [], // Empty array for now - recipients can be assigned later
+      vendor_id: parseInt(vendor_id, 10),
+      product: 'DashGo Gift Card',
+      description: `Custom DashGo card for ${vendorName}`,
+      price: cardAmount,
+      currency: 'GHS',
+      issue_date: new Date().toISOString().split('T')[0],
+      redemption_branches: redemptionBranches,
+    })
   }
 
   // Get vendor details - use business_name or vendor_name as fallback
@@ -254,7 +289,13 @@ export default function VendorsProfile() {
                 <Button
                   variant="secondary"
                   type="submit"
-                  disabled={!form.watch('amount') || parseFloat(form.watch('amount') || '0') <= 0}
+                  disabled={
+                    !form.watch('amount') ||
+                    parseFloat(form.watch('amount') || '0') <= 0 ||
+                    createDashGoMutation.isPending ||
+                    !vendor_id
+                  }
+                  loading={createDashGoMutation.isPending}
                   className="flex-1"
                 >
                   <Icon icon="bi:cart-plus" className="size-5 mr-2" />

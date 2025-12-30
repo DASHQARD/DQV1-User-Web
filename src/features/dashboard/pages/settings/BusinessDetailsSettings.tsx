@@ -27,10 +27,13 @@ export function BusinessDetailsSettings() {
     useUpdateBusinessLogoService()
   const { mutateAsync: uploadFiles } = useUploadFiles()
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const { countries } = useCountriesData()
+  const { countries: phoneCountries } = useCountriesData()
   const toast = useToast()
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
   const [logoFile, setLogoFile] = React.useState<File | null>(null)
+
+  // Check if user status is approved - if so, disable all inputs
+  const isApproved = userProfileData?.status === 'approved'
 
   type FormData = z.input<typeof UpdateBusinessDetailsSchema>
   const form = useForm<FormData>({
@@ -155,24 +158,26 @@ export function BusinessDetailsSettings() {
               name={userProfileData?.business_details?.[0]?.name || 'Business'}
               className="w-24 h-24"
             />
-            <div className="flex flex-col gap-2">
-              <FileUploader
-                onChange={handleLogoFileChange}
-                value={logoFile}
-                accept="image/*"
-                id="logo-upload"
-              />
-              {logoFile && (
-                <Button
-                  variant="secondary"
-                  size="small"
-                  onClick={handleLogoUpload}
-                  loading={isUpdatingLogo}
-                >
-                  Upload Logo
-                </Button>
-              )}
-            </div>
+            {!isApproved && (
+              <div className="flex flex-col gap-2">
+                <FileUploader
+                  onChange={handleLogoFileChange}
+                  value={logoFile}
+                  accept="image/*"
+                  id="logo-upload"
+                />
+                {logoFile && (
+                  <Button
+                    variant="secondary"
+                    size="small"
+                    onClick={handleLogoUpload}
+                    loading={isUpdatingLogo}
+                  >
+                    Upload Logo
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -186,6 +191,7 @@ export function BusinessDetailsSettings() {
               placeholder="Enter business name"
               {...form.register('name')}
               error={form.formState.errors.name?.message}
+              disabled={isApproved}
             />
           </div>
 
@@ -209,27 +215,34 @@ export function BusinessDetailsSettings() {
                   }}
                   error={error?.message}
                   placeholder="Select business type"
+                  isDisabled={isApproved}
                 />
               )}
             />
           </div>
 
-          <div>
+          <div className="flex flex-col gap-1">
             <Controller
               control={form.control}
               name="phone"
-              render={({ field: { value, onChange } }) => (
-                <BasePhoneInput
-                  placeholder="Enter number eg. 5512345678"
-                  options={countries}
-                  selectedVal={value}
-                  maxLength={10}
-                  handleChange={onChange}
-                  label="Phone Number"
-                  error={form.formState.errors.phone?.message}
-                />
-              )}
+              render={({ field: { onChange } }) => {
+                return (
+                  <BasePhoneInput
+                    placeholder="Enter number eg. 5512345678"
+                    options={phoneCountries}
+                    maxLength={9}
+                    handleChange={onChange}
+                    label="Phone Number"
+                    error={form.formState.errors.phone?.message}
+                    disabled={isApproved}
+                  />
+                )
+              }}
             />
+            <p className="text-xs text-gray-500">
+              Please enter your number in the format:{' '}
+              <span className="font-medium">5512345678</span>
+            </p>
           </div>
 
           <div>
@@ -239,6 +252,7 @@ export function BusinessDetailsSettings() {
               placeholder="Enter email address"
               {...form.register('email')}
               error={form.formState.errors.email?.message}
+              disabled={isApproved}
             />
           </div>
 
@@ -248,6 +262,7 @@ export function BusinessDetailsSettings() {
               placeholder="Enter street address"
               {...form.register('street_address')}
               error={form.formState.errors.street_address?.message}
+              disabled={isApproved}
             />
           </div>
 
@@ -257,6 +272,7 @@ export function BusinessDetailsSettings() {
               placeholder="Enter digital address (optional)"
               {...form.register('digital_address')}
               error={form.formState.errors.digital_address?.message}
+              disabled={isApproved}
             />
           </div>
 
@@ -266,13 +282,14 @@ export function BusinessDetailsSettings() {
               placeholder="Enter registration number"
               {...form.register('registration_number')}
               error={form.formState.errors.registration_number?.message}
+              disabled={isApproved}
             />
           </div>
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-          <Button type="submit" variant="secondary" loading={isPending}>
-            Save Changes
+          <Button type="submit" variant="secondary" loading={isPending} disabled={isApproved}>
+            Update
           </Button>
         </div>
       </form>
