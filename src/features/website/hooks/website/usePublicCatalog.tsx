@@ -16,7 +16,7 @@ export function usePublicCatalog(
 ) {
   const [query, setQuery] = useReducerSpread({
     ...DEFAULT_QUERY,
-    limit: 10,
+    limit: 50,
     search: '',
     expiry_date: '',
     vendor_ids: '',
@@ -59,7 +59,6 @@ export function usePublicCatalog(
     vendor_id: vendor_ids || '',
   })
 
-  // Extract vendors from response
   const vendors = vendorsResponse
 
   const cardTabs = [

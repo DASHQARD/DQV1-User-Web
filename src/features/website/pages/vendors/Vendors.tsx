@@ -62,23 +62,26 @@ export default function Vendors() {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-              {vendors?.map((vendor: any) => (
-                <div
-                  key={vendor.id}
-                  onClick={() =>
-                    navigate(
-                      `/vendor?vendor_id=${vendor.vendor_id}&id=${vendor.id}&name=${encodeURIComponent(vendor.branch_name || '')}`,
-                    )
-                  }
-                  className="cursor-pointer transition-transform hover:scale-105"
-                >
-                  <VendorItems
-                    name={vendor.branch_name || 'Unnamed Vendor'}
-                    branches={vendor.branches_with_cards.length}
-                    rating={4.5}
-                  />
-                </div>
-              ))}
+              {vendors?.map((vendor: any) => {
+                const vendorName = vendor.business_name || vendor.vendor_name || 'Unnamed Vendor'
+                return (
+                  <div
+                    key={vendor.id || vendor.vendor_id}
+                    onClick={() =>
+                      navigate(
+                        `/vendor?vendor_id=${vendor.vendor_id}&id=${vendor.id || vendor.vendor_id}&name=${encodeURIComponent(vendorName)}`,
+                      )
+                    }
+                    className="cursor-pointer transition-transform hover:scale-105"
+                  >
+                    <VendorItems
+                      name={vendorName}
+                      branches={vendor.branches_with_cards?.length || 0}
+                      rating={4.5}
+                    />
+                  </div>
+                )
+              })}
             </div>
 
             {/* Pagination - TODO: Implement cursor-based pagination when API supports it */}

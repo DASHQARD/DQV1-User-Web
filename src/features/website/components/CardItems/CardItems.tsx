@@ -76,7 +76,7 @@ export const CardItems = ({
   const displayPrice = formatCurrency(price, currency) || 0
 
   // Generate QR code for the card
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`${product}-${card_id}`)}&bgcolor=FFFFFF&color=000000&margin=0`
+  // const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`${product}-${card_id}`)}&bgcolor=FFFFFF&color=000000&margin=0`
 
   // Get card type display name
   const getCardTypeName = () => {
@@ -171,9 +171,9 @@ export const CardItems = ({
             )}
 
             {/* Right: QR Code */}
-            <div className="p-1.5 rounded-lg">
+            {/* <div className="p-1.5 rounded-lg">
               <img src={qrCodeUrl} alt="QR Code" className="w-12 h-12" />
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
