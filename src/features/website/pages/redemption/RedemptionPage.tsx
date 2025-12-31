@@ -112,6 +112,8 @@ export default function RedemptionPage() {
   const [cardType, setCardType] = useState<CardType | ''>('')
   const [amount, setAmount] = useState('')
   const [balance, setBalance] = useState<number | null>(null)
+  const [dashProBalance, setDashProBalance] = useState<number | null>(null)
+  const [dashGoBalance, setDashGoBalance] = useState<number | null>(null)
   const [balanceLoading, setBalanceLoading] = useState(false)
   const [balanceError, setBalanceError] = useState<string | null>(null)
   const [vendorName, setVendorName] = useState('')
@@ -208,6 +210,8 @@ export default function RedemptionPage() {
     const fetchBalance = async () => {
       if (!selectedVendor) {
         setBalance(null)
+        setDashProBalance(null)
+        setDashGoBalance(null)
         return
       }
 
@@ -218,40 +222,89 @@ export default function RedemptionPage() {
           setBalance(null)
           return
         }
+        setBalanceLoading(true)
+        setBalanceError(null)
+        try {
+          const balanceData = await getCardBalance(
+            !isAuthenticated ? phoneNumber : undefined,
+            isAuthenticated ? user?.user_id : undefined,
+            'dashpro',
+            selectedVendor.vendor_id,
+          )
+          if (balanceData) {
+            setBalance(balanceData.balance)
+            setBalanceError(null)
+          } else {
+            setBalance(null)
+            setBalanceError('Unable to fetch balance. Please try again.')
+          }
+        } catch (error: any) {
+          console.error('Error fetching balance:', error)
+          setBalance(null)
+          setBalanceError(error?.message || 'Failed to fetch balance. Please try again.')
+        } finally {
+          setBalanceLoading(false)
+        }
       } else if (redemptionMethod === 'vendor_id') {
-        // For vendor ID, we need phone number if not authenticated and card type
+        // For vendor ID, we need phone number if not authenticated
         if (!isAuthenticated && !phoneNumber) {
           setBalance(null)
+          setDashProBalance(null)
+          setDashGoBalance(null)
           return
         }
-        if (!cardType) {
-          setBalance(null)
-          return
-        }
-      }
 
-      setBalanceLoading(true)
-      setBalanceError(null)
-      try {
-        const balanceData = await getCardBalance(
-          !isAuthenticated ? phoneNumber : undefined,
-          isAuthenticated ? user?.user_id : undefined,
-          cardType || 'dashpro',
-          selectedVendor.vendor_id,
-        )
-        if (balanceData) {
-          setBalance(balanceData.balance)
+        // Fetch both DashPro and DashGo balances when vendor is selected
+        setBalanceLoading(true)
+        setBalanceError(null)
+        try {
+          // Fetch DashPro balance
+          const dashProData = await getCardBalance(
+            !isAuthenticated ? phoneNumber : undefined,
+            isAuthenticated ? user?.user_id : undefined,
+            'dashpro',
+            selectedVendor.vendor_id,
+          )
+
+          // Fetch DashGo balance
+          const dashGoData = await getCardBalance(
+            !isAuthenticated ? phoneNumber : undefined,
+            isAuthenticated ? user?.user_id : undefined,
+            'dashgo',
+            selectedVendor.vendor_id,
+          )
+
+          if (dashProData) {
+            setDashProBalance(dashProData.balance)
+          } else {
+            setDashProBalance(null)
+          }
+
+          if (dashGoData) {
+            setDashGoBalance(dashGoData.balance)
+          } else {
+            setDashGoBalance(null)
+          }
+
+          // Set the balance based on selected card type
+          if (cardType === 'dashpro' && dashProData) {
+            setBalance(dashProData.balance)
+          } else if (cardType === 'dashgo' && dashGoData) {
+            setBalance(dashGoData.balance)
+          } else {
+            setBalance(null)
+          }
+
           setBalanceError(null)
-        } else {
+        } catch (error: any) {
+          console.error('Error fetching balance:', error)
           setBalance(null)
-          setBalanceError('Unable to fetch balance. Please try again.')
+          setDashProBalance(null)
+          setDashGoBalance(null)
+          setBalanceError(error?.message || 'Failed to fetch balance. Please try again.')
+        } finally {
+          setBalanceLoading(false)
         }
-      } catch (error: any) {
-        console.error('Error fetching balance:', error)
-        setBalance(null)
-        setBalanceError(error?.message || 'Failed to fetch balance. Please try again.')
-      } finally {
-        setBalanceLoading(false)
       }
     }
 
@@ -1260,7 +1313,7 @@ export default function RedemptionPage() {
                             </div>
                           )}
 
-                          {/* Balance display */}
+                          {/* Balance display - Show DashPro and DashGo balances */}
                           {balanceLoading ? (
                             <div className="p-4 bg-gray-50 rounded-lg flex items-center gap-2">
                               <Loader />
@@ -1268,35 +1321,106 @@ export default function RedemptionPage() {
                                 Loading balance...
                               </Text>
                             </div>
-                          ) : balance !== null ? (
-                            <div>
-                              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Available Balance
-                              </label>
-                              <div className="p-4 bg-gray-50 rounded-lg">
-                                <Text variant="h4" weight="semibold" className="text-primary-600">
-                                  GHS {balance.toFixed(2)}
-                                </Text>
-                              </div>
-                              {amount && parseFloat(amount) > balance && (
-                                <p className="mt-2 text-sm text-red-600">Insufficient balance</p>
-                              )}
-                              {amount &&
-                                parseFloat(amount) <= balance &&
-                                parseFloat(amount) > 0 && (
-                                  <p className="mt-2 text-sm text-green-600">Amount valid</p>
-                                )}
-                            </div>
                           ) : (
-                            cardType && (
-                              <div className="p-4 bg-gray-50 rounded-lg">
-                                <Text variant="span" className="text-gray-600 text-sm">
-                                  {!isAuthenticated && !phoneNumber
-                                    ? 'Enter phone number to view balance'
-                                    : 'No balance available for this card type'}
-                                </Text>
-                              </div>
-                            )
+                            <div className="space-y-4">
+                              {/* DashPro Balance */}
+                              {dashProBalance !== null && (
+                                <div>
+                                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    DashPro Balance
+                                  </label>
+                                  <div
+                                    className={`p-4 rounded-lg ${
+                                      cardType === 'dashpro'
+                                        ? 'bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200'
+                                        : 'bg-gray-50'
+                                    }`}
+                                  >
+                                    <Text
+                                      variant="h4"
+                                      weight="semibold"
+                                      className="text-primary-600"
+                                    >
+                                      GHS {dashProBalance.toFixed(2)}
+                                    </Text>
+                                  </div>
+                                  {cardType === 'dashpro' &&
+                                    amount &&
+                                    parseFloat(amount) > dashProBalance && (
+                                      <p className="mt-2 text-sm text-red-600">
+                                        Insufficient DashPro balance
+                                      </p>
+                                    )}
+                                  {cardType === 'dashpro' &&
+                                    amount &&
+                                    parseFloat(amount) <= dashProBalance &&
+                                    parseFloat(amount) > 0 && (
+                                      <p className="mt-2 text-sm text-green-600">
+                                        DashPro amount valid
+                                      </p>
+                                    )}
+                                </div>
+                              )}
+
+                              {/* DashGo Balance */}
+                              {dashGoBalance !== null && (
+                                <div>
+                                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    DashGo Balance
+                                  </label>
+                                  <div
+                                    className={`p-4 rounded-lg ${
+                                      cardType === 'dashgo'
+                                        ? 'bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200'
+                                        : 'bg-gray-50'
+                                    }`}
+                                  >
+                                    <Text
+                                      variant="h4"
+                                      weight="semibold"
+                                      className="text-primary-600"
+                                    >
+                                      GHS {dashGoBalance.toFixed(2)}
+                                    </Text>
+                                  </div>
+                                  {cardType === 'dashgo' &&
+                                    amount &&
+                                    parseFloat(amount) > dashGoBalance && (
+                                      <p className="mt-2 text-sm text-red-600">
+                                        Insufficient DashGo balance
+                                      </p>
+                                    )}
+                                  {cardType === 'dashgo' &&
+                                    amount &&
+                                    parseFloat(amount) <= dashGoBalance &&
+                                    parseFloat(amount) > 0 && (
+                                      <p className="mt-2 text-sm text-green-600">
+                                        DashGo amount valid
+                                      </p>
+                                    )}
+                                </div>
+                              )}
+
+                              {/* Show message if no balances available */}
+                              {dashProBalance === null &&
+                                dashGoBalance === null &&
+                                (isAuthenticated || phoneNumber) && (
+                                  <div className="p-4 bg-gray-50 rounded-lg">
+                                    <Text variant="span" className="text-gray-600 text-sm">
+                                      No balance available for DashPro or DashGo
+                                    </Text>
+                                  </div>
+                                )}
+
+                              {/* Show message if phone number not entered */}
+                              {!isAuthenticated && !phoneNumber && (
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                  <Text variant="span" className="text-gray-600 text-sm">
+                                    Enter phone number to view balance
+                                  </Text>
+                                </div>
+                              )}
+                            </div>
                           )}
 
                           {/* Branch selection if multiple branches */}
@@ -1349,7 +1473,14 @@ export default function RedemptionPage() {
                                 ((cardType === 'dashpro' || cardType === 'dashgo') &&
                                   (!amount || parseFloat(amount) <= 0)) ||
                                 (!isAuthenticated && !phoneNumber) ||
-                                (balance !== null && amount && parseFloat(amount) > balance),
+                                (cardType === 'dashpro' &&
+                                  dashProBalance !== null &&
+                                  amount &&
+                                  parseFloat(amount) > dashProBalance) ||
+                                (cardType === 'dashgo' &&
+                                  dashGoBalance !== null &&
+                                  amount &&
+                                  parseFloat(amount) > dashGoBalance),
                             )}
                             className="w-full"
                           >
