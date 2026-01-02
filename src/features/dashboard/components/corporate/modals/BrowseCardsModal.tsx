@@ -26,7 +26,7 @@ export function BrowseCardsModal() {
   const { useGetCardsService } = corporateQueries()
 
   const { data: vendorsResponse, isLoading: isLoadingVendors } = useGetAllVendorsDetailsService()
-  console.log('vendorsResponse', vendorsResponse)
+
   const { data: cardsResponse, isLoading: isLoadingCards } = useGetCardsService()
 
   // Extract vendors from API response

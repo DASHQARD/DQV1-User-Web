@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
+import { corporateQueries } from '../corporate/hooks/useCorporateQueries'
 
 interface DashboardMetrics {
   redemptionBalance: number
@@ -18,50 +19,120 @@ interface Redemption {
   updated_at: string
   giftCardType?: string
 }
+
 export function useDashboardMetrics() {
-  const [isLoading, setIsLoading] = useState(true)
-  const [metrics, setMetrics] = useState<DashboardMetrics>({
-    redemptionBalance: 0,
-    totalPurchased: 0,
-    totalRedeemed: 0,
-  })
-  const [recentPurchases, setRecentPurchases] = useState<Purchase[]>([])
-  const [recentRedemptions, setRecentRedemptions] = useState<Redemption[]>([])
+  const { useGetAllCorporatePaymentsService } = corporateQueries()
+  const { data, isLoading: isLoadingPayments } = useGetAllCorporatePaymentsService()
 
-  useEffect(() => {
-    // Simulate API call
-    const fetchData = async () => {
-      setIsLoading(true)
-      try {
-        // TODO: Replace with actual API call
-        // const response = await api.get('/dashboard/metrics')
+  // Handle both direct array response and wrapped response with data property
+  const paymentsData = useMemo(() => {
+    if (!data) return []
 
-        // Mock data for now
-        setTimeout(() => {
-          setMetrics({
-            redemptionBalance: 0.0,
-            totalPurchased: 0.0,
-            totalRedeemed: 0.0,
-          })
-          setRecentPurchases([
-            { id: '1', amount: 100, updated_at: new Date(Date.now() - 3600000).toISOString() },
-            { id: '2', amount: 250, updated_at: new Date(Date.now() - 7200000).toISOString() },
-            { id: '3', amount: 50, updated_at: new Date(Date.now() - 86400000).toISOString() },
-          ])
-          setRecentRedemptions([
-            { id: '1', amount: 75, updated_at: new Date(Date.now() - 1800000).toISOString() },
-            { id: '2', amount: 150, updated_at: new Date(Date.now() - 10800000).toISOString() },
-          ])
-          setIsLoading(false)
-        }, 1000)
-      } catch (error) {
-        console.error('Error fetching dashboard metrics:', error)
-        setIsLoading(false)
+    // Handle both direct array response and wrapped response with data property
+    const rawData = Array.isArray(data) ? data : data?.data || []
+
+    if (!Array.isArray(rawData)) return []
+
+    // Filter for paid status payments
+    return rawData.filter((payment: any) => {
+      return payment.status?.toLowerCase() === 'paid'
+    })
+  }, [data])
+
+  // Calculate metrics from payments data
+  const metrics = useMemo((): DashboardMetrics => {
+    if (!Array.isArray(paymentsData) || paymentsData.length === 0) {
+      return {
+        redemptionBalance: 0,
+        totalPurchased: 0,
+        totalRedeemed: 0,
       }
     }
 
-    fetchData()
-  }, [])
+    // Filter for purchase-type payments (only paid purchases count)
+    const purchasePayments = paymentsData.filter((payment: any) => {
+      const paymentType = payment.type?.toLowerCase()
+      return (
+        paymentType === 'purchase' ||
+        paymentType === 'bulk_purchase' ||
+        paymentType === 'checkout' ||
+        paymentType === 'individual_purchase'
+      )
+    })
+
+    // Filter for redemption-type payments (only paid redemptions count)
+    const redemptionPayments = paymentsData.filter((payment: any) => {
+      const paymentType = payment.type?.toLowerCase()
+      return paymentType === 'redemption'
+    })
+
+    // Calculate total purchased (sum of purchase payment amounts)
+    const totalPurchased = purchasePayments.reduce((sum: number, payment: any) => {
+      const amount =
+        typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount || 0
+      return sum + amount
+    }, 0)
+
+    // Calculate total redeemed (sum of redemption payment amounts)
+    const totalRedeemed = redemptionPayments.reduce((sum: number, payment: any) => {
+      const amount =
+        typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount || 0
+      return sum + amount
+    }, 0)
+
+    // Calculate redemption balance (total purchased - total redeemed)
+    const redemptionBalance = totalPurchased - totalRedeemed
+
+    return {
+      redemptionBalance: Math.max(0, redemptionBalance),
+      totalPurchased,
+      totalRedeemed,
+    }
+  }, [paymentsData])
+
+  // Get recent purchases
+  const recentPurchases = useMemo((): Purchase[] => {
+    if (!Array.isArray(paymentsData) || paymentsData.length === 0) return []
+
+    return paymentsData
+      .filter((payment: any) => {
+        const paymentType = payment.type?.toLowerCase()
+        return (
+          paymentType === 'purchase' ||
+          paymentType === 'bulk_purchase' ||
+          paymentType === 'checkout' ||
+          paymentType === 'individual_purchase'
+        )
+      })
+      .map((payment: any) => ({
+        id: payment.id?.toString() || '',
+        amount:
+          typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount || 0,
+        updated_at: payment.updated_at || payment.created_at || new Date().toISOString(),
+      }))
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      .slice(0, 10)
+  }, [paymentsData])
+
+  // Get recent redemptions
+  const recentRedemptions = useMemo((): Redemption[] => {
+    if (!Array.isArray(paymentsData) || paymentsData.length === 0) return []
+
+    return paymentsData
+      .filter((payment: any) => {
+        const paymentType = payment.type?.toLowerCase()
+        return paymentType === 'redemption'
+      })
+      .map((payment: any) => ({
+        id: payment.id?.toString() || '',
+        amount:
+          typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount || 0,
+        updated_at: payment.updated_at || payment.created_at || new Date().toISOString(),
+        giftCardType: payment.card_type || undefined,
+      }))
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      .slice(0, 10)
+  }, [paymentsData])
 
   const formatCurrency = (amount: number | string, currency: string = 'GHS'): string => {
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
@@ -76,7 +147,7 @@ export function useDashboardMetrics() {
   }
 
   return {
-    isLoading,
+    isLoading: isLoadingPayments,
     metrics,
     recentPurchases,
     recentRedemptions,

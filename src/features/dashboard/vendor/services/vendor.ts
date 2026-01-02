@@ -41,6 +41,10 @@ export const getRequestsVendor = async (): Promise<any> => {
   return await getList<any>(`/requests/vendors`)
 }
 
+export const updateRequestStatus = async (data: { id: number; status: string }): Promise<any> => {
+  return await patchMethod(`/requests/vendors/update-status`, data)
+}
+
 export const updateBusinessDetails = async (data: {
   id: number
   name: string

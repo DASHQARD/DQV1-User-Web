@@ -15,6 +15,7 @@ import { ROUTES } from '@/utils/constants'
 
 export default function CorporateHome() {
   const { metrics, formatCurrency, isLoading } = useDashboardMetrics()
+
   const navigate = useNavigate()
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
@@ -58,6 +59,11 @@ export default function CorporateHome() {
   // Check if user status is pending and KYC is complete
   const userStatus = userProfileData?.status
   const isPendingAndKYCComplete = userStatus === 'pending' && isComplete
+
+  // Check if user has completed onboarding and is approved
+  const isOnboardingComplete = progressPercentage === 100
+  const isApprovedOrVerified = userStatus === 'approved' || userStatus === 'verified'
+  const canAccessRestrictedFeatures = isOnboardingComplete && isApprovedOrVerified
 
   const getNextIncompleteStep = () => {
     if (!hasProfileAndID) {
@@ -291,7 +297,7 @@ export default function CorporateHome() {
 
         {/* Pending Approval Message - Show when status is pending and KYC is complete */}
         {isPendingAndKYCComplete && (
-          <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 border border-blue-200 rounded-2xl shadow-lg p-6 sm:p-8">
+          <div className="bg-linear-to-br from-blue-50 via-white to-indigo-50 border border-blue-200 rounded-2xl shadow-lg p-6 sm:p-8">
             <div className="flex items-start gap-4">
               <div className="w-16 h-16 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-md shrink-0">
                 <Icon icon="bi:clock-history" className="text-3xl" />
@@ -369,16 +375,65 @@ export default function CorporateHome() {
         )}
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <RecentRequests />
-          <RecentAuditLogs />
+          <div
+            className={cn(
+              'relative',
+              !canAccessRestrictedFeatures && 'opacity-50 pointer-events-none',
+            )}
+          >
+            <RecentRequests />
+            {!canAccessRestrictedFeatures && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-2xl z-10">
+                <div className="text-center p-4">
+                  <Icon icon="bi:lock-fill" className="text-3xl text-gray-400 mb-2 mx-auto" />
+                  <Text variant="span" className="text-sm text-gray-600 block">
+                    Complete onboarding and get approved to access Requests
+                  </Text>
+                </div>
+              </div>
+            )}
+          </div>
+          <div
+            className={cn(
+              'relative',
+              !canAccessRestrictedFeatures && 'opacity-50 pointer-events-none',
+            )}
+          >
+            <RecentAuditLogs />
+            {!canAccessRestrictedFeatures && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-2xl z-10">
+                <div className="text-center p-4">
+                  <Icon icon="bi:lock-fill" className="text-3xl text-gray-400 mb-2 mx-auto" />
+                  <Text variant="span" className="text-sm text-gray-600 block">
+                    Complete onboarding and get approved to access Audit Logs
+                  </Text>
+                </div>
+              </div>
+            )}
+          </div>
         </section>
 
-        <RecentTransactions />
+        <div
+          className={cn(
+            'relative',
+            !canAccessRestrictedFeatures && 'opacity-50 pointer-events-none',
+          )}
+        >
+          <RecentTransactions />
+          {!canAccessRestrictedFeatures && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-2xl z-10">
+              <div className="text-center p-4">
+                <Icon icon="bi:lock-fill" className="text-3xl text-gray-400 mb-2 mx-auto" />
+                <Text variant="span" className="text-sm text-gray-600 block">
+                  Complete onboarding and get approved to access Transactions
+                </Text>
+              </div>
+            </div>
+          )}
+        </div>
 
-        {/* Summary Cards */}
         <SummaryCards />
 
-        {/* Only show CompleteCorporateWidget if onboarding is not complete */}
         {!isComplete && (
           <div className="fixed bottom-6 right-6 z-50 w-[598px] max-w-[calc(100vw-3rem)]">
             <CompleteCorporateWidget />

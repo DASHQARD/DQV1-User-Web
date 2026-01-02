@@ -74,7 +74,7 @@ export function BusinessDetailsSettings() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-8">
         <div className="md:col-span-2">
           <Input
             label="Business Name"
@@ -114,13 +114,16 @@ export function BusinessDetailsSettings() {
           <Controller
             control={form.control}
             name="phone"
-            render={({ field: { onChange } }) => {
+            render={({ field: { onChange, value } }) => {
+              // Ensure value is always a string
+              const phoneValue = value || ''
               return (
                 <BasePhoneInput
                   placeholder="Enter number eg. 5512345678"
                   options={phoneCountries}
                   maxLength={9}
                   handleChange={onChange}
+                  selectedVal={phoneValue}
                   label="Phone Number"
                   error={form.formState.errors.phone?.message}
                   disabled={isApproved}
@@ -133,43 +136,38 @@ export function BusinessDetailsSettings() {
           </p>
         </div>
 
-        <div>
-          <Input
-            label="Email"
-            type="email"
-            placeholder="Enter email address"
-            {...form.register('email')}
-            error={form.formState.errors.email?.message}
-            disabled={isApproved}
-          />
-        </div>
-        <div>
-          <Input
-            label="Street Address"
-            placeholder="Enter street address"
-            {...form.register('street_address')}
-            error={form.formState.errors.street_address?.message}
-            disabled={isApproved}
-          />
-        </div>
-        <div>
-          <Input
-            label="Digital Address"
-            placeholder="Enter digital address (optional)"
-            {...form.register('digital_address')}
-            error={form.formState.errors.digital_address?.message}
-            disabled={isApproved}
-          />
-        </div>
-        <div>
-          <Input
-            label="Registration Number"
-            placeholder="Enter registration number"
-            {...form.register('registration_number')}
-            error={form.formState.errors.registration_number?.message}
-            disabled={isApproved}
-          />
-        </div>
+        <Input
+          label="Email"
+          type="email"
+          placeholder="Enter email address"
+          {...form.register('email')}
+          error={form.formState.errors.email?.message}
+          disabled={isApproved}
+        />
+
+        <Input
+          label="Street Address"
+          placeholder="Enter street address"
+          {...form.register('street_address')}
+          error={form.formState.errors.street_address?.message}
+          disabled={isApproved}
+        />
+
+        <Input
+          label="Digital Address"
+          placeholder="Enter digital address (optional)"
+          {...form.register('digital_address')}
+          error={form.formState.errors.digital_address?.message}
+          disabled={isApproved}
+        />
+
+        <Input
+          label="Registration Number"
+          placeholder="Enter registration number"
+          {...form.register('registration_number')}
+          error={form.formState.errors.registration_number?.message}
+          disabled={isApproved}
+        />
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">

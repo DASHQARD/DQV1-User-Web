@@ -57,12 +57,10 @@ export function useCart(query?: Record<string, any>) {
     },
   })
 
-  // Update cart item quantity
   const updateCartItemMutation = useMutation({
-    mutationFn: (data: { cart_item_id: number; quantity: number; amount: number }) =>
-      updateCartItem(data),
+    mutationFn: (data: { cart_item_id: number; quantity: number }) => updateCartItem(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+      queryClient.invalidateQueries()
       success('Cart updated')
     },
     onError: (error: { status: number; message: string }) => {

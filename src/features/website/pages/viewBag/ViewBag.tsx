@@ -6,15 +6,16 @@ import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import { useCart } from '../../hooks/useCart'
 import { usePersistedModalState } from '@/hooks'
 import { MODAL_NAMES } from '@/utils/constants'
-import { deleteRecipient, getRecipients } from '@/features/dashboard/services'
-import type { RecipientResponse } from '@/types/responses'
+import { deleteRecipient } from '@/features/dashboard/services'
 import { useToast } from '@/hooks'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
 import DashpassBg from '@/assets/svgs/Dashx_bg.svg'
 import { ENV_VARS } from '@/utils/constants'
 import { deleteCartItem } from '../../services/cart'
+import { formatCurrency } from '@/utils/format'
+import type { CartListResponse } from '@/types/responses'
 
 export default function ViewBag() {
   const navigate = useNavigate()
@@ -31,14 +32,13 @@ export default function ViewBag() {
     paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
   })
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [recipientToDelete, setRecipientToDelete] = useState<RecipientResponse | null>(null)
+  const [recipientToDelete, setRecipientToDelete] = useState<any | null>(null)
 
-  // Get recipients for all carts
-  const { data: recipientsData } = useQuery({
-    queryKey: ['cart-recipients'],
-    queryFn: () => getRecipients(),
-    enabled: Array.isArray(cartItems) && cartItems.length > 0,
-  })
+  // Filter out paid carts
+  const activeCartItems = useMemo(() => {
+    if (!Array.isArray(cartItems)) return []
+    return cartItems.filter((cart: CartListResponse) => cart.cart_status?.toLowerCase() !== 'paid')
+  }, [cartItems])
 
   // Delete cart item mutation
   const deleteMutation = useMutation({
@@ -57,7 +57,6 @@ export default function ViewBag() {
     mutationFn: deleteRecipient,
     onSuccess: () => {
       toast.success('Recipient removed successfully')
-      queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
     },
     onError: (error: any) => {
@@ -100,7 +99,7 @@ export default function ViewBag() {
   }
 
   // Flatten cart items from nested structure
-  // cartItems is an array of carts, each cart has an items array
+  // Recipients are now included directly in the cart items from /carts endpoint
   type FlattenedCartItem = {
     cart_id: number
     card_id: number
@@ -112,66 +111,96 @@ export default function ViewBag() {
     amount: string
     images?: Array<{ file_url: string; file_name: string }>
     cart_item_id?: number
-    recipient_count?: string
+    total_quantity?: number
+    recipients?: Array<{
+      email: string
+      phone: string
+      message: string
+      name?: string
+      amount?: string
+    }>
   }
 
   const displayCartItems = useMemo(() => {
-    if (!Array.isArray(cartItems)) return []
+    if (!Array.isArray(activeCartItems)) return []
 
     const flattened: FlattenedCartItem[] = []
 
-    cartItems.forEach((cart) => {
-      // Each cart has an items array
-      if (cart.items && Array.isArray(cart.items)) {
-        cart.items.forEach((item) => {
+    activeCartItems.forEach((cart: CartListResponse) => {
+      // Each cart has an items object (not array in the new structure)
+      if (cart.items) {
+        // Handle both array and single object cases
+        const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
+
+        itemsArray.forEach((item: any) => {
           flattened.push({
             cart_id: cart.cart_id,
             card_id: item.card_id,
             product: item.product,
             vendor_name: undefined, // May not be in nested structure
-            type: item.type,
+            type: item.type || 'dashx',
             currency: 'GHS', // Default, adjust if available
-            price: item.total_amount,
-            amount: item.total_amount,
-            images: item.images,
+            price: item.total_amount?.toString() || '0',
+            amount: item.total_amount?.toString() || '0',
+            images: item.images || [],
             cart_item_id: item.cart_item_id,
-            recipient_count: cart.item_count, // Use cart's item_count
+            total_quantity: item.total_quantity || 1,
+            recipients: item.recipients || [], // Recipients are now included in cart items
           })
         })
       }
     })
 
     return flattened
-  }, [cartItems])
+  }, [activeCartItems])
 
-  // Group recipients by cart_id
-  const recipients = useMemo(() => recipientsData?.data || [], [recipientsData?.data])
-  const recipientsByCart = useMemo(() => {
-    const grouped: Record<number, RecipientResponse[]> = {}
-    recipients.forEach((recipient: RecipientResponse) => {
-      if (!grouped[recipient.cart_id]) {
-        grouped[recipient.cart_id] = []
+  // Group recipients by cart_item_id from cart items (recipients are now included in cart response)
+  const recipientsByCartItem = useMemo(() => {
+    const grouped: Record<number, any[]> = {}
+
+    displayCartItems.forEach((item: FlattenedCartItem) => {
+      if (item.cart_item_id && item.recipients && item.recipients.length > 0) {
+        // Calculate per-recipient amount: total_amount / total_quantity
+        const totalAmount = parseFloat(item.amount || '0')
+        const totalQuantity = item.total_quantity || 1
+        const perRecipientAmount = totalAmount / totalQuantity
+
+        grouped[item.cart_item_id] = item.recipients.map((recipient, index) => ({
+          id: `${item.cart_item_id}-${index}`, // Generate unique ID
+          name: recipient.name || recipient.email?.split('@')[0] || 'Recipient',
+          email: recipient.email,
+          phone: recipient.phone,
+          message: recipient.message || '',
+          amount: parseFloat(recipient.amount || perRecipientAmount.toString() || '0'),
+          cart_id: item.cart_id,
+          cart_item_id: item.cart_item_id,
+        }))
       }
-      grouped[recipient.cart_id].push(recipient)
     })
+
     return grouped
-  }, [recipients])
+  }, [displayCartItems])
 
   const handleAddRecipient = (item: FlattenedCartItem) => {
     if (!item.cart_item_id) {
       toast.error('Cart item ID is required')
       return
     }
+    // Calculate per-recipient amount: total_amount / total_quantity
+    const totalAmount = parseFloat(item.amount || '0')
+    const totalQuantity = item.total_quantity || 1
+    const perRecipientAmount = totalAmount / totalQuantity
+
     modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
       cart_item_id: item.cart_item_id,
       cardType: item.type,
       cardProduct: item.product,
       cardCurrency: item.currency || 'GHS',
-      amount: parseFloat(item.amount || '0'),
+      amount: perRecipientAmount,
     })
   }
 
-  const handleEditRecipient = (item: FlattenedCartItem, recipient: RecipientResponse) => {
+  const handleEditRecipient = (item: FlattenedCartItem, recipient: any) => {
     if (!item.cart_item_id) {
       toast.error('Cart item ID is required')
       return
@@ -185,14 +214,21 @@ export default function ViewBag() {
     })
   }
 
-  const handleDeleteRecipient = (recipient: RecipientResponse) => {
-    if (!recipient || !recipient.id) {
-      toast.error('Invalid recipient data. Cannot delete.')
-      return
-    }
-    setRecipientToDelete(recipient)
-    setIsDeleteModalOpen(true)
-  }
+  // const handleDeleteRecipient = (recipient: any) => {
+  //   if (!recipient || !recipient.id) {
+  //     toast.error('Invalid recipient data. Cannot delete.')
+  //     return
+  //   }
+  //   // Extract numeric ID from the generated string ID (format: "cart_item_id-index")
+  //   const numericId =
+  //     typeof recipient.id === 'string' ? parseInt(recipient.id.split('-')[0]) : recipient.id
+  //   if (!numericId) {
+  //     toast.error('Invalid recipient ID. Cannot delete.')
+  //     return
+  //   }
+  //   setRecipientToDelete({ ...recipient, id: numericId })
+  //   setIsDeleteModalOpen(true)
+  // }
 
   const confirmDeleteRecipient = () => {
     if (recipientToDelete && recipientToDelete.id) {
@@ -216,25 +252,33 @@ export default function ViewBag() {
     deleteMutation.mutate(cartId)
   }
 
-  const formatPrice = (price: string | number | undefined | null) => {
-    if (price === undefined || price === null) return 'GHS 0.00'
-    const numPrice = typeof price === 'string' ? parseFloat(price) : price
-    if (isNaN(numPrice) || !isFinite(numPrice)) return 'GHS 0.00'
-    return new Intl.NumberFormat('en-GH', {
-      style: 'currency',
-      currency: 'GHS',
-      minimumFractionDigits: 2,
-    }).format(numPrice)
-  }
-
-  const subtotal = Array.isArray(cartItems)
-    ? cartItems.reduce((total: number, cart) => {
-        const amount = parseFloat(cart.total_amount || '0')
-        return total + amount
-      }, 0)
-    : 0
+  // Calculate total amount from cart totals
+  const subtotal = useMemo(() => {
+    return activeCartItems.reduce(
+      (sum: number, cart: CartListResponse) => sum + parseFloat(cart.total_amount || '0'),
+      0,
+    )
+  }, [activeCartItems])
 
   const totalItems = displayCartItems.length
+
+  // Get card type display name
+  const getCardTypeName = (type: string | undefined) => {
+    if (!type || !type.trim()) return 'DASHQARD'
+    const normalizedType = type.toLowerCase().trim()
+    switch (normalizedType) {
+      case 'dashx':
+        return 'DASHX'
+      case 'dashpro':
+        return 'DASHPRO'
+      case 'dashpass':
+        return 'DASHPASS'
+      case 'dashgo':
+        return 'DASHGO'
+      default:
+        return type.toUpperCase().trim()
+    }
+  }
 
   if (isLoadingCart) {
     return (
@@ -273,14 +317,18 @@ export default function ViewBag() {
                   ? getImageUrl(item.images[0].file_url)
                   : null
 
-                // Get recipients for this cart item
-                const itemRecipients = recipientsByCart[item.cart_id] || []
-                const quantity = parseInt(item.recipient_count || '1', 10)
+                // Get recipients from cart item (recipients are now included in cart response)
+                const itemRecipients =
+                  item.cart_item_id && recipientsByCartItem[item.cart_item_id]
+                    ? recipientsByCartItem[item.cart_item_id]
+                    : []
+
                 const displayPrice = parseFloat(item.amount || '0')
+                const hasRecipients = itemRecipients.length > 0
 
                 return (
                   <div
-                    key={item.cart_id}
+                    key={`${item.cart_id}-${item.cart_item_id || item.card_id}`}
                     className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
                   >
                     <div className="flex gap-6">
@@ -307,13 +355,22 @@ export default function ViewBag() {
                       {/* Item Details */}
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="font-semibold text-gray-900 text-lg">
-                              {item.vendor_name
-                                ? `${item.vendor_name}: ${item.product}`
-                                : item.product}
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 text-lg mb-1">
+                              {item.product || `Card #${item.card_id}`}
                             </h3>
-                            <p className="text-sm text-gray-500 mt-1">Type: {item.type}</p>
+                            <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                              <span>{getCardTypeName(item.type)}</span>
+                              <span>•</span>
+                              <span>ID: {item.card_id}</span>
+                            </div>
+                            {hasRecipients && (
+                              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                                <Icon icon="bi:check-circle" className="size-3" />
+                                {itemRecipients.length} Recipient
+                                {itemRecipients.length !== 1 ? 's' : ''}
+                              </div>
+                            )}
                           </div>
                           <button
                             onClick={() => handleRemoveItem(item.cart_item_id || item.cart_id)}
@@ -326,113 +383,72 @@ export default function ViewBag() {
 
                         <div className="mb-4">
                           <Text variant="p" weight="bold" className="text-primary-500 text-lg">
-                            {item.currency || 'GHS'} {displayPrice.toFixed(2)}
+                            {formatCurrency(displayPrice)}
                           </Text>
                         </div>
 
-                        {/* Quantity Selector */}
-                        <div className="flex items-center gap-4 mb-4">
-                          <span className="text-sm text-gray-600">Quantity:</span>
-                          <div className="flex items-center bg-white rounded-full border border-gray-200 shadow-sm">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (quantity > 1) {
-                                  // TODO: Implement quantity decrease API call
-                                } else {
-                                  handleRemoveItem(item.cart_item_id || item.cart_id)
-                                }
-                              }}
-                              className="p-2 hover:bg-gray-50 rounded-l-full transition-colors"
-                              aria-label="Decrease quantity"
-                            >
-                              <Icon icon="bi:dash-lg" className="text-lg text-gray-600" />
-                            </button>
-                            <span className="px-4 py-2 text-sm font-medium text-gray-700 min-w-8 text-center">
-                              {quantity}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                // TODO: Implement quantity increase API call
-                              }}
-                              className="p-2 hover:bg-gray-50 rounded-r-full transition-colors"
-                              aria-label="Increase quantity"
-                            >
-                              <Icon icon="bi:plus" className="text-lg text-gray-600" />
-                            </button>
-                          </div>
-                        </div>
-
                         {/* Recipients Section */}
-                        <div className="mt-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-700">
-                              Recipients ({itemRecipients.length})
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleAddRecipient(item)}
-                              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-black bg-white border border-black rounded-lg hover:bg-gray-50 transition-colors"
-                            >
-                              <Icon icon="bi:plus-circle" className="text-base" />
-                              Add Recipient
-                            </button>
-                          </div>
-
-                          {itemRecipients.length > 0 ? (
-                            <div className="space-y-2 mt-2">
-                              {itemRecipients
-                                .filter((recipient) => recipient && recipient.id)
-                                .map((recipient) => (
-                                  <div
-                                    key={recipient.id}
-                                    className="bg-gray-50 rounded-lg p-3 text-sm"
-                                  >
-                                    <div className="flex justify-between items-start mb-2">
-                                      <div className="flex-1">
-                                        <p className="font-medium text-gray-900">
-                                          {recipient.name || 'Self'}
-                                        </p>
-                                        {recipient.email && (
-                                          <p className="text-gray-600 text-xs mt-1">
-                                            {recipient.email}
-                                          </p>
-                                        )}
-                                        {recipient.phone && (
-                                          <p className="text-gray-600 text-xs">{recipient.phone}</p>
-                                        )}
-                                      </div>
-                                      <span className="text-primary-500 font-semibold">
-                                        {formatPrice(recipient.amount ?? 0)}
-                                      </span>
-                                    </div>
-                                    <div className="flex gap-2 justify-end mt-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleEditRecipient(item, recipient)}
-                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                                      >
-                                        <Icon icon="bi:pencil" className="text-sm" />
-                                        Edit
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeleteRecipient(recipient)}
-                                        disabled={deleteRecipientMutation.isPending}
-                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
-                                      >
-                                        <Icon icon="bi:trash" className="text-sm" />
-                                        Delete
-                                      </button>
-                                    </div>
+                        {hasRecipients && (
+                          <div className="mt-4 pt-4 border-t border-gray-100">
+                            <div className="space-y-2">
+                              {itemRecipients.map((recipient) => (
+                                <div
+                                  key={recipient.id}
+                                  className="flex items-center justify-between text-sm bg-gray-50 rounded-lg p-3"
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-gray-900 truncate">
+                                      {recipient.name}
+                                    </p>
+                                    <p className="text-gray-500 truncate">{recipient.email}</p>
                                   </div>
-                                ))}
+                                  <div className="flex items-center gap-2 ml-4">
+                                    <span className="text-gray-600 font-medium">
+                                      {formatCurrency(recipient.amount)}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditRecipient(item, recipient)}
+                                      className="text-blue-600 hover:text-blue-700 p-1"
+                                      aria-label="Edit recipient"
+                                    >
+                                      <Icon icon="bi:pencil" className="text-sm" />
+                                    </button>
+                                    {/* <button
+                                      type="button"
+                                      onClick={() => handleDeleteRecipient(recipient)}
+                                      disabled={deleteRecipientMutation.isPending}
+                                      className="text-red-600 hover:text-red-700 p-1 disabled:opacity-50"
+                                      aria-label="Delete recipient"
+                                    >
+                                      <Icon icon="bi:trash" className="text-sm" />
+                                    </button> */}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ) : (
-                            <p className="text-sm text-gray-500 italic">
-                              No recipients added yet. Click "Add Recipient" to assign.
-                            </p>
+                          </div>
+                        )}
+
+                        {/* Add Recipient Button */}
+                        <div className="mt-4">
+                          {itemRecipients.length < (item.total_quantity || 1) && (
+                            <Button
+                              onClick={() => handleAddRecipient(item)}
+                              variant="outline"
+                              size="small"
+                              className="w-full sm:w-auto"
+                            >
+                              <Icon icon="bi:person-plus" className="mr-1.5" />
+                              {itemRecipients.length > 0
+                                ? 'Add Another Recipient'
+                                : 'Assign Recipient'}
+                            </Button>
+                          )}
+                          {itemRecipients.length >= (item.total_quantity || 1) && (
+                            <div className="text-sm text-gray-500 italic">
+                              Maximum recipients reached (quantity: {item.total_quantity || 1})
+                            </div>
                           )}
                         </div>
                       </div>
@@ -450,22 +466,14 @@ export default function ViewBag() {
 
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="font-semibold text-gray-900">{formatPrice(subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Estimated Shipping</span>
-                  <span className="font-semibold text-green-600">FREE</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Estimated Taxes</span>
-                  <span className="text-gray-500">Calculated at Checkout</span>
+                  <span className="text-gray-600">Subtotal ({totalItems} items)</span>
+                  <span className="font-semibold text-gray-900">{formatCurrency(subtotal)}</span>
                 </div>
                 <div className="border-t border-gray-200 pt-4 mt-4">
                   <div className="flex justify-between">
                     <span className="text-lg font-bold text-gray-900">Total</span>
                     <span className="text-lg font-bold text-gray-900">
-                      {formatPrice(Number(subtotal))}
+                      {formatCurrency(subtotal)}
                     </span>
                   </div>
                 </div>
@@ -473,7 +481,7 @@ export default function ViewBag() {
 
               <Button
                 onClick={() => navigate('/checkout')}
-                variant="primary"
+                variant="secondary"
                 className="w-full mb-4"
               >
                 Proceed to Checkout
@@ -517,7 +525,7 @@ export default function ViewBag() {
                   <p className="text-sm text-gray-600">{recipientToDelete.phone}</p>
                 )}
                 <p className="text-sm font-semibold text-primary-500 mt-2">
-                  {formatPrice(recipientToDelete.amount ?? 0)}
+                  {formatCurrency(recipientToDelete.amount ?? 0)}
                 </p>
               </div>
             </div>

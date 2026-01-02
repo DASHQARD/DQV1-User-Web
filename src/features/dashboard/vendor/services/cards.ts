@@ -1,4 +1,5 @@
 import { deleteMethod, getList, postMethod, putMethod } from '@/services/requests'
+import { getMethod } from '@/services/requests'
 import type { CreateExperienceData } from '@/types'
 
 const commonManagerUrl = '/cards'
@@ -21,4 +22,8 @@ export const updateCard = async (data: CreateExperienceData & { id: number }) =>
 
 export const deleteCard = async (id: string | number) => {
   return await deleteMethod(`${commonManagerUrl}/${id}`)
+}
+
+export const getCardsMetrics = async () => {
+  return await getMethod(`${commonManagerUrl}/users/metrics`)
 }

@@ -10,6 +10,8 @@ import {
   getRequestsVendor,
   getCardsByVendorId,
   getCardById,
+  getCardsMetrics,
+  getAllVendorsDetails,
 } from '../services'
 import { userProfile } from '@/hooks'
 
@@ -96,6 +98,20 @@ export function vendorQueries() {
     })
   }
 
+  function useGetCardsMetricsService() {
+    return useQuery({
+      queryKey: ['cards-metrics'],
+      queryFn: getCardsMetrics,
+    })
+  }
+
+  function useGetAllVendorsDetailsForVendorService() {
+    return useQuery({
+      queryKey: ['all-vendors-details-for-vendor'],
+      queryFn: getAllVendorsDetails,
+    })
+  }
+
   return {
     useGetAllVendorsService,
     useGetAllVendorsDetailsService,
@@ -106,5 +122,7 @@ export function vendorQueries() {
     useGetRequestsVendorService,
     useGetCardsByVendorIdService,
     useGetCardByIdService,
+    useGetCardsMetricsService,
+    useGetAllVendorsDetailsForVendorService,
   }
 }

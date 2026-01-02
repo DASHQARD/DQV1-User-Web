@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Button,
@@ -8,18 +8,21 @@ import {
   RadioGroupItem,
   Combobox,
   Loader,
-  OTPInput,
-  ResendCode,
   BasePhoneInput,
 } from '@/components'
 import { Icon } from '@/libs'
 import { useAuthStore } from '@/stores'
 import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
-import { useDebouncedState, useCountdown, useCountriesData } from '@/hooks'
+import { useDebouncedState, useCountriesData, userProfile } from '@/hooks'
 import type { DropdownOption } from '@/types'
-import { useMutation } from '@tanstack/react-query'
-import { axiosClient } from '@/libs'
 import { useToast } from '@/hooks'
+import {
+  getCardBalance,
+  processCardsRedemption,
+  type CardBalanceResponse,
+  type CardsRedemptionPayload,
+  type RedemptionResponse,
+} from '@/features/dashboard/services/redemptions'
 
 type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
@@ -31,73 +34,31 @@ interface VendorCard {
   card_price: number
   currency: string
   status: string
+  branch_id?: number
+  branch_name?: string
+  branch_location?: string
 }
 
-interface BalanceResponse {
-  balance: number
-  card_type: string
-}
-
-// Service function to fetch balance
-const getCardBalance = async (
-  phoneNumber?: string,
-  userId?: string | number,
-  cardType?: string,
-  vendorId?: string | number,
-): Promise<BalanceResponse | null> => {
-  try {
-    const params: Record<string, any> = {}
-    if (phoneNumber) params.phone_number = phoneNumber
-    if (userId) params.user_id = userId
-    if (cardType) params.card_type = cardType
-    if (vendorId) params.vendor_id = vendorId
-
-    // TODO: Replace with actual API endpoint when available
-    // For now, this is a placeholder that returns null
-    // const response = await getList('/gift-cards/balance', params)
-    // return response
-
-    return null
-  } catch (error) {
-    console.error('Error fetching balance:', error)
-    return null
-  }
-}
-
-// Service function to send redemption OTP
-const sendRedemptionOTP = async (data: {
-  phone_number?: string
-  user_id?: string | number
-  redemption_method: string
-  vendor_id?: string | number
-  card_type?: string
-  amount?: number
-  card_id?: number
-}): Promise<{ status: string; message: string }> => {
-  const response = await axiosClient.post('/redemptions/send-otp', data)
-  return response.data
-}
-
-// Service function to verify redemption OTP
-const verifyRedemptionOTP = async (data: {
-  otp: string
-  phone_number?: string
-  user_id?: string | number
-  redemption_method: string
-  vendor_id?: string | number
-  card_type?: string
-  amount?: number
-  card_id?: number
-}): Promise<{ status: string; message: string; data?: any }> => {
-  const response = await axiosClient.post('/redemptions/verify-otp', data)
-  return response.data
+// Helper function to convert card type to API format
+const formatCardTypeForAPI = (
+  cardType: string,
+): 'DashPro' | 'DashGo' | 'DashX' | 'DashPass' | undefined => {
+  const normalized = cardType?.toLowerCase()
+  if (normalized === 'dashpro') return 'DashPro'
+  if (normalized === 'dashgo') return 'DashGo'
+  if (normalized === 'dashx') return 'DashX'
+  if (normalized === 'dashpass') return 'DashPass'
+  return undefined
 }
 
 export default function RedemptionPage() {
   const navigate = useNavigate()
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { countries: phoneCountries } = useCountriesData()
+  const { useGetUserProfileService } = userProfile()
+  const { data: user } = useGetUserProfileService()
+  console.log('user', user)
 
   // State management
   const [redemptionMethod, setRedemptionMethod] = useState<RedemptionMethod | ''>('')
@@ -112,16 +73,14 @@ export default function RedemptionPage() {
   const [cardType, setCardType] = useState<CardType | ''>('')
   const [amount, setAmount] = useState('')
   const [balance, setBalance] = useState<number | null>(null)
-  const [dashProBalance, setDashProBalance] = useState<number | null>(null)
   const [dashGoBalance, setDashGoBalance] = useState<number | null>(null)
   const [balanceLoading, setBalanceLoading] = useState(false)
   const [balanceError, setBalanceError] = useState<string | null>(null)
   const [vendorName, setVendorName] = useState('')
   const [selectedCard, setSelectedCard] = useState<VendorCard | null>(null)
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
-  const [step, setStep] = useState<'method' | 'details' | 'otp' | 'confirm' | 'success'>('method')
-  const [otp, setOtp] = useState('')
-  const [otpError, setOtpError] = useState('')
+  const [step, setStep] = useState<'method' | 'details' | 'success'>('method')
+  const [isProcessingRedemption, setIsProcessingRedemption] = useState(false)
   const toast = useToast()
 
   // Debounced vendor search
@@ -159,12 +118,12 @@ export default function RedemptionPage() {
     }))
   }, [vendors])
 
-  // Extract cards from selected vendor
+  // Extract cards from selected vendor with branch information
   const vendorCards = useMemo(() => {
     if (!selectedVendor) return []
     const cards: VendorCard[] = []
 
-    // Extract cards from branches_with_cards
+    // Extract cards from branches_with_cards (includes branch info)
     if (selectedVendor.branches_with_cards && Array.isArray(selectedVendor.branches_with_cards)) {
       selectedVendor.branches_with_cards.forEach((branch: any) => {
         if (branch.cards && Array.isArray(branch.cards)) {
@@ -176,13 +135,16 @@ export default function RedemptionPage() {
               card_price: card.card_price || 0,
               currency: card.currency || 'GHS',
               status: card.status || 'active',
+              branch_id: branch.branch_id,
+              branch_name: branch.branch_name,
+              branch_location: branch.branch_location,
             })
           })
         }
       })
     }
 
-    // Extract cards from vendor_cards if available
+    // Extract cards from vendor_cards if available (no branch info)
     if (selectedVendor.vendor_cards && Array.isArray(selectedVendor.vendor_cards)) {
       selectedVendor.vendor_cards.forEach((card: any) => {
         cards.push({
@@ -205,111 +167,151 @@ export default function RedemptionPage() {
     return vendorCards.filter((card) => card.card_type === cardType)
   }, [vendorCards, cardType])
 
-  // Fetch balance when phone number or vendor changes
+  // Fetch balance when phone number, selected card, or vendor changes
   useEffect(() => {
     const fetchBalance = async () => {
-      if (!selectedVendor) {
+      // Get phone number - from user if authenticated, otherwise from phoneNumber state
+      const userPhoneNumber = isAuthenticated
+        ? (user as any)?.phonenumber || (user as any)?.phone || ''
+        : phoneNumber
+
+      if (!userPhoneNumber) {
         setBalance(null)
-        setDashProBalance(null)
+        setDashGoBalance(null)
+        return
+      }
+
+      // Format phone number (remove +233 prefix if present, keep only digits)
+      const formattedPhone = userPhoneNumber.replace(/^\+?233/, '').replace(/\D/g, '')
+
+      if (!formattedPhone || formattedPhone.length < 10) {
+        setBalance(null)
         setDashGoBalance(null)
         return
       }
 
       // Only fetch balance if we have the required info
       if (redemptionMethod === 'vendor_mobile_money') {
-        // For vendor mobile money, we need phone number if not authenticated
-        if (!isAuthenticated && !phoneNumber) {
-          setBalance(null)
-          return
-        }
+        // For vendor mobile money, fetch DashPro balance
         setBalanceLoading(true)
         setBalanceError(null)
         try {
-          const balanceData = await getCardBalance(
-            !isAuthenticated ? phoneNumber : undefined,
-            isAuthenticated ? user?.user_id : undefined,
-            'dashpro',
-            selectedVendor.vendor_id,
-          )
-          if (balanceData) {
-            setBalance(balanceData.balance)
+          const response: CardBalanceResponse = await getCardBalance({
+            phone_number: formattedPhone,
+            card_type: 'DashPro',
+          })
+
+          if (response?.data?.balance !== undefined) {
+            setBalance(response.data.balance)
             setBalanceError(null)
           } else {
             setBalance(null)
-            setBalanceError('Unable to fetch balance. Please try again.')
+            setBalanceError(response?.message || 'Unable to fetch balance. Please try again.')
           }
         } catch (error: any) {
           console.error('Error fetching balance:', error)
           setBalance(null)
-          setBalanceError(error?.message || 'Failed to fetch balance. Please try again.')
+          setBalanceError(
+            error?.response?.data?.message ||
+              error?.message ||
+              'Failed to fetch balance. Please try again.',
+          )
         } finally {
           setBalanceLoading(false)
         }
       } else if (redemptionMethod === 'vendor_id') {
-        // For vendor ID, we need phone number if not authenticated
-        if (!isAuthenticated && !phoneNumber) {
-          setBalance(null)
-          setDashProBalance(null)
-          setDashGoBalance(null)
-          return
-        }
-
-        // Fetch both DashPro and DashGo balances when vendor is selected
-        setBalanceLoading(true)
-        setBalanceError(null)
-        try {
-          // Fetch DashPro balance
-          const dashProData = await getCardBalance(
-            !isAuthenticated ? phoneNumber : undefined,
-            isAuthenticated ? user?.user_id : undefined,
-            'dashpro',
-            selectedVendor.vendor_id,
-          )
-
-          // Fetch DashGo balance
-          const dashGoData = await getCardBalance(
-            !isAuthenticated ? phoneNumber : undefined,
-            isAuthenticated ? user?.user_id : undefined,
-            'dashgo',
-            selectedVendor.vendor_id,
-          )
-
-          if (dashProData) {
-            setDashProBalance(dashProData.balance)
-          } else {
-            setDashProBalance(null)
-          }
-
-          if (dashGoData) {
-            setDashGoBalance(dashGoData.balance)
-          } else {
-            setDashGoBalance(null)
-          }
-
-          // Set the balance based on selected card type
-          if (cardType === 'dashpro' && dashProData) {
-            setBalance(dashProData.balance)
-          } else if (cardType === 'dashgo' && dashGoData) {
-            setBalance(dashGoData.balance)
-          } else {
-            setBalance(null)
-          }
-
+        // For vendor ID, fetch balance based on selected card
+        if (selectedCard?.card_type) {
+          setBalanceLoading(true)
           setBalanceError(null)
-        } catch (error: any) {
-          console.error('Error fetching balance:', error)
-          setBalance(null)
-          setDashProBalance(null)
-          setDashGoBalance(null)
-          setBalanceError(error?.message || 'Failed to fetch balance. Please try again.')
-        } finally {
-          setBalanceLoading(false)
+          try {
+            const cardTypeForAPI = formatCardTypeForAPI(selectedCard.card_type)
+
+            if (cardTypeForAPI) {
+              const response: CardBalanceResponse = await getCardBalance({
+                phone_number: formattedPhone,
+                card_type: cardTypeForAPI,
+              })
+
+              if (response?.data?.balance !== undefined) {
+                const balanceValue = response.data.balance
+
+                // Update the appropriate balance state based on card type
+                if (selectedCard.card_type.toLowerCase() === 'dashgo') {
+                  setDashGoBalance(balanceValue)
+                  setBalance(balanceValue)
+                } else {
+                  setBalance(balanceValue)
+                }
+                setBalanceError(null)
+              } else {
+                setBalance(null)
+                if (selectedCard.card_type.toLowerCase() === 'dashgo') {
+                  setDashGoBalance(null)
+                }
+                setBalanceError(response?.message || 'Unable to fetch balance. Please try again.')
+              }
+            } else {
+              setBalance(null)
+              setBalanceError('Invalid card type')
+            }
+          } catch (error: any) {
+            console.error('Error fetching balance:', error)
+            setBalance(null)
+            if (selectedCard.card_type.toLowerCase() === 'dashgo') {
+              setDashGoBalance(null)
+            }
+            setBalanceError(
+              error?.response?.data?.message ||
+                error?.message ||
+                'Failed to fetch balance. Please try again.',
+            )
+          } finally {
+            setBalanceLoading(false)
+          }
+        } else {
+          // If no card selected, fetch DashGo balance
+          setBalanceLoading(true)
+          setBalanceError(null)
+          try {
+            // Fetch DashGo balance
+            const dashGoResponse: CardBalanceResponse = await getCardBalance({
+              phone_number: formattedPhone,
+              card_type: 'DashGo',
+            })
+
+            if (dashGoResponse?.data?.balance !== undefined) {
+              setDashGoBalance(dashGoResponse.data.balance)
+            } else {
+              setDashGoBalance(null)
+            }
+
+            // Set the balance based on selected card type
+            if (cardType === 'dashgo' && dashGoResponse?.data?.balance !== undefined) {
+              setBalance(dashGoResponse.data.balance)
+            } else {
+              setBalance(null)
+            }
+
+            setBalanceError(null)
+          } catch (error: any) {
+            console.error('Error fetching balance:', error)
+            setBalance(null)
+            setDashGoBalance(null)
+            setBalanceError(
+              error?.response?.data?.message ||
+                error?.message ||
+                'Failed to fetch balance. Please try again.',
+            )
+          } finally {
+            setBalanceLoading(false)
+          }
         }
       }
     }
 
     fetchBalance()
-  }, [phoneNumber, selectedVendor, cardType, isAuthenticated, user, redemptionMethod])
+  }, [phoneNumber, selectedCard, selectedVendor, cardType, isAuthenticated, user, redemptionMethod])
 
   // Handle vendor selection
   const handleVendorSelect = (vendorId: string) => {
@@ -388,6 +390,7 @@ export default function RedemptionPage() {
       setVendorName(vendor.business_name || vendor.vendor_name || 'Unknown Vendor')
       setSelectedCard(null)
       setSelectedBranchId(null)
+      setCardType('')
     }
   }
 
@@ -404,8 +407,6 @@ export default function RedemptionPage() {
     setBalance(null)
     setSelectedCard(null)
     setVendorSearch('')
-    setOtp('')
-    setOtpError('')
   }
 
   // Handle vendor mobile money validation
@@ -458,121 +459,75 @@ export default function RedemptionPage() {
     setAmount(value)
   }
 
-  // Send OTP mutation
-  const sendOTPMutation = useMutation({
-    mutationFn: sendRedemptionOTP,
-    onSuccess: () => {
-      toast.success('OTP sent successfully')
-      setStep('otp')
-    },
-    onError: (error: { status: number; message: string }) => {
-      toast.error(error?.message || 'Failed to send OTP. Please try again.')
-    },
-  })
-
-  // Verify OTP mutation
-  const verifyOTPMutation = useMutation({
-    mutationFn: verifyRedemptionOTP,
-    onSuccess: () => {
-      toast.success('OTP verified successfully')
-      setStep('confirm')
-      setOtpError('')
-    },
-    onError: (error: { status: number; message: string }) => {
-      setOtpError(error?.message || 'Invalid OTP. Please try again.')
-      toast.error(error?.message || 'Invalid OTP. Please try again.')
-    },
-  })
-
-  // Countdown for resending OTP
-  const { resendOtp, formatCountdown, countdown, startCountdown } = useCountdown({
-    sendOtp: async () => {
-      await sendOTPMutation.mutateAsync({
-        phone_number: !isAuthenticated ? phoneNumber : undefined,
-        user_id: isAuthenticated ? user?.user_id : undefined,
-        redemption_method: redemptionMethod,
-        vendor_id: selectedVendor?.vendor_id,
-        card_type: cardType || undefined,
-        amount: amount ? parseFloat(amount) : undefined,
-        card_id: selectedCard?.card_id,
-      })
-    },
-    countdown: 120,
-  })
-
-  // Start countdown when OTP step is reached
-  useEffect(() => {
-    if (step === 'otp') {
-      startCountdown()
-    }
-  }, [step, startCountdown])
-
-  // Handle redemption submission - send OTP
+  // Handle redemption submission - process cards redemption directly
   const handleRedeem = async () => {
-    if (
-      redemptionMethod === 'vendor_id' &&
-      !selectedCard &&
-      cardType !== 'dashpro' &&
-      cardType !== 'dashgo'
-    ) {
-      // For DashX and DashPass, a card must be selected
-      return
+    if (redemptionMethod === 'vendor_id') {
+      // For vendor_id method, only DashGo, DashX, and DashPass are allowed
+      if (!selectedCard && cardType !== 'dashgo') {
+        // For DashX and DashPass, a card must be selected
+        toast.error('Please select a card')
+        return
+      }
+
+      if (!cardType || (cardType !== 'dashgo' && cardType !== 'dashx' && cardType !== 'dashpass')) {
+        toast.error('Please select a valid card type')
+        return
+      }
+
+      // Get phone number
+      const userPhoneNumber = isAuthenticated
+        ? (user as any)?.phonenumber || (user as any)?.phone || ''
+        : phoneNumber
+
+      if (!userPhoneNumber) {
+        toast.error('Phone number is required')
+        return
+      }
+
+      // Convert card type to API format
+      const cardTypeForAPI = formatCardTypeForAPI(cardType)
+      if (
+        !cardTypeForAPI ||
+        (cardTypeForAPI !== 'DashGo' && cardTypeForAPI !== 'DashX' && cardTypeForAPI !== 'DashPass')
+      ) {
+        toast.error('Invalid card type')
+        return
+      }
+
+      setIsProcessingRedemption(true)
+      try {
+        const payload: CardsRedemptionPayload = {
+          card_type: cardTypeForAPI,
+          phone_number: userPhoneNumber.replace(/^\+?233/, '0'),
+        }
+
+        const response: RedemptionResponse = await processCardsRedemption(payload)
+
+        if (
+          response?.status === 'success' ||
+          response?.statusCode === 200 ||
+          response?.statusCode === 201
+        ) {
+          toast.success(response?.message || 'Redemption processed successfully')
+          setStep('success')
+        } else {
+          toast.error(response?.message || 'Redemption failed. Please try again.')
+        }
+      } catch (error: any) {
+        console.error('Redemption error:', error)
+        toast.error(
+          error?.response?.data?.message ||
+            error?.message ||
+            'Redemption failed. Please try again.',
+        )
+      } finally {
+        setIsProcessingRedemption(false)
+      }
+    } else {
+      // For vendor_mobile_money, handle DashPro redemption
+      // TODO: Implement DashPro redemption flow if needed
+      toast.error('DashPro redemption via vendor mobile money is not yet implemented')
     }
-
-    // Send OTP
-    sendOTPMutation.mutate({
-      phone_number: !isAuthenticated ? phoneNumber : undefined,
-      user_id: isAuthenticated ? user?.user_id : undefined,
-      redemption_method: redemptionMethod,
-      vendor_id: selectedVendor?.vendor_id,
-      card_type: cardType || undefined,
-      amount: amount ? parseFloat(amount) : undefined,
-      card_id: selectedCard?.card_id,
-    })
-  }
-
-  // Handle OTP verification
-  const handleVerifyOTP = useCallback(() => {
-    if (otp.length !== 6) {
-      setOtpError('Please enter a valid 6-digit OTP')
-      return
-    }
-
-    verifyOTPMutation.mutate({
-      otp,
-      phone_number: !isAuthenticated ? phoneNumber : undefined,
-      user_id: isAuthenticated ? user?.user_id : undefined,
-      redemption_method: redemptionMethod,
-      vendor_id: selectedVendor?.vendor_id,
-      card_type: cardType || undefined,
-      amount: amount ? parseFloat(amount) : undefined,
-      card_id: selectedCard?.card_id,
-    })
-  }, [
-    otp,
-    isAuthenticated,
-    phoneNumber,
-    user?.user_id,
-    redemptionMethod,
-    selectedVendor?.vendor_id,
-    cardType,
-    amount,
-    selectedCard?.card_id,
-    verifyOTPMutation,
-  ])
-
-  // Auto-submit when OTP is complete
-  useEffect(() => {
-    if (otp.length === 6 && step === 'otp') {
-      handleVerifyOTP()
-    }
-  }, [otp, step, handleVerifyOTP])
-
-  // Handle confirmation
-  const handleConfirm = async () => {
-    // TODO: Call redemption API
-    // On success, navigate to success page
-    setStep('success')
   }
 
   // Reset vendor selection
@@ -624,10 +579,10 @@ export default function RedemptionPage() {
 
               {/* Trust Indicators */}
               <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-3 px-4 py-3 bg-white/8 backdrop-blur-md border border-white/12 rounded-xl">
+                {/* <div className="flex items-center gap-3 px-4 py-3 bg-white/8 backdrop-blur-md border border-white/12 rounded-xl">
                   <Icon icon="bi:shield-fill-check" className="text-xl text-yellow-400" />
                   <span className="text-sm font-medium">256-bit SSL Encryption</span>
-                </div>
+                </div> */}
                 <div className="flex items-center gap-3 px-4 py-3 bg-white/8 backdrop-blur-md border border-white/12 rounded-xl">
                   <Icon icon="bi:lightning-charge-fill" className="text-xl text-yellow-400" />
                   <span className="text-sm font-medium">Instant Processing</span>
@@ -861,7 +816,7 @@ export default function RedemptionPage() {
                             </div>
                             <div className="flex-1">
                               <div className="font-semibold text-gray-900">
-                                {user?.fullname || user?.name || 'User'}
+                                {user?.fullname || 'User'}
                               </div>
                               <div className="text-xs text-gray-600">
                                 {user?.phonenumber || 'Phone not available'}
@@ -954,7 +909,7 @@ export default function RedemptionPage() {
                                   <p className="text-sm text-gray-600">
                                     Account:{' '}
                                     {isAuthenticated
-                                      ? user?.fullname || user?.name || 'User'
+                                      ? user?.fullname || 'User'
                                       : phoneNumber || 'N/A'}
                                   </p>
                                 </div>
@@ -993,7 +948,7 @@ export default function RedemptionPage() {
                           variant="outline"
                           onClick={handleResetVendor}
                           className="flex-1"
-                          disabled={sendOTPMutation.isPending}
+                          disabled={isProcessingRedemption}
                         >
                           <Icon icon="bi:arrow-clockwise" className="mr-2" />
                           Reset Form
@@ -1007,12 +962,12 @@ export default function RedemptionPage() {
                             (!isAuthenticated && !phoneNumber) ||
                             !amount ||
                             (balance !== null && parseFloat(amount) > balance) ||
-                            sendOTPMutation.isPending
+                            isProcessingRedemption
                           }
-                          loading={sendOTPMutation.isPending}
+                          loading={isProcessingRedemption}
                           className="flex-1"
                         >
-                          {sendOTPMutation.isPending ? (
+                          {isProcessingRedemption ? (
                             <span className="flex items-center gap-2">
                               <Loader />
                               Processing...
@@ -1027,7 +982,7 @@ export default function RedemptionPage() {
                       </div>
 
                       {/* Security Notice */}
-                      <div className="mt-6 p-4 bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-300 rounded-xl flex gap-3">
+                      {/* <div className="mt-6 p-4 bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-300 rounded-xl flex gap-3">
                         <Icon
                           icon="bi:shield-lock"
                           className="text-yellow-600 text-xl flex-shrink-0 mt-0.5"
@@ -1036,7 +991,7 @@ export default function RedemptionPage() {
                           <strong>Secure Transaction:</strong> This redemption is protected by
                           256-bit SSL encryption and requires SMS verification to complete.
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   )}
 
@@ -1186,20 +1141,7 @@ export default function RedemptionPage() {
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                               Select Card Type <span className="text-red-500">*</span>
                             </label>
-                            <div className="grid grid-cols-2 gap-4">
-                              <button
-                                onClick={() => {
-                                  setCardType('dashpro')
-                                  setSelectedCard(null)
-                                }}
-                                className={`p-4 border-2 rounded-lg transition-colors ${
-                                  cardType === 'dashpro'
-                                    ? 'border-primary-500 bg-primary-50'
-                                    : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                              >
-                                DashPro
-                              </button>
+                            <div className="grid grid-cols-3 gap-4">
                               <button
                                 onClick={() => {
                                   setCardType('dashgo')
@@ -1242,7 +1184,7 @@ export default function RedemptionPage() {
                             </div>
                           </div>
 
-                          {/* Show cards for selected card type (DashX and DashPass) */}
+                          {/* Show cards for selected card type (DashX and DashPass only) - Combined with branch selection */}
                           {cardType && (cardType === 'dashx' || cardType === 'dashpass') && (
                             <div>
                               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1255,49 +1197,85 @@ export default function RedemptionPage() {
                                   </Text>
                                 </div>
                               ) : (
-                                <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
-                                  {filteredCards.map((card) => (
-                                    <button
-                                      key={card.card_id}
-                                      onClick={() => setSelectedCard(card)}
-                                      className={`p-4 border-2 rounded-lg text-left transition-colors ${
-                                        selectedCard?.card_id === card.card_id
-                                          ? 'border-primary-500 bg-primary-50'
-                                          : 'border-gray-200 hover:border-gray-300'
-                                      }`}
-                                    >
-                                      <div className="flex justify-between items-center">
-                                        <div>
-                                          <Text
-                                            variant="span"
-                                            weight="semibold"
-                                            className="text-gray-900"
-                                          >
-                                            {card.card_name}
-                                          </Text>
-                                          <Text
-                                            variant="span"
-                                            className="text-gray-600 text-sm block mt-1"
-                                          >
-                                            {card.currency} {card.card_price.toFixed(2)}
-                                          </Text>
+                                <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+                                  {filteredCards.map((card) => {
+                                    const isSelected =
+                                      selectedCard?.card_id === card.card_id &&
+                                      selectedBranchId === card.branch_id
+                                    return (
+                                      <button
+                                        key={`${card.card_id}-${card.branch_id || 'no-branch'}`}
+                                        onClick={() => {
+                                          setSelectedCard(card)
+                                          setSelectedBranchId(card.branch_id || null)
+                                        }}
+                                        className={`p-4 border-2 rounded-lg text-left transition-colors ${
+                                          isSelected
+                                            ? 'border-primary-500 bg-primary-50'
+                                            : 'border-gray-200 hover:border-gray-300'
+                                        }`}
+                                      >
+                                        <div className="flex justify-between items-start">
+                                          <div className="flex-1">
+                                            <Text
+                                              variant="span"
+                                              weight="semibold"
+                                              className="text-gray-900 block"
+                                            >
+                                              {card.card_name}
+                                            </Text>
+                                            <Text
+                                              variant="span"
+                                              className="text-gray-600 text-sm block mt-1"
+                                            >
+                                              {card.currency} {card.card_price.toFixed(2)}
+                                            </Text>
+                                            {card.branch_name && (
+                                              <div className="mt-2 flex items-start gap-2">
+                                                <Icon
+                                                  icon="bi:shop"
+                                                  className="text-primary-600 text-sm mt-0.5"
+                                                />
+                                                <div>
+                                                  <Text
+                                                    variant="span"
+                                                    className="text-gray-700 text-sm font-medium block"
+                                                  >
+                                                    {card.branch_name}
+                                                  </Text>
+                                                  {card.branch_location && (
+                                                    <Text
+                                                      variant="span"
+                                                      className="text-gray-500 text-xs block mt-0.5"
+                                                    >
+                                                      {card.branch_location}
+                                                    </Text>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                          {isSelected && (
+                                            <div className="flex-shrink-0 ml-3">
+                                              <div className="w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center">
+                                                <Icon
+                                                  icon="bi:check"
+                                                  className="text-white text-sm"
+                                                />
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
-                                        {selectedCard?.card_id === card.card_id && (
-                                          <Icon
-                                            icon="bi:check-circle-fill"
-                                            className="text-primary-600 text-xl"
-                                          />
-                                        )}
-                                      </div>
-                                    </button>
-                                  ))}
+                                      </button>
+                                    )
+                                  })}
                                 </div>
                               )}
                             </div>
                           )}
 
-                          {/* Amount input for DashPro and DashGo */}
-                          {(cardType === 'dashpro' || cardType === 'dashgo') && (
+                          {/* Amount input for DashGo (removed DashPro from vendor_id method) */}
+                          {cardType === 'dashgo' && (
                             <div>
                               <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Amount <span className="text-red-500">*</span>
@@ -1313,7 +1291,7 @@ export default function RedemptionPage() {
                             </div>
                           )}
 
-                          {/* Balance display - Show DashPro and DashGo balances */}
+                          {/* Balance display - Show DashGo balance (DashPro not available in vendor_id method) */}
                           {balanceLoading ? (
                             <div className="p-4 bg-gray-50 rounded-lg flex items-center gap-2">
                               <Loader />
@@ -1323,45 +1301,6 @@ export default function RedemptionPage() {
                             </div>
                           ) : (
                             <div className="space-y-4">
-                              {/* DashPro Balance */}
-                              {dashProBalance !== null && (
-                                <div>
-                                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    DashPro Balance
-                                  </label>
-                                  <div
-                                    className={`p-4 rounded-lg ${
-                                      cardType === 'dashpro'
-                                        ? 'bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200'
-                                        : 'bg-gray-50'
-                                    }`}
-                                  >
-                                    <Text
-                                      variant="h4"
-                                      weight="semibold"
-                                      className="text-primary-600"
-                                    >
-                                      GHS {dashProBalance.toFixed(2)}
-                                    </Text>
-                                  </div>
-                                  {cardType === 'dashpro' &&
-                                    amount &&
-                                    parseFloat(amount) > dashProBalance && (
-                                      <p className="mt-2 text-sm text-red-600">
-                                        Insufficient DashPro balance
-                                      </p>
-                                    )}
-                                  {cardType === 'dashpro' &&
-                                    amount &&
-                                    parseFloat(amount) <= dashProBalance &&
-                                    parseFloat(amount) > 0 && (
-                                      <p className="mt-2 text-sm text-green-600">
-                                        DashPro amount valid
-                                      </p>
-                                    )}
-                                </div>
-                              )}
-
                               {/* DashGo Balance */}
                               {dashGoBalance !== null && (
                                 <div>
@@ -1401,16 +1340,14 @@ export default function RedemptionPage() {
                                 </div>
                               )}
 
-                              {/* Show message if no balances available */}
-                              {dashProBalance === null &&
-                                dashGoBalance === null &&
-                                (isAuthenticated || phoneNumber) && (
-                                  <div className="p-4 bg-gray-50 rounded-lg">
-                                    <Text variant="span" className="text-gray-600 text-sm">
-                                      No balance available for DashPro or DashGo
-                                    </Text>
-                                  </div>
-                                )}
+                              {/* Show message if no balance available */}
+                              {dashGoBalance === null && (isAuthenticated || phoneNumber) && (
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                  <Text variant="span" className="text-gray-600 text-sm">
+                                    No balance available for DashGo
+                                  </Text>
+                                </div>
+                              )}
 
                               {/* Show message if phone number not entered */}
                               {!isAuthenticated && !phoneNumber && (
@@ -1423,222 +1360,26 @@ export default function RedemptionPage() {
                             </div>
                           )}
 
-                          {/* Branch selection if multiple branches */}
-                          {selectedVendor.branches_with_cards &&
-                            selectedVendor.branches_with_cards.length > 1 && (
-                              <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                  Select Branch <span className="text-red-500">*</span>
-                                </label>
-                                <div className="space-y-2">
-                                  {selectedVendor.branches_with_cards.map((branch: any) => (
-                                    <button
-                                      key={branch.branch_id}
-                                      onClick={() => setSelectedBranchId(branch.branch_id)}
-                                      className={`w-full p-3 border-2 rounded-lg text-left transition-colors ${
-                                        selectedBranchId === branch.branch_id
-                                          ? 'border-primary-500 bg-primary-50'
-                                          : 'border-gray-200 hover:border-gray-300'
-                                      }`}
-                                    >
-                                      <Text
-                                        variant="span"
-                                        weight="semibold"
-                                        className="text-gray-900"
-                                      >
-                                        {branch.branch_name}
-                                      </Text>
-                                      {branch.branch_location && (
-                                        <Text
-                                          variant="span"
-                                          className="text-gray-600 text-sm block mt-1"
-                                        >
-                                          {branch.branch_location}
-                                        </Text>
-                                      )}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
                           <Button
                             variant="primary"
                             onClick={handleRedeem}
-                            disabled={Boolean(
+                            disabled={
                               !selectedVendor ||
-                                !cardType ||
-                                ((cardType === 'dashx' || cardType === 'dashpass') &&
-                                  !selectedCard) ||
-                                ((cardType === 'dashpro' || cardType === 'dashgo') &&
-                                  (!amount || parseFloat(amount) <= 0)) ||
-                                (!isAuthenticated && !phoneNumber) ||
-                                (cardType === 'dashpro' &&
-                                  dashProBalance !== null &&
-                                  amount &&
-                                  parseFloat(amount) > dashProBalance) ||
-                                (cardType === 'dashgo' &&
-                                  dashGoBalance !== null &&
-                                  amount &&
-                                  parseFloat(amount) > dashGoBalance),
-                            )}
+                              !cardType ||
+                              ((cardType === 'dashx' || cardType === 'dashpass') &&
+                                (!selectedCard || !selectedBranchId)) ||
+                              (!isAuthenticated && !phoneNumber) ||
+                              isProcessingRedemption
+                            }
+                            loading={isProcessingRedemption}
                             className="w-full"
                           >
-                            Redeem
+                            {isProcessingRedemption ? 'Processing...' : 'Redeem'}
                           </Button>
                         </>
                       )}
                     </div>
                   )}
-                </div>
-              )}
-
-              {step === 'otp' && (
-                <div className="space-y-6">
-                  <button
-                    onClick={() => {
-                      setStep('details')
-                      setOtp('')
-                      setOtpError('')
-                    }}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-                  >
-                    <Icon icon="bi:arrow-left" className="text-lg" />
-                    <span>Back</span>
-                  </button>
-
-                  <div className="text-center space-y-4">
-                    <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto">
-                      <Icon icon="bi:shield-check" className="text-3xl text-primary-600" />
-                    </div>
-                    <Text variant="h3" weight="semibold" className="text-gray-900">
-                      Verify OTP
-                    </Text>
-                    <Text variant="p" className="text-gray-600">
-                      We've sent a 6-digit OTP to{' '}
-                      <span className="font-semibold text-gray-900">
-                        {isAuthenticated
-                          ? user?.email || user?.phonenumber || 'your registered contact'
-                          : phoneNumber || 'your phone number'}
-                      </span>
-                      . Please enter it below to continue with your redemption.
-                    </Text>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Enter OTP <span className="text-red-500">*</span>
-                      </label>
-                      <OTPInput
-                        length={6}
-                        value={otp}
-                        onChange={(value) => {
-                          setOtp(value)
-                          setOtpError('')
-                        }}
-                        error={otpError}
-                        inputListClassName="grid grid-cols-6 gap-2"
-                      />
-                    </div>
-
-                    <ResendCode
-                      countdown={countdown}
-                      formatCountdown={formatCountdown}
-                      onResend={resendOtp}
-                      isLoading={sendOTPMutation.isPending}
-                    />
-
-                    <Button
-                      variant="primary"
-                      onClick={handleVerifyOTP}
-                      disabled={otp.length !== 6 || verifyOTPMutation.isPending}
-                      loading={verifyOTPMutation.isPending}
-                      className="w-full"
-                    >
-                      Verify OTP
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {step === 'confirm' && (
-                <div className="space-y-6">
-                  <Text variant="h3" weight="semibold" className="text-gray-900">
-                    Confirm Redemption
-                  </Text>
-
-                  <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-                    <div className="flex justify-between">
-                      <Text variant="span" className="text-gray-600">
-                        Redemption Method:
-                      </Text>
-                      <Text variant="span" weight="semibold" className="text-gray-900">
-                        {redemptionMethod === 'vendor_mobile_money'
-                          ? 'Vendor Mobile Money'
-                          : 'Vendor Redemption'}
-                      </Text>
-                    </div>
-                    {redemptionMethod === 'vendor_id' && cardType && (
-                      <div className="flex justify-between">
-                        <Text variant="span" className="text-gray-600">
-                          Card Type:
-                        </Text>
-                        <Text variant="span" weight="semibold" className="text-gray-900">
-                          {cardType.charAt(0).toUpperCase() + cardType.slice(1)}
-                        </Text>
-                      </div>
-                    )}
-                    {selectedCard && (
-                      <div className="flex justify-between">
-                        <Text variant="span" className="text-gray-600">
-                          Selected Card:
-                        </Text>
-                        <Text variant="span" weight="semibold" className="text-gray-900">
-                          {selectedCard.card_name}
-                        </Text>
-                      </div>
-                    )}
-                    {(cardType === 'dashpro' ||
-                      cardType === 'dashgo' ||
-                      redemptionMethod === 'vendor_mobile_money') && (
-                      <div className="flex justify-between">
-                        <Text variant="span" className="text-gray-600">
-                          Redemption Amount:
-                        </Text>
-                        <Text variant="span" weight="semibold" className="text-gray-900">
-                          GHS {parseFloat(amount || '0').toFixed(2)}
-                        </Text>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <Text variant="span" className="text-gray-600">
-                        Vendor:
-                      </Text>
-                      <Text variant="span" weight="semibold" className="text-gray-900">
-                        {vendorName || 'N/A'}
-                      </Text>
-                    </div>
-                    {balance !== null && (
-                      <div className="flex justify-between">
-                        <Text variant="span" className="text-gray-600">
-                          Available Balance:
-                        </Text>
-                        <Text variant="span" weight="semibold" className="text-gray-900">
-                          GHS {balance.toFixed(2)}
-                        </Text>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-4">
-                    <Button variant="outline" onClick={() => setStep('details')} className="flex-1">
-                      Cancel
-                    </Button>
-                    <Button variant="primary" onClick={handleConfirm} className="flex-1">
-                      Confirm
-                    </Button>
-                  </div>
                 </div>
               )}
 

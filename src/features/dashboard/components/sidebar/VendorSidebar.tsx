@@ -8,8 +8,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { PaymentChangeNotifications } from '../corporate/notifications/PaymentChangeNotifications'
 import { ExperienceApprovalNotifications } from '../corporate/notifications/ExperienceApprovalNotifications'
 import { CreateVendorAccount } from '../corporate/modals'
-import { MODALS } from '@/utils/constants'
-import { usePersistedModalState, userProfile, usePresignedURL } from '@/hooks'
+import { userProfile, usePresignedURL } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import Logo from '@/assets/images/logo-placeholder.png'
 import { vendorQueries } from '@/features'
@@ -21,9 +20,6 @@ export default function VendorSidebar() {
   const { logout, user } = useAuthStore()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
-  const vendorAccountModal = usePersistedModalState({
-    paramName: MODALS.VENDOR_ACCOUNT.CREATE,
-  })
 
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
@@ -52,38 +48,41 @@ export default function VendorSidebar() {
     return (user as any)?.fullname || (user as any)?.name || 'User'
   }, [isBranchManager, branchManagerName, user])
 
-  // Calculate discovery score based on onboarding progress
-  const discoveryScore = React.useMemo(() => {
-    const progress = userProfileData?.onboarding_progress
-    if (!progress) return 0
-
-    // For branch managers, only count personal details and upload ID
-    // For regular vendors, count all onboarding steps
-    const steps = isBranchManager
-      ? [progress.personal_details_completed, progress.upload_id_completed]
-      : [
-          progress.personal_details_completed,
-          progress.upload_id_completed,
-          progress.business_details_completed,
-          progress.business_documents_completed,
-          progress.branch_details_completed,
-          progress.payment_details_completed,
-        ]
-
-    const completedCount = steps.filter(Boolean).length
-    const totalCount = steps.length
-    return Math.round((completedCount / totalCount) * 100)
-  }, [userProfileData?.onboarding_progress, isBranchManager])
-
-  // Check if user can access corporate workspace (corporate_vendor or corporate super admin)
-  const canAccessCorporate = userType === 'corporate_vendor' || userType === 'corporate super admin'
-
   const { useBranchesService, useGetAllVendorsDetailsService } = vendorQueries()
   const { data: branches } = useBranchesService()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
 
   // Handle branches data structure (array or wrapped response)
   const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
+
+  // Calculate discovery score based on onboarding progress
+  const discoveryScore = React.useMemo(() => {
+    const progress = userProfileData?.onboarding_progress
+    if (!progress) return 0
+
+    // For branch managers, only count personal details and upload ID
+    // For regular vendors, count onboarding steps matching CompleteVendorWidget logic:
+    // 1. Profile & ID (personal_details + upload_id combined)
+    // 2. Business Details & Docs (business_details + business_documents combined)
+    // 3. Branches (actual branches exist, not just the flag)
+    if (isBranchManager) {
+      const steps = [progress.personal_details_completed, progress.upload_id_completed]
+      const completedCount = steps.filter(Boolean).length
+      const totalCount = steps.length
+      return Math.round((completedCount / totalCount) * 100)
+    }
+
+    // For vendors: count as 3 steps like CompleteVendorWidget
+    const hasProfileAndID = progress.personal_details_completed && progress.upload_id_completed
+    const hasBusinessDetailsAndDocs =
+      progress.business_details_completed && progress.business_documents_completed
+    const hasBranches = branchesArray.length > 0
+
+    const completedCount =
+      (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0) + (hasBranches ? 1 : 0)
+    const totalCount = 3
+    return Math.round((completedCount / totalCount) * 100)
+  }, [userProfileData?.onboarding_progress, isBranchManager, branchesArray.length])
 
   // Get vendors created by this corporate user
   const vendorsCreatedByCorporate = React.useMemo(() => {
@@ -96,6 +95,24 @@ export default function VendorSidebar() {
         vendor.approval_status === 'auto_approved',
     )
   }, [allVendorsDetails, userProfileData?.id])
+
+  // Check if user can access corporate workspace
+  // Show corporate account if user has corporate_id or if they have vendors created (meaning they have a corporate account)
+  const canAccessCorporate = React.useMemo(() => {
+    // Check if user type allows corporate access
+    if (userType === 'corporate_vendor' || userType === 'corporate super admin') {
+      return true
+    }
+    // Check if user has corporate_id (meaning they have a corporate account)
+    if (userProfileData?.corporate_id) {
+      return true
+    }
+    // Check if user has created vendors (meaning they came from corporate side)
+    if (vendorsCreatedByCorporate && vendorsCreatedByCorporate.length > 0) {
+      return true
+    }
+    return false
+  }, [userType, userProfileData?.corporate_id, vendorsCreatedByCorporate])
 
   // State for vendor logo URLs
   const [vendorLogoUrls, setVendorLogoUrls] = React.useState<Record<number, string>>({})
@@ -340,37 +357,6 @@ export default function VendorSidebar() {
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <div className="py-2">
-            <Link
-              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.TRANSACTIONS)}
-              onClick={() => setIsPopoverOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <Icon icon="bi:bar-chart" className="text-lg text-[#677084]" />
-              <span>Analytics</span>
-            </Link>
-            <Link
-              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.RECIPIENTS)}
-              onClick={() => setIsPopoverOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <Icon icon="bi:people" className="text-lg text-[#677084]" />
-              <span>Network</span>
-            </Link>
-            <Link
-              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.GIFT_CARDS.ROOT)}
-              onClick={() => setIsPopoverOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <Icon icon="bi:briefcase" className="text-lg text-[#677084]" />
-              <span>Portfolio</span>
-            </Link>
-          </div>
-
-          {/* Separator */}
-          <div className="border-t border-gray-200 my-2"></div>
-
           {/* Switch Workspace */}
           <div className="px-4 py-2">
             <Text
@@ -434,16 +420,7 @@ export default function VendorSidebar() {
                 <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
               </button>
             )}
-            <button
-              onClick={() => {
-                setIsPopoverOpen(false)
-                vendorAccountModal.openModal(MODALS.VENDOR_ACCOUNT.CREATE)
-              }}
-              className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition-colors mb-3"
-            >
-              <Icon icon="bi:plus-circle" className="text-lg" />
-              <span>Create a vendor account</span>
-            </button>
+
             <CreateVendorAccount />
           </div>
 
@@ -658,23 +635,34 @@ export default function VendorSidebar() {
                                 No branches available
                               </div>
                             ) : (
-                              branchesArray.map((branch: any) => (
-                                <Link
-                                  key={branch.id}
-                                  to={addAccountParam(
-                                    `${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}/${branch.id}`,
-                                  )}
-                                  className={cn(
-                                    'flex items-center gap-2 py-2 px-4 rounded-md text-sm transition-colors relative z-2',
-                                    isBranchActive(branch.id)
-                                      ? 'text-[#402D87] font-semibold bg-[rgba(64,45,135,0.12)]'
-                                      : 'text-gray-600 hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.06)]',
-                                  )}
-                                >
-                                  <div className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />
-                                  <span className="truncate">{branch.branch_name}</span>
-                                </Link>
-                              ))
+                              branchesArray.map((branch: any) => {
+                                const branchId = branch.id || branch.branch_id
+                                const vendorId = currentVendorId || userProfileData?.vendor_id
+                                const branchPath = `${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}/${branchId}`
+                                // Build query params
+                                const queryParams = new URLSearchParams()
+                                if (vendorId) queryParams.set('vendor_id', String(vendorId))
+                                if (branchId) queryParams.set('branch_id', String(branchId))
+                                const queryString = queryParams.toString()
+                                const branchUrl = addAccountParam(
+                                  queryString ? `${branchPath}?${queryString}` : branchPath,
+                                )
+                                return (
+                                  <Link
+                                    key={branchId}
+                                    to={branchUrl}
+                                    className={cn(
+                                      'flex items-center gap-2 py-2 px-4 rounded-md text-sm transition-colors relative z-2',
+                                      isBranchActive(branchId)
+                                        ? 'text-[#402D87] font-semibold bg-[rgba(64,45,135,0.12)]'
+                                        : 'text-gray-600 hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.06)]',
+                                    )}
+                                  >
+                                    <div className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />
+                                    <span className="truncate">{branch.branch_name}</span>
+                                  </Link>
+                                )
+                              })
                             )}
                           </div>
                         )}

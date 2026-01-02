@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "update-icons": "node scripts/update-icon-names && yarn lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

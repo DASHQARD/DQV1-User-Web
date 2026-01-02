@@ -42,7 +42,7 @@ export default function PurchaseModal() {
   })
   const [isCardFlipped, setIsCardFlipped] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
-  const [assignToSelf, setAssignToSelf] = React.useState(true) // Default to true
+  const [assignToSelf, setAssignToSelf] = React.useState(true)
   const { useAssignRecipientService } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()
 
@@ -51,7 +51,6 @@ export default function PurchaseModal() {
 
   // Get data from modal
   const modalData = modal.modalData
-  const cartItemId = modalData?.cart_item_id
   const cardType = modalData?.cardType || 'dashpro'
   const cardProduct = modalData?.cardProduct || ''
   const cardCurrency = modalData?.cardCurrency || 'GHS'
@@ -130,12 +129,10 @@ export default function PurchaseModal() {
     form.setValue('assign_to_self', newValue)
 
     if (newValue) {
-      // When assigning to self, populate with user info but these will be ignored in API
       form.setValue('name', userProfileData?.fullname || '')
       form.setValue('email', userProfileData?.email || '')
       form.setValue('phone', userProfileData?.phonenumber || '')
     } else {
-      // When assigning to someone else, clear the fields
       form.setValue('name', '')
       form.setValue('email', '')
       form.setValue('phone', '')
@@ -190,13 +187,15 @@ export default function PurchaseModal() {
   }, [modal, form])
 
   const onSubmit = (data: z.infer<typeof AssignRecipientSchema>) => {
-    if (!cartItemId) {
+    // Get the current cart_item_id from modal data to ensure it's the correct one
+    const currentCartItemId = modal.modalData?.cart_item_id
+    if (!currentCartItemId) {
       console.error('Cart item ID is required')
       return
     }
 
     const payload: AssignRecipientPayload = {
-      cart_item_id: cartItemId,
+      cart_item_id: currentCartItemId,
       assign_to_self: data.assign_to_self,
       quantity: 1,
       amount: data.amount,

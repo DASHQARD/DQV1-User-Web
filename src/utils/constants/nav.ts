@@ -14,6 +14,11 @@ export const CORPORATE_NAV_ITEMS = [
         icon: 'bi:receipt',
       },
       { path: ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE, label: 'Purchase', icon: 'bi:gift' },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.RECIPIENTS,
+        label: 'Recipients',
+        icon: 'bi:person-lines-fill',
+      },
     ],
   },
   {
@@ -39,11 +44,6 @@ export const CORPORATE_NAV_ITEMS = [
         label: 'Notifications',
         icon: 'bi:bell-fill',
       },
-      {
-        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.RECIPIENTS,
-        label: 'Recipients',
-        icon: 'bi:person-lines-fill',
-      },
     ],
   },
 ]
@@ -52,7 +52,7 @@ export const USER_NAV_ITEMS = [
   {
     section: 'Gift Cards',
     items: [
-      { path: ROUTES.IN_APP.DASHQARDS, label: 'Cards', icon: 'bi:credit-card-2-front' },
+      { path: ROUTES.IN_APP.DASHBOARD.MY_CARDS, label: 'Cards', icon: 'bi:credit-card-2-front' },
       { path: ROUTES.IN_APP.DASHBOARD.ORDERS, label: 'My Orders', icon: 'bi:gift' },
       { path: ROUTES.IN_APP.DASHBOARD.REDEEM, label: 'Redeem', icon: 'bi:card-checklist' },
       // { path: ROUTES.IN_APP.DASHBOARD.RECIPIENTS, label: 'Recipients', icon: 'bi:people-fill' },

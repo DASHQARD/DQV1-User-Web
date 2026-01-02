@@ -13,6 +13,7 @@ import {
   addPaymentDetails,
   updateCard,
   deleteCard,
+  updateRequestStatus,
 } from '../services'
 import { useToast } from '@/hooks'
 import { useNavigate } from 'react-router-dom'
@@ -182,6 +183,20 @@ export function useVendorMutations() {
     })
   }
 
+  function useUpdateRequestStatusService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: { id: number; status: string }) => updateRequestStatus(data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Request status updated successfully')
+        queryClient.invalidateQueries({ queryKey: ['requests-vendor'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to update request status. Please try again.')
+      },
+    })
+  }
+
   return {
     useCreateVendorService,
     useVendorInviteService,
@@ -196,5 +211,6 @@ export function useVendorMutations() {
     useUpdateBusinessDetailsService,
     useUpdateBusinessLogoService,
     useAddPaymentDetailsService,
+    useUpdateRequestStatusService,
   }
 }

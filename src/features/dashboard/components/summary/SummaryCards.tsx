@@ -15,7 +15,6 @@ import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
 export default function SummaryCards() {
   const navigate = useNavigate()
   const { data: metricsResponse, isLoading } = useGiftCardMetrics()
-  console.log('metricsResponse', metricsResponse)
 
   const modal = usePersistedModalState<{
     id: string
@@ -53,7 +52,7 @@ export default function SummaryCards() {
         id: '1',
         title: 'DashX Gift Cards',
         value: metrics.DashX,
-        totalGiftCards: 0,
+        totalGiftCards: metrics.DashX,
         IconName: 'hugeicons:money-bag-01',
         active: false,
         savingsType: null,
@@ -64,7 +63,7 @@ export default function SummaryCards() {
         id: '2',
         title: 'DashGo Gift Cards',
         value: metrics.DashGo,
-        totalGiftCards: 0,
+        totalGiftCards: metrics.DashGo,
         IconName: 'hugeicons:money-bag-01',
         active: false,
         savingsType: null,
@@ -75,7 +74,7 @@ export default function SummaryCards() {
         id: '3',
         title: 'DashPro Gift Cards',
         value: metrics.DashPro,
-        totalGiftCards: 0,
+        totalGiftCards: metrics.DashPro,
         IconName: 'hugeicons:money-bag-01',
         active: false,
         savingsType: null,
@@ -86,7 +85,7 @@ export default function SummaryCards() {
         id: '4',
         title: 'DashPass Gift Cards',
         value: metrics.DashPass,
-        totalGiftCards: 0,
+        totalGiftCards: metrics.DashPass,
         IconName: 'hugeicons:money-bag-01',
         active: false,
         savingsType: null,

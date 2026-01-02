@@ -1,17 +1,20 @@
 import type { SubmitHandler } from 'react-hook-form'
 import { Controller } from 'react-hook-form'
 
-import { Button, CreatableCombobox, CustomIcon, Modal, Text } from '@/components'
+import { Button, CreatableCombobox, Modal, Text } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS, REJECT_REASON_OPTIONS } from '@/utils/constants'
-import { useCustomForm } from '@/libs'
+import { Icon, useCustomForm } from '@/libs'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ToggleCustomerStatusSchema } from '@/utils/schemas'
+import { corporateMutations } from '@/features/dashboard/corporate/hooks'
 
 export function RejectAction() {
-  const modal = usePersistedModalState<{ id: string }>({
+  const modal = usePersistedModalState<{ id: number | string; request_id?: string }>({
     paramName: MODALS.REQUEST.PARAM_NAME,
   })
+  const { useUpdateRequestStatusService } = corporateMutations()
+  const { mutate: updateRequestStatus, isPending } = useUpdateRequestStatusService()
 
   const form = useCustomForm({
     resolver: zodResolver(ToggleCustomerStatusSchema),
@@ -20,8 +23,25 @@ export function RejectAction() {
     },
   })
 
-  const onSubmit: SubmitHandler<any> = (data) => {
-    console.log(data)
+  const onSubmit: SubmitHandler<any> = (_data: any) => {
+    console.log(_data)
+    const requestId = modal.modalData?.id
+    if (!requestId) {
+      console.error('Request ID is required')
+      return
+    }
+
+    updateRequestStatus(
+      {
+        id: typeof requestId === 'string' ? parseInt(requestId, 10) : requestId,
+        status: 'rejected',
+      },
+      {
+        onSuccess: () => {
+          modal.closeModal()
+        },
+      },
+    )
   }
 
   return (
@@ -34,7 +54,7 @@ export function RejectAction() {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="p-6 space-y-13">
           <div className="flex flex-col gap-4 items-center justify-center">
-            <CustomIcon name={'OrangeWarningSign'} width={48} height={48} className="text-error" />
+            <Icon icon={'bi:x-circle'} width={48} height={48} className="text-error" />
             <div className="space-y-6">
               <div>
                 <Text variant="h3" className="text-center font-semibold">
@@ -66,7 +86,7 @@ export function RejectAction() {
             <Button type="button" variant={'outline'} onClick={modal.closeModal} className="grow">
               Cancel
             </Button>
-            <Button loading={false} className="grow">
+            <Button loading={isPending} onClick={form.handleSubmit(onSubmit)} className="grow">
               Reject
             </Button>
           </div>

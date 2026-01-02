@@ -7,6 +7,7 @@ import {
   DeleteExperience,
   experienceListColumns,
   experienceListCsvHeaders,
+  VendorSummaryCards,
 } from '../../../components'
 import { OPTIONS } from '@/utils/constants/filter'
 import { DEFAULT_QUERY } from '@/utils/constants/shared'
@@ -27,10 +28,10 @@ export default function Experience() {
             <Text variant="h2" weight="semibold" className="text-primary-900">
               My Experiences
             </Text>
-            <div className="flex items-center gap-3">
-              <CreateExperience />
-            </div>
+            <CreateExperience />
           </div>
+
+          <VendorSummaryCards />
           <div className="relative space-y-[37px]">
             <div className="text-[#0c4b77] py-2 border-b-2 border-[#0c4b77] w-fit">
               <Text variant="h6" weight="medium">

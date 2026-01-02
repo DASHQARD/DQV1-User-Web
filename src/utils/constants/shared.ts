@@ -58,6 +58,7 @@ export const ROUTES = {
         ROOT: '/dashboard/gift-cards',
         GIFT_CARD_DETAILS: '/dashboard/gift-cards/:id',
       },
+      MY_CARDS: '/dashboard/my-cards',
       ORDERS: '/dashboard/orders',
       REDEEM: '/dashboard/redeem/dashpro',
       RECIPIENTS: '/dashboard/recipients',

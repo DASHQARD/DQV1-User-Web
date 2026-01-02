@@ -1,8 +1,8 @@
+import React from 'react'
 import { useReducerSpread } from '@/hooks'
 
 import { corporateQueries } from '../../corporate/hooks'
 import { useAuthStore } from '@/stores'
-// import React from 'react'
 import { usePersistedModalState } from '@/hooks'
 // import { useSearch } from '@/hooks/useSearch'
 import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
@@ -23,8 +23,18 @@ export function useCorporateRequests() {
   //   }, [setQuery, state?.searchQuery])
 
   const { useGetRequestsCorporateService } = corporateQueries()
-  const { data: requestCorporatesList, isLoading: isLoadingRequestCorporatesList } =
+  const { data: requestsResponse, isLoading: isLoadingRequestCorporatesList } =
     useGetRequestsCorporateService()
+
+  // Extract data array from response
+  const requestCorporatesList = React.useMemo(() => {
+    if (!requestsResponse) return []
+    return Array.isArray(requestsResponse)
+      ? requestsResponse
+      : Array.isArray(requestsResponse?.data)
+        ? requestsResponse.data
+        : []
+  }, [requestsResponse])
 
   function getRequestCorporateOptions({
     modal: modalInstance,

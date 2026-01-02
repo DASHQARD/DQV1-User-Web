@@ -3,9 +3,13 @@ import { Navigate, Outlet } from 'react-router-dom'
 
 import { corporateRoutes } from '../corporate/routes/routes'
 import { vendorRoutes } from '../vendor/routes/routes'
-import { Orders, UserSettings } from '../pages'
+import { Orders, UserSettings, MyCards } from '../pages'
 
 export const dashboardRoutes: RouteObject[] = [
+  {
+    path: 'my-cards',
+    element: <MyCards />,
+  },
   {
     path: 'orders',
     element: <Orders />,

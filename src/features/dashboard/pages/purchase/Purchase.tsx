@@ -14,7 +14,7 @@ export default function Purchase() {
         <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
             <Text variant="h2" weight="semibold" className="text-primary-900">
-              My Purhaces
+              My Purchases
             </Text>
             <div className="flex items-center gap-3">
               <BulkUploadGiftCards />
@@ -23,7 +23,7 @@ export default function Purchase() {
           <div className="relative space-y-[37px]">
             <div className="text-[#0c4b77] py-2 border-b-2 border-[#0c4b77] w-fit">
               <Text variant="h6" weight="medium">
-                My Purhaces (0)
+                My Purchases (0)
               </Text>
             </div>
             <PaginatedTable

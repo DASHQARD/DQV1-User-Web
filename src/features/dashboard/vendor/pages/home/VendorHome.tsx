@@ -4,8 +4,8 @@ import { Icon } from '@/libs'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
 import {
-  SummaryCards,
-  QardsPerformance,
+  VendorSummaryCards,
+  VendorQardsPerformance,
   CompleteVendorWidget,
 } from '@/features/dashboard/components'
 import { userProfile } from '@/hooks'
@@ -505,8 +505,8 @@ export default function VendorHome() {
         </div>
 
         {/* Vendor Widgets */}
-        <SummaryCards />
-        <QardsPerformance />
+        <VendorSummaryCards />
+        <VendorQardsPerformance />
 
         {/* Complete Vendor Onboarding Widget */}
         <div className="fixed bottom-6 right-6 z-50 w-[598px] max-w-[calc(100vw-3rem)]">

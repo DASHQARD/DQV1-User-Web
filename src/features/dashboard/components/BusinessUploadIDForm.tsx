@@ -35,7 +35,7 @@ export default function BusinessUploadIDForm() {
   const navigate = useNavigate()
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
+
   const { isLoading } = useGetUserProfileService()
   const { useBusinessUploadIDService } = useAuth()
   const { mutateAsync: submitBusinessID, isPending: isSubmitting } = useBusinessUploadIDService()
@@ -218,8 +218,8 @@ export default function BusinessUploadIDForm() {
 
       <section className="flex flex-col gap-4 min-w-0">
         <Input
-          label="Employer Identification Number"
-          placeholder="Enter your employer identification number"
+          label="Taxpayer Identification Number (TIN)"
+          placeholder="Enter your Taxpayer Identification Number (TIN)"
           {...form.register('employer_identification_number')}
           error={form.formState.errors.employer_identification_number?.message}
         />

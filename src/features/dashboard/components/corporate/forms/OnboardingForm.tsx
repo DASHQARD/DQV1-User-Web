@@ -10,9 +10,13 @@ import { userProfile, useUploadFiles, usePresignedURL, useToast } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import React from 'react'
 import { cn } from '@/libs'
+import { useAuthStore } from '@/stores'
 
 export default function OnboardingForm() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
+  const userType = (user as any)?.user_type
+  const isBranchManager = userType === 'branch'
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData, isLoading } = useGetUserProfileService()
   const toast = useToast()
@@ -26,11 +30,71 @@ export default function OnboardingForm() {
   const [frontOfIdentification, setFrontOfIdentification] = React.useState<string | null>(null)
   const [backOfIdentification, setBackOfIdentification] = React.useState<string | null>(null)
 
-  const form = useForm<z.infer<typeof ProfileAndIdentitySchema>>({
-    resolver: zodResolver(ProfileAndIdentitySchema),
+  // Create schema with conditional validation for back_id
+  const dynamicSchema = React.useMemo(() => {
+    // Extend the schema to make back_id optional, then add conditional validation
+    const baseSchema = ProfileAndIdentitySchema.omit({ back_id: true }).extend({
+      back_id: z
+        .instanceof(File, { message: 'Back ID photo is required' })
+        .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB')
+        .optional(),
+    })
+
+    return baseSchema.superRefine((data, ctx) => {
+      // For passport, back_id is optional (only front_id required)
+      if (data.id_type === 'passport') {
+        // Passport only needs front_id
+        if (!data.front_id) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Passport page is required',
+            path: ['front_id'],
+          })
+        }
+        // back_id is optional for passport, so no validation needed
+      } else if (data.id_type) {
+        // For other ID types (National ID, Driver's License, Other), both are required
+        if (!data.front_id) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Front ID photo is required',
+            path: ['front_id'],
+          })
+        }
+        if (!data.back_id) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Back ID photo is required',
+            path: ['back_id'],
+          })
+        }
+      }
+    })
+  }, [])
+
+  type FormData = z.infer<typeof dynamicSchema>
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(dynamicSchema),
   })
 
+  // Watch ID type to determine which uploaders to show
+  const selectedIdType = form.watch('id_type')
+  const isPassport = selectedIdType === 'passport'
+  const needsBothSides = !isPassport && selectedIdType // For National ID, Driver's License, Other
+
   const isPending = isSubmittingPersonalDetailsWithID || isUploading
+
+  // Reset back_id when ID type changes to passport
+  React.useEffect(() => {
+    if (isPassport) {
+      const currentBackId = form.getValues('back_id')
+      if (currentBackId) {
+        form.setValue('back_id', undefined as any)
+        form.clearErrors('back_id')
+      }
+    }
+  }, [isPassport, form])
 
   React.useEffect(() => {
     if (!userProfileData?.id_images?.length) {
@@ -63,7 +127,7 @@ export default function OnboardingForm() {
         if (cancelled) return
 
         setFrontOfIdentification(frontUrl)
-        setBackOfIdentification(backUrl)
+        setBackOfIdentification(backUrl || null)
 
         // Reset form with existing data
         form.reset({
@@ -89,17 +153,21 @@ export default function OnboardingForm() {
     }
   }, [fetchPresignedURL, toast, userProfileData, form])
 
-  const onSubmit = async (data: z.infer<typeof ProfileAndIdentitySchema>) => {
+  const onSubmit = async (data: FormData) => {
     try {
-      // First upload ID images
-      const files = [data.front_id, data.back_id]
-      const uploadPromises = files.map((file) => uploadFiles([file]))
+      // First upload ID images - handle passport (one file) vs other IDs (two files)
+      const filesToUpload: File[] = [data.front_id]
+      if (data.back_id && !isPassport) {
+        filesToUpload.push(data.back_id)
+      }
+
+      const uploadPromises = filesToUpload.map((file) => uploadFiles([file]))
       const responses = await Promise.all(uploadPromises)
 
       const identificationPhotos = responses.map(
         (response: { file_name: string; file_key: string }[], index: number) => ({
           file_url: response[0].file_key,
-          file_name: files[index].name,
+          file_name: filesToUpload[index].name,
         }),
       )
 
@@ -115,8 +183,12 @@ export default function OnboardingForm() {
 
       await submitPersonalDetailsWithID(onboardingPayload, {
         onSuccess: () => {
-          const businessDetailsUrl = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS}?account=corporate`
-          navigate(businessDetailsUrl)
+          if (isBranchManager) {
+            navigate(`${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor`)
+          } else {
+            const businessDetailsUrl = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS}?account=corporate`
+            navigate(businessDetailsUrl)
+          }
         },
       })
     } catch (error: any) {
@@ -126,8 +198,8 @@ export default function OnboardingForm() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
-      <section className="flex sm:flex-row flex-col gap-10 pb-16">
-        <div className="flex flex-col gap-2 max-w-[271px] w-full">
+      <section className="flex flex-col gap-10 pb-16">
+        <div className="flex flex-col gap-2 w-full">
           <Text variant="h2" weight="semibold">
             Key Person Details
           </Text>
@@ -140,12 +212,14 @@ export default function OnboardingForm() {
           <Input
             label="First Name"
             placeholder="Enter your first name"
+            className="col-span-full sm:col-span-1"
             {...form.register('first_name')}
             error={form.formState.errors.first_name?.message}
           />
           <Input
             label="Last Name"
             placeholder="Enter your last name"
+            className="col-span-full sm:col-span-1"
             {...form.register('last_name')}
             error={form.formState.errors.last_name?.message}
           />
@@ -202,13 +276,15 @@ export default function OnboardingForm() {
       </section>
 
       {/* ID Upload Section */}
-      <section className="flex sm:flex-row flex-col gap-10 pb-16">
-        <div className="flex flex-col gap-2 max-w-[271px] w-full">
+      <section className="flex flex-col gap-10 pb-16">
+        <div className="flex flex-col gap-2 w-full">
           <Text variant="h2" weight="semibold">
             Identity Documents
           </Text>
           <Text variant="span" weight="normal" className="text-gray-500">
-            Upload pictures of your identification (front and back)
+            {isPassport
+              ? 'Upload a picture of your passport page'
+              : 'Upload pictures of your identification (front and back)'}
           </Text>
         </div>
 
@@ -217,44 +293,66 @@ export default function OnboardingForm() {
             <Loader />
           </div>
         ) : userProfileData?.id_images?.length && userProfileData?.id_images?.length > 0 ? (
-          <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1 max-w-[554px]">
+          <section
+            className={cn(
+              'grid gap-4 flex-1 max-w-[554px]',
+              isPassport ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
+            )}
+          >
             <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-700 mb-2">Front of Identification</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                {isPassport ? 'Passport Page' : 'Front of Identification'}
+              </p>
               <div
                 className={cn(
                   'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
                 )}
               >
-                <img
-                  src={frontOfIdentification ?? ''}
-                  alt="Front of Identification"
-                  className="max-h-48 w-full object-contain"
-                />
+                {frontOfIdentification ? (
+                  <img
+                    src={frontOfIdentification}
+                    alt={isPassport ? 'Passport Page' : 'Front of Identification'}
+                    className="max-h-48 w-full object-contain"
+                  />
+                ) : null}
               </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-700 mb-2">Back of Identification</p>
-              <div
-                className={cn(
-                  'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
-                )}
-              >
-                <img
-                  src={backOfIdentification ?? ''}
-                  alt="Back of Identification"
-                  className="max-h-48 w-full object-contain"
-                />
+            {!isPassport && backOfIdentification && (
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-700 mb-2">Back of Identification</p>
+                <div
+                  className={cn(
+                    'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
+                  )}
+                >
+                  {backOfIdentification ? (
+                    <img
+                      src={backOfIdentification}
+                      alt="Back of Identification"
+                      className="max-h-48 w-full object-contain"
+                    />
+                  ) : null}
+                </div>
               </div>
-            </div>
+            )}
           </section>
         ) : (
-          <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
+          <section
+            className={cn(
+              'grid gap-4 flex-1',
+              isPassport ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
+            )}
+          >
             <Controller
               control={form.control}
               name="front_id"
               render={({ field: { onChange, value }, fieldState: { error } }) => (
                 <FileUploader
-                  label="Upload Picture of Front of Identification"
+                  label={
+                    isPassport
+                      ? 'Upload Passport Page'
+                      : 'Upload Picture of Front of Identification'
+                  }
                   value={value}
                   onChange={onChange}
                   error={error?.message}
@@ -263,19 +361,21 @@ export default function OnboardingForm() {
               )}
             />
 
-            <Controller
-              control={form.control}
-              name="back_id"
-              render={({ field: { onChange, value }, fieldState: { error } }) => (
-                <FileUploader
-                  label="Upload Picture of Back of Identification"
-                  value={value}
-                  onChange={onChange}
-                  error={error?.message}
-                  id="back_id"
-                />
-              )}
-            />
+            {needsBothSides && (
+              <Controller
+                control={form.control}
+                name="back_id"
+                render={({ field: { onChange, value }, fieldState: { error } }) => (
+                  <FileUploader
+                    label="Upload Picture of Back of Identification"
+                    value={value}
+                    onChange={onChange}
+                    error={error?.message}
+                    id="back_id"
+                  />
+                )}
+              />
+            )}
           </section>
         )}
       </section>
@@ -291,7 +391,7 @@ export default function OnboardingForm() {
           variant="secondary"
           className="w-fit"
         >
-          Submit & Continue
+          {isBranchManager ? 'Submit' : 'Submit & Continue'}
         </Button>
       </div>
     </form>

@@ -29,7 +29,7 @@ export const getCartItem = async (id: number): Promise<CartItemResponse> => {
 }
 
 export const deleteCartItem = async (id: number): Promise<any> => {
-  return await deleteMethod(`/carts/${id}`)
+  return await deleteMethod(`/carts/items/${id}`)
 }
 
 export const deleteCartItemRecipient = async (cart_item_id: number): Promise<any> => {
@@ -39,7 +39,6 @@ export const deleteCartItemRecipient = async (cart_item_id: number): Promise<any
 export const updateCartItem = async (data: {
   cart_item_id: number
   quantity: number
-  amount: number
 }): Promise<any> => {
   return await patchMethod('/carts/items', data)
 }

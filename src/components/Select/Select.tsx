@@ -14,7 +14,8 @@ import {
   Viewport,
 } from '@radix-ui/react-select'
 
-import { CustomIcon, ErrorText, InputLabel, Loader } from '@/components'
+import { ErrorText, InputLabel, Loader } from '@/components'
+import { Icon } from '@/libs'
 import { useHookFormInputRef } from '@/hooks'
 import { cn } from '@/libs'
 import type { DropdownOption, NativeEventHandler } from '@/types'
@@ -99,7 +100,7 @@ export const Select = React.memo(
               {renderValue({ value, currentOption, placeholder })}
             </Value>
             <div>
-              {!loading && <CustomIcon name="Caret" className="text-[#9DA1A8]" />}
+              {!loading && <Icon icon="bi:caret-down-fill" className="text-[#9DA1A8]" />}
               {loading && <Loader />}
             </div>
           </Trigger>
@@ -107,7 +108,7 @@ export const Select = React.memo(
           <Portal>
             <Content className="w-full bg-white p-1.5 rounded-md shadow z-5000 menu-shadow">
               <ScrollUpButton className="flex justify-center bg-primary-500/10 text-xl">
-                <CustomIcon name="ArrowDown" className="rotate-180" />
+                <Icon icon="bi:chevron-down" className="rotate-180" />
               </ScrollUpButton>
               <Viewport>
                 {options.map((option) => (
@@ -127,7 +128,7 @@ export const Select = React.memo(
                 ))}
               </Viewport>
               <ScrollDownButton className="flex justify-center bg-primary-500/10 text-xl">
-                <CustomIcon name="ArrowDown" />
+                <Icon icon="bi:chevron-down" />
               </ScrollDownButton>
             </Content>
           </Portal>

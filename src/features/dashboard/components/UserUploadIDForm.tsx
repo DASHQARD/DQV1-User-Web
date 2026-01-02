@@ -16,7 +16,6 @@ export default function UserUploadIDForm() {
   const navigate = useNavigate()
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
   const { isLoading } = useGetUserProfileService()
   const { useUploadUserIDService } = useAuth()
   const { mutateAsync: submitUserID, isPending: isSubmitting } = useUploadUserIDService()

@@ -1,7 +1,8 @@
-import { Modal, Text, Button, CustomIcon } from '@/components'
+import { Modal, Text, Button } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { useVendorMutations } from '@/features'
+import { Icon } from '@/libs'
 
 export function DeleteExperience() {
   const modal = usePersistedModalState({
@@ -39,7 +40,7 @@ export function DeleteExperience() {
       >
         <div className="p-6 space-y-4">
           <div className="flex flex-col gap-4 items-center justify-center">
-            <CustomIcon name={'OrangeWarningSign'} width={48} height={48} className="text-error" />
+            <Icon icon="bi:exclamation-triangle-fill" className="text-error text-5xl" />
             <div className="space-y-2">
               <Text variant="h3" className="text-center font-semibold">
                 Delete Experience

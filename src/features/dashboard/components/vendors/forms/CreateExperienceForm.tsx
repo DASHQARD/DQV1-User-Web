@@ -6,14 +6,17 @@ import { FileUploader, Input, Combobox, Button, Text } from '@/components'
 import { useUploadFiles } from '@/hooks'
 import { useToast } from '@/hooks'
 import { usePersistedModalState, userProfile } from '@/hooks'
-import { MODALS } from '@/utils/constants'
+import { MODALS, ROUTES } from '@/utils/constants'
 import { useAuthStore } from '@/stores'
 import { useVendorMutations, vendorQueries } from '@/features'
 import { CreateExperienceSchema } from '@/utils/schemas'
+import { useNavigate } from 'react-router-dom'
+import { Icon } from '@/libs'
 
 type FormData = z.infer<typeof CreateExperienceSchema>
 
 export default function CreateExperienceForm() {
+  const navigate = useNavigate()
   const { useCreateExperienceService } = useVendorMutations()
   const { mutateAsync: createExperience, isPending: isCreating } = useCreateExperienceService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
@@ -21,7 +24,7 @@ export default function CreateExperienceForm() {
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useBranchesService } = vendorQueries()
-  const { data: branches } = useBranchesService()
+  const { data: branches, isLoading: isLoadingBranches } = useBranchesService()
 
   const toast = useToast()
 
@@ -142,6 +145,10 @@ export default function CreateExperienceForm() {
   // Build branch options for the select
   // Handle both array response and wrapped response with data property
   const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
+
+  // Check if branches are available for vendors (not branch managers)
+  const hasNoBranches = !isBranchManager && branchesArray.length === 0 && !isLoadingBranches
+
   const branchOptions =
     branchesArray.length > 0
       ? [
@@ -152,6 +159,11 @@ export default function CreateExperienceForm() {
           })),
         ]
       : [{ label: 'All Branches', value: 'all' }]
+
+  const addAccountParam = (path: string): string => {
+    const separator = path?.includes('?') ? '&' : '?'
+    return `${path}${separator}account=vendor`
+  }
 
   const onSubmit = async (data: FormData) => {
     console.log('data', data)
@@ -210,6 +222,50 @@ export default function CreateExperienceForm() {
       console.error('Error submitting experience:', error)
       toast.error(error?.message || 'Failed to create experience. Please try again.')
     }
+  }
+
+  // Show message if no branches available for vendors
+  if (hasNoBranches) {
+    return (
+      <div className="w-full flex flex-col gap-6">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+              <Icon icon="bi:exclamation-triangle-fill" className="text-amber-600 text-xl" />
+            </div>
+            <div className="flex-1">
+              <Text variant="h6" weight="semibold" className="text-amber-900 mb-2">
+                No Branches Available
+              </Text>
+              <Text variant="p" className="text-amber-800 mb-4">
+                You need to create at least one branch before you can create an experience. Please
+                create a branch first.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  modal.closeModal()
+                  navigate(addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_BRANCH_MANAGER))
+                }}
+              >
+                <Icon icon="bi:building-add" className="mr-2" />
+                Create Branch
+              </Button>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-4 border-t border-gray-200 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => modal.closeModal()}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
