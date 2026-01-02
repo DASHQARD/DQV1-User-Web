@@ -1,9 +1,6 @@
 import { Avatar, Tag, Text } from '@/components'
-import { CustomIcon } from '@/components/CustomIcon/CustomIcon'
 import { cn, Icon } from '@/libs'
-import type { TierType } from '@/types'
 import { getStatusVariant } from '@/utils/helpers'
-import { getCustomerTierTagIconName } from '@/utils/helpers/customer'
 
 type Props = {
   name: string
@@ -35,11 +32,6 @@ export default function Profile({ name, tier, status, children, className }: Rea
             </Text>
             <div className="flex gap-2 items-center">
               <div className="flex items-center gap-2">
-                <CustomIcon
-                  name={getCustomerTierTagIconName(String(tier) as TierType)}
-                  width={24}
-                  height={24}
-                />
                 <Text variant="span" className="text-secondary-800 text-sm text-nowrap">
                   Tier {tier}
                 </Text>

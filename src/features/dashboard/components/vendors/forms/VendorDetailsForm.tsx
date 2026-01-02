@@ -217,8 +217,8 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
             disabled={checkboxVendorDetailsSameAsCorporate}
           />
           <Input
-            label="Employer Identification Number"
-            placeholder="Enter your employer identification number"
+            label="Taxpayer Identification Number (TIN)"
+            placeholder="Enter your Taxpayer Identification Number (TIN)"
             {...form.register('employer_identification_number')}
             error={form.formState.errors.employer_identification_number?.message}
             disabled={checkboxVendorDetailsSameAsCorporate}

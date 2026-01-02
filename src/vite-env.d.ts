@@ -11,3 +11,13 @@ declare module '*.svg?react' {
   const ReactComponent: React.FunctionComponent<React.SVGProps<SVGSVGElement>>
   export default ReactComponent
 }
+
+declare module '*.xlsx' {
+  const src: string
+  export default src
+}
+
+declare module '*.xlsx?url' {
+  const src: string
+  export default src
+}

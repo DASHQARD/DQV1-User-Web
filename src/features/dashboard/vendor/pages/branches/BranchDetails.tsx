@@ -1,18 +1,22 @@
 import React from 'react'
-import { useNavigate, Link, useSearchParams } from 'react-router-dom'
-import { CustomIcon, Loader, PaginatedTable, Text, Button } from '@/components'
+import { useNavigate, Link, useSearchParams, useParams } from 'react-router-dom'
+import { PaginatedTable, Text, Button } from '@/components'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
-import { formatCurrency } from '@/utils/format'
 import { DEFAULT_QUERY } from '@/utils/constants/shared'
 import { useReducerSpread, usePersistedModalState, userProfile } from '@/hooks'
-import { RedemptionDetails, BranchDetailsModal } from '@/features/dashboard/components'
+import {
+  RedemptionDetails,
+  BranchDetailsModal,
+  ViewExperience,
+} from '@/features/dashboard/components'
+import { CardItems } from '@/features/website/components'
 import { ROUTES, MODALS } from '@/utils/constants'
 import { vendorQueries } from '@/features'
+import LoaderGif from '@/assets/gifs/loader.gif'
 
 type QueryType = typeof DEFAULT_QUERY
 
-// Audit log types
 type ActivityData = {
   id: string
   actor_name?: string
@@ -22,75 +26,6 @@ type ActivityData = {
   created_at: string
 }
 
-// Mock redemption data with gift card types
-// type Redemption = {
-//   id: string
-//   giftCardType: 'DashX' | 'DashPro' | 'DashGo' | 'DashPass'
-//   amount: number
-//   updated_at: string
-//   branch_id?: string
-// }
-
-// const MOCK_REDEMPTIONS: Redemption[] = [
-//   {
-//     id: '1',
-//     giftCardType: 'DashX',
-//     amount: 150.0,
-//     updated_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-//     branch_id: '1',
-//   },
-//   {
-//     id: '2',
-//     giftCardType: 'DashPro',
-//     amount: 250.0,
-//     updated_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-//     branch_id: '1',
-//   },
-//   {
-//     id: '3',
-//     giftCardType: 'DashGo',
-//     amount: 100.0,
-//     updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-//     branch_id: '1',
-//   },
-//   {
-//     id: '4',
-//     giftCardType: 'DashX',
-//     amount: 75.0,
-//     updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-//     branch_id: '1',
-//   },
-//   {
-//     id: '5',
-//     giftCardType: 'DashPass',
-//     amount: 300.0,
-//     updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-//     branch_id: '1',
-//   },
-//   {
-//     id: '6',
-//     giftCardType: 'DashPro',
-//     amount: 200.0,
-//     updated_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-//     branch_id: '1',
-//   },
-//   {
-//     id: '7',
-//     giftCardType: 'DashX',
-//     amount: 125.0,
-//     updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-//     branch_id: '1',
-//   },
-//   {
-//     id: '8',
-//     giftCardType: 'DashGo',
-//     amount: 180.0,
-//     updated_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-//     branch_id: '1',
-//   },
-// ]
-
-// Helper functions for audit logs
 const actionStyles: Record<'Create' | 'Edit' | 'Request' | 'Approve' | 'Reject', string> = {
   Create: 'text-success-600',
   Edit: 'text-warning-400',
@@ -395,12 +330,19 @@ const auditLogsCsvHeaders = [
 
 export function BranchDetails() {
   const navigate = useNavigate()
-  // const { id } = useParams<{ id: string }>()
+  const params = useParams<{ id?: string }>()
   const [searchParams] = useSearchParams()
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
   const branchModal = usePersistedModalState({
     paramName: MODALS.BRANCH.VIEW,
   })
+  const experienceModal = usePersistedModalState({
+    paramName: MODALS.EXPERIENCE.ROOT,
+  })
+
+  const { useGetAllVendorsDetailsForVendorService } = vendorQueries()
+  const { data: vendorsDetailsResponse, isLoading: isLoadingVendorsDetails } =
+    useGetAllVendorsDetailsForVendorService()
 
   // Get user profile and vendor ID
   const { useGetUserProfileService } = userProfile()
@@ -409,6 +351,8 @@ export function BranchDetails() {
 
   // Get vendor_id from URL params or user profile
   const vendorIdFromParams = searchParams.get('vendor_id')
+  const branchIdFromParams = searchParams.get('branch_id')
+  const branchIdFromPath = params.id // Branch ID from URL path
   const vendorIdFromProfile = userProfileData?.vendor_id
   const vendorId = vendorIdFromParams
     ? Number(vendorIdFromParams)
@@ -423,43 +367,82 @@ export function BranchDetails() {
     isError: isErrorBranches,
   } = useGetBranchesByVendorIdService(vendorId, false)
 
+  console.log('branchData', branchData)
+
   const branchesResponse = branchData?.[0]
 
-  console.log('branchesResponse', branchesResponse)
-
   const branches = React.useMemo(() => {
-    if (!branchesResponse) return []
+    if (!branchesResponse) return null
     return branchesResponse
   }, [branchesResponse])
 
-  // Mock experiences data (to be replaced with API call later)
-  const MOCK_EXPERIENCES = [
-    {
-      id: '1',
-      product: 'DashX Gift Card',
-      type: 'Gift Card',
-      price: 100,
-    },
-    {
-      id: '2',
-      product: 'DashPro Gift Card',
-      type: 'Gift Card',
-      price: 200,
-    },
-    {
-      id: '3',
-      product: 'DashGo Gift Card',
-      type: 'Gift Card',
-      price: 150,
-    },
-    {
-      id: '4',
-      product: 'DashPass Gift Card',
-      type: 'Gift Card',
-      price: 250,
-    },
-  ]
-  const experiences = MOCK_EXPERIENCES
+  // Extract branch_id from URL path, query params, or branch data
+  const branchId = React.useMemo(() => {
+    // Priority: 1. Query param, 2. URL path param, 3. Branch data
+    if (branchIdFromParams) return Number(branchIdFromParams)
+    if (branchIdFromPath) return Number(branchIdFromPath)
+    if (branches?.branch_id) return Number(branches.branch_id)
+    return null
+  }, [branchIdFromParams, branchIdFromPath, branches?.branch_id])
+
+  // Extract cards for the specific branch from vendors details
+  const experiences = React.useMemo(() => {
+    if (!vendorsDetailsResponse || !vendorId || !branchId) return []
+
+    // Handle both direct array response and wrapped response with data property
+    const vendorsData = Array.isArray(vendorsDetailsResponse)
+      ? vendorsDetailsResponse
+      : (vendorsDetailsResponse as any)?.data || []
+
+    if (!Array.isArray(vendorsData)) return []
+
+    // Find the vendor that matches the current vendor_id
+    const vendor = vendorsData.find((v: any) => {
+      const vId = v.vendor_id || v.id
+      return String(vId) === String(vendorId)
+    })
+
+    if (!vendor || !vendor.branches_with_cards || !Array.isArray(vendor.branches_with_cards)) {
+      return []
+    }
+
+    // Find the specific branch
+    const branch = vendor.branches_with_cards.find((b: any) => {
+      const bId = b.branch_id || b.id
+      return String(bId) === String(branchId)
+    })
+
+    if (!branch || !branch.cards || !Array.isArray(branch.cards)) {
+      return []
+    }
+
+    // Transform cards to experiences format
+    return branch.cards.map((card: any) => ({
+      id: String(card.card_id || card.id || ''),
+      card_id: card.card_id || card.id,
+      product: card.card_name || card.product || 'Gift Card',
+      type: card.card_type || card.type || 'Gift Card',
+      price: String(card.card_price || card.price || 0),
+      currency: card.currency || 'GHS',
+      description: card.card_description || card.description || '',
+      status: card.card_status || card.status || 'active',
+      expiry_date: card.expiry_date || '',
+      issue_date: card.issue_date || '',
+      images: card.images || [],
+      terms_and_conditions: card.terms_and_conditions || [],
+      vendor_name: branch.branch_name || vendor.business_name || '',
+      branch_name: branch.branch_name || '',
+      branch_location: branch.branch_location || '',
+      base_price: String(card.card_price || card.price || 0),
+      markup_price: null,
+      service_fee: '0',
+      rating: 0,
+      created_at: card.created_at || '',
+      updated_at: card.updated_at || card.created_at || '',
+      recipient_count: '0',
+      vendor_id: vendor.vendor_id || vendor.id || 0,
+    }))
+  }, [vendorsDetailsResponse, vendorId, branchId])
 
   // Get all redemptions for this branch, sorted by most recent first
 
@@ -475,10 +458,10 @@ export function BranchDetails() {
   }, [])
 
   // Show loading state
-  if (isLoadingBranches) {
+  if (isLoadingBranches || isLoadingVendorsDetails) {
     return (
       <div className="flex justify-center items-center h-full">
-        <Loader />
+        <img src={LoaderGif} alt="loading" className="w-10 h-10" />
       </div>
     )
   }
@@ -510,12 +493,7 @@ export function BranchDetails() {
               onClick={() => navigate(ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES)}
               className="flex items-center gap-1 text-gray-500 text-xs cursor-pointer"
             >
-              <CustomIcon
-                name="ArrowTurnBackward"
-                className="-rotate-x-180"
-                width={20}
-                height={20}
-              />
+              <Icon icon="hugeicons:arrow-left-01" className="text-primary-900" />
               Back to Branches
             </button>
             <h2 className="text-2xl font-semibold text-primary-900 mt-2">Branch Details</h2>
@@ -636,29 +614,76 @@ export function BranchDetails() {
           </div>
           <div className="px-6 pb-6">
             {experiences.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Icon icon="bi:briefcase" className="text-4xl mb-2 opacity-50" />
-                <p className="text-sm m-0">No experiences created yet</p>
+              <div className="flex flex-col items-center justify-center py-12 min-h-[300px]">
+                <Icon icon="bi:briefcase" className="text-6xl text-gray-300 opacity-40 mb-4" />
+                <Text variant="p" className="text-sm text-gray-400 font-normal">
+                  No experiences created yet
+                </Text>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {experiences
                   .slice(0, 6)
                   .map(
-                    (experience: { id: string; product: string; type: string; price: number }) => (
+                    (experience: {
+                      id: string
+                      card_id?: number
+                      product: string
+                      type: string
+                      price: string
+                      currency?: string
+                      description?: string
+                      status?: string
+                      expiry_date?: string
+                      issue_date?: string
+                      images?: any[]
+                      terms_and_conditions?: any[]
+                      vendor_name?: string
+                      branch_name?: string
+                      branch_location?: string
+                      base_price?: string
+                      markup_price?: number | null
+                      service_fee?: string
+                      rating?: number
+                      created_at?: string
+                      updated_at?: string
+                      recipient_count?: string
+                      vendor_id?: number
+                    }) => (
                       <div
                         key={experience.id}
-                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                        onClick={() => {
+                          experienceModal.openModal(MODALS.EXPERIENCE.VIEW, experience)
+                        }}
+                        className="cursor-pointer"
                       >
-                        <Text variant="span" weight="semibold" className="text-gray-900 block mb-2">
-                          {experience.product}
-                        </Text>
-                        <Text variant="span" className="text-gray-500 text-sm block mb-2">
-                          {experience.type}
-                        </Text>
-                        <Text variant="span" weight="semibold" className="text-[#402D87]">
-                          {formatCurrency(experience.price, 'GHS')}
-                        </Text>
+                        <CardItems
+                          card_id={experience.card_id || Number(experience.id)}
+                          product={experience.product}
+                          vendor_name={experience.vendor_name || ''}
+                          branch_name={experience.branch_name || ''}
+                          branch_location={experience.branch_location || ''}
+                          description={experience.description || ''}
+                          price={experience.price}
+                          base_price={experience.base_price || experience.price}
+                          markup_price={experience.markup_price ?? null}
+                          service_fee={experience.service_fee || '0'}
+                          currency={experience.currency || 'GHS'}
+                          expiry_date={experience.expiry_date || ''}
+                          status={experience.status || 'active'}
+                          rating={experience.rating || 0}
+                          created_at={experience.created_at || ''}
+                          recipient_count={experience.recipient_count || '0'}
+                          images={(experience.images || []) as []}
+                          terms_and_conditions={(experience.terms_and_conditions || []) as []}
+                          type={experience.type}
+                          updated_at={experience.updated_at || experience.created_at || ''}
+                          vendor_id={experience.vendor_id || 0}
+                          buttonText="View Details"
+                          onGetQard={() => {
+                            experienceModal.openModal(MODALS.EXPERIENCE.VIEW, experience)
+                          }}
+                        />
                       </div>
                     ),
                   )}
@@ -714,6 +739,7 @@ export function BranchDetails() {
 
       <BranchDetailsModal branch={branches} />
       <RedemptionDetails />
+      <ViewExperience />
     </>
   )
 }

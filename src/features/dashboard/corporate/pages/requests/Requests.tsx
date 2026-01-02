@@ -19,8 +19,6 @@ export default function Requests() {
     setQuery,
   } = useCorporateRequests()
 
-  console.log('requestCorporatesList', requestCorporatesList)
-
   return (
     <>
       <div className="py-10">

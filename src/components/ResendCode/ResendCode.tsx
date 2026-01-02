@@ -21,7 +21,12 @@ export default function ResendCode({
     <Text variant="span" className={cn('text-gray-600 leading-5', className)}>
       Didn't get a code?{' '}
       {!countdown ? (
-        <button type="button" onClick={onResend} disabled={isLoading} className="text-primary-400">
+        <button
+          type="button"
+          onClick={onResend}
+          disabled={isLoading}
+          className="text-primary-400 cursor-pointer"
+        >
           Resend code
         </button>
       ) : (

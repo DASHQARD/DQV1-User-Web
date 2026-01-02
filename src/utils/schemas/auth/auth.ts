@@ -21,7 +21,7 @@ export const CreateAccountSchema = z.object({
   email: getRequiredEmailSchema('Email'),
   password: getRequiredAlphaNumericStringSchema('Password'),
   phone_number: getRequiredStringSchema('Phone Number'),
-  user_type: z.enum(['user', 'corporate super admin']),
+  user_type: z.enum(['user', 'corporate']),
   country: getRequiredStringSchema('Country'),
   country_code: getRequiredStringSchema('Country Code'),
 })
@@ -80,7 +80,7 @@ export const BusinessDetailsSchema = z.object({
 })
 
 export const UploadBusinessIDSchema = z.object({
-  employer_identification_number: getRequiredStringSchema('Employer Identification Number'),
+  employer_identification_number: getRequiredStringSchema('Taxpayer Identification Number (TIN)'),
   business_industry: getRequiredStringSchema('Business Industry'),
   certificate_of_incorporation: z
     .instanceof(File, { message: 'Certificate of Incorporation is required' })

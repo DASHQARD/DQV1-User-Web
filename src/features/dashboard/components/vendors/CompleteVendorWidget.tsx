@@ -5,11 +5,14 @@ import { cn } from '@/libs'
 import { userProfile } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import { Text } from '@/components'
+import { vendorQueries } from '@/features'
 
 export default function CompleteVendorWidget() {
   const [isExpanded, setIsExpanded] = React.useState(false)
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
+  const { useBranchesService } = vendorQueries()
+  const { data: branches } = useBranchesService()
   const navigate = useNavigate()
 
   const userType = (userProfileData as any)?.user_type
@@ -39,23 +42,30 @@ export default function CompleteVendorWidget() {
 
   const { hasProfileAndID, hasBusinessDetailsAndDocs } = onboardingProgress
 
-  // For branch managers, only count profile step. For vendors, count both steps
+  // Handle branches data structure (array or wrapped response)
+  const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
+  const hasBranches = branchesArray.length > 0
+
+  // For branch managers, only count profile step. For vendors, count all steps including branch
   const completedCount = isBranchManager
     ? hasProfileAndID
       ? 1
       : 0
-    : (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0)
-  const totalCount = isBranchManager ? 1 : 2
-  const progressPercentage = (completedCount / totalCount) * 100
+    : (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0) + (hasBranches ? 1 : 0)
+  const totalCount = isBranchManager ? 1 : 3
+  const progressPercentage = Math.round((completedCount / totalCount) * 100)
 
   // Find the first incomplete step - use vendor compliance routes
   const getNextIncompleteStep = () => {
     if (!hasProfileAndID) {
       return ROUTES.IN_APP.DASHBOARD.VENDOR.COMPLIANCE.PROFILE_INFORMATION
     }
-    // Branch managers don't need business details
+    // Branch managers don't need business details or branches
     if (!isBranchManager && !hasBusinessDetailsAndDocs) {
       return ROUTES.IN_APP.DASHBOARD.VENDOR.COMPLIANCE.BUSINESS_DETAILS
+    }
+    if (!isBranchManager && !hasBranches) {
+      return ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_BRANCH_MANAGER
     }
     return ROUTES.IN_APP.DASHBOARD.VENDOR.COMPLIANCE.ROOT
   }
@@ -221,13 +231,49 @@ export default function CompleteVendorWidget() {
                 </div>
               </Link>
             )}
+
+            {/* Only show Create Branch for regular vendors, not branch managers */}
+            {!isBranchManager && (
+              <Link
+                to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_BRANCH_MANAGER)}
+                className={cn(
+                  'flex items-center gap-3 p-3 rounded-lg transition-colors',
+                  hasBranches ? 'bg-gray-50 opacity-75' : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
+                )}
+              >
+                <Icon
+                  icon={hasBranches ? 'bi:check-circle-fill' : 'bi:circle'}
+                  className={cn(
+                    'text-lg shrink-0',
+                    hasBranches ? 'text-[#059669]' : 'text-gray-400',
+                  )}
+                />
+                <div className="flex-1">
+                  <div
+                    className={cn(
+                      'text-sm font-medium',
+                      hasBranches ? 'text-gray-500 line-through' : 'text-gray-900',
+                    )}
+                  >
+                    Create Your First Branch
+                  </div>
+                  {!hasBranches && (
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      Create at least one branch to get started
+                    </div>
+                  )}
+                </div>
+              </Link>
+            )}
           </div>
 
           {/* Continue Button */}
           {(() => {
             const getNextStepName = () => {
               if (!hasProfileAndID) return 'Profile Information & ID Upload'
-              if (!hasBusinessDetailsAndDocs) return 'Business Details & Documents'
+              if (!isBranchManager && !hasBusinessDetailsAndDocs)
+                return 'Business Details & Documents'
+              if (!isBranchManager && !hasBranches) return 'Create Your First Branch'
               return null
             }
 

@@ -32,8 +32,9 @@ export function BusinessDetailsSettings() {
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
   const [logoFile, setLogoFile] = React.useState<File | null>(null)
 
-  // Check if user status is approved - if so, disable all inputs
   const isApproved = userProfileData?.status === 'approved'
+
+  console.log('userProfileData checking', userProfileData)
 
   type FormData = z.input<typeof UpdateBusinessDetailsSchema>
   const form = useForm<FormData>({
@@ -185,22 +186,22 @@ export function BusinessDetailsSettings() {
       {/* Business Details Form */}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2">
-            <Input
-              label="Business Name"
-              placeholder="Enter business name"
-              {...form.register('name')}
-              error={form.formState.errors.name?.message}
-              disabled={isApproved}
-            />
-          </div>
+          <Input
+            label="Business Name"
+            className="col-span-2"
+            placeholder="Enter business name"
+            {...form.register('name')}
+            error={form.formState.errors.name?.message}
+            disabled={isApproved}
+          />
 
-          <div>
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Controller
               control={form.control}
               name="type"
               render={({ field, fieldState: { error } }) => (
                 <CreatableCombobox
+                  className="col-span-2"
                   label="Business Type"
                   options={[
                     { label: 'LLC', value: 'llc' },
@@ -219,72 +220,68 @@ export function BusinessDetailsSettings() {
                 />
               )}
             />
-          </div>
 
-          <div className="flex flex-col gap-1">
-            <Controller
-              control={form.control}
-              name="phone"
-              render={({ field: { onChange } }) => {
-                return (
-                  <BasePhoneInput
-                    placeholder="Enter number eg. 5512345678"
-                    options={phoneCountries}
-                    maxLength={9}
-                    handleChange={onChange}
-                    label="Phone Number"
-                    error={form.formState.errors.phone?.message}
-                    disabled={isApproved}
-                  />
-                )
-              }}
-            />
-            <p className="text-xs text-gray-500">
-              Please enter your number in the format:{' '}
-              <span className="font-medium">5512345678</span>
-            </p>
-          </div>
+            <div className="flex flex-col gap-1 md:col-span-full col-span-1">
+              <Controller
+                control={form.control}
+                name="phone"
+                render={({ field: { onChange, value } }) => {
+                  // Ensure value is always a string
+                  const phoneValue = value || ''
+                  return (
+                    <BasePhoneInput
+                      placeholder="Enter number eg. 5512345678"
+                      options={phoneCountries}
+                      maxLength={9}
+                      handleChange={onChange}
+                      selectedVal={phoneValue}
+                      label="Phone Number"
+                      error={form.formState.errors.phone?.message}
+                      disabled={isApproved}
+                    />
+                  )
+                }}
+              />
+              <p className="text-xs text-gray-500">
+                Please enter your number in the format:{' '}
+                <span className="font-medium">5512345678</span>
+              </p>
+            </div>
+          </section>
 
-          <div>
-            <Input
-              label="Email"
-              type="email"
-              placeholder="Enter email address"
-              {...form.register('email')}
-              error={form.formState.errors.email?.message}
-              disabled={isApproved}
-            />
-          </div>
+          <Input
+            label="Email"
+            type="email"
+            placeholder="Enter email address"
+            {...form.register('email')}
+            error={form.formState.errors.email?.message}
+            disabled={isApproved}
+          />
 
-          <div>
-            <Input
-              label="Street Address"
-              placeholder="Enter street address"
-              {...form.register('street_address')}
-              error={form.formState.errors.street_address?.message}
-              disabled={isApproved}
-            />
-          </div>
+          <Input
+            label="Street Address"
+            placeholder="Enter street address"
+            {...form.register('street_address')}
+            error={form.formState.errors.street_address?.message}
+            disabled={isApproved}
+          />
 
-          <div>
-            <Input
-              label="Digital Address"
-              placeholder="Enter digital address (optional)"
-              {...form.register('digital_address')}
-              error={form.formState.errors.digital_address?.message}
-              disabled={isApproved}
-            />
-          </div>
+          <Input
+            label="Digital Address"
+            placeholder="Enter digital address (optional)"
+            {...form.register('digital_address')}
+            error={form.formState.errors.digital_address?.message}
+            disabled={isApproved}
+          />
 
-          <div>
-            <Input
-              label="Registration Number"
-              placeholder="Enter registration number"
-              {...form.register('registration_number')}
-              error={form.formState.errors.registration_number?.message}
-              disabled={isApproved}
-            />
-          </div>
+          <Input
+            label="Registration Number"
+            className="col-span-2"
+            placeholder="Enter registration number"
+            {...form.register('registration_number')}
+            error={form.formState.errors.registration_number?.message}
+            disabled={isApproved}
+          />
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">

@@ -1,15 +1,21 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { Text, Tag } from '@/components'
 import { ROUTES } from '@/utils/constants'
 
 import { getStatusVariant } from '@/utils/helpers'
-import { formatRelativeTime } from '@/utils/format'
 import { corporateQueries } from '../../corporate'
+import { formatDate } from '@/utils/format'
 
 export default function RecentRequests() {
   const { useGetRequestsCorporateService } = corporateQueries()
-  const { data: recentRequests } = useGetRequestsCorporateService()
+  const { data: requestsResponse } = useGetRequestsCorporateService()
+
+  const recentRequests = useMemo(() => {
+    if (!requestsResponse) return []
+    return Array.isArray(requestsResponse) ? requestsResponse : []
+  }, [requestsResponse])
 
   return (
     <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
@@ -28,7 +34,7 @@ export default function RecentRequests() {
       </div>
 
       <div className="px-6 pb-6">
-        {recentRequests?.length === 0 ? (
+        {recentRequests.length === 0 ? (
           <div className="text-center py-12 flex flex-col items-center justify-center">
             <Icon icon="bi:inbox" className="text-6xl text-[#e9ecef] mb-3" />
             <Text variant="p" className="text-sm text-[#6c757d] m-0">
@@ -37,37 +43,37 @@ export default function RecentRequests() {
           </div>
         ) : (
           <div className="divide-y divide-[#F2F4F7]">
-            {recentRequests?.map((request: any) => (
+            {recentRequests.map((request: any) => (
               <article
                 key={request.id}
-                className="flex flex-wrap items-center gap-4 py-4 text-sm text-[#475467]"
+                className="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0"
               >
-                <div className="flex-1 min-w-[120px]">
-                  <Text variant="span" className="text-xs font-medium text-gray-800 block mb-1">
-                    {request.id}
+                {/* Left: Request ID and Type */}
+                <div className="flex-1 min-w-0">
+                  <Text variant="span" className="text-sm font-semibold text-gray-900 block mb-1">
+                    {request.request_id || `RQ-${request.id}`}
                   </Text>
-                  <Text variant="span" className="text-xs text-gray-500">
-                    {request.request_type}
+                  <Text variant="span" className="text-xs text-gray-500 block mb-3">
+                    {request.type || 'N/A'}
                   </Text>
-                </div>
-
-                <div className="flex-1 min-w-[150px]">
-                  <Text variant="span" className="text-xs text-gray-800 block mb-1">
-                    {request.product}
-                  </Text>
-                  <Text variant="span" className="text-xs text-gray-500">
-                    {request.requestedBy}
-                  </Text>
-                </div>
-
-                <div className="min-w-[80px]">
-                  <Tag value={request.status} variant={getStatusVariant(request.status)} />
-                </div>
-
-                <div className="min-w-[140px] text-right">
                   <Text variant="span" className="text-xs text-gray-400">
-                    {formatRelativeTime(request.createdAt)}
+                    {formatDate(request?.created_at)}
                   </Text>
+                </div>
+
+                {/* Middle: Description and Name */}
+                <div className="flex-1 min-w-0 px-4">
+                  <Text variant="span" className="text-sm text-gray-900 block mb-1">
+                    {request.description || 'No description'}
+                  </Text>
+                  <Text variant="span" className="text-xs text-gray-500">
+                    {request.name || 'Unknown'}
+                  </Text>
+                </div>
+
+                {/* Right: Status Badge */}
+                <div className="shrink-0">
+                  <Tag value={request.status} variant={getStatusVariant(request.status)} />
                 </div>
               </article>
             ))}

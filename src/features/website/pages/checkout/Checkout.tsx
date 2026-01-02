@@ -5,7 +5,7 @@ import { Button, Loader, Modal, EmptyState, Input } from '@/components'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import FileUploader from '@/components/FileUploader/FileUploader'
 import { useCart } from '../../hooks/useCart'
-import type { RecipientResponse, CartListResponse } from '@/types/responses'
+import type { CartListResponse } from '@/types/responses'
 import { usePersistedModalState, useToast } from '@/hooks'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
@@ -20,7 +20,6 @@ import { userProfile } from '@/hooks'
 import { usePayments } from '../../hooks'
 import { formatCurrency } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
-import { usePublicCatalogQueries } from '../../hooks/website/usePublicCatalogQueries'
 
 // Schema for user information form
 const UserInfoSchema = z.object({
@@ -32,9 +31,6 @@ const UserInfoSchema = z.object({
 type UserInfoFormData = z.infer<typeof UserInfoSchema>
 
 export default function Checkout() {
-  const { useGetCartAllRecipientsService } = usePublicCatalogQueries()
-  const { data: cartAllRecipientsData } = useGetCartAllRecipientsService()
-  console.log('cartAllRecipientsData', cartAllRecipientsData)
   const navigate = useNavigate()
   const toast = useToast()
   const queryClient = useQueryClient()
@@ -72,16 +68,8 @@ export default function Checkout() {
     }
   }, [userProfileData, userInfoForm])
 
-  // Fetch all recipients using /carts/all/recipients endpoint
-
-  // Get all recipients from /carts/all/recipients endpoint
-  const recipients = useMemo(() => {
-    if (!cartAllRecipientsData?.data || !Array.isArray(cartAllRecipientsData.data)) {
-      return []
-    }
-    return cartAllRecipientsData.data
-  }, [cartAllRecipientsData])
   // Flatten cart items from nested structure
+  // Recipients are now included directly in the cart items from /carts endpoint
   type FlattenedCartItem = {
     cart_id: number
     card_id: number
@@ -93,7 +81,14 @@ export default function Checkout() {
     amount: string
     images?: Array<{ file_url: string; file_name: string }>
     cart_item_id?: number
-    recipients?: any[]
+    total_quantity?: number
+    recipients?: Array<{
+      email: string
+      phone: string
+      message: string
+      name?: string
+      amount?: string
+    }>
   }
 
   const displayCartItems = useMemo(() => {
@@ -115,11 +110,12 @@ export default function Checkout() {
             vendor_name: undefined, // May not be in nested structure
             type: item.type || 'dashx',
             currency: 'GHS', // Default, adjust if available
-            price: item.total_amount,
-            amount: item.total_amount,
-            images: item.images,
+            price: item.total_amount?.toString() || '0',
+            amount: item.total_amount?.toString() || '0',
+            images: item.images || [],
             cart_item_id: item.cart_item_id,
-            recipients: [], // Recipients come from separate API
+            total_quantity: item.total_quantity || 1,
+            recipients: item.recipients || [], // Recipients are now included in cart items
           })
         })
       }
@@ -261,24 +257,32 @@ export default function Checkout() {
     return `${baseUrl}/uploads/${fileUrl}`
   }, [])
 
-  // Group recipients by cart_id
-  const recipientsByCart = useMemo(() => {
-    const grouped: Record<number, RecipientResponse[]> = {}
-    recipients.forEach((recipient: RecipientResponse) => {
-      if (recipient.cart_id) {
-        if (!grouped[recipient.cart_id]) {
-          grouped[recipient.cart_id] = []
-        }
-        grouped[recipient.cart_id].push(recipient)
+  // Group recipients by cart_item_id from cart items (recipients are now included in cart response)
+  const recipientsByCartItem = useMemo(() => {
+    const grouped: Record<number, any[]> = {}
+
+    displayCartItems.forEach((item: FlattenedCartItem) => {
+      if (item.cart_item_id && item.recipients && item.recipients.length > 0) {
+        // Calculate per-recipient amount: total_amount / total_quantity
+        const totalAmount = parseFloat(item.amount || '0')
+        const totalQuantity = item.total_quantity || 1
+        const perRecipientAmount = totalAmount / totalQuantity
+
+        grouped[item.cart_item_id] = item.recipients.map((recipient, index) => ({
+          id: `${item.cart_item_id}-${index}`, // Generate unique ID
+          name: recipient.name || recipient.email?.split('@')[0] || 'Recipient',
+          email: recipient.email,
+          phone: recipient.phone,
+          message: recipient.message || '',
+          amount: parseFloat(recipient.amount || perRecipientAmount.toString() || '0'),
+          cart_id: item.cart_id,
+          cart_item_id: item.cart_item_id,
+        }))
       }
     })
-    return grouped
-  }, [recipients])
 
-  // Get carts that have recipients
-  const cartsWithRecipients = useMemo(() => {
-    return new Set(Object.keys(recipientsByCart).map(Number))
-  }, [recipientsByCart])
+    return grouped
+  }, [displayCartItems])
 
   const handleBulkUpload = useCallback(() => {
     if (!bulkFile) {
@@ -323,7 +327,11 @@ export default function Checkout() {
             title="Your cart is empty"
             description="Add items to your cart to proceed to checkout"
           />
-          <Button onClick={() => navigate('/dashqards')} className="mt-6">
+          <Button
+            onClick={() => navigate('/dashqards')}
+            className="mt-6 mx-auto"
+            variant="secondary"
+          >
             Browse Gift Cards
           </Button>
         </div>
@@ -332,320 +340,232 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#f8fafc] to-[#e2e8f0]">
-      <div className="wrapper py-12">
+    <div className="min-h-screen bg-gray-50">
+      <div className="wrapper py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-[#212529] mb-2">Checkout</h1>
-          <p className="text-grey-500">
-            Assign recipients to your gift cards before completing your purchase
-          </p>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
+          <p className="text-gray-600">Review your order and complete your purchase</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* User Information Card - Show if profile is incomplete */}
-
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-primary-200">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
-                  <Icon icon="bi:person-fill" className="size-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Complete Your Information</h3>
-                  <p className="text-sm text-gray-600">
-                    Please provide your details to proceed with checkout
-                  </p>
-                </div>
-              </div>
-
-              <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="text"
-                    {...userInfoForm.register('full_name')}
-                    error={userInfoForm.formState.errors.full_name?.message}
-                    placeholder="Enter your full name"
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    Email Address <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="email"
-                    {...userInfoForm.register('email')}
-                    error={userInfoForm.formState.errors.email?.message}
-                    placeholder="Enter your email address"
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    Phone Number <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="tel"
-                    {...userInfoForm.register('phone_number')}
-                    error={userInfoForm.formState.errors.phone_number?.message}
-                    placeholder="Enter your phone number"
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 text-xs text-gray-500 pt-2">
-                  <Icon icon="bi:info-circle" className="size-4" />
-                  <span>This information will be used for your order confirmation</span>
-                </div>
-              </form>
-            </div>
-
-            {/* Cart Items */}
-            {/* Cart Items */}
-            {displayCartItems.map((item: FlattenedCartItem) => {
-              const cardBackground = getCardBackground(item.type || '')
-              const displayPrice = parseFloat(item.amount || '0')
-
-              // Get recipients from fetched recipients API
-              const fetchedRecipients = recipientsByCart[item.cart_id] || []
-
-              // Use a Map to deduplicate recipients
-              const recipientsMap = new Map<string | number, RecipientResponse>()
-
-              // Helper function to get a unique key for a recipient
-              const getRecipientKey = (r: RecipientResponse): string | number => {
-                if (r.id) return r.id
-                // Fallback to email + cart_id if no ID
-                return `${r.email || ''}_${r.cart_id || item.cart_id}`
-              }
-
-              // Helper function to validate and normalize recipient
-              const normalizeRecipient = (r: RecipientResponse): RecipientResponse | null => {
-                // Filter out invalid recipients (missing name, email, or invalid amount)
-                if (!r.name || !r.email) return null
-
-                const amount =
-                  typeof r.amount === 'number'
-                    ? r.amount
-                    : parseFloat(String(r.amount || item.amount))
-
-                if (isNaN(amount) || amount <= 0) return null
-
-                return {
-                  ...r,
-                  amount: amount,
-                  cart_id: r.cart_id || item.cart_id,
-                }
-              }
-
-              // Add fetched recipients
-              fetchedRecipients.forEach((r: RecipientResponse) => {
-                const normalized = normalizeRecipient(r)
-                if (normalized) {
-                  const key = getRecipientKey(normalized)
-                  recipientsMap.set(key, normalized)
-                }
-              })
-
-              const itemRecipients = Array.from(recipientsMap.values())
-              const hasRecipients = cartsWithRecipients.has(item.cart_id)
-              const cardImageUrl = item.images?.[0]?.file_url
-                ? getImageUrl(item.images[0].file_url)
-                : null
-
-              // Generate QR code for the card
-              const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`${item.product}-${item.card_id}`)}&bgcolor=FFFFFF&color=000000&margin=0`
-
-              return (
-                <div
-                  key={`${item.cart_id}-${item.cart_item_id || item.card_id}`}
-                  className={`bg-white rounded-2xl shadow-lg p-6 border transition-shadow ${
-                    hasRecipients
-                      ? 'border-primary-300 hover:shadow-xl hover:border-primary-400'
-                      : 'border-gray-100 hover:shadow-xl'
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row gap-6 mb-6">
-                    {/* Card Preview */}
-                    <div className="w-full sm:w-48 h-32 shrink-0 rounded-lg overflow-hidden bg-gray-200 relative shadow-md">
-                      {/* Card Background - always shown as fallback */}
-                      <img
-                        src={cardBackground}
-                        alt={`${item.type} card background`}
-                        className="absolute inset-0 w-full h-full object-cover"
+          <div className="lg:col-span-2 space-y-4">
+            {/* User Information Section */}
+            {isUserInfoIncomplete && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
+                <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        {...userInfoForm.register('full_name')}
+                        error={userInfoForm.formState.errors.full_name?.message}
+                        placeholder="John Doe"
+                        className="w-full"
                       />
-                      {/* Uploaded Image - shown if available, falls back to background on error */}
-                      {cardImageUrl && (
-                        <img
-                          src={cardImageUrl}
-                          alt={item.product || 'Cart item'}
-                          className="absolute inset-0 w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement
-                            target.style.display = 'none'
-                          }}
-                        />
-                      )}
-
-                      {/* Card Overlay Content */}
-                      <div className="absolute inset-0 p-2 flex flex-col justify-between text-white pointer-events-none">
-                        {/* Top Section */}
-                        <div className="flex items-start justify-between">
-                          {/* Left: Card Type */}
-                          <div className="flex items-center gap-1">
-                            <Icon icon="bi:gift" className="size-3" />
-                            <span className="text-xs font-bold tracking-wide">
-                              {getCardTypeName(item.type)}
-                            </span>
-                          </div>
-                          {/* Right: Price */}
-                          <div className="text-right">
-                            <span className="text-xs font-bold">
-                              {formatCurrency(displayPrice)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Bottom Section */}
-                        <div className="flex items-end justify-between">
-                          {/* Left: Product Name */}
-                          <div className="text-[10px] font-semibold uppercase truncate max-w-[60%]">
-                            {item.product}
-                          </div>
-                          {/* Right: QR Code */}
-                          <div className="p-1 rounded bg-white/10 backdrop-blur-sm">
-                            <img src={qrCodeUrl} alt="QR Code" className="w-8 h-8" />
-                          </div>
-                        </div>
-                      </div>
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="text-xl font-bold text-gray-900">
-                          {item.product || `Card #${item.card_id}`}
-                        </h3>
-                        {hasRecipients && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200">
-                            <Icon icon="bi:check-circle" className="size-3" />
-                            Has Recipients
-                          </span>
-                        )}
-                      </div>
-                      {item.vendor_name && (
-                        <p className="text-sm text-gray-600 mb-2">{item.vendor_name}</p>
-                      )}
-                      <p className="text-lg font-semibold text-primary-500 mb-2">
-                        {formatCurrency(displayPrice)}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 uppercase">
-                          {getCardTypeName(item.type)}
-                        </span>
-                        <span className="text-gray-300">•</span>
-                        <span className="text-xs text-gray-500">Card ID: {item.card_id}</span>
-                      </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Phone Number <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="tel"
+                        {...userInfoForm.register('phone_number')}
+                        error={userInfoForm.formState.errors.phone_number?.message}
+                        placeholder="+233 XX XXX XXXX"
+                        className="w-full"
+                      />
                     </div>
                   </div>
 
-                  {/* Recipients for this cart item */}
-                  {itemRecipients.length > 0 && (
-                    <div className="mb-6 pt-6 border-t border-gray-200">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <Icon icon="bi:people" className="size-4" />
-                        Recipients ({itemRecipients.length})
-                      </h4>
-                      <div className="space-y-3">
-                        {itemRecipients.map((recipient) => (
-                          <div
-                            key={recipient.id}
-                            className="flex items-start justify-between p-4 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-900 mb-1">{recipient.name}</p>
-                              <div className="space-y-1">
-                                <p className="text-sm text-gray-600 flex items-center gap-1">
-                                  <Icon icon="bi:envelope" className="size-3" />
-                                  {recipient.email}
-                                </p>
-                                {recipient.phone && (
-                                  <p className="text-sm text-gray-600 flex items-center gap-1">
-                                    <Icon icon="bi:telephone" className="size-3" />
-                                    {recipient.phone}
-                                  </p>
-                                )}
-                                {recipient.message && (
-                                  <p className="text-xs text-gray-500 italic mt-2 pl-4 border-l-2 border-primary-200">
-                                    "{recipient.message}"
-                                  </p>
-                                )}
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                      Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="email"
+                      {...userInfoForm.register('email')}
+                      error={userInfoForm.formState.errors.email?.message}
+                      placeholder="john@example.com"
+                      className="w-full"
+                    />
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Order Items Section */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Order Items</h2>
+              </div>
+
+              <div className="divide-y divide-gray-200">
+                {displayCartItems.map((item: FlattenedCartItem) => {
+                  const cardBackground = getCardBackground(item.type || '')
+                  const displayPrice = parseFloat(item.amount || '0')
+
+                  // Get recipients from cart item (recipients are now included in cart response)
+                  const itemRecipients =
+                    item.cart_item_id && recipientsByCartItem[item.cart_item_id]
+                      ? recipientsByCartItem[item.cart_item_id]
+                      : []
+
+                  const hasRecipients = itemRecipients.length > 0
+                  const cardImageUrl = item.images?.[0]?.file_url
+                    ? getImageUrl(item.images[0].file_url)
+                    : null
+
+                  return (
+                    <div
+                      key={`${item.cart_id}-${item.cart_item_id || item.card_id}`}
+                      className="p-6"
+                    >
+                      <div className="flex gap-4">
+                        {/* Card Preview */}
+                        <div className="w-24 h-16 shrink-0 rounded-md overflow-hidden bg-gray-200 relative">
+                          <img
+                            src={cardBackground}
+                            alt={`${item.type} card background`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                          {cardImageUrl && (
+                            <img
+                              src={cardImageUrl}
+                              alt={item.product || 'Cart item'}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                              }}
+                            />
+                          )}
+                        </div>
+
+                        {/* Item Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <h3 className="text-base font-semibold text-gray-900 mb-1">
+                                {item.product || `Card #${item.card_id}`}
+                              </h3>
+                              <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                                <span>{getCardTypeName(item.type)}</span>
+                                <span>•</span>
+                                <span>ID: {item.card_id}</span>
                               </div>
+                              {hasRecipients && (
+                                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                                  <Icon icon="bi:check-circle" className="size-3" />
+                                  {itemRecipients.length} Recipient
+                                  {itemRecipients.length !== 1 ? 's' : ''}
+                                </div>
+                              )}
                             </div>
-                            <div className="text-right ml-4">
-                              <p className="font-semibold text-primary-500 mb-1">
-                                {formatCurrency(recipient.amount)}
+                            <div className="text-right">
+                              <p className="text-base font-semibold text-gray-900">
+                                {formatCurrency(displayPrice)}
                               </p>
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 capitalize">
-                                {recipient.status}
-                              </span>
                             </div>
                           </div>
-                        ))}
+
+                          {/* Recipients List */}
+                          {itemRecipients.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-gray-100">
+                              <div className="space-y-2">
+                                {itemRecipients.map((recipient) => (
+                                  <div
+                                    key={recipient.id}
+                                    className="flex items-center justify-between text-sm"
+                                  >
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-gray-900 truncate">
+                                        {recipient.name}
+                                      </p>
+                                      <p className="text-gray-500 truncate">{recipient.email}</p>
+                                    </div>
+                                    <span className="ml-4 text-gray-600 font-medium">
+                                      {formatCurrency(recipient.amount)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Assign Recipient Button */}
+                          <div className="mt-4">
+                            {/* Only show button if quantity allows more recipients */}
+                            {itemRecipients.length < (item.total_quantity || 1) && (
+                              <Button
+                                onClick={() => {
+                                  if (!item.cart_item_id) {
+                                    toast.error('Cart item ID is required')
+                                    return
+                                  }
+                                  // Calculate per-recipient amount: total_amount / total_quantity
+                                  const totalAmount = parseFloat(item.amount || '0')
+                                  const totalQuantity = item.total_quantity || 1
+                                  const perRecipientAmount = totalAmount / totalQuantity
+
+                                  modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
+                                    cart_item_id: item.cart_item_id,
+                                    cardType: item.type,
+                                    cardProduct: item.product,
+                                    cardCurrency: item.currency || 'GHS',
+                                    amount: perRecipientAmount,
+                                  })
+                                }}
+                                variant="outline"
+                                size="small"
+                                className="w-full sm:w-auto"
+                              >
+                                <Icon icon="bi:person-plus" className="mr-1.5" />
+                                {itemRecipients.length > 0
+                                  ? 'Add Another Recipient'
+                                  : 'Assign Recipient'}
+                              </Button>
+                            )}
+                            {/* Show message when all recipients have been assigned */}
+                            {itemRecipients.length >= (item.total_quantity || 1) && (
+                              <div className="text-sm text-gray-500 italic">
+                                Maximum recipients reached (quantity: {item.total_quantity || 1})
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  )}
-
-                  {/* Assign Recipient Button */}
-                  <Button
-                    onClick={() => {
-                      if (!item.cart_item_id) {
-                        toast.error('Cart item ID is required')
-                        return
-                      }
-                      modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
-                        cart_item_id: item.cart_item_id,
-                        cardType: item.type,
-                        cardProduct: item.product,
-                        cardCurrency: item.currency || 'GHS',
-                        amount: parseFloat(item.amount || '0'),
-                      })
-                    }}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Icon icon="bi:person-plus" className="mr-2" />
-                    {itemRecipients.length > 0 ? 'Add Another Recipient' : 'Assign Recipient'}
-                  </Button>
-                </div>
-              )
-            })}
+                  )
+                })}
+              </div>
+            </div>
           </div>
 
-          {/* Sidebar */}
+          {/* Order Summary Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-8">
-              <h2 className="text-xl font-bold text-[#212529] mb-6">Order Summary</h2>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
 
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between items-center text-gray-700">
-                  <span className="text-sm">Items ({displayCartItems.length})</span>
-                  <span className="font-semibold">{formatCurrency(totalAmount)}</span>
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal ({displayCartItems.length} items)</span>
+                  <span className="font-medium text-gray-900">{formatCurrency(totalAmount)}</span>
                 </div>
-                <div className="flex justify-between items-center text-gray-700">
-                  <span className="text-sm">Service Fee (5%)</span>
-                  <span className="font-semibold">{formatCurrency(serviceFee)}</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Service Fee</span>
+                  <span className="font-medium text-gray-900">{formatCurrency(serviceFee)}</span>
                 </div>
-                <div className="border-t-2 border-gray-200 pt-4 mt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-gray-900">Total</span>
-                    <span className="text-xl font-bold text-primary-500">
+                <div className="border-t border-gray-200 pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-base font-semibold text-gray-900">Total</span>
+                    <span className="text-lg font-bold text-gray-900">
                       {formatCurrency(amountDue)}
                     </span>
                   </div>
@@ -655,12 +575,19 @@ export default function Checkout() {
               <Button
                 variant="secondary"
                 className="w-full"
-                // disabled={recipients.length === 0 || isCheckingOut}
                 onClick={handleCheckout}
                 loading={isCheckingOut}
+                disabled={isCheckingOut}
               >
                 {isCheckingOut ? 'Processing...' : 'Complete Purchase'}
               </Button>
+
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-start gap-2 text-xs text-gray-500">
+                  <Icon icon="bi:shield-check" className="size-4 shrink-0 mt-0.5" />
+                  <span>Your payment information is secure and encrypted</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

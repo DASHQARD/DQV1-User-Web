@@ -1,9 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
-import { getRedemptions } from '../services/redemptions'
+import { useRedemptionQueries } from './useRedemptionQueries'
 
-export function useRedemptions() {
-  return useQuery({
-    queryKey: ['redemptions'],
-    queryFn: getRedemptions,
-  })
+export function useRedemptions(params?: { limit?: number; after?: string; status?: string }) {
+  const redemptionQueries = useRedemptionQueries()
+  return redemptionQueries.useGetRedemptionsService(params)
 }

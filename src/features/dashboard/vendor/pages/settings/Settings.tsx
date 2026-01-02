@@ -3,7 +3,7 @@ import { Text } from '@/components'
 import { TabbedView } from '@/components'
 import { BusinessDetailsSettings } from './BusinessDetailsSettings'
 import { BusinessLogoSettings } from './BusinessLogoSettings'
-import { PaymentDetailsSettings } from './PaymentDetailsSettings'
+// import { PaymentDetailsSettings } from './PaymentDetailsSettings'
 
 export default function Settings() {
   const settingsTabs = [
@@ -17,11 +17,11 @@ export default function Settings() {
       component: () => <BusinessLogoSettings />,
       label: 'Business Logo',
     },
-    {
-      key: 'payment-details' as const,
-      component: () => <PaymentDetailsSettings />,
-      label: 'Payment Details',
-    },
+    // {
+    //   key: 'payment-details' as const,
+    //   component: () => <PaymentDetailsSettings />,
+    //   label: 'Payment Details',
+    // },
   ]
 
   return (

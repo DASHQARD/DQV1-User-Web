@@ -37,7 +37,7 @@ export default function Redeem() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    await submitRedemption(userInfo.userInfo)
+    await submitRedemption()
   }
 
   const handleModalClose = () => {
@@ -318,7 +318,7 @@ export default function Redeem() {
                           <button
                             type="button"
                             className="bg-transparent text-[#402D87] border border-[#402D87] px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200 flex items-center gap-2 hover:bg-[#402D87] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed"
-                            onClick={() => submitRedemption(userInfo.userInfo)}
+                            onClick={() => submitRedemption()}
                             disabled={isSubmitting}
                           >
                             <Icon icon="bi:arrow-clockwise" />
@@ -400,13 +400,13 @@ export default function Redeem() {
                   </div>
 
                   {/* Security Notice */}
-                  <div className="mt-8 p-4 bg-gradient-to-br from-[#FEF7CD] to-[#FEF3C7] border border-[#F59E0B] rounded-xl flex gap-3">
+                  {/* <div className="mt-8 p-4 bg-gradient-to-br from-[#FEF7CD] to-[#FEF3C7] border border-[#F59E0B] rounded-xl flex gap-3">
                     <Icon icon="bi:shield-lock" className="text-xl text-[#D97706] mt-0.5" />
                     <div className="text-sm text-[#92400E] leading-relaxed">
                       <strong>Secure Transaction:</strong> This redemption is protected by 256-bit
                       SSL encryption and requires SMS verification to complete.
                     </div>
-                  </div>
+                  </div> */}
                 </form>
               </div>
             </div>

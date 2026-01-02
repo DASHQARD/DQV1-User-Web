@@ -5,6 +5,7 @@ import { CardItems } from '@/features/website/components/CardItems/CardItems'
 import { VendorItems } from '@/features/website/components/VendorItems/VendorItems'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import DashProBg from '@/assets/svgs/dashpro_bg.svg'
+import BulkUploadTemplate from '@/assets/Bulk Upload Structure.xlsx?url'
 import { usePersistedModalState, useToast, userProfile } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
@@ -99,10 +100,19 @@ export function BulkPurchaseEmployeesModal({
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService()
   console.log('vendorsResponse', vendorsResponse)
-  const { usePublicCardsService } = usePublicCatalogQueries()
-  const { data: cardsResponse, isLoading: isLoadingCards } = usePublicCardsService()
+
   const { data: cartsResponse } = useGetCartsService()
   const { refetch: refetchRecipients } = useGetAllRecipientsService()
+
+  // Load existing cart items when modal opens
+  const existingCartItems = React.useMemo(() => {
+    const cartsData = cartsResponse?.data || []
+    if (!Array.isArray(cartsData) || cartsData.length === 0) return []
+    return cartsData
+  }, [cartsResponse])
+
+  // Check if there are existing cart items
+  const hasExistingCartItems = existingCartItems.length > 0
 
   // Filter past purchases (completed carts)
 
@@ -130,48 +140,31 @@ export function BulkPurchaseEmployeesModal({
     return map
   }, [vendorsResponse])
 
-  // Extract cards from API response (including vendor_cards from vendor data)
+  // Extract cards from vendors response (from vendor_cards and branches_with_cards)
   const allCards = React.useMemo(() => {
-    const cardsData = cardsResponse || []
-    const cardsFromResponse = cardsData.map((card: any) => ({
-      id: card.card_id || card.id,
-      card_id: card.card_id || card.id,
-      product: card.product,
-      vendor_name: card.vendor_name || 'Unknown Vendor',
-      vendor_id: card.vendor_id,
-      rating: card.rating || 0,
-      price: card.price,
-      currency: card.currency,
-      type: card.type,
-      description: card.description,
-      expiry_date: card.expiry_date,
-      terms_and_conditions: card.terms_and_conditions || [],
-      images: card.images || [],
-      issue_date: card.issue_date,
-    }))
-
-    // Also include cards from vendor_cards and branches_with_cards in vendor data
     const vendorsData = vendorsResponse || []
     const cardsFromVendors: any[] = []
+
     vendorsData.forEach((vendor: any) => {
+      const vendorName = vendor.business_name || vendor.vendor_name || 'Unknown Vendor'
       // Extract from vendor_cards array
       if (vendor.vendor_cards && Array.isArray(vendor.vendor_cards)) {
         vendor.vendor_cards.forEach((card: any) => {
           cardsFromVendors.push({
-            id: card.card_id || card.id,
             card_id: card.card_id || card.id,
             product: card.product || card.card_name,
-            vendor_name: vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
+            vendor_name: vendorName,
             vendor_id: vendor.vendor_id,
             rating: card.rating || 0,
             price: card.price || card.card_price,
-            currency: card.currency,
+            currency: card.currency || 'GHS',
             type: card.type || card.card_type,
-            description: card.description,
-            expiry_date: card.expiry_date,
+            description: card.card_description || card.description || '',
+            expiry_date: card.expiry_date || '',
             terms_and_conditions: card.terms_and_conditions || [],
             images: card.images || [],
-            issue_date: card.issue_date,
+            issue_date: card.issue_date || '',
+            status: card.status || card.card_status || 'active',
           })
         })
       }
@@ -182,20 +175,22 @@ export function BulkPurchaseEmployeesModal({
           if (branch.cards && Array.isArray(branch.cards)) {
             branch.cards.forEach((card: any) => {
               cardsFromVendors.push({
-                id: card.card_id || card.id,
                 card_id: card.card_id || card.id,
                 product: card.card_name || card.product,
-                vendor_name: vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
+                vendor_name: branch.branch_name || vendorName,
+                branch_name: branch.branch_name || '',
+                branch_location: branch.branch_location || '',
                 vendor_id: vendor.vendor_id,
                 rating: 0,
                 price: card.card_price || card.price,
                 currency: card.currency || 'GHS',
                 type: card.card_type || card.type,
-                description: card.description || '',
+                description: card.card_description || card.description || '',
                 expiry_date: card.expiry_date || '',
                 terms_and_conditions: card.terms_and_conditions || [],
                 images: card.images || [],
                 issue_date: card.issue_date || '',
+                status: card.card_status || card.status || 'active',
               })
             })
           }
@@ -203,16 +198,16 @@ export function BulkPurchaseEmployeesModal({
       }
     })
 
-    // Combine and deduplicate by card_id
+    // Deduplicate by card_id
     const allCardsMap = new Map()
-    ;[...cardsFromResponse, ...cardsFromVendors].forEach((card) => {
+    cardsFromVendors.forEach((card) => {
       if (card.card_id && !allCardsMap.has(card.card_id)) {
         allCardsMap.set(card.card_id, card)
       }
     })
 
     return Array.from(allCardsMap.values())
-  }, [cardsResponse, vendorsResponse])
+  }, [vendorsResponse])
 
   // Filter vendors based on search
   const filteredVendors = React.useMemo(() => {
@@ -224,41 +219,46 @@ export function BulkPurchaseEmployeesModal({
   // Get cards for selected vendor (excluding DashPro and DashGo)
   const vendorCards = React.useMemo(() => {
     if (!selectedVendor) return []
-    return allCards.filter(
-      (card: any) =>
-        card.vendor_id === selectedVendor &&
-        card.type?.toLowerCase() !== 'dashpro' &&
-        card.type?.toLowerCase() !== 'dashgo',
-    )
+    return allCards.filter((card: any) => card.vendor_id === selectedVendor)
   }, [selectedVendor, allCards])
 
   const selectedVendorName = React.useMemo(() => {
     return vendors.find((v: any) => v.id === selectedVendor)?.branch_name || ''
   }, [selectedVendor, vendors])
 
-  // Get or create cart
+  // Get or create cart and load existing recipients
   React.useEffect(() => {
     const cartsData = cartsResponse?.data || []
     if (step >= 2 && cartsData.length > 0 && !cartId) {
-      // Use the first cart or create a new one
+      // Use the first cart
       setCartId(cartsData[0].cart_id)
     }
-  }, [cartsResponse?.data, step, cartId])
+
+    // Load existing recipients when modal opens with saved cart items
+    if (step === 2 && hasExistingCartItems && uploadedRecipients.length === 0) {
+      refetchRecipients().then((recipientsData) => {
+        if (recipientsData?.data) {
+          setUploadedRecipients(recipientsData.data || [])
+        }
+      })
+    }
+  }, [
+    cartsResponse?.data,
+    step,
+    cartId,
+    hasExistingCartItems,
+    uploadedRecipients.length,
+    refetchRecipients,
+  ])
 
   const downloadTemplate = () => {
-    const example = `name,email,phone,message
-John Doe,john.doe@example.com,+233551234567,Happy Birthday!
-Jane Smith,jane.smith@example.com,+233551234568,Thank you for your service
-Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
-    const blob = new Blob([example], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
+    // Use the Excel template file from assets
     const a = document.createElement('a')
-    a.href = url
-    a.download = 'bulk-recipients-template.csv'
+    a.href = BulkUploadTemplate
+    a.download = 'bulk-recipients-template.xlsx'
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    URL.revokeObjectURL(url)
   }
 
   const handleUpload = async () => {
@@ -269,10 +269,9 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
 
     try {
       await uploadMutation.mutateAsync(file)
-      toast.success('File uploaded successfully')
 
       // Fetch recipients from the API after upload
-      queryClient.invalidateQueries({ queryKey: ['all-corporate-recipients'] })
+
       const recipientsData = await refetchRecipients()
 
       setUploadedRecipients(recipientsData?.data || [])
@@ -465,7 +464,7 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
     }
   }
 
-  const handleAddCardsToCart = async () => {
+  const handleSaveToCart = async () => {
     // Check if any card has recipients assigned
     const hasAnyAssignment = Object.keys(cardRecipientAssignments).length > 0
 
@@ -493,7 +492,6 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
           }
 
           const cartItem = await addToCartMutation.mutateAsync(cartData)
-          console.log('cartItem', cartItem)
 
           // Store cart_id for later use - check multiple possible response structures
           const returnedCartId =
@@ -560,15 +558,20 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
       )
 
       if (regularCardAssignments.length > 0) {
-        toast.success('Cards added to cart and recipients assigned successfully')
+        toast.success(
+          'Cards saved to cart successfully. You can continue later or proceed to checkout.',
+        )
       } else if (dashGoDashProAssignments.length > 0) {
         toast.success('Cards created and assigned successfully')
       }
 
-      // Proceed to checkout for all card types (including DashGo)
-      handleCheckout()
+      // Clear current assignments after saving (user can add more)
+      setCardRecipientAssignments({})
+      setSelectedCardId(null)
+      setSelectedCardType(null)
+      setSelectedRecipients(new Set())
     } catch (error: any) {
-      toast.error(error?.message || 'Failed to add cards to cart')
+      toast.error(error?.message || 'Failed to save cards to cart')
     }
   }
 
@@ -578,25 +581,28 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
       return
     }
 
-    // Check if there are any regular cards that need checkout
+    // Check if there are any current assignments
     const regularCardAssignments = Object.entries(cardRecipientAssignments).filter(
       ([, assignment]) => assignment.cardType === 'card',
     )
 
-    // Check if there are DashGo/DashPro cards
     const dashGoDashProAssignments = Object.entries(cardRecipientAssignments).filter(
       ([, assignment]) => assignment.cardType === 'dashgo' || assignment.cardType === 'dashpro',
     )
 
-    // If there are no cards at all, return early
-    if (regularCardAssignments.length === 0 && dashGoDashProAssignments.length === 0) {
-      toast.error('No cards to checkout')
-      return
+    // If there are current assignments, save them first
+    if (regularCardAssignments.length > 0 || dashGoDashProAssignments.length > 0) {
+      await handleSaveToCart()
+      // Wait a bit for the save to complete
+      await new Promise((resolve) => setTimeout(resolve, 500))
     }
 
-    // Try to get cartId if not set (might have been created by DashGo/DashPro creation)
-    if (!cartId) {
-      // Refetch carts to get the latest cart (DashGo creation might have created/updated a cart)
+    // Get the current cart ID (use local variable to avoid async state update issues)
+    let currentCartId = cartId
+
+    // Try to get cartId if not set - use local variable instead of relying on state
+    if (!currentCartId) {
+      // Refetch carts to get the latest cart
       await queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
       const updatedCartsResponse = await queryClient.fetchQuery({
         queryKey: ['corporate-carts'],
@@ -604,27 +610,36 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
       })
       const cartsData = (updatedCartsResponse as any)?.data || updatedCartsResponse || []
       if (Array.isArray(cartsData) && cartsData.length > 0) {
-        setCartId(cartsData[0].cart_id)
-        // Retry checkout after setting cartId
-        setTimeout(() => {
-          handleCheckout()
-        }, 100)
-        return
+        currentCartId = cartsData[0].cart_id
+        setCartId(currentCartId) // Update state for future use
       }
     }
 
     // Ensure we have a cart_id before proceeding (required for checkout)
-    if (!cartId) {
-      toast.error('Missing cart information. Please try again.')
+    if (!currentCartId) {
+      toast.error('Missing cart information. Please add items to cart first.')
       return
     }
 
-    // Calculate total amount from cardRecipientAssignments
-    const totalAmount = Object.entries(cardRecipientAssignments).reduce((sum, [, assignment]) => {
+    // Calculate total amount from existing cart items
+    let totalAmount = 0
+    if (existingCartItems.length > 0) {
+      existingCartItems.forEach((cart: any) => {
+        if (cart.items && Array.isArray(cart.items)) {
+          cart.items.forEach((item: any) => {
+            const itemPrice = parseFloat(item.price || item.card_price || '0')
+            const quantity = item.quantity || 1
+            totalAmount += itemPrice * quantity
+          })
+        }
+      })
+    }
+
+    // Also add current assignments if any
+    totalAmount += Object.entries(cardRecipientAssignments).reduce((sum, [, assignment]) => {
       if (assignment.cardPrice) {
         return sum + assignment.cardPrice * assignment.recipientIds.length
       }
-      // Fallback for regular cards
       const card = allCards.find((c: any) => c.card_id === assignment.cardId)
       if (card) {
         return sum + parseFloat(card.price) * assignment.recipientIds.length
@@ -634,7 +649,7 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
 
     try {
       const response = await checkoutMutation.mutateAsync({
-        cart_id: cartId,
+        cart_id: currentCartId,
         full_name: userProfileData.fullname || userProfileData.email || '',
         email: userProfileData.email || '',
         phone_number: userProfileData.phonenumber || '',
@@ -710,8 +725,9 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
           <div className="space-y-6">
             <div className="space-y-2">
               <Text variant="p" className="text-sm text-gray-600">
-                Upload an Excel or CSV file with recipient details (name, email, phone number,
-                message). After uploading, you'll be able to assign gift cards to each recipient.
+                Upload an Excel file with recipient details (first name, last name, email, phone
+                number, message). After uploading, you'll be able to assign gift cards to each
+                recipient.
               </Text>
             </div>
 
@@ -721,11 +737,11 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
                   File Format Required
                 </Text>
                 <Text variant="p" className="text-sm text-gray-600 mb-2">
-                  Your file must include the following columns:
+                  Your file must include the following columns (in this order):
                 </Text>
                 <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
                   <li>
-                    <strong>name</strong> (required) - Recipient's full name
+                    <strong>last_name</strong> (required) - Recipient's last name
                   </li>
                   <li>
                     <strong>email</strong> (required) - Recipient's email address
@@ -735,6 +751,9 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
                   </li>
                   <li>
                     <strong>message</strong> (optional) - Personal message for the recipient
+                  </li>
+                  <li>
+                    <strong>first_name</strong> (required) - Recipient's first name
                   </li>
                 </ul>
               </div>
@@ -748,8 +767,8 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
             </div>
 
             <FileUploader
-              label="Upload Recipients File (Excel/CSV)"
-              accept=".csv,.xlsx,.xls"
+              label="Upload Recipients File (Excel)"
+              accept=".xlsx,.xls"
               value={file}
               onChange={setFile}
             />
@@ -773,9 +792,49 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
         {/* Step 2: Browse Vendors & Select Cards */}
         {step === 2 && (
           <div className="space-y-6">
-            <Text variant="h6" weight="semibold" className="text-gray-900">
-              Browse Cards & Assign Recipients ({uploadedRecipients.length} recipients)
-            </Text>
+            <div className="flex items-center justify-between">
+              <Text variant="h6" weight="semibold" className="text-gray-900">
+                Browse Cards & Assign Recipients ({uploadedRecipients.length} recipients)
+              </Text>
+              {hasExistingCartItems && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 rounded-lg">
+                  <Icon icon="hugeicons:shopping-cart-01" className="w-4 h-4 text-primary-600" />
+                  <Text variant="span" className="text-sm text-primary-700 font-medium">
+                    {existingCartItems.length} item(s) saved in cart
+                  </Text>
+                </div>
+              )}
+            </div>
+
+            {/* Show existing cart items summary */}
+            {hasExistingCartItems && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Icon icon="hugeicons:info-circle" className="w-5 h-5 text-blue-600" />
+                    <Text variant="span" weight="semibold" className="text-blue-900">
+                      Saved Cart Items
+                    </Text>
+                  </div>
+                </div>
+                <Text variant="p" className="text-sm text-blue-700 mb-2">
+                  You have {existingCartItems.length} item(s) already saved in your cart. You can
+                  continue adding more cards or proceed to checkout.
+                </Text>
+                <div className="mt-3 space-y-2">
+                  {existingCartItems.slice(0, 3).map((cart: any, index: number) => (
+                    <div key={index} className="text-sm text-blue-800">
+                      • Cart #{cart.cart_id} - {cart.items?.length || 0} card(s)
+                    </div>
+                  ))}
+                  {existingCartItems.length > 3 && (
+                    <Text variant="span" className="text-sm text-blue-700">
+                      ...and {existingCartItems.length - 3} more
+                    </Text>
+                  )}
+                </div>
+              </div>
+            )}
 
             {!selectedVendor ? (
               <>
@@ -1095,15 +1154,38 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
                     Back
                   </Button>
                   {Object.keys(cardRecipientAssignments).length > 0 && (
-                    <Button
-                      variant="secondary"
-                      onClick={handleAddCardsToCart}
-                      disabled={
-                        Object.keys(cardRecipientAssignments).length === 0 ||
-                        addToCartMutation.isPending
-                      }
-                      loading={addToCartMutation.isPending}
-                    >
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={handleSaveToCart}
+                        disabled={
+                          Object.keys(cardRecipientAssignments).length === 0 ||
+                          addToCartMutation.isPending
+                        }
+                        loading={addToCartMutation.isPending}
+                      >
+                        Save to Cart
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={async () => {
+                          await handleSaveToCart()
+                          setTimeout(() => {
+                            handleCheckout()
+                          }, 500)
+                        }}
+                        disabled={
+                          Object.keys(cardRecipientAssignments).length === 0 ||
+                          addToCartMutation.isPending
+                        }
+                        loading={addToCartMutation.isPending}
+                      >
+                        Save & Checkout
+                      </Button>
+                    </>
+                  )}
+                  {Object.keys(cardRecipientAssignments).length === 0 && hasExistingCartItems && (
+                    <Button variant="secondary" onClick={handleCheckout} disabled={!cartId}>
                       Proceed to Checkout
                     </Button>
                   )}
@@ -1215,16 +1297,12 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
                 )}
 
                 {/* Other Vendor Cards (DashX, DashPass, etc.) */}
-                {isLoadingCards ? (
-                  <div className="text-center py-12">
-                    <Loader />
-                  </div>
-                ) : vendorCards.length > 0 ? (
+                {vendorCards.length > 0 ? (
                   <div className="space-y-3">
                     <Text variant="span" weight="semibold" className="text-gray-900">
                       Other Cards
                     </Text>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[50vh] overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-h-[50vh] overflow-y-auto">
                       {vendorCards.map((card: any) => {
                         const assignmentKey = `card-${card.card_id}`
                         const assignment = cardRecipientAssignments[assignmentKey]
@@ -1244,7 +1322,9 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
                               branch_location={card.branch_location || ''}
                               card_id={card.card_id}
                               product={card.product}
-                              vendor_name={card.vendor_name}
+                              vendor_name={
+                                card.vendor_name || selectedVendorName || 'Unknown Vendor'
+                              }
                               rating={card.rating}
                               price={card.price}
                               currency={card.currency}
@@ -1470,17 +1550,42 @@ Bob Johnson,bob.johnson@example.com,+233551234569,Welcome to the team!`
                   <Button variant="outline" onClick={handleBackToVendors}>
                     Back
                   </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={handleAddCardsToCart}
-                    disabled={
-                      Object.keys(cardRecipientAssignments).length === 0 ||
-                      addToCartMutation.isPending
-                    }
-                    loading={addToCartMutation.isPending}
-                  >
-                    Proceed to Checkout
-                  </Button>
+                  {Object.keys(cardRecipientAssignments).length > 0 && (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={handleSaveToCart}
+                        disabled={
+                          Object.keys(cardRecipientAssignments).length === 0 ||
+                          addToCartMutation.isPending
+                        }
+                        loading={addToCartMutation.isPending}
+                      >
+                        Save to Cart
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={async () => {
+                          await handleSaveToCart()
+                          setTimeout(() => {
+                            handleCheckout()
+                          }, 500)
+                        }}
+                        disabled={
+                          Object.keys(cardRecipientAssignments).length === 0 ||
+                          addToCartMutation.isPending
+                        }
+                        loading={addToCartMutation.isPending}
+                      >
+                        Save & Checkout
+                      </Button>
+                    </>
+                  )}
+                  {Object.keys(cardRecipientAssignments).length === 0 && hasExistingCartItems && (
+                    <Button variant="secondary" onClick={handleCheckout} disabled={!cartId}>
+                      Proceed to Checkout
+                    </Button>
+                  )}
                 </div>
               </>
             )}

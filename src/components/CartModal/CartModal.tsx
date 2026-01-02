@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCartStore } from '@/stores/cart'
 import { useCart } from '@/features/website/hooks/useCart'
@@ -15,6 +16,12 @@ export default function CartPopoverContent() {
   const navigate = useNavigate()
   const { closeCart } = useCartStore()
   const { cartItems, isLoading, deleteCartItem, updateCartItem, isUpdating } = useCart()
+
+  // Filter out paid carts
+  const activeCartItems = useMemo(() => {
+    if (!Array.isArray(cartItems)) return []
+    return cartItems.filter((cart: CartListResponse) => cart.cart_status?.toLowerCase() !== 'paid')
+  }, [cartItems])
 
   const handleCheckout = () => {
     closeCart()
@@ -80,21 +87,17 @@ export default function CartPopoverContent() {
     }
   }
 
-  const subtotal = Array.isArray(cartItems)
-    ? cartItems.reduce((total: number, cart: CartListResponse) => {
-        const amount = parseFloat(cart.total_amount || '0')
-        return total + amount
-      }, 0)
-    : 0
+  const subtotal = activeCartItems.reduce((total: number, cart: CartListResponse) => {
+    const amount = parseFloat(cart.total_amount || '0')
+    return total + amount
+  }, 0)
 
-  // Calculate total items - check if cartItems is empty or has no items
-  const totalItems = Array.isArray(cartItems)
-    ? cartItems.reduce((total, cart) => {
-        if (!cart.items) return total
-        const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
-        return total + itemsArray.length
-      }, 0)
-    : 0
+  // Calculate total items - check if activeCartItems is empty or has no items
+  const totalItems = activeCartItems.reduce((total, cart) => {
+    if (!cart.items) return total
+    const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
+    return total + itemsArray.length
+  }, 0)
 
   return (
     <div className="flex flex-col w-[393px] max-h-[70vh]">
@@ -143,7 +146,7 @@ export default function CartPopoverContent() {
           </div>
         ) : (
           <div className="space-y-4">
-            {cartItems.flatMap((cart: CartListResponse) => {
+            {activeCartItems.flatMap((cart: CartListResponse) => {
               if (!cart.items) return []
 
               // Handle both array and single object cases
@@ -162,8 +165,6 @@ export default function CartPopoverContent() {
                 const cartTotalAmount = parseFloat(cart.total_amount || '0')
                 const totalAmount = itemTotalAmount > 0 ? itemTotalAmount : cartTotalAmount
                 const quantity = item.total_quantity || 1
-                // Calculate unit price from total amount and quantity
-                const unitPrice = quantity > 0 ? totalAmount / quantity : totalAmount
 
                 const handleQuantityChange = (newQuantity: number) => {
                   if (newQuantity < 1) {
@@ -174,7 +175,6 @@ export default function CartPopoverContent() {
                     updateCartItem({
                       cart_item_id: item.cart_item_id,
                       quantity: newQuantity,
-                      amount: unitPrice,
                     })
                   } else {
                     console.warn('Cannot update quantity: cart_item_id is missing', { item, cart })
@@ -266,11 +266,6 @@ export default function CartPopoverContent() {
                           <button
                             type="button"
                             onClick={() => {
-                              console.log('Increase clicked', {
-                                cart_item_id: item.cart_item_id,
-                                quantity,
-                                unitPrice,
-                              })
                               handleQuantityChange(quantity + 1)
                             }}
                             disabled={isUpdating}

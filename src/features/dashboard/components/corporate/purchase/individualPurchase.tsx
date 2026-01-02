@@ -12,7 +12,19 @@ type QueryType = typeof DEFAULT_QUERY
 export default function IndividualPurchase() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
   const { useGetAllCorporatePaymentsService } = corporateQueries()
-  const { data: paymentsResponse, isLoading } = useGetAllCorporatePaymentsService()
+
+  // Build query parameters for the API
+  const queryParams = useMemo(() => {
+    const params: Record<string, any> = {}
+    if (query.limit) params.limit = query.limit
+    if (query.after) params.after = query.after
+    if (query.status) params.status = query.status
+    if (query.search) params.search = query.search
+    // Add other query parameters as needed (type, date_from, date_to, min_amount, max_amount, currency, etc.)
+    return params
+  }, [query])
+
+  const { data: paymentsResponse, isLoading } = useGetAllCorporatePaymentsService(queryParams)
 
   // Transform payment data to match table column structure - filter for individual purchases only
   const individualPurchases = useMemo(() => {

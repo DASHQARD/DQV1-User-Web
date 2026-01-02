@@ -67,6 +67,11 @@ export default function CorporateSidebar() {
     return Math.round((completedCount / totalCount) * 100)
   }, [user?.onboarding_progress, user?.user_type])
 
+  // Check if user has completed onboarding and is approved (for account menu)
+  const isOnboardingComplete = onboardingProgress === 100
+  const isApprovedOrVerified = user?.status === 'approved' || user?.status === 'verified'
+  const canAccessRestrictedFeatures = isOnboardingComplete && isApprovedOrVerified
+
   // Fetch logo presigned URL
   React.useEffect(() => {
     const logoDocument = user?.business_documents?.find((doc) => doc.type === 'logo')
@@ -127,133 +132,158 @@ export default function CorporateSidebar() {
     return `${path}${separator}account=corporate`
   }
 
-  const accountMenuContent = (
-    <>
-      <PaymentChangeNotifications />
-      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <PopoverTrigger asChild>
-              <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                <svg
-                  fill="none"
-                  focusable="false"
-                  height="16"
-                  role="img"
-                  strokeWidth="1"
-                  viewBox="0 0 24 24"
-                  width="16"
-                  className={cn(
-                    'text-[#677084] transition-transform',
-                    isPopoverOpen && 'rotate-90',
-                  )}
-                >
-                  <path
-                    d="M8.46973 6.53039L13.9394 12.0001L8.46973 17.4697L9.53039 18.5304L16.0607 12.0001L9.53039 5.46973L8.46973 6.53039Z"
-                    fill="currentColor"
-                  ></path>
-                </svg>
-              </button>
-            </PopoverTrigger>
-          </TooltipTrigger>
-          <TooltipContent>Account menu</TooltipContent>
-        </Tooltip>
-        <PopoverContent
-          side="right"
-          align="start"
-          sideOffset={8}
-          className="min-w-[280px] max-w-[320px] p-0 bg-white border-none"
-        >
-          {/* Header */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <Avatar size="sm" src={logoUrl} name={user?.business_details?.[0]?.name} />
-              <div className="flex-1 min-w-0">
-                <Text variant="span" weight="semibold" className="block text-sm truncate">
-                  {user?.business_details?.[0]?.name || 'Corporate Account'}
-                </Text>
-                <Text variant="span" className="block text-xs text-gray-500 truncate">
-                  {user?.corporate_id_from_business}
-                </Text>
+  const accountMenuContent = (() => {
+    // Hide account menu for corporate admin users
+    if (user?.user_type === 'corporate admin') {
+      return null
+    }
+
+    return (
+      <>
+        <PaymentChangeNotifications />
+        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <button className="p-1 hover:bg-gray-100 rounded transition-colors">
+                  <svg
+                    fill="none"
+                    focusable="false"
+                    height="16"
+                    role="img"
+                    strokeWidth="1"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    className={cn(
+                      'text-[#677084] transition-transform',
+                      isPopoverOpen && 'rotate-90',
+                    )}
+                  >
+                    <path
+                      d="M8.46973 6.53039L13.9394 12.0001L8.46973 17.4697L9.53039 18.5304L16.0607 12.0001L9.53039 5.46973L8.46973 6.53039Z"
+                      fill="currentColor"
+                    ></path>
+                  </svg>
+                </button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Account menu</TooltipContent>
+          </Tooltip>
+          <PopoverContent
+            side="right"
+            align="start"
+            sideOffset={8}
+            className="min-w-[280px] max-w-[320px] p-0 bg-white border-none"
+          >
+            {/* Header */}
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <Avatar size="sm" src={logoUrl} name={user?.business_details?.[0]?.name} />
+                <div className="flex-1 min-w-0">
+                  <Text variant="span" weight="semibold" className="block text-sm truncate">
+                    {user?.business_details?.[0]?.name || 'Corporate Account'}
+                  </Text>
+                  <Text variant="span" className="block text-xs text-gray-500 truncate">
+                    {user?.corporate_id_from_business}
+                  </Text>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Switch Workspace */}
-          <div className="px-4 py-2">
-            <Text
-              variant="span"
-              className="text-xs text-gray-500 uppercase tracking-wider block mb-2"
-            >
-              Switch Workspace
-            </Text>
+            {/* Switch Workspace */}
+            <div className="px-4 py-2">
+              <Text
+                variant="span"
+                className="text-xs text-gray-500 uppercase tracking-wider block mb-2"
+              >
+                Switch Workspace
+              </Text>
 
-            {/* List of vendor accounts */}
-            {allVendorsCreatedByCorporate && allVendorsCreatedByCorporate.length > 0 && (
-              <div className="mb-3 space-y-1 max-h-[200px] overflow-y-auto">
-                {allVendorsCreatedByCorporate.map((vendor: any) => (
-                  <button
-                    key={vendor.vendor_id || vendor.id}
-                    onClick={() => {
-                      setIsPopoverOpen(false)
-                      const vendorId = vendor.vendor_id || vendor.id
-                      navigate(
-                        `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor${vendorId ? `&vendor_id=${vendorId}` : ''}`,
-                      )
-                    }}
-                    className="flex items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors"
-                  >
-                    <Avatar
-                      size="sm"
-                      src={logoUrl}
-                      name={vendor.vendor_name || vendor.business_name}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <Text variant="span" weight="semibold" className="block text-sm truncate">
-                        {vendor.vendor_name || vendor.business_name}
-                      </Text>
-                      <Text variant="span" className="block text-xs text-gray-500 truncate">
-                        {vendor.gvid || `ID: ${vendor.vendor_id || vendor.id}`}
-                      </Text>
-                    </div>
-                    <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
-                  </button>
-                ))}
-              </div>
-            )}
+              {/* List of vendor accounts */}
+              {allVendorsCreatedByCorporate && allVendorsCreatedByCorporate.length > 0 && (
+                <div className="mb-3 space-y-1 max-h-[200px] overflow-y-auto">
+                  {allVendorsCreatedByCorporate.map((vendor: any) => (
+                    <button
+                      key={vendor.vendor_id || vendor.id}
+                      onClick={() => {
+                        setIsPopoverOpen(false)
+                        const vendorId = vendor.vendor_id || vendor.id
+                        navigate(
+                          `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor${vendorId ? `&vendor_id=${vendorId}` : ''}`,
+                        )
+                      }}
+                      className="flex items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors"
+                    >
+                      <Avatar
+                        size="sm"
+                        src={logoUrl}
+                        name={vendor.vendor_name || vendor.business_name}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <Text variant="span" weight="semibold" className="block text-sm truncate">
+                          {vendor.vendor_name || vendor.business_name}
+                        </Text>
+                        <Text variant="span" className="block text-xs text-gray-500 truncate">
+                          {vendor.gvid || `ID: ${vendor.vendor_id || vendor.id}`}
+                        </Text>
+                      </div>
+                      <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
 
-            <button
-              onClick={() => {
-                vendorAccountModal.openModal(
-                  MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_VENDOR_ACCOUNT,
-                  {
-                    user,
-                  },
-                )
-              }}
-              className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition-colors mb-3"
-            >
-              <Icon icon="bi:plus-circle" className="text-lg" />
-              <span>Create a vendor account</span>
-            </button>
+              <button
+                onClick={() => {
+                  if (canAccessRestrictedFeatures) {
+                    vendorAccountModal.openModal(
+                      MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_VENDOR_ACCOUNT,
+                      {
+                        user,
+                      },
+                    )
+                  }
+                }}
+                disabled={!canAccessRestrictedFeatures}
+                className={cn(
+                  'flex items-center gap-2 text-sm transition-colors mb-3 w-full text-left',
+                  canAccessRestrictedFeatures
+                    ? 'text-gray-700 hover:text-gray-900'
+                    : 'text-gray-400 cursor-not-allowed opacity-50',
+                )}
+              >
+                <Icon icon="bi:plus-circle" className="text-lg" />
+                <span>Create a vendor account</span>
+                {!canAccessRestrictedFeatures && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Icon icon="bi:info-circle" className="text-xs text-gray-400 ml-auto" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Complete onboarding and get approved to create vendor accounts
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </button>
 
-            <CreateVendorAccount />
-          </div>
+              <CreateVendorAccount />
+            </div>
 
-          {/* Footer Actions */}
-          <div className="border-t border-gray-200 py-2">
-            <button
-              onClick={() => setIsPopoverOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors w-full text-left"
-            >
-              <Icon icon="bi:question-circle" className="text-lg text-[#677084]" />
-              <span>Help</span>
-            </button>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </>
-  )
+            {/* Footer Actions */}
+            <div className="border-t border-gray-200 py-2">
+              <button
+                onClick={() => setIsPopoverOpen(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors w-full text-left"
+              >
+                <Icon icon="bi:question-circle" className="text-lg text-[#677084]" />
+                <span>Help</span>
+              </button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </>
+    )
+  })()
 
   return (
     <aside
@@ -380,33 +410,48 @@ export default function CorporateSidebar() {
         )}
         <ul className="py-2 px-3">
           {CORPORATE_NAV_ITEMS.map((section) => {
+            // Check if user has completed onboarding and is approved
+            const isOnboardingComplete = onboardingProgress === 100
+            const isApprovedOrVerified = user?.status === 'approved' || user?.status === 'verified'
+            const canAccessRestrictedFeatures = isOnboardingComplete && isApprovedOrVerified
+
             // Filter out Admins, Requests, Purchase, and Notifications items if user status is not approved or verified
             // Also hide Admins and Notifications tabs for corporate admin users
-            const filteredItems = section.items.filter((item) => {
-              const isCorporateAdmin = user?.user_type === 'corporate admin'
+            // Keep all items but mark Transactions, Audit Logs, and Recipients as disabled if onboarding incomplete or not approved
+            const processedItems = section.items
+              .filter((item) => {
+                const isCorporateAdmin = user?.user_type === 'corporate admin'
 
-              // Hide Admins and Notifications for corporate admin users
-              if (
-                (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||
-                  item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS) &&
-                isCorporateAdmin
-              ) {
-                return false
-              }
+                // Hide Admins and Notifications for corporate admin users
+                if (
+                  (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||
+                    item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS) &&
+                  isCorporateAdmin
+                ) {
+                  return false
+                }
 
-              if (
-                item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||
-                item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS ||
-                item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE ||
-                item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS
-              ) {
-                return user?.status === 'approved' || user?.status === 'verified'
-              }
-              return true
-            })
+                if (
+                  item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||
+                  item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS ||
+                  item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE ||
+                  item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS
+                ) {
+                  return isApprovedOrVerified
+                }
+                return true
+              })
+              .map((item) => ({
+                ...item,
+                disabled:
+                  (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.TRANSACTIONS ||
+                    item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.AUDIT_LOGS ||
+                    item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.RECIPIENTS) &&
+                  !canAccessRestrictedFeatures,
+              }))
 
             // Don't render section if all items are filtered out
-            if (filteredItems.length === 0) {
+            if (processedItems.length === 0) {
               return null
             }
 
@@ -419,76 +464,115 @@ export default function CorporateSidebar() {
                     </span>
                   </li>
                 )}
-                {filteredItems.map((item) => (
-                  <li
-                    key={item.path}
-                    className={cn(
-                      'flex items-center mb-2 rounded-[10px] transition-all duration-200 relative overflow-hidden',
-                      isActive(item.path) &&
-                        'bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
-                      !isActive(item.path) &&
-                        'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-px',
-                      isCollapsed && 'justify-center mb-3',
-                    )}
-                  >
-                    {isActive(item.path) && (
-                      <>
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-white/30 via-[#402D87] to-[#2d1a72] rounded-r-sm shadow-[2px_0_8px_rgba(64,45,135,0.4),2px_0_16px_rgba(64,45,135,0.2)]" />
-                        <div className="absolute inset-0 rounded-r-2xl bg-linear-to-br from-white/8 via-transparent to-[rgba(45,26,114,0.03)] pointer-events-none" />
-                      </>
-                    )}
-                    {isCollapsed ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Link
-                            to={addAccountParam(item.path)}
-                            className={cn(
-                              'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 justify-center',
-                              isActive(item.path) &&
-                                'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
-                              !isActive(item.path) && 'hover:text-[#402D87]',
+                {processedItems.map((item) => {
+                  const isDisabled = item.disabled
+                  return (
+                    <li
+                      key={item.path}
+                      className={cn(
+                        'flex items-center mb-2 rounded-[10px] transition-all duration-200 relative overflow-hidden',
+                        isActive(item.path) &&
+                          !isDisabled &&
+                          'bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
+                        !isActive(item.path) &&
+                          !isDisabled &&
+                          'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-px',
+                        isCollapsed && 'justify-center mb-3',
+                        isDisabled && 'opacity-50 cursor-not-allowed',
+                      )}
+                    >
+                      {isActive(item.path) && !isDisabled && (
+                        <>
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-white/30 via-[#402D87] to-[#2d1a72] rounded-r-sm shadow-[2px_0_8px_rgba(64,45,135,0.4),2px_0_16px_rgba(64,45,135,0.2)]" />
+                          <div className="absolute inset-0 rounded-r-2xl bg-linear-to-br from-white/8 via-transparent to-[rgba(45,26,114,0.03)] pointer-events-none" />
+                        </>
+                      )}
+                      {isCollapsed ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            {isDisabled ? (
+                              <div
+                                className={cn(
+                                  'flex items-center gap-3.5 text-gray-400 font-medium text-sm py-3 px-4 w-full rounded-[10px] relative z-2 justify-center cursor-not-allowed',
+                                )}
+                              >
+                                <Icon
+                                  icon={item.icon}
+                                  className="w-5 h-5 text-base flex items-center justify-center shrink-0 text-gray-400"
+                                />
+                              </div>
+                            ) : (
+                              <Link
+                                to={addAccountParam(item.path)}
+                                className={cn(
+                                  'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 justify-center',
+                                  isActive(item.path) &&
+                                    'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
+                                  !isActive(item.path) && 'hover:text-[#402D87]',
+                                )}
+                              >
+                                <Icon
+                                  icon={item.icon}
+                                  className={cn(
+                                    'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                                    isActive(item.path) && 'text-[#402D87]',
+                                    !isActive(item.path) &&
+                                      'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                                  )}
+                                />
+                              </Link>
                             )}
-                          >
-                            <Icon
-                              icon={item.icon}
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            {isDisabled
+                              ? `${item.label} - Complete onboarding and get approved to access`
+                              : item.label}
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <>
+                          {isDisabled ? (
+                            <div
                               className={cn(
-                                'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-                                isActive(item.path) && 'text-[#402D87]',
-                                !isActive(item.path) &&
-                                  'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                                'flex items-center gap-3.5 text-gray-400 font-medium text-sm py-3 px-4 w-full rounded-[10px] relative z-2 cursor-not-allowed',
                               )}
-                            />
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">{item.label}</TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <Link
-                        to={addAccountParam(item.path)}
-                        className={cn(
-                          'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
-                          isActive(item.path) &&
-                            'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
-                          !isActive(item.path) && 'hover:text-[#402D87]',
-                        )}
-                      >
-                        <Icon
-                          icon={item.icon}
-                          className={cn(
-                            'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-                            isActive(item.path) && 'text-[#402D87]',
-                            !isActive(item.path) &&
-                              'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                            >
+                              <Icon
+                                icon={item.icon}
+                                className="w-5 h-5 text-base flex items-center justify-center shrink-0 text-gray-400"
+                              />
+                              <span>{item.label}</span>
+                            </div>
+                          ) : (
+                            <Link
+                              to={addAccountParam(item.path)}
+                              className={cn(
+                                'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
+                                isActive(item.path) &&
+                                  'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
+                                !isActive(item.path) && 'hover:text-[#402D87]',
+                              )}
+                            >
+                              <Icon
+                                icon={item.icon}
+                                className={cn(
+                                  'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                                  isActive(item.path) && 'text-[#402D87]',
+                                  !isActive(item.path) &&
+                                    'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                                )}
+                              />
+                              <span>{item.label}</span>
+                            </Link>
                           )}
-                        />
-                        <span>{item.label}</span>
-                      </Link>
-                    )}
-                    {isCollapsed && isActive(item.path) && (
-                      <div className="absolute right-[-0.75rem] top-1/2 -translate-y-1/2 w-1 h-6 bg-linear-to-b from-[#402D87] to-[#2d1a72] rounded-l-sm" />
-                    )}
-                  </li>
-                ))}
+                        </>
+                      )}
+                      {isCollapsed && isActive(item.path) && !isDisabled && (
+                        <div className="absolute right-[-0.75rem] top-1/2 -translate-y-1/2 w-1 h-6 bg-linear-to-b from-[#402D87] to-[#2d1a72] rounded-l-sm" />
+                      )}
+                    </li>
+                  )
+                })}
               </React.Fragment>
             )
           })}
@@ -498,28 +582,77 @@ export default function CorporateSidebar() {
       {/* Footer - Settings and Log Out */}
       <div className="border-t border-gray-200 p-3 space-y-2">
         {/* Settings */}
-        <Link
-          to={addAccountParam(ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS)}
-          className={cn(
-            'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
-            isActive(ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS) &&
-              'text-[#402D87] font-bold bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
-            !isActive(ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS) &&
-              'hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.04)]',
-            isCollapsed && 'justify-center px-2',
-          )}
-        >
-          <Icon
-            icon="bi:gear"
-            className={cn(
-              'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-              isActive(ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS) && 'text-[#402D87]',
-              !isActive(ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS) &&
-                'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
-            )}
-          />
-          {!isCollapsed && <span>Settings</span>}
-        </Link>
+        {(() => {
+          const isCorporateAdmin = user?.user_type === 'corporate admin'
+
+          // Hide Settings for corporate admin users
+          if (isCorporateAdmin) {
+            return null
+          }
+
+          const isOnboardingComplete = onboardingProgress === 100
+          const isApprovedOrVerified = user?.status === 'approved' || user?.status === 'verified'
+          const canAccessSettings = isOnboardingComplete && isApprovedOrVerified
+
+          if (!canAccessSettings) {
+            return isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className={cn(
+                      'flex items-center justify-center gap-3.5 text-gray-400 font-medium text-sm py-3 px-2 w-full rounded-[10px] cursor-not-allowed opacity-50',
+                    )}
+                  >
+                    <Icon
+                      icon="bi:gear"
+                      className="w-5 h-5 text-base flex items-center justify-center shrink-0"
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  Complete onboarding and get approved to access Settings
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <div
+                className={cn(
+                  'flex items-center gap-3.5 text-gray-400 font-medium text-sm py-3 px-4 w-full rounded-[10px] cursor-not-allowed opacity-50',
+                )}
+              >
+                <Icon
+                  icon="bi:gear"
+                  className="w-5 h-5 text-base flex items-center justify-center shrink-0"
+                />
+                <span>Settings</span>
+              </div>
+            )
+          }
+
+          return (
+            <Link
+              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS)}
+              className={cn(
+                'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
+                isActive(ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS) &&
+                  'text-[#402D87] font-bold bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
+                !isActive(ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS) &&
+                  'hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.04)]',
+                isCollapsed && 'justify-center px-2',
+              )}
+            >
+              <Icon
+                icon="bi:gear"
+                className={cn(
+                  'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                  isActive(ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS) && 'text-[#402D87]',
+                  !isActive(ROUTES.IN_APP.DASHBOARD.CORPORATE.SETTINGS) &&
+                    'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                )}
+              />
+              {!isCollapsed && <span>Settings</span>}
+            </Link>
+          )
+        })()}
 
         {/* Log Out */}
         {isCollapsed ? (

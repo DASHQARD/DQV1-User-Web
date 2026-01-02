@@ -651,33 +651,43 @@ export default function DashQards() {
                   <div className="grid grid-cols-3 gap-6 max-xl:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
                     {sortedQards
                       .filter((card) => card.type?.toLowerCase() !== 'dashpro')
-                      .map((card) => (
-                        <CardItems
-                          key={card.card_id}
-                          card_id={card.card_id}
-                          product={card.product}
-                          vendor_name={card.vendor_name || ''}
-                          branch_name={card.vendor_name || ''}
-                          branch_location=""
-                          description={card.description || ''}
-                          price={card.price}
-                          base_price={card.price}
-                          markup_price={null}
-                          service_fee="0"
-                          currency={card.currency}
-                          expiry_date={card.expiry_date || ''}
-                          status={card.status || 'active'}
-                          rating={card.rating || 0}
-                          created_at={card.created_at || ''}
-                          recipient_count={card.recipient_count || '0'}
-                          images={(card.images || []) as []}
-                          terms_and_conditions={(card.terms_and_conditions || []) as []}
-                          type={card.type}
-                          updated_at={card.updated_at || card.created_at || ''}
-                          vendor_id={card.vendor_id}
-                          onGetQard={() => onGetCard(card)}
-                        />
-                      ))}
+                      .map((card) => {
+                        // Extract all available fields from card (API may return additional fields not in type)
+                        const cardData = card as any
+                        return (
+                          <CardItems
+                            key={card.card_id}
+                            card_id={card.card_id}
+                            product={card.product || cardData.card_name || ''}
+                            vendor_name={card.vendor_name || cardData.branch_name || ''}
+                            branch_name={cardData.branch_name || card.vendor_name || ''}
+                            branch_location={cardData.branch_location || ''}
+                            description={card.description || cardData.card_description || ''}
+                            price={card.price || cardData.card_price || '0'}
+                            base_price={
+                              cardData.base_price || card.price || cardData.card_price || '0'
+                            }
+                            markup_price={cardData.markup_price ?? null}
+                            service_fee={cardData.service_fee || '0'}
+                            currency={card.currency || 'GHS'}
+                            expiry_date={card.expiry_date || ''}
+                            status={card.status || cardData.card_status || 'active'}
+                            rating={card.rating || 0}
+                            created_at={card.created_at || ''}
+                            recipient_count={card.recipient_count || '0'}
+                            images={(card.images || cardData.images || []) as []}
+                            terms_and_conditions={
+                              (card.terms_and_conditions ||
+                                cardData.terms_and_conditions ||
+                                []) as []
+                            }
+                            type={card.type || cardData.card_type || 'dashx'}
+                            updated_at={card.updated_at || card.created_at || ''}
+                            vendor_id={card.vendor_id || cardData.vendor_id || 0}
+                            onGetQard={() => onGetCard(card)}
+                          />
+                        )
+                      })}
                   </div>
                 </>
               )}

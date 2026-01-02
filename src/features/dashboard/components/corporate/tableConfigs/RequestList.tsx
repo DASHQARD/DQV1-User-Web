@@ -5,7 +5,7 @@ import { RequestActionCell } from './RequestActionCell'
 export const requestsListColumns = [
   {
     header: 'Request ID',
-    accessorKey: 'id',
+    accessorKey: 'request_id',
   },
   {
     header: 'Type',
@@ -13,7 +13,7 @@ export const requestsListColumns = [
   },
   {
     header: 'Requested By',
-    accessorKey: 'requestedBy',
+    accessorKey: 'name',
   },
   {
     header: 'Status',
@@ -21,13 +21,8 @@ export const requestsListColumns = [
     cell: StatusCell,
   },
   {
-    header: 'Date',
-    accessorKey: 'date',
-    cell: DateCell,
-  },
-  {
     header: 'Created At',
-    accessorKey: 'createdAt',
+    accessorKey: 'created_at',
     cell: DateCell,
   },
   {
@@ -41,7 +36,7 @@ export const requestsListColumns = [
 export const requestListCsvHeaders: Array<CsvHeader> = [
   {
     name: 'Request ID',
-    accessor: 'id',
+    accessor: 'request_id',
   },
   {
     name: 'Type',
@@ -49,20 +44,15 @@ export const requestListCsvHeaders: Array<CsvHeader> = [
   },
   {
     name: 'Requested By',
-    accessor: 'requestedBy',
+    accessor: 'name',
   },
   {
     name: 'Status',
     accessor: 'status',
   },
   {
-    name: 'Date',
-    accessor: 'date',
-    transform: (v: any) => (v ? new Date(v).toLocaleDateString() : ''),
-  },
-  {
     name: 'Created At',
-    accessor: 'createdAt',
+    accessor: 'created_at',
     transform: (v: any) => (v ? new Date(v).toLocaleDateString() : ''),
   },
 ]

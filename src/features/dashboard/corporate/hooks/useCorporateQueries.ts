@@ -52,7 +52,6 @@ export function corporateQueries() {
     return useQuery({
       queryKey: ['requests-corporate'],
       queryFn: getRequestsCorporate,
-      enabled: false,
     })
   }
 
@@ -77,10 +76,10 @@ export function corporateQueries() {
     })
   }
 
-  function useGetAllCorporatePaymentsService() {
+  function useGetAllCorporatePaymentsService(query?: Record<string, any>) {
     return useQuery({
-      queryKey: ['all-corporate-payments'],
-      queryFn: () => getAllCorporatePayments(),
+      queryKey: ['all-corporate-payments', query],
+      queryFn: () => getAllCorporatePayments(query),
     })
   }
 

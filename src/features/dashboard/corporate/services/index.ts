@@ -29,6 +29,10 @@ export const getRequestsCorporate = async (): Promise<any> => {
   return await getList<any>(`/requests/corporate`)
 }
 
+export const updateRequestStatus = async (data: { id: number; status: string }): Promise<any> => {
+  return await patchMethod(`/requests/corporate/update-status`, data)
+}
+
 export const getCorporateAdmins = async (): Promise<any> => {
   return await getList<any>(`${CORPORATE_API_URL}/admins`)
 }
@@ -80,8 +84,8 @@ export const getCorporatePaymentDetails = async () => {
   return await getList(`/payment-details`)
 }
 
-export const getAllCorporatePayments = async () => {
-  return await getList(`/payments/users`)
+export const getAllCorporatePayments = async (query?: Record<string, any>) => {
+  return await getList(`/payments/users`, query)
 }
 
 export const getPaymentById = async (id: string | number): Promise<any> => {

@@ -5,12 +5,14 @@ import { cn } from '@/libs'
 import { userProfile } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import { Text } from '@/components'
+import { vendorQueries } from '@/features'
 
 export default function BecomeVendorWidget() {
   const [isExpanded, setIsExpanded] = React.useState(false)
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
+  const { useBranchesService } = vendorQueries()
+  const { data: branches } = useBranchesService()
   const navigate = useNavigate()
 
   // Helper function to add account parameter to URLs
@@ -19,7 +21,7 @@ export default function BecomeVendorWidget() {
     return `${path}${separator}account=corporate`
   }
 
-  // Check completion status for the 4 onboarding steps
+  // Check completion status for the onboarding steps
   const hasProfile =
     Boolean(userProfileData?.fullname) &&
     Boolean(userProfileData?.street_address) &&
@@ -33,8 +35,13 @@ export default function BecomeVendorWidget() {
   const hasProfileAndIdentity = hasProfile && hasIdentityDocs
   const hasBusinessDetailsAndDocs = hasBusinessDetails && hasBusinessDocs
 
-  const completedCount = (hasProfileAndIdentity ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0)
-  const totalCount = 2
+  // Handle branches data structure (array or wrapped response)
+  const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
+  const hasBranches = branchesArray.length > 0
+
+  const completedCount =
+    (hasProfileAndIdentity ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0) + (hasBranches ? 1 : 0)
+  const totalCount = 3
   const progressPercentage = (completedCount / totalCount) * 100
 
   // Find the first incomplete step
@@ -44,6 +51,9 @@ export default function BecomeVendorWidget() {
     }
     if (!hasBusinessDetailsAndDocs) {
       return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.BUSINESS_DETAILS
+    }
+    if (!hasBranches) {
+      return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.CREATE_BRANCH
     }
     return ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT
   }
@@ -89,7 +99,7 @@ export default function BecomeVendorWidget() {
                     Complete your onboarding process to gain access
                   </Text>
                   <Text variant="span" className="text-gray-600">
-                    Finish all 2 steps to activate your corporate account.
+                    Finish all 3 steps to activate your corporate account.
                   </Text>
                 </section>
                 <button
@@ -199,6 +209,34 @@ export default function BecomeVendorWidget() {
                 )}
               </div>
             </Link>
+
+            <Link
+              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.CREATE_BRANCH)}
+              className={cn(
+                'flex items-center gap-3 p-3 rounded-lg transition-colors',
+                hasBranches ? 'bg-gray-50 opacity-75' : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
+              )}
+            >
+              <Icon
+                icon={hasBranches ? 'bi:check-circle-fill' : 'bi:circle'}
+                className={cn('text-lg shrink-0', hasBranches ? 'text-[#059669]' : 'text-gray-400')}
+              />
+              <div className="flex-1">
+                <div
+                  className={cn(
+                    'text-sm font-medium',
+                    hasBranches ? 'text-gray-500 line-through' : 'text-gray-900',
+                  )}
+                >
+                  Create Your First Branch
+                </div>
+                {!hasBranches && (
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    Create at least one branch to get started
+                  </div>
+                )}
+              </div>
+            </Link>
           </div>
 
           {/* Continue Button */}
@@ -206,6 +244,7 @@ export default function BecomeVendorWidget() {
             const getNextStepName = () => {
               if (!hasProfileAndIdentity) return 'Profile Information & Identity Documents'
               if (!hasBusinessDetailsAndDocs) return 'Business Details & Documentation'
+              if (!hasBranches) return 'Create Your First Branch'
               return null
             }
 

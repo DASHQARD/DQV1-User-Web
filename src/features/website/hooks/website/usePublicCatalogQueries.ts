@@ -5,7 +5,7 @@ import type {
   VendorDetailsResponse,
   RecipientsListResponse,
 } from '@/types/responses'
-import { getCartAllRecipients } from '../../services/recipients'
+import { getCartAllRecipients, getRecipientByID } from '../../services/recipients'
 
 export function usePublicCatalogQueries() {
   function usePublicCardsService(query?: Record<string, any>) {
@@ -63,6 +63,14 @@ export function usePublicCatalogQueries() {
     })
   }
 
+  function useGetRecipientsByCartIdService(cartId: number | null) {
+    return useQuery<RecipientsListResponse, Error, RecipientsListResponse>({
+      queryKey: ['cart-recipients', cartId],
+      queryFn: () => getRecipientByID(cartId!),
+      enabled: !!cartId,
+    })
+  }
+
   return {
     usePublicCardsService,
     usePublicVendorsService,
@@ -71,5 +79,6 @@ export function usePublicCatalogQueries() {
     usePublicVendors,
     useVendorQrCodeService,
     useGetCartAllRecipientsService,
+    useGetRecipientsByCartIdService,
   }
 }

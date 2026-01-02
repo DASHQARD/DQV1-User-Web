@@ -108,7 +108,7 @@ export function useAuth() {
     return useMutation({
       mutationFn: login,
       onSuccess: (response: any) => {
-        success(response.data?.message)
+        success(response.message)
       },
       onError: (err: { status: number; message: string }) => {
         const errorMessage = err?.message || 'Login failed. Please try again.'
@@ -173,7 +173,6 @@ export function useAuth() {
     return useMutation({
       mutationFn: personalDetailsWithID,
       onSuccess: (response: any) => {
-        console.log('response', response)
         success(
           response.data?.message || 'Personal details with identification updated successfully',
         )
@@ -330,7 +329,8 @@ export function useAuth() {
         success('Login successful')
         if (
           response.user.user_type === 'corporate super admin' ||
-          response.user.user_type === 'corporate admin'
+          response.user.user_type === 'corporate admin' ||
+          response.user.user_type === 'corporate'
         ) {
           navigate(`${ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME}?account=corporate`)
         } else if (response.user.user_type === 'vendor' || response.user.user_type === 'branch') {
@@ -396,8 +396,7 @@ export function useAuth() {
         const response = await resendRefreshToken(email)
         return (response as any).data as { message: string }
       },
-      onSuccess: (response: { message: string }) => {
-        console.log('response', response)
+      onSuccess: (response: any) => {
         success(response.message || 'Refresh token resent successfully')
       },
     })

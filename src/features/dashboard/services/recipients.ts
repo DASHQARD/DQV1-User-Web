@@ -49,7 +49,7 @@ export const getRecipients = async (params?: {
 }
 
 export const deleteRecipient = async (id: number): Promise<void> => {
-  await axiosClient.delete(`/carts/remove-recipient/${id}`)
+  await axiosClient.delete(`/carts/recipients/${id}`)
 }
 
 export const updateRecipient = async (

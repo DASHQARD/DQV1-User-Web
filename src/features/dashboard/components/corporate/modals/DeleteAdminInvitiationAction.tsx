@@ -1,4 +1,4 @@
-import { Button, CustomIcon, Modal, Text } from '@/components'
+import { Button, Modal, Text } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { useForm } from 'react-hook-form'
@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { corporateMutations } from '@/features/dashboard/corporate'
 import { DeleteAdminInvitiationFormSchema } from '@/utils/schemas'
 import { z } from 'zod'
+import { Icon } from '@/libs'
 
 export function DeleteAdminInvitiationAction() {
   const modal = usePersistedModalState<{ id: string }>({
@@ -43,7 +44,7 @@ export function DeleteAdminInvitiationAction() {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="p-6 space-y-13">
           <div className="flex flex-col gap-4 items-center justify-center">
-            <CustomIcon name={'OrangeWarningSign'} width={48} height={48} className="text-error" />
+            <Icon icon="bi:exclamation-triangle-fill" className="text-error text-5xl" />
             <div className="space-y-6">
               <div>
                 <Text variant="h3" className="text-center font-semibold">

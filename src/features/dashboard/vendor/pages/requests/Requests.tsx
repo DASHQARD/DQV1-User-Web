@@ -1,23 +1,33 @@
+import React from 'react'
 import { Text } from '@/components'
 import { PaginatedTable } from '@/components/Table'
-import {
-  ApproveAction,
-  RejectAction,
-  RequestDetails,
-  requestListCsvHeaders,
-  requestsListColumns,
-} from '@/features/dashboard/components'
+import { requestListCsvHeaders, requestsListColumns } from '@/features/dashboard/components'
 import { OPTIONS } from '@/utils/constants/filter'
 import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
 import { vendorQueries } from '../../hooks'
+import {
+  VendorRequestDetails,
+  VendorApproveAction,
+  VendorRejectAction,
+} from '@/features/dashboard/components/vendors/modals'
 
 export default function Requests() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
   const { useGetRequestsVendorService } = vendorQueries()
-  const { data: requestsVendorList, isLoading: isLoadingRequestsVendorList } =
+  const { data: requestsResponse, isLoading: isLoadingRequestsVendorList } =
     useGetRequestsVendorService()
+
+  // Extract data array from response
+  const requestsVendorList = React.useMemo(() => {
+    if (!requestsResponse) return []
+    return Array.isArray(requestsResponse)
+      ? requestsResponse
+      : Array.isArray(requestsResponse?.data)
+        ? requestsResponse.data
+        : []
+  }, [requestsResponse])
 
   return (
     <>
@@ -53,9 +63,9 @@ export default function Requests() {
         </div>
       </div>
 
-      <RequestDetails />
-      <ApproveAction />
-      <RejectAction />
+      <VendorRequestDetails />
+      <VendorApproveAction />
+      <VendorRejectAction />
     </>
   )
 }

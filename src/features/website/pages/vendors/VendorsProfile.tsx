@@ -1,47 +1,37 @@
-import { Loader, Button, Text, Input, EmptyState } from '@/components'
+import { Loader, EmptyState } from '@/components'
 import { ROUTES } from '@/utils/constants/shared'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/libs'
 import React from 'react'
-import { CardItems } from '../../components'
+import { CardItems, PublicDashGoForm } from '../../components'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import { useForm } from 'react-hook-form'
-
 import { usePublicCatalogQueries } from '../../hooks/website'
 import { EmptyStateImage } from '@/assets/images'
-import { useCartStore } from '@/stores/cart'
-import { createDashGoAndAssign } from '../../services/cards'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useToast } from '@/hooks'
+import LoaderGif from '@/assets/gifs/loader.gif'
 
 export default function VendorsProfile() {
   const [searchParams] = useSearchParams()
   const vendor_id = searchParams.get('vendor_id') || ''
-  const { usePublicVendorsService, useVendorQrCodeService, usePublicCardsService } =
-    usePublicCatalogQueries()
-  const { data: vendorDetailsResponse, isLoading: isLoadingVendor } = usePublicVendorsService({
-    limit: 1,
-    vendor_ids: vendor_id || '',
-  })
+  const { usePublicVendorsService, useVendorQrCodeService } = usePublicCatalogQueries()
+  const { data: vendorDetailsResponse, isLoading: isLoadingVendor } = usePublicVendorsService()
   const { data: qrCodeData, isLoading: isLoadingQrCode } = useVendorQrCodeService(vendor_id || null)
-  const { data: vendorCardsResponse, isLoading: isLoadingVendorCards } = usePublicCardsService({
-    vendor_ids: vendor_id || '',
-  })
 
   const vendorDetails = React.useMemo(() => {
-    if (!vendorDetailsResponse?.[0]) return null
-    return vendorDetailsResponse[0] || null
-  }, [vendorDetailsResponse])
+    if (!vendorDetailsResponse || !vendor_id) return null
 
-  const vendorCards = React.useMemo(() => {
-    if (!vendorCardsResponse) return []
-    const cards = vendorCardsResponse
-    return cards.filter((card: any) => {
-      const isDashGo = card.type?.toLowerCase() === 'dashgo'
-      const matchesVendor = !vendor_id || card.vendor_id === parseInt(vendor_id, 10)
-      return !isDashGo && matchesVendor
-    })
-  }, [vendorCardsResponse, vendor_id])
+    // Handle both array response and wrapped response
+    const vendors = Array.isArray(vendorDetailsResponse)
+      ? vendorDetailsResponse
+      : (vendorDetailsResponse as any)?.data || []
+
+    // Filter to find the vendor with matching vendor_id
+    const vendor = vendors.find((v: any) => String(v.vendor_id || v.id) === vendor_id)
+
+    return vendor || null
+  }, [vendorDetailsResponse, vendor_id])
+
+  console.log('vendorDetails', vendorDetails)
 
   const form = useForm<{ amount: string }>({
     defaultValues: {
@@ -49,59 +39,67 @@ export default function VendorsProfile() {
     },
   })
 
-  const { openCart } = useCartStore()
-  const queryClient = useQueryClient()
-  const { success, error: toastError } = useToast()
-
-  const createDashGoMutation = useMutation({
-    mutationFn: createDashGoAndAssign,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-      success('DashGo card added to cart successfully')
-      openCart()
-    },
-    onError: (error: any) => {
-      toastError(error?.message || 'Failed to add DashGo card to cart. Please try again.')
-    },
-  })
-
-  const isLoading = isLoadingVendor || isLoadingVendorCards || isLoadingQrCode
+  const isLoading = isLoadingVendor || isLoadingQrCode
 
   const quickAmounts = [100, 200, 300, 400, 500]
   const selectedAmount = form.watch('amount')
 
-  const onSubmit = async (data: { amount: string }) => {
-    const cardAmount = parseFloat(data.amount)
-    if (isNaN(cardAmount) || cardAmount <= 0) {
-      return
-    }
+  // Get available branches for redemption
+  const availableBranches = React.useMemo(() => {
+    const branches = (vendorDetails as any)?.branches_with_cards || []
+    return branches.map((branch: any) => ({
+      branch_id: Number(branch.branch_id || branch.id),
+      branch_name: branch.branch_name || 'Unnamed Branch',
+      branch_location: branch.branch_location || '',
+    }))
+  }, [vendorDetails])
 
-    if (!vendor_id) {
-      return
-    }
+  // Extract vendor cards from branches_with_cards
+  const vendorCards = React.useMemo(() => {
+    if (!vendorDetails) return []
+    const branches = (vendorDetails as any)?.branches_with_cards || []
+    const allCards: any[] = []
 
-    const vendorBranches = (vendorDetails as any)?.branches_with_cards || []
-    const redemptionBranches =
-      vendorBranches.length > 0
-        ? vendorBranches.map((branch: any) => ({
-            branch_id: Number(branch.branch_id || branch.id),
-          }))
-        : []
-
-    createDashGoMutation.mutate({
-      recipient_ids: [],
-      vendor_id: parseInt(vendor_id, 10),
-      product: 'DashGo Gift Card',
-      description: `Custom DashGo card for ${vendorName}`,
-      price: cardAmount,
-      currency: 'GHS',
-      issue_date: new Date().toISOString().split('T')[0],
-      redemption_branches: redemptionBranches,
+    branches.forEach((branch: any) => {
+      if (branch.cards && Array.isArray(branch.cards)) {
+        branch.cards.forEach((card: any) => {
+          // Filter out DashGo cards
+          if (card.card_type?.toLowerCase() !== 'dashgo' && card.type?.toLowerCase() !== 'dashgo') {
+            allCards.push({
+              card_id: card.card_id || card.id,
+              product: card.card_name || card.product, // Use card_name as product name
+              vendor_name: branch.branch_name || '', // Use branch name as vendor_name so it displays first
+              branch_name: branch.branch_name || '', // Branch name from branch level
+              branch_location: branch.branch_location || '', // Branch location from branch level
+              rating: card.rating || 0,
+              price: String(card.card_price || card.price || 0),
+              currency: card.currency || 'GHS',
+              type: card.card_type || card.type,
+              description: card.card_description || card.description || '',
+              expiry_date: card.expiry_date || '',
+              terms_and_conditions: card.terms_and_conditions || [],
+              images: card.images || [],
+              issue_date: card.issue_date || '',
+              status: card.card_status || card.status || 'active',
+              base_price: String(card.card_price || card.price || 0),
+              markup_price: null,
+              service_fee: '0',
+              recipient_count: '0',
+              created_at: card.created_at || '',
+              updated_at: card.updated_at || card.created_at || '',
+              vendor_id: vendorDetails?.vendor_id || vendorDetails?.id,
+            })
+          }
+        })
+      }
     })
-  }
+
+    return allCards
+  }, [vendorDetails])
 
   const branchName = vendorDetails?.business_name || vendorDetails?.vendor_name || ''
   const vendorName = branchName || 'Vendor'
+
   const vendorDescription =
     'Explore our wide range of gift cards and services. We offer quality products and exceptional customer service to meet all your needs.'
 
@@ -110,7 +108,7 @@ export default function VendorsProfile() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader />
+        <img src={LoaderGif} alt="Loading..." className="w-20 h-auto" />
       </div>
     )
   }
@@ -187,114 +185,14 @@ export default function VendorsProfile() {
               </div>
             </div>
 
-            {/* Right Column - Card Details and Actions */}
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="flex flex-col gap-1">
-                <Text variant="h1" className="capitalize">
-                  DashGo Gift Qard
-                </Text>
-                <Text variant="p" className="text-grey-500">
-                  Vendor: {vendorName}
-                </Text>
-                <div className="flex items-center gap-1">
-                  <Icon icon="bi:geo-alt-fill" className="size-4 text-grey-500" />
-                  <Text variant="p" className="text-grey-500">
-                    {(vendorDetails as any)?.country ||
-                      (vendorDetails as any)?.branch_location ||
-                      'Location not available'}
-                  </Text>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <Text variant="h2" className="capitalize">
-                  Description
-                </Text>
-                <Text variant="p" className="text-grey-600 leading-relaxed">
-                  Create a custom DashGo gift card with your desired amount for {vendorName}. Use
-                  this card at {vendorName} locations.
-                </Text>
-              </div>
-
-              {/* Amount Input */}
-              <div>
-                <Text variant="h3" weight="bold" className="text-gray-900 mb-4">
-                  Select Amount
-                </Text>
-
-                {/* Quick Selection Buttons */}
-                <div className="flex gap-3 mb-4 flex-wrap">
-                  {quickAmounts.map((amount) => {
-                    const isSelected = parseFloat(selectedAmount || '0') === amount
-                    return (
-                      <button
-                        key={amount}
-                        type="button"
-                        onClick={() => form.setValue('amount', amount.toString())}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                          isSelected
-                            ? 'bg-primary-500 text-white shadow-md'
-                            : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-primary-300'
-                        }`}
-                      >
-                        GHS {amount.toLocaleString()}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                {/* Amount Input Field */}
-
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="1"
-                  max="10000"
-                  prefix={
-                    <span className="pointer-events-none font-bold text-primary-500 text-lg">
-                      GHS
-                    </span>
-                  }
-                  {...form.register('amount', {
-                    required: 'Amount is required',
-                    validate: (value) => {
-                      const numValue = parseFloat(value)
-                      if (isNaN(numValue) || numValue <= 0) {
-                        return 'Please enter a valid amount greater than 0'
-                      }
-                      if (numValue > 10000) {
-                        return `Maximum amount is GHS 10000`
-                      }
-                      return true
-                    },
-                  })}
-                  placeholder="0.00"
-                  innerClassName="h-[56px]!"
-                  error={form.formState.errors.amount?.message}
-                />
-
-                <p className="mt-2 text-sm text-gray-500">Maximum amount: GHS 10000</p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-4">
-                <Button
-                  variant="secondary"
-                  type="submit"
-                  disabled={
-                    !form.watch('amount') ||
-                    parseFloat(form.watch('amount') || '0') <= 0 ||
-                    createDashGoMutation.isPending ||
-                    !vendor_id
-                  }
-                  loading={createDashGoMutation.isPending}
-                  className="flex-1"
-                >
-                  <Icon icon="bi:cart-plus" className="size-5 mr-2" />
-                  Add to Cart
-                </Button>
-              </div>
-            </form>
+            <PublicDashGoForm
+              vendor_id={vendor_id}
+              vendorName={vendorName}
+              vendorDetails={vendorDetails}
+              availableBranches={availableBranches}
+              quickAmounts={quickAmounts}
+              selectedAmount={selectedAmount}
+            />
           </div>
         </div>
       </section>
@@ -371,6 +269,8 @@ export default function VendorsProfile() {
                   {...card}
                   id={card.card_id}
                   type={(card.type as 'dashpro' | 'dashpass' | 'dashgo' | 'DashX') || 'DashX'}
+                  branch_name={card.branch_name}
+                  branch_location={card.branch_location}
                 />
               ))}
             </div>
