@@ -36,9 +36,17 @@ export default function Checkout() {
   const queryClient = useQueryClient()
   const { cartItems, isLoading: isLoadingCart } = useCart()
 
+  // Filter out paid carts - only show pending carts
+  const pendingCartItems = useMemo(() => {
+    if (!Array.isArray(cartItems)) return []
+    return cartItems.filter(
+      (cart: CartListResponse) => cart.cart_status?.toLowerCase() === 'pending',
+    )
+  }, [cartItems])
+
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
+
   const { useCheckoutService } = usePayments()
   const { mutateAsync: checkoutMutation, isPending: isCheckingOut } = useCheckoutService()
   const [isBulkModalOpen, setIsBulkModalOpen] = React.useState(false)
@@ -92,11 +100,11 @@ export default function Checkout() {
   }
 
   const displayCartItems = useMemo(() => {
-    if (!Array.isArray(cartItems)) return []
+    if (!Array.isArray(pendingCartItems)) return []
 
     const flattened: FlattenedCartItem[] = []
 
-    cartItems.forEach((cart: CartListResponse) => {
+    pendingCartItems.forEach((cart: CartListResponse) => {
       // Each cart has an items object (not array in the new structure)
       if (cart.items) {
         // Handle both array and single object cases
@@ -122,16 +130,16 @@ export default function Checkout() {
     })
 
     return flattened
-  }, [cartItems])
+  }, [pendingCartItems])
 
   // Calculate total amount from cart totals
   const totalAmount = useMemo(() => {
-    if (!Array.isArray(cartItems)) return 0
-    return cartItems.reduce(
+    if (!Array.isArray(pendingCartItems)) return 0
+    return pendingCartItems.reduce(
       (sum: number, cart: CartListResponse) => sum + parseFloat(cart.total_amount || '0'),
       0,
     )
-  }, [cartItems])
+  }, [pendingCartItems])
 
   // Calculate service fee (5%)
   const serviceFee = useMemo(() => totalAmount * 0.05, [totalAmount])
@@ -163,7 +171,7 @@ export default function Checkout() {
 
   // Handle checkout
   const handleCheckout = async () => {
-    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+    if (!Array.isArray(pendingCartItems) || pendingCartItems.length === 0) {
       toast.error('No items in cart')
       return
     }
@@ -190,7 +198,7 @@ export default function Checkout() {
     // }
 
     // Use the first cart's ID (or you might want to handle multiple carts differently)
-    const firstCart = cartItems[0]
+    const firstCart = pendingCartItems[0]
     const payload = {
       cart_id: firstCart.cart_id,
       full_name: userInfo.full_name,
@@ -318,7 +326,11 @@ export default function Checkout() {
     )
   }
 
-  if (!Array.isArray(cartItems) || cartItems.length === 0 || displayCartItems.length === 0) {
+  if (
+    !Array.isArray(pendingCartItems) ||
+    pendingCartItems.length === 0 ||
+    displayCartItems.length === 0
+  ) {
     return (
       <div className="min-h-screen bg-linear-to-br from-[#f8fafc] to-[#e2e8f0] flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center">
@@ -407,143 +419,145 @@ export default function Checkout() {
               </div>
 
               <div className="divide-y divide-gray-200">
-                {displayCartItems.map((item: FlattenedCartItem) => {
-                  const cardBackground = getCardBackground(item.type || '')
-                  const displayPrice = parseFloat(item.amount || '0')
+                {displayCartItems
+                  ?.filter((item: FlattenedCartItem) => item.cart_item_id)
+                  .map((item: FlattenedCartItem) => {
+                    const cardBackground = getCardBackground(item.type || '')
+                    const displayPrice = parseFloat(item.amount || '0')
 
-                  // Get recipients from cart item (recipients are now included in cart response)
-                  const itemRecipients =
-                    item.cart_item_id && recipientsByCartItem[item.cart_item_id]
-                      ? recipientsByCartItem[item.cart_item_id]
-                      : []
+                    // Get recipients from cart item (recipients are now included in cart response)
+                    const itemRecipients =
+                      item.cart_item_id && recipientsByCartItem[item.cart_item_id]
+                        ? recipientsByCartItem[item.cart_item_id]
+                        : []
 
-                  const hasRecipients = itemRecipients.length > 0
-                  const cardImageUrl = item.images?.[0]?.file_url
-                    ? getImageUrl(item.images[0].file_url)
-                    : null
+                    const hasRecipients = itemRecipients.length > 0
+                    const cardImageUrl = item.images?.[0]?.file_url
+                      ? getImageUrl(item.images[0].file_url)
+                      : null
 
-                  return (
-                    <div
-                      key={`${item.cart_id}-${item.cart_item_id || item.card_id}`}
-                      className="p-6"
-                    >
-                      <div className="flex gap-4">
-                        {/* Card Preview */}
-                        <div className="w-24 h-16 shrink-0 rounded-md overflow-hidden bg-gray-200 relative">
-                          <img
-                            src={cardBackground}
-                            alt={`${item.type} card background`}
-                            className="absolute inset-0 w-full h-full object-cover"
-                          />
-                          {cardImageUrl && (
+                    return (
+                      <div
+                        key={`${item.cart_id}-${item.cart_item_id || item.card_id}`}
+                        className="p-6"
+                      >
+                        <div className="flex gap-4">
+                          {/* Card Preview */}
+                          <div className="w-24 h-16 shrink-0 rounded-md overflow-hidden bg-gray-200 relative">
                             <img
-                              src={cardImageUrl}
-                              alt={item.product || 'Cart item'}
+                              src={cardBackground}
+                              alt={`${item.type} card background`}
                               className="absolute inset-0 w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement
-                                target.style.display = 'none'
-                              }}
                             />
-                          )}
-                        </div>
+                            {cardImageUrl && (
+                              <img
+                                src={cardImageUrl}
+                                alt={item.product || 'Cart item'}
+                                className="absolute inset-0 w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                }}
+                              />
+                            )}
+                          </div>
 
-                        {/* Item Details */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <h3 className="text-base font-semibold text-gray-900 mb-1">
-                                {item.product || `Card #${item.card_id}`}
-                              </h3>
-                              <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                                <span>{getCardTypeName(item.type)}</span>
-                                <span>•</span>
-                                <span>ID: {item.card_id}</span>
+                          {/* Item Details */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <h3 className="text-base font-semibold text-gray-900 mb-1">
+                                  {item.product || `Card #${item.card_id}`}
+                                </h3>
+                                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                                  <span>{getCardTypeName(item.type)}</span>
+                                  <span>•</span>
+                                  <span>ID: {item.card_id}</span>
+                                </div>
+                                {hasRecipients && (
+                                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                                    <Icon icon="bi:check-circle" className="size-3" />
+                                    {itemRecipients.length} Recipient
+                                    {itemRecipients.length !== 1 ? 's' : ''}
+                                  </div>
+                                )}
                               </div>
-                              {hasRecipients && (
-                                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                                  <Icon icon="bi:check-circle" className="size-3" />
-                                  {itemRecipients.length} Recipient
-                                  {itemRecipients.length !== 1 ? 's' : ''}
+                              <div className="text-right">
+                                <p className="text-base font-semibold text-gray-900">
+                                  {formatCurrency(displayPrice)}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Recipients List */}
+                            {itemRecipients.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-100">
+                                <div className="space-y-2">
+                                  {itemRecipients.map((recipient) => (
+                                    <div
+                                      key={recipient.id}
+                                      className="flex items-center justify-between text-sm"
+                                    >
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-gray-900 truncate">
+                                          {recipient.name}
+                                        </p>
+                                        <p className="text-gray-500 truncate">{recipient.email}</p>
+                                      </div>
+                                      <span className="ml-4 text-gray-600 font-medium">
+                                        {formatCurrency(recipient.amount)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Assign Recipient Button */}
+                            <div className="mt-4">
+                              {/* Only show button if quantity allows more recipients */}
+                              {itemRecipients.length < (item.total_quantity || 1) && (
+                                <Button
+                                  onClick={() => {
+                                    if (!item.cart_item_id) {
+                                      toast.error('Cart item ID is required')
+                                      return
+                                    }
+                                    // Calculate per-recipient amount: total_amount / total_quantity
+                                    const totalAmount = parseFloat(item.amount || '0')
+                                    const totalQuantity = item.total_quantity || 1
+                                    const perRecipientAmount = totalAmount / totalQuantity
+
+                                    modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
+                                      cart_item_id: item.cart_item_id,
+                                      cardType: item.type,
+                                      cardProduct: item.product,
+                                      cardCurrency: item.currency || 'GHS',
+                                      amount: perRecipientAmount,
+                                    })
+                                  }}
+                                  variant="outline"
+                                  size="small"
+                                  className="w-full sm:w-auto"
+                                >
+                                  <Icon icon="bi:person-plus" className="mr-1.5" />
+                                  {itemRecipients.length > 0
+                                    ? 'Add Another Recipient'
+                                    : 'Assign Recipient'}
+                                </Button>
+                              )}
+                              {/* Show message when all recipients have been assigned */}
+                              {itemRecipients.length >= (item.total_quantity || 1) && (
+                                <div className="text-sm text-gray-500 italic">
+                                  Maximum recipients reached (quantity: {item.total_quantity || 1})
                                 </div>
                               )}
                             </div>
-                            <div className="text-right">
-                              <p className="text-base font-semibold text-gray-900">
-                                {formatCurrency(displayPrice)}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Recipients List */}
-                          {itemRecipients.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-gray-100">
-                              <div className="space-y-2">
-                                {itemRecipients.map((recipient) => (
-                                  <div
-                                    key={recipient.id}
-                                    className="flex items-center justify-between text-sm"
-                                  >
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-medium text-gray-900 truncate">
-                                        {recipient.name}
-                                      </p>
-                                      <p className="text-gray-500 truncate">{recipient.email}</p>
-                                    </div>
-                                    <span className="ml-4 text-gray-600 font-medium">
-                                      {formatCurrency(recipient.amount)}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Assign Recipient Button */}
-                          <div className="mt-4">
-                            {/* Only show button if quantity allows more recipients */}
-                            {itemRecipients.length < (item.total_quantity || 1) && (
-                              <Button
-                                onClick={() => {
-                                  if (!item.cart_item_id) {
-                                    toast.error('Cart item ID is required')
-                                    return
-                                  }
-                                  // Calculate per-recipient amount: total_amount / total_quantity
-                                  const totalAmount = parseFloat(item.amount || '0')
-                                  const totalQuantity = item.total_quantity || 1
-                                  const perRecipientAmount = totalAmount / totalQuantity
-
-                                  modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
-                                    cart_item_id: item.cart_item_id,
-                                    cardType: item.type,
-                                    cardProduct: item.product,
-                                    cardCurrency: item.currency || 'GHS',
-                                    amount: perRecipientAmount,
-                                  })
-                                }}
-                                variant="outline"
-                                size="small"
-                                className="w-full sm:w-auto"
-                              >
-                                <Icon icon="bi:person-plus" className="mr-1.5" />
-                                {itemRecipients.length > 0
-                                  ? 'Add Another Recipient'
-                                  : 'Assign Recipient'}
-                              </Button>
-                            )}
-                            {/* Show message when all recipients have been assigned */}
-                            {itemRecipients.length >= (item.total_quantity || 1) && (
-                              <div className="text-sm text-gray-500 italic">
-                                Maximum recipients reached (quantity: {item.total_quantity || 1})
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
               </div>
             </div>
           </div>

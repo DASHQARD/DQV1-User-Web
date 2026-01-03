@@ -89,7 +89,7 @@ export interface DashProRedemptionPayload {
 }
 
 export interface CardsRedemptionPayload {
-  card_type: 'DashGo' | 'DashX' | 'DashPass'
+  card_type: 'DashGo' | 'DashPro' | 'DashX' | 'DashPass'
   phone_number: string
 }
 

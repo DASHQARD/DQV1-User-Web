@@ -1,9 +1,7 @@
-import { Button, Checkbox, Input, Text } from '@/components'
+import { Button, Input, Text } from '@/components'
 import { Icon } from '@/libs'
 import { useForm } from 'react-hook-form'
-import React from 'react'
 import { usePublicCatalogMutations } from '../../hooks/website/usePublicCatalogMutations'
-import { useToast } from '@/hooks'
 
 interface PublicDashGoFormProps {
   vendorName: string
@@ -26,39 +24,12 @@ export default function PublicDashGoForm({
 }: PublicDashGoFormProps) {
   const { useCreateDashGoAndAssignService } = usePublicCatalogMutations()
   const createDashGoMutation = useCreateDashGoAndAssignService()
-  const { error } = useToast()
 
   const form = useForm<{ amount: string }>({
     defaultValues: {
       amount: '100',
     },
   })
-
-  // State for selected branches
-  const [selectedBranchIds, setSelectedBranchIds] = React.useState<Set<number>>(
-    new Set(availableBranches.map((branch: { branch_id: number }) => branch.branch_id)),
-  )
-
-  // Update selected branches when available branches change
-  React.useEffect(() => {
-    if (availableBranches.length > 0) {
-      setSelectedBranchIds(
-        new Set(availableBranches.map((branch: { branch_id: number }) => branch.branch_id)),
-      )
-    }
-  }, [availableBranches])
-
-  const handleBranchToggle = (branchId: number) => {
-    setSelectedBranchIds((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(branchId)) {
-        newSet.delete(branchId)
-      } else {
-        newSet.add(branchId)
-      }
-      return newSet
-    })
-  }
 
   const onSubmit = async (data: { amount: string }) => {
     const cardAmount = parseFloat(data.amount)
@@ -70,14 +41,9 @@ export default function PublicDashGoForm({
       return
     }
 
-    // Validate that at least one branch is selected
-    if (selectedBranchIds.size === 0) {
-      error('Please select at least one redemption branch')
-      return
-    }
-
-    const redemptionBranches = Array.from(selectedBranchIds).map((branchId) => ({
-      branch_id: branchId,
+    // Include all available branches for redemption
+    const redemptionBranches = availableBranches.map((branch: { branch_id: number }) => ({
+      branch_id: branch.branch_id,
     }))
 
     createDashGoMutation.mutate({
@@ -178,54 +144,6 @@ export default function PublicDashGoForm({
         <p className="mt-2 text-sm text-gray-500">Maximum amount: GHS 10000</p>
       </div>
 
-      {/* Redemption Branches Selection */}
-      {availableBranches.length > 0 && (
-        <div>
-          <Text variant="h3" weight="bold" className="text-gray-900 mb-4">
-            Select Redemption Branches
-          </Text>
-          <Text variant="p" className="text-gray-600 mb-4 text-sm">
-            Choose the branches where this DashGo card can be redeemed
-          </Text>
-          <div className="space-y-3 border border-gray-200 rounded-lg p-4 max-h-60 overflow-y-auto">
-            {availableBranches.map(
-              (branch: { branch_id: number; branch_name: string; branch_location: string }) => {
-                const isSelected = selectedBranchIds.has(branch.branch_id)
-                return (
-                  <div
-                    key={branch.branch_id}
-                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      onChange={() => handleBranchToggle(branch.branch_id)}
-                      label=""
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <Text variant="span" weight="semibold" className="text-gray-900 block">
-                        {branch.branch_name}
-                      </Text>
-                      {branch.branch_location && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Icon icon="bi:geo-alt-fill" className="size-3 text-gray-500" />
-                          <Text variant="span" className="text-gray-600 text-sm">
-                            {branch.branch_location}
-                          </Text>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              },
-            )}
-          </div>
-          {selectedBranchIds.size === 0 && (
-            <p className="mt-2 text-sm text-red-500">Please select at least one branch</p>
-          )}
-        </div>
-      )}
-
       {/* Action Buttons */}
       <div className="flex gap-4">
         <Button
@@ -235,8 +153,7 @@ export default function PublicDashGoForm({
             !form.watch('amount') ||
             parseFloat(form.watch('amount') || '0') <= 0 ||
             createDashGoMutation.isPending ||
-            !vendor_id ||
-            selectedBranchIds.size === 0
+            !vendor_id
           }
           loading={createDashGoMutation.isPending}
           className="flex-1"
