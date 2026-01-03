@@ -161,11 +161,33 @@ export default function RedemptionPage() {
     return cards
   }, [selectedVendor])
 
-  // Filter cards by selected card type
+  // Extract unique branches from vendor
+  const availableBranches = useMemo(() => {
+    if (!selectedVendor || !selectedVendor.branches_with_cards) return []
+    const branchMap = new Map<number, any>()
+    selectedVendor.branches_with_cards.forEach((branch: any) => {
+      if (branch.branch_id && !branchMap.has(branch.branch_id)) {
+        branchMap.set(branch.branch_id, {
+          branch_id: branch.branch_id,
+          branch_name: branch.branch_name,
+          branch_location: branch.branch_location,
+        })
+      }
+    })
+    return Array.from(branchMap.values())
+  }, [selectedVendor])
+
+  // Filter cards by selected card type and branch
   const filteredCards = useMemo(() => {
-    if (!cardType) return vendorCards
-    return vendorCards.filter((card) => card.card_type === cardType)
-  }, [vendorCards, cardType])
+    let cards = vendorCards
+    if (cardType) {
+      cards = cards.filter((card) => card.card_type === cardType)
+    }
+    if (selectedBranchId !== null) {
+      cards = cards.filter((card) => card.branch_id === selectedBranchId)
+    }
+    return cards
+  }, [vendorCards, cardType, selectedBranchId])
 
   // Fetch balance when phone number, selected card, or vendor changes
   useEffect(() => {
@@ -391,6 +413,7 @@ export default function RedemptionPage() {
       setSelectedCard(null)
       setSelectedBranchId(null)
       setCardType('')
+      setAmount('')
     }
   }
 
@@ -462,15 +485,35 @@ export default function RedemptionPage() {
   // Handle redemption submission - process cards redemption directly
   const handleRedeem = async () => {
     if (redemptionMethod === 'vendor_id') {
-      // For vendor_id method, only DashGo, DashX, and DashPass are allowed
-      if (!selectedCard && cardType !== 'dashgo') {
-        // For DashX and DashPass, a card must be selected
+      // For vendor_id method, DashGo, DashPro, DashX, and DashPass are allowed
+      if (
+        !selectedCard &&
+        cardType !== 'dashgo' &&
+        (cardType === 'dashpro' || cardType === 'dashx' || cardType === 'dashpass')
+      ) {
+        // For DashPro, DashX, and DashPass, a card must be selected
         toast.error('Please select a card')
         return
       }
 
-      if (!cardType || (cardType !== 'dashgo' && cardType !== 'dashx' && cardType !== 'dashpass')) {
+      if (
+        !cardType ||
+        (cardType !== 'dashgo' &&
+          cardType !== 'dashpro' &&
+          cardType !== 'dashx' &&
+          cardType !== 'dashpass')
+      ) {
         toast.error('Please select a valid card type')
+        return
+      }
+
+      // For DashPro, DashX, and DashPass, branch must be selected if branches are available
+      if (
+        (cardType === 'dashpro' || cardType === 'dashx' || cardType === 'dashpass') &&
+        availableBranches.length > 0 &&
+        selectedBranchId === null
+      ) {
+        toast.error('Please select a branch')
         return
       }
 
@@ -488,7 +531,10 @@ export default function RedemptionPage() {
       const cardTypeForAPI = formatCardTypeForAPI(cardType)
       if (
         !cardTypeForAPI ||
-        (cardTypeForAPI !== 'DashGo' && cardTypeForAPI !== 'DashX' && cardTypeForAPI !== 'DashPass')
+        (cardTypeForAPI !== 'DashGo' &&
+          cardTypeForAPI !== 'DashPro' &&
+          cardTypeForAPI !== 'DashX' &&
+          cardTypeForAPI !== 'DashPass')
       ) {
         toast.error('Invalid card type')
         return
@@ -539,7 +585,9 @@ export default function RedemptionPage() {
     setCardType('')
     setSelectedCard(null)
     setSelectedBranchId(null)
+    setAmount('')
     setBalance(null)
+    setDashGoBalance(null)
   }
 
   return (
@@ -1055,7 +1103,7 @@ export default function RedemptionPage() {
                                   handleVendorSelect(vendorId)
                                 }
                               }}
-                              placeholder="Search for a vendor by name..."
+                              placeholder="Search for a vendor or ID by name..."
                               isLoading={isLoadingVendors}
                             />
                             {vendorSearch && vendors.length === 0 && !isLoadingVendors && (
@@ -1134,250 +1182,386 @@ export default function RedemptionPage() {
                         )}
                       </div>
 
-                      {/* Card type selection - only show if vendor is selected */}
-                      {selectedVendor && (
-                        <>
-                          <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                              Select Card Type <span className="text-red-500">*</span>
-                            </label>
-                            <div className="grid grid-cols-3 gap-4">
-                              <button
-                                onClick={() => {
-                                  setCardType('dashgo')
-                                  setSelectedCard(null)
-                                }}
-                                className={`p-4 border-2 rounded-lg transition-colors ${
-                                  cardType === 'dashgo'
-                                    ? 'border-primary-500 bg-primary-50'
-                                    : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                              >
-                                DashGo
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setCardType('dashx')
-                                  setSelectedCard(null)
-                                }}
-                                className={`p-4 border-2 rounded-lg transition-colors ${
-                                  cardType === 'dashx'
-                                    ? 'border-primary-500 bg-primary-50'
-                                    : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                              >
-                                DashX
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setCardType('dashpass')
-                                  setSelectedCard(null)
-                                }}
-                                className={`p-4 border-2 rounded-lg transition-colors ${
-                                  cardType === 'dashpass'
-                                    ? 'border-primary-500 bg-primary-50'
-                                    : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                              >
-                                DashPass
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Show cards for selected card type (DashX and DashPass only) - Combined with branch selection */}
-                          {cardType && (cardType === 'dashx' || cardType === 'dashpass') && (
-                            <div>
-                              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Select Card <span className="text-red-500">*</span>
-                              </label>
-                              {filteredCards.length === 0 ? (
-                                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                  <Text variant="span" className="text-yellow-800 text-sm">
-                                    No {cardType} cards available for this vendor
-                                  </Text>
-                                </div>
-                              ) : (
-                                <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
-                                  {filteredCards.map((card) => {
-                                    const isSelected =
-                                      selectedCard?.card_id === card.card_id &&
-                                      selectedBranchId === card.branch_id
-                                    return (
-                                      <button
-                                        key={`${card.card_id}-${card.branch_id || 'no-branch'}`}
-                                        onClick={() => {
-                                          setSelectedCard(card)
-                                          setSelectedBranchId(card.branch_id || null)
-                                        }}
-                                        className={`p-4 border-2 rounded-lg text-left transition-colors ${
-                                          isSelected
-                                            ? 'border-primary-500 bg-primary-50'
-                                            : 'border-gray-200 hover:border-gray-300'
-                                        }`}
+                      {/* Branch Selection - Show right after vendor selection */}
+                      {selectedVendor && availableBranches.length > 0 && (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Select Branch <span className="text-red-500">*</span>
+                          </label>
+                          <div className="grid grid-cols-1 gap-3 max-h-64 overflow-y-auto">
+                            {availableBranches.map((branch) => {
+                              const isSelected = selectedBranchId === branch.branch_id
+                              return (
+                                <button
+                                  key={branch.branch_id}
+                                  onClick={() => {
+                                    setSelectedBranchId(branch.branch_id)
+                                    setSelectedCard(null) // Reset card selection when branch changes
+                                    setCardType('') // Reset card type when branch changes
+                                  }}
+                                  className={`p-4 border-2 rounded-lg text-left transition-colors ${
+                                    isSelected
+                                      ? 'border-primary-500 bg-primary-50'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <Icon icon="bi:shop" className="text-primary-600 text-lg" />
+                                        <Text
+                                          variant="span"
+                                          weight="semibold"
+                                          className="text-gray-900"
+                                        >
+                                          {branch.branch_name || `Branch #${branch.branch_id}`}
+                                        </Text>
+                                      </div>
+                                      {branch.branch_location && (
+                                        <Text
+                                          variant="span"
+                                          className="text-gray-600 text-sm block mt-1"
+                                        >
+                                          {branch.branch_location}
+                                        </Text>
+                                      )}
+                                      <Text
+                                        variant="span"
+                                        className="text-gray-500 text-xs block mt-1"
                                       >
-                                        <div className="flex justify-between items-start">
-                                          <div className="flex-1">
-                                            <Text
-                                              variant="span"
-                                              weight="semibold"
-                                              className="text-gray-900 block"
-                                            >
-                                              {card.card_name}
-                                            </Text>
-                                            <Text
-                                              variant="span"
-                                              className="text-gray-600 text-sm block mt-1"
-                                            >
-                                              {card.currency} {card.card_price.toFixed(2)}
-                                            </Text>
-                                            {card.branch_name && (
-                                              <div className="mt-2 flex items-start gap-2">
-                                                <Icon
-                                                  icon="bi:shop"
-                                                  className="text-primary-600 text-sm mt-0.5"
-                                                />
-                                                <div>
-                                                  <Text
-                                                    variant="span"
-                                                    className="text-gray-700 text-sm font-medium block"
-                                                  >
-                                                    {card.branch_name}
-                                                  </Text>
-                                                  {card.branch_location && (
-                                                    <Text
-                                                      variant="span"
-                                                      className="text-gray-500 text-xs block mt-0.5"
-                                                    >
-                                                      {card.branch_location}
-                                                    </Text>
-                                                  )}
-                                                </div>
-                                              </div>
-                                            )}
-                                          </div>
-                                          {isSelected && (
-                                            <div className="flex-shrink-0 ml-3">
-                                              <div className="w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center">
-                                                <Icon
-                                                  icon="bi:check"
-                                                  className="text-white text-sm"
-                                                />
-                                              </div>
-                                            </div>
-                                          )}
+                                        {
+                                          vendorCards.filter(
+                                            (card) => card.branch_id === branch.branch_id,
+                                          ).length
+                                        }{' '}
+                                        card
+                                        {vendorCards.filter(
+                                          (card) => card.branch_id === branch.branch_id,
+                                        ).length !== 1
+                                          ? 's'
+                                          : ''}{' '}
+                                        available
+                                      </Text>
+                                    </div>
+                                    {isSelected && (
+                                      <div className="shrink-0 ml-3">
+                                        <div className="w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center">
+                                          <Icon icon="bi:check" className="text-white text-sm" />
                                         </div>
-                                      </button>
-                                    )
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
 
-                          {/* Amount input for DashGo (removed DashPro from vendor_id method) */}
-                          {cardType === 'dashgo' && (
+                      {/* Card type selection - only show if vendor is selected and (no branches OR branch selected) */}
+                      {selectedVendor &&
+                        (availableBranches.length === 0 || selectedBranchId !== null) && (
+                          <>
                             <div>
                               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Amount <span className="text-red-500">*</span>
+                                Select Card Type <span className="text-red-500">*</span>
                               </label>
-                              <Input
-                                type="number"
-                                placeholder="Enter amount to redeem"
-                                value={amount}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                  handleAmountChange(e.target.value)
-                                }
-                              />
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <button
+                                  onClick={() => {
+                                    setCardType('dashgo')
+                                    setSelectedCard(null)
+                                  }}
+                                  className={`p-4 border-2 rounded-lg transition-colors ${
+                                    cardType === 'dashgo'
+                                      ? 'border-primary-500 bg-primary-50'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
+                                  DashGo
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setCardType('dashpro')
+                                    setSelectedCard(null)
+                                  }}
+                                  className={`p-4 border-2 rounded-lg transition-colors ${
+                                    cardType === 'dashpro'
+                                      ? 'border-primary-500 bg-primary-50'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
+                                  DashPro
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setCardType('dashx')
+                                    setSelectedCard(null)
+                                  }}
+                                  className={`p-4 border-2 rounded-lg transition-colors ${
+                                    cardType === 'dashx'
+                                      ? 'border-primary-500 bg-primary-50'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
+                                  DashX
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setCardType('dashpass')
+                                    setSelectedCard(null)
+                                  }}
+                                  className={`p-4 border-2 rounded-lg transition-colors ${
+                                    cardType === 'dashpass'
+                                      ? 'border-primary-500 bg-primary-50'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
+                                  DashPass
+                                </button>
+                              </div>
                             </div>
-                          )}
 
-                          {/* Balance display - Show DashGo balance (DashPro not available in vendor_id method) */}
-                          {balanceLoading ? (
-                            <div className="p-4 bg-gray-50 rounded-lg flex items-center gap-2">
-                              <Loader />
-                              <Text variant="span" className="text-gray-600 text-sm">
-                                Loading balance...
-                              </Text>
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              {/* DashGo Balance */}
-                              {dashGoBalance !== null && (
+                            {/* Show cards for selected card type (DashX, DashPro, and DashPass) */}
+                            {cardType &&
+                              (cardType === 'dashx' ||
+                                cardType === 'dashpro' ||
+                                cardType === 'dashpass') && (
                                 <div>
                                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    DashGo Balance
+                                    Select Card <span className="text-red-500">*</span>
                                   </label>
-                                  <div
-                                    className={`p-4 rounded-lg ${
-                                      cardType === 'dashgo'
-                                        ? 'bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200'
-                                        : 'bg-gray-50'
-                                    }`}
-                                  >
-                                    <Text
-                                      variant="h4"
-                                      weight="semibold"
-                                      className="text-primary-600"
-                                    >
-                                      GHS {dashGoBalance.toFixed(2)}
-                                    </Text>
-                                  </div>
-                                  {cardType === 'dashgo' &&
-                                    amount &&
-                                    parseFloat(amount) > dashGoBalance && (
+                                  {filteredCards.length === 0 ? (
+                                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                      <Text variant="span" className="text-yellow-800 text-sm">
+                                        No {cardType} cards available for this vendor
+                                      </Text>
+                                    </div>
+                                  ) : (
+                                    <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+                                      {filteredCards.map((card) => {
+                                        const isSelected =
+                                          selectedCard?.card_id === card.card_id &&
+                                          selectedBranchId === card.branch_id
+                                        return (
+                                          <button
+                                            key={`${card.card_id}-${card.branch_id || 'no-branch'}`}
+                                            onClick={() => {
+                                              setSelectedCard(card)
+                                              setSelectedBranchId(card.branch_id || null)
+                                            }}
+                                            className={`p-4 border-2 rounded-lg text-left transition-colors ${
+                                              isSelected
+                                                ? 'border-primary-500 bg-primary-50'
+                                                : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                          >
+                                            <div className="flex justify-between items-start">
+                                              <div className="flex-1">
+                                                <Text
+                                                  variant="span"
+                                                  weight="semibold"
+                                                  className="text-gray-900 block"
+                                                >
+                                                  {card.card_name}
+                                                </Text>
+                                                <Text
+                                                  variant="span"
+                                                  className="text-gray-600 text-sm block mt-1"
+                                                >
+                                                  {card.currency} {card.card_price.toFixed(2)}
+                                                </Text>
+                                                {card.branch_name && (
+                                                  <div className="mt-2 flex items-start gap-2">
+                                                    <Icon
+                                                      icon="bi:shop"
+                                                      className="text-primary-600 text-sm mt-0.5"
+                                                    />
+                                                    <div>
+                                                      <Text
+                                                        variant="span"
+                                                        className="text-gray-700 text-sm font-medium block"
+                                                      >
+                                                        {card.branch_name}
+                                                      </Text>
+                                                      {card.branch_location && (
+                                                        <Text
+                                                          variant="span"
+                                                          className="text-gray-500 text-xs block mt-0.5"
+                                                        >
+                                                          {card.branch_location}
+                                                        </Text>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                              {isSelected && (
+                                                <div className="flex-shrink-0 ml-3">
+                                                  <div className="w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center">
+                                                    <Icon
+                                                      icon="bi:check"
+                                                      className="text-white text-sm"
+                                                    />
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                            {/* Amount input for DashGo */}
+                            {cardType === 'dashgo' && (
+                              <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                  Amount <span className="text-red-500">*</span>
+                                </label>
+                                <Input
+                                  type="number"
+                                  placeholder="Enter amount to redeem"
+                                  value={amount}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                    handleAmountChange(e.target.value)
+                                  }
+                                />
+                              </div>
+                            )}
+
+                            {/* Balance display - Show balance for selected card type */}
+                            {balanceLoading ? (
+                              <div className="p-4 bg-gray-50 rounded-lg flex items-center gap-2">
+                                <Loader />
+                                <Text variant="span" className="text-gray-600 text-sm">
+                                  Loading balance...
+                                </Text>
+                              </div>
+                            ) : (
+                              <div className="space-y-4">
+                                {/* DashGo Balance */}
+                                {cardType === 'dashgo' && dashGoBalance !== null && (
+                                  <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                      DashGo Balance
+                                    </label>
+                                    <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200">
+                                      <Text
+                                        variant="h4"
+                                        weight="semibold"
+                                        className="text-primary-600"
+                                      >
+                                        GHS {dashGoBalance.toFixed(2)}
+                                      </Text>
+                                    </div>
+                                    {amount && parseFloat(amount) > dashGoBalance && (
                                       <p className="mt-2 text-sm text-red-600">
                                         Insufficient DashGo balance
                                       </p>
                                     )}
-                                  {cardType === 'dashgo' &&
-                                    amount &&
-                                    parseFloat(amount) <= dashGoBalance &&
-                                    parseFloat(amount) > 0 && (
-                                      <p className="mt-2 text-sm text-green-600">
-                                        DashGo amount valid
-                                      </p>
-                                    )}
-                                </div>
-                              )}
+                                    {amount &&
+                                      parseFloat(amount) <= dashGoBalance &&
+                                      parseFloat(amount) > 0 && (
+                                        <p className="mt-2 text-sm text-green-600">
+                                          DashGo amount valid
+                                        </p>
+                                      )}
+                                  </div>
+                                )}
 
-                              {/* Show message if no balance available */}
-                              {dashGoBalance === null && (isAuthenticated || phoneNumber) && (
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                  <Text variant="span" className="text-gray-600 text-sm">
-                                    No balance available for DashGo
-                                  </Text>
-                                </div>
-                              )}
+                                {/* DashPro Balance */}
+                                {cardType === 'dashpro' && balance !== null && (
+                                  <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                      DashPro Balance
+                                    </label>
+                                    <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200">
+                                      <Text
+                                        variant="h4"
+                                        weight="semibold"
+                                        className="text-primary-600"
+                                      >
+                                        GHS {balance.toFixed(2)}
+                                      </Text>
+                                    </div>
+                                  </div>
+                                )}
 
-                              {/* Show message if phone number not entered */}
-                              {!isAuthenticated && !phoneNumber && (
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                  <Text variant="span" className="text-gray-600 text-sm">
-                                    Enter phone number to view balance
-                                  </Text>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                {/* DashX/DashPass Balance */}
+                                {(cardType === 'dashx' || cardType === 'dashpass') &&
+                                  balance !== null && (
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        {cardType === 'dashx' ? 'DashX' : 'DashPass'} Balance
+                                      </label>
+                                      <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200">
+                                        <Text
+                                          variant="h4"
+                                          weight="semibold"
+                                          className="text-primary-600"
+                                        >
+                                          GHS {balance.toFixed(2)}
+                                        </Text>
+                                      </div>
+                                    </div>
+                                  )}
 
-                          <Button
-                            variant="primary"
-                            onClick={handleRedeem}
-                            disabled={
-                              !selectedVendor ||
-                              !cardType ||
-                              ((cardType === 'dashx' || cardType === 'dashpass') &&
-                                (!selectedCard || !selectedBranchId)) ||
-                              (!isAuthenticated && !phoneNumber) ||
-                              isProcessingRedemption
-                            }
-                            loading={isProcessingRedemption}
-                            className="w-full"
-                          >
-                            {isProcessingRedemption ? 'Processing...' : 'Redeem'}
-                          </Button>
-                        </>
-                      )}
+                                {/* Show message if no balance available */}
+                                {((cardType === 'dashgo' && dashGoBalance === null) ||
+                                  ((cardType === 'dashpro' ||
+                                    cardType === 'dashx' ||
+                                    cardType === 'dashpass') &&
+                                    balance === null)) &&
+                                  (isAuthenticated || phoneNumber) && (
+                                    <div className="p-4 bg-gray-50 rounded-lg">
+                                      <Text variant="span" className="text-gray-600 text-sm">
+                                        No balance available for{' '}
+                                        {cardType === 'dashgo'
+                                          ? 'DashGo'
+                                          : cardType === 'dashpro'
+                                            ? 'DashPro'
+                                            : cardType === 'dashx'
+                                              ? 'DashX'
+                                              : 'DashPass'}
+                                      </Text>
+                                    </div>
+                                  )}
+
+                                {/* Show message if phone number not entered */}
+                                {!isAuthenticated && !phoneNumber && (
+                                  <div className="p-4 bg-gray-50 rounded-lg">
+                                    <Text variant="span" className="text-gray-600 text-sm">
+                                      Enter phone number to view balance
+                                    </Text>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <Button
+                              variant="primary"
+                              onClick={handleRedeem}
+                              disabled={
+                                !selectedVendor ||
+                                !cardType ||
+                                ((cardType === 'dashpro' ||
+                                  cardType === 'dashx' ||
+                                  cardType === 'dashpass') &&
+                                  (!selectedCard ||
+                                    (availableBranches.length > 0 && selectedBranchId === null))) ||
+                                (!isAuthenticated && !phoneNumber) ||
+                                isProcessingRedemption
+                              }
+                              loading={isProcessingRedemption}
+                              className="w-full"
+                            >
+                              {isProcessingRedemption ? 'Processing...' : 'Redeem'}
+                            </Button>
+                          </>
+                        )}
                     </div>
                   )}
                 </div>
