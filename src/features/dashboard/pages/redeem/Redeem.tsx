@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '@/libs'
 import { BasePhoneInput } from '@/components/BasePhoneNumber/BasePhoneNumber'
 import { useRedemptionForm } from '../../hooks/useRedemptionForm'
 import { useUserInfo } from '../../hooks/useUserInfo'
 import { useCountriesData } from '@/hooks'
 import RedemptionSummary from '../../components/RedemptionSummary'
+import RedemptionOTPModal from '../../components/RedemptionOTPModal'
 
 export default function Redeem() {
   const userInfo = useUserInfo()
@@ -28,6 +29,8 @@ export default function Redeem() {
     setForm,
   } = useRedemptionForm()
 
+  const [showOTPModal, setShowOTPModal] = useState(false)
+
   // Auto-fill user information from logged-in user
   useEffect(() => {
     if (userInfo.userInfo.phone) {
@@ -37,6 +40,15 @@ export default function Redeem() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    // Show OTP modal instead of directly submitting
+    setShowOTPModal(true)
+  }
+
+  const handleOTPVerify = async (_otp: string) => {
+    console.log('OTP verified:', _otp)
+    // Close OTP modal and proceed with redemption
+    // TODO: Verify OTP with backend API when available
+    setShowOTPModal(false)
     await submitRedemption()
   }
 
@@ -413,6 +425,15 @@ export default function Redeem() {
           </div>
         </div>
       </div>
+
+      {/* OTP Modal */}
+      <RedemptionOTPModal
+        isOpen={showOTPModal}
+        onClose={() => setShowOTPModal(false)}
+        onVerify={handleOTPVerify}
+        isLoading={isSubmitting}
+        userPhone={userInfo.userInfo.phone || undefined}
+      />
 
       {/* Summary Modal */}
       <RedemptionSummary

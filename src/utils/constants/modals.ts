@@ -103,4 +103,12 @@ export const MODALS = {
     ROOT: 'invite-admin-modal',
     CREATE: 'invite-admin',
   },
+  VENDOR_PAYMENT_MANAGEMENT: {
+    PARAM_NAME: 'vendor-payment-management',
+    CHILDREN: {
+      VIEW: 'view',
+      PROCESS: 'process',
+      PREFERENCES: 'preferences',
+    },
+  },
 }

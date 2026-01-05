@@ -47,7 +47,6 @@ export default function PublicDashGoForm({
     }))
 
     createDashGoMutation.mutate({
-      recipient_ids: [],
       vendor_id: parseInt(vendor_id, 10),
       product: 'DashGo Gift Card',
       description: `Custom DashGo card for ${vendorName}`,

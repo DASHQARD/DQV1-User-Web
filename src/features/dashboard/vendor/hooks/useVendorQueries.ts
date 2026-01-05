@@ -12,7 +12,9 @@ import {
   getCardById,
   getCardsMetrics,
   getAllVendorsDetails,
+  getVendorPayments,
 } from '../services'
+import type { QueryType } from '@/types'
 import { userProfile } from '@/hooks'
 
 export function vendorQueries() {
@@ -112,6 +114,13 @@ export function vendorQueries() {
     })
   }
 
+  function useGetVendorPaymentsService(query?: QueryType) {
+    return useQuery({
+      queryKey: ['vendor-payments', query],
+      queryFn: () => getVendorPayments(query),
+    })
+  }
+
   return {
     useGetAllVendorsService,
     useGetAllVendorsDetailsService,
@@ -124,5 +133,6 @@ export function vendorQueries() {
     useGetCardByIdService,
     useGetCardsMetricsService,
     useGetAllVendorsDetailsForVendorService,
+    useGetVendorPaymentsService,
   }
 }

@@ -107,6 +107,16 @@ export const VENDOR_NAV_ITEMS = [
     ],
   },
   {
+    section: 'Payments',
+    items: [
+      {
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.PAYMENTS,
+        label: 'Payments',
+        icon: 'bi:credit-card',
+      },
+    ],
+  },
+  {
     section: 'Management',
     items: [
       {

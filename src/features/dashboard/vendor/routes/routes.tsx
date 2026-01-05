@@ -9,6 +9,7 @@ import { Redemptions } from '../pages/redemptions'
 import { Requests } from '../pages/requests'
 import { AuditLogs } from '../pages/auditLogs'
 import { PaymentInfo } from '../pages/payment'
+import Payments from '../pages/payments/Payments'
 import { Invite } from '../pages/invite'
 import { Compliance, ProfileInformation, UploadID, BusinessDetails } from '../pages/compliance'
 import { Settings } from '../pages/settings'
@@ -40,6 +41,10 @@ export const vendorRoutes: RouteObject[] = [
   {
     path: 'payment-methods',
     element: <PaymentInfo />,
+  },
+  {
+    path: 'payments',
+    element: <Payments />,
   },
   {
     path: 'redemptions',
