@@ -14,6 +14,7 @@ import {
   updateCard,
   deleteCard,
   updateRequestStatus,
+  updatePaymentPreferences,
 } from '../services'
 import { useToast } from '@/hooks'
 import { useNavigate } from 'react-router-dom'
@@ -183,6 +184,20 @@ export function useVendorMutations() {
     })
   }
 
+  function useUpdatePaymentPreferencesService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: updatePaymentPreferences,
+      onSuccess: (response: any) => {
+        queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+        success(response?.message || 'Payment preferences updated successfully')
+      },
+      onError: (err: { status: number; message: string }) => {
+        error(err?.message || 'Failed to update payment preferences. Please try again.')
+      },
+    })
+  }
+
   function useUpdateRequestStatusService() {
     const queryClient = useQueryClient()
     return useMutation({
@@ -212,5 +227,6 @@ export function useVendorMutations() {
     useUpdateBusinessLogoService,
     useAddPaymentDetailsService,
     useUpdateRequestStatusService,
+    useUpdatePaymentPreferencesService,
   }
 }

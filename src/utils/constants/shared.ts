@@ -38,6 +38,7 @@ export const ROUTES = {
         REQUESTS: '/dashboard/vendor/requests',
         AUDIT_LOGS: '/dashboard/vendor/audit-logs',
         PAYMENT_METHODS: '/dashboard/vendor/payment-methods',
+        PAYMENTS: '/dashboard/vendor/payments',
         INVITE_BRANCH_MANAGER: '/dashboard/vendor/invite-branch-manager',
         INVITE_ADMIN: '/dashboard/vendor/invite-admin',
         COMPLIANCE: {
