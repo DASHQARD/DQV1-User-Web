@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useRedemptionQueries } from './useRedemptionQueries'
+import { useRedemptionQueries } from './redemption/useRedemptionQueries'
 import { useAuthStore } from '@/stores'
 
 interface RedemptionForm {

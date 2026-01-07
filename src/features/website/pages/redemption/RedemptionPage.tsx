@@ -24,6 +24,7 @@ import {
   type RedemptionResponse,
 } from '@/features/dashboard/services/redemptions'
 import RedemptionOTPModal from '../../components/RedemptionOTPModal'
+import { useRedemptionQueries } from '@/features/dashboard/hooks'
 
 type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
@@ -59,7 +60,6 @@ export default function RedemptionPage() {
   const { countries: phoneCountries } = useCountriesData()
   const { useGetUserProfileService } = userProfile()
   const { data: user } = useGetUserProfileService()
-  console.log('user', user)
 
   // State management
   const [redemptionMethod, setRedemptionMethod] = useState<RedemptionMethod | ''>('')
@@ -84,6 +84,62 @@ export default function RedemptionPage() {
   const [isProcessingRedemption, setIsProcessingRedemption] = useState(false)
   const [showOTPModal, setShowOTPModal] = useState(false)
   const toast = useToast()
+
+  // Get redemption queries hooks
+  const { useGetRedemptionsAmountDashGoService, useGetRedemptionsAmountDashProService } =
+    useRedemptionQueries()
+
+  // Get phone number for balance queries
+  const userPhoneNumber = isAuthenticated
+    ? (user as any)?.phonenumber || (user as any)?.phone || ''
+    : phoneNumber
+
+  // Format phone number (replace +233 or 233 with 0, keep only digits)
+  const formattedPhoneForAPI = userPhoneNumber
+    ? userPhoneNumber.replace(/^\+?233/, '0').replace(/\D/g, '')
+    : ''
+
+  // Prepare params for DashGo hook (requires phone_number and either branch_id or vendor_id)
+  const dashGoParams = useMemo(() => {
+    if (!formattedPhoneForAPI || formattedPhoneForAPI.length < 10) {
+      return undefined
+    }
+    const params: any = {
+      phone_number: formattedPhoneForAPI,
+    }
+    // Always add branch_id if available (from selected branch or selected card)
+    const branchId = selectedBranchId !== null ? selectedBranchId : selectedCard?.branch_id
+    if (branchId !== null && branchId !== undefined) {
+      params.branch_id = branchId
+    }
+    // Add vendor_id if available
+    if (selectedVendorId) {
+      params.vendor_id = parseInt(selectedVendorId)
+    }
+    // If neither branch_id nor vendor_id is available, return undefined to disable the query
+    if (!branchId && !selectedVendorId) {
+      return undefined
+    }
+    return params
+  }, [formattedPhoneForAPI, selectedBranchId, selectedVendorId, selectedCard])
+
+  // Prepare params for DashPro hook
+  const dashProParams = useMemo(() => {
+    if (!formattedPhoneForAPI || formattedPhoneForAPI.length < 10) {
+      return undefined
+    }
+    return {
+      phone_number: formattedPhoneForAPI,
+    }
+  }, [formattedPhoneForAPI])
+
+  const { data: redemptionsAmountDashGo, isLoading: isLoadingRedemptionsAmountDashGo } =
+    useGetRedemptionsAmountDashGoService(dashGoParams)
+  const { data: redemptionsAmountDashPro, isLoading: isLoadingRedemptionsAmountDashPro } =
+    useGetRedemptionsAmountDashProService(dashProParams)
+
+  console.log('redemptionsAmountDashGo', redemptionsAmountDashGo)
+  console.log('redemptionsAmountDashPro', redemptionsAmountDashPro)
 
   // Debounced vendor search
   const { value: debouncedVendorSearch } = useDebouncedState({
@@ -219,8 +275,8 @@ export default function RedemptionPage() {
         return
       }
 
-      // Format phone number (remove +233 prefix if present, keep only digits)
-      const formattedPhone = userPhoneNumber.replace(/^\+?233/, '').replace(/\D/g, '')
+      // Format phone number (replace +233 or 233 with 0, keep only digits)
+      const formattedPhone = userPhoneNumber.replace(/^\+?233/, '0').replace(/\D/g, '')
 
       if (!formattedPhone || formattedPhone.length < 10) {
         setBalance(null)
@@ -230,139 +286,333 @@ export default function RedemptionPage() {
 
       // Only fetch balance if we have the required info
       if (redemptionMethod === 'vendor_mobile_money') {
-        // For vendor mobile money, fetch DashPro balance
-        setBalanceLoading(true)
+        // For vendor mobile money, use DashPro redemption amount hook
+        setBalanceLoading(isLoadingRedemptionsAmountDashPro)
         setBalanceError(null)
-        try {
-          const response: CardBalanceResponse = await getCardBalance({
-            phone_number: formattedPhone,
-            card_type: 'DashPro',
-          })
 
-          if (response?.data?.balance !== undefined) {
-            setBalance(response.data.balance)
-            setBalanceError(null)
+        if (isLoadingRedemptionsAmountDashPro) {
+          // Loading state is already set
+        } else if (redemptionsAmountDashPro) {
+          // Check for total_balance first (even if 0, it's a valid value)
+
+          let balanceValue: number | undefined
+          if (
+            redemptionsAmountDashPro?.total_balance !== undefined &&
+            redemptionsAmountDashPro?.total_balance !== null
+          ) {
+            balanceValue = redemptionsAmountDashPro.total_balance
+          } else if (
+            redemptionsAmountDashPro?.balance !== undefined &&
+            redemptionsAmountDashPro?.balance !== null
+          ) {
+            balanceValue = redemptionsAmountDashPro.balance
+          } else if (
+            redemptionsAmountDashPro?.amount !== undefined &&
+            redemptionsAmountDashPro?.amount !== null
+          ) {
+            balanceValue = redemptionsAmountDashPro.amount
+          }
+
+          if (balanceValue !== undefined && balanceValue !== null) {
+            const numericBalance =
+              typeof balanceValue === 'number' ? balanceValue : parseFloat(String(balanceValue))
+            if (!isNaN(numericBalance)) {
+              setBalance(numericBalance)
+              setBalanceError(null)
+            } else {
+              setBalance(null)
+            }
           } else {
             setBalance(null)
-            setBalanceError(response?.message || 'Unable to fetch balance. Please try again.')
           }
-        } catch (error: any) {
-          console.error('Error fetching balance:', error)
+        } else {
           setBalance(null)
-          setBalanceError(
-            error?.response?.data?.message ||
-              error?.message ||
-              'Failed to fetch balance. Please try again.',
-          )
-        } finally {
-          setBalanceLoading(false)
         }
       } else if (redemptionMethod === 'vendor_id') {
         // For vendor ID, fetch balance based on selected card
         if (selectedCard?.card_type) {
-          setBalanceLoading(true)
-          setBalanceError(null)
-          try {
-            const cardTypeForAPI = formatCardTypeForAPI(selectedCard.card_type)
+          const cardTypeLower = selectedCard.card_type.toLowerCase()
 
-            if (cardTypeForAPI) {
-              const response: CardBalanceResponse = await getCardBalance({
-                phone_number: formattedPhone,
-                card_type: cardTypeForAPI,
-              })
+          // Use hooks for DashGo and DashPro
+          if (cardTypeLower === 'dashgo') {
+            setBalanceLoading(isLoadingRedemptionsAmountDashGo)
+            setBalanceError(null)
 
-              if (response?.data?.balance !== undefined) {
-                const balanceValue = response.data.balance
-
-                // Update the appropriate balance state based on card type
-                if (selectedCard.card_type.toLowerCase() === 'dashgo') {
-                  setDashGoBalance(balanceValue)
-                  setBalance(balanceValue)
-                } else {
-                  setBalance(balanceValue)
-                }
-                setBalanceError(null)
-              } else {
-                setBalance(null)
-                if (selectedCard.card_type.toLowerCase() === 'dashgo') {
-                  setDashGoBalance(null)
-                }
-                setBalanceError(response?.message || 'Unable to fetch balance. Please try again.')
+            if (isLoadingRedemptionsAmountDashGo) {
+              // Loading state is already set
+            } else if (redemptionsAmountDashGo) {
+              // Check for total_balance first (even if 0, it's a valid value)
+              let balanceValue: number | undefined
+              if (
+                redemptionsAmountDashGo?.data?.total_balance !== undefined &&
+                redemptionsAmountDashGo?.data?.total_balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.data.total_balance
+              } else if (
+                redemptionsAmountDashGo?.total_balance !== undefined &&
+                redemptionsAmountDashGo?.total_balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.total_balance
+              } else if (
+                redemptionsAmountDashGo?.data?.balance !== undefined &&
+                redemptionsAmountDashGo?.data?.balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.data.balance
+              } else if (
+                redemptionsAmountDashGo?.balance !== undefined &&
+                redemptionsAmountDashGo?.balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.balance
+              } else if (
+                redemptionsAmountDashGo?.data?.amount !== undefined &&
+                redemptionsAmountDashGo?.data?.amount !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.data.amount
+              } else if (
+                redemptionsAmountDashGo?.amount !== undefined &&
+                redemptionsAmountDashGo?.amount !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.amount
               }
-            } else {
-              setBalance(null)
-              setBalanceError('Invalid card type')
-            }
-          } catch (error: any) {
-            console.error('Error fetching balance:', error)
-            setBalance(null)
-            if (selectedCard.card_type.toLowerCase() === 'dashgo') {
-              setDashGoBalance(null)
-            }
-            setBalanceError(
-              error?.response?.data?.message ||
-                error?.message ||
-                'Failed to fetch balance. Please try again.',
-            )
-          } finally {
-            setBalanceLoading(false)
-          }
-        } else {
-          // If no card selected, fetch DashGo or DashPro balance based on card type
-          setBalanceLoading(true)
-          setBalanceError(null)
-          try {
-            if (cardType === 'dashgo') {
-              // Fetch DashGo balance
-              const dashGoResponse: CardBalanceResponse = await getCardBalance({
-                phone_number: formattedPhone,
-                card_type: 'DashGo',
-              })
 
-              if (dashGoResponse?.data?.balance !== undefined) {
-                setDashGoBalance(dashGoResponse.data.balance)
-                setBalance(dashGoResponse.data.balance)
+              if (balanceValue !== undefined && balanceValue !== null) {
+                const numericBalance =
+                  typeof balanceValue === 'number' ? balanceValue : parseFloat(String(balanceValue))
+                if (!isNaN(numericBalance)) {
+                  setDashGoBalance(numericBalance)
+                  setBalance(numericBalance)
+                  setBalanceError(null)
+                } else {
+                  setDashGoBalance(null)
+                  setBalance(null)
+                }
               } else {
                 setDashGoBalance(null)
                 setBalance(null)
               }
-            } else if (cardType === 'dashpro') {
-              // Fetch DashPro balance
-              const dashProResponse: CardBalanceResponse = await getCardBalance({
-                phone_number: formattedPhone,
-                card_type: 'DashPro',
-              })
+            } else {
+              setDashGoBalance(null)
+              setBalance(null)
+            }
+          } else if (cardTypeLower === 'dashpro') {
+            setBalanceLoading(isLoadingRedemptionsAmountDashPro)
+            setBalanceError(null)
 
-              if (dashProResponse?.data?.balance !== undefined) {
-                setBalance(dashProResponse.data.balance)
+            if (isLoadingRedemptionsAmountDashPro) {
+              // Loading state is already set
+            } else if (redemptionsAmountDashPro) {
+              // Check for total_balance first (even if 0, it's a valid value)
+              let balanceValue: number | undefined
+              if (
+                redemptionsAmountDashPro?.data?.total_balance !== undefined &&
+                redemptionsAmountDashPro?.data?.total_balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashPro.data.total_balance
+              } else if (
+                redemptionsAmountDashPro?.total_balance !== undefined &&
+                redemptionsAmountDashPro?.total_balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashPro.total_balance
+              } else if (
+                redemptionsAmountDashPro?.data?.balance !== undefined &&
+                redemptionsAmountDashPro?.data?.balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashPro.data.balance
+              } else if (
+                redemptionsAmountDashPro?.balance !== undefined &&
+                redemptionsAmountDashPro?.balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashPro.balance
+              } else if (
+                redemptionsAmountDashPro?.data?.amount !== undefined &&
+                redemptionsAmountDashPro?.data?.amount !== null
+              ) {
+                balanceValue = redemptionsAmountDashPro.data.amount
+              } else if (
+                redemptionsAmountDashPro?.amount !== undefined &&
+                redemptionsAmountDashPro?.amount !== null
+              ) {
+                balanceValue = redemptionsAmountDashPro.amount
+              }
+
+              if (balanceValue !== undefined && balanceValue !== null) {
+                const numericBalance =
+                  typeof balanceValue === 'number' ? balanceValue : parseFloat(String(balanceValue))
+                if (!isNaN(numericBalance)) {
+                  setBalance(numericBalance)
+                  setBalanceError(null)
+                } else {
+                  setBalance(null)
+                }
               } else {
                 setBalance(null)
               }
             } else {
               setBalance(null)
             }
-
+          } else {
+            // For DashX and DashPass, use the API
+            setBalanceLoading(true)
             setBalanceError(null)
-          } catch (error: any) {
-            console.error('Error fetching balance:', error)
-            setBalance(null)
-            if (cardType === 'dashgo') {
-              setDashGoBalance(null)
+            try {
+              const cardTypeForAPI = formatCardTypeForAPI(selectedCard.card_type)
+
+              if (cardTypeForAPI) {
+                const response: CardBalanceResponse = await getCardBalance({
+                  phone_number: formattedPhone,
+                  card_type: cardTypeForAPI,
+                })
+
+                console.log('response lemme see', response)
+
+                if (response?.data?.balance !== undefined) {
+                  setBalance(response.data.balance)
+                  setBalanceError(null)
+                } else {
+                  setBalance(null)
+                  setBalanceError(response?.message || 'Unable to fetch balance. Please try again.')
+                }
+              } else {
+                setBalance(null)
+                setBalanceError('Invalid card type')
+              }
+            } catch (error: any) {
+              console.error('Error fetching balance:', error)
+              setBalance(null)
+              setBalanceError(
+                error?.response?.data?.message ||
+                  error?.message ||
+                  'Failed to fetch balance. Please try again.',
+              )
+            } finally {
+              setBalanceLoading(false)
             }
-            setBalanceError(
-              error?.response?.data?.message ||
-                error?.message ||
-                'Failed to fetch balance. Please try again.',
-            )
-          } finally {
-            setBalanceLoading(false)
+          }
+        } else {
+          // If no card selected, use hooks to fetch DashGo or DashPro balance based on card type
+          setBalanceLoading(isLoadingRedemptionsAmountDashGo || isLoadingRedemptionsAmountDashPro)
+          setBalanceError(null)
+
+          if (cardType === 'dashgo') {
+            // Use DashGo redemption amount hook
+            if (isLoadingRedemptionsAmountDashGo) {
+              // Loading state is already set above
+            } else if (redemptionsAmountDashGo) {
+              // Extract balance from the response
+              // Check for total_balance first (even if 0, it's a valid value)
+              let balanceValue: number | undefined
+              if (
+                redemptionsAmountDashGo?.data?.total_balance !== undefined &&
+                redemptionsAmountDashGo?.data?.total_balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.data.total_balance
+              } else if (
+                redemptionsAmountDashGo?.total_balance !== undefined &&
+                redemptionsAmountDashGo?.total_balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.total_balance
+              } else if (
+                redemptionsAmountDashGo?.data?.balance !== undefined &&
+                redemptionsAmountDashGo?.data?.balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.data.balance
+              } else if (
+                redemptionsAmountDashGo?.balance !== undefined &&
+                redemptionsAmountDashGo?.balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.balance
+              } else if (
+                redemptionsAmountDashGo?.data?.amount !== undefined &&
+                redemptionsAmountDashGo?.data?.amount !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.data.amount
+              } else if (
+                redemptionsAmountDashGo?.amount !== undefined &&
+                redemptionsAmountDashGo?.amount !== null
+              ) {
+                balanceValue = redemptionsAmountDashGo.amount
+              }
+
+              if (balanceValue !== undefined && balanceValue !== null) {
+                const numericBalance =
+                  typeof balanceValue === 'number' ? balanceValue : parseFloat(String(balanceValue))
+                if (!isNaN(numericBalance)) {
+                  setDashGoBalance(numericBalance)
+                  setBalance(numericBalance)
+                  setBalanceError(null)
+                } else {
+                  setDashGoBalance(null)
+                  setBalance(null)
+                }
+              } else {
+                setDashGoBalance(null)
+                setBalance(null)
+              }
+            } else {
+              setDashGoBalance(null)
+              setBalance(null)
+            }
+          } else if (cardType === 'dashpro') {
+            // Use DashPro redemption amount hook
+            if (isLoadingRedemptionsAmountDashPro) {
+              // Loading state is already set above
+            } else if (redemptionsAmountDashPro) {
+              // Extract balance from the response
+              // Check for total_balance first (even if 0, it's a valid value)
+              let balanceValue: number | undefined
+              if (
+                redemptionsAmountDashPro?.total_balance !== undefined &&
+                redemptionsAmountDashPro?.total_balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashPro.total_balance
+              } else if (
+                redemptionsAmountDashPro?.balance !== undefined &&
+                redemptionsAmountDashPro?.balance !== null
+              ) {
+                balanceValue = redemptionsAmountDashPro.balance
+              } else if (
+                redemptionsAmountDashPro?.amount !== undefined &&
+                redemptionsAmountDashPro?.amount !== null
+              ) {
+                balanceValue = redemptionsAmountDashPro.amount
+              }
+
+              if (balanceValue !== undefined && balanceValue !== null) {
+                const numericBalance =
+                  typeof balanceValue === 'number' ? balanceValue : parseFloat(String(balanceValue))
+                if (!isNaN(numericBalance)) {
+                  setBalance(numericBalance)
+                  setBalanceError(null)
+                } else {
+                  setBalance(null)
+                }
+              } else {
+                setBalance(null)
+              }
+            } else {
+              setBalance(null)
+            }
+          } else {
+            setBalance(null)
           }
         }
       }
     }
 
     fetchBalance()
-  }, [phoneNumber, selectedCard, selectedVendor, cardType, isAuthenticated, user, redemptionMethod])
+  }, [
+    phoneNumber,
+    selectedCard,
+    selectedVendor,
+    cardType,
+    isAuthenticated,
+    user,
+    redemptionMethod,
+    redemptionsAmountDashGo,
+    redemptionsAmountDashPro,
+    isLoadingRedemptionsAmountDashGo,
+    isLoadingRedemptionsAmountDashPro,
+  ])
 
   // Handle vendor selection
   const handleVendorSelect = (vendorId: string) => {
@@ -409,33 +659,6 @@ export default function RedemptionPage() {
        *   ]
        * }
        */
-      // Log successful vendor retrieval for debugging
-      console.log('✅ Successful Vendor Retrieval:', {
-        vendor_id: vendor.vendor_id,
-        business_name: vendor.business_name,
-        vendor_name: vendor.vendor_name,
-        branches_count: vendor.branches_with_cards?.length || 0,
-        total_cards:
-          vendor.branches_with_cards?.reduce(
-            (sum: number, branch: any) => sum + (branch.cards?.length || 0),
-            0,
-          ) || 0,
-        branches_with_cards: vendor.branches_with_cards?.map((branch: any) => ({
-          branch_id: branch.branch_id,
-          branch_name: branch.branch_name,
-          branch_location: branch.branch_location,
-          cards_count: branch.cards?.length || 0,
-          cards: branch.cards?.map((card: any) => ({
-            card_id: card.card_id,
-            card_name: card.card_name,
-            card_type: card.card_type,
-            card_price: card.card_price,
-            currency: card.currency,
-          })),
-        })),
-        full_vendor_object: vendor,
-      })
-
       setSelectedVendor(vendor)
       setSelectedVendorId(vendorId)
       setVendorName(vendor.business_name || vendor.vendor_name || 'Unknown Vendor')
@@ -509,6 +732,10 @@ export default function RedemptionPage() {
   // Handle amount validation
   const handleAmountChange = (value: string) => {
     setAmount(value)
+    // Log amount when DashGo or DashPro is selected
+    if ((cardType === 'dashgo' || cardType === 'dashpro') && value) {
+      console.log(`Amount for ${cardType}:`, value)
+    }
   }
 
   // Handle redemption submission - show OTP modal first
@@ -653,7 +880,7 @@ export default function RedemptionPage() {
       try {
         const payload: CardsRedemptionPayload = {
           card_type: cardTypeForAPI,
-          phone_number: userPhoneNumber.replace(/^\+?233/, '0'),
+          phone_number: userPhoneNumber.replace(/^\+?233/, '0').replace(/\D/g, ''),
         }
 
         const response: RedemptionResponse = await processCardsRedemption(payload)
@@ -737,9 +964,9 @@ export default function RedemptionPage() {
               {/* Trust Indicators */}
               <div className="flex flex-col gap-4">
                 {/* <div className="flex items-center gap-3 px-4 py-3 bg-white/8 backdrop-blur-md border border-white/12 rounded-xl">
-                  <Icon icon="bi:shield-fill-check" className="text-xl text-yellow-400" />
-                  <span className="text-sm font-medium">256-bit SSL Encryption</span>
-                </div> */}
+                    <Icon icon="bi:shield-fill-check" className="text-xl text-yellow-400" />
+                    <span className="text-sm font-medium">256-bit SSL Encryption</span>
+                  </div> */}
                 <div className="flex items-center gap-3 px-4 py-3 bg-white/8 backdrop-blur-md border border-white/12 rounded-xl">
                   <Icon icon="bi:lightning-charge-fill" className="text-xl text-yellow-400" />
                   <span className="text-sm font-medium">Instant Processing</span>
@@ -1140,15 +1367,15 @@ export default function RedemptionPage() {
 
                       {/* Security Notice */}
                       {/* <div className="mt-6 p-4 bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-300 rounded-xl flex gap-3">
-                        <Icon
-                          icon="bi:shield-lock"
-                          className="text-yellow-600 text-xl flex-shrink-0 mt-0.5"
-                        />
-                        <div className="text-sm text-yellow-900">
-                          <strong>Secure Transaction:</strong> This redemption is protected by
-                          256-bit SSL encryption and requires SMS verification to complete.
-                        </div>
-                      </div> */}
+                          <Icon
+                            icon="bi:shield-lock"
+                            className="text-yellow-600 text-xl flex-shrink-0 mt-0.5"
+                          />
+                          <div className="text-sm text-yellow-900">
+                            <strong>Secure Transaction:</strong> This redemption is protected by
+                            256-bit SSL encryption and requires SMS verification to complete.
+                          </div>
+                        </div> */}
                     </div>
                   )}
 
@@ -1311,6 +1538,10 @@ export default function RedemptionPage() {
                                   onClick={() => {
                                     setCardType('dashgo')
                                     setSelectedCard(null)
+                                    // Log amount when DashGo is selected
+                                    if (amount) {
+                                      console.log('Amount for DashGo:', amount)
+                                    }
                                   }}
                                   className={`p-4 border-2 rounded-lg transition-colors ${
                                     cardType === 'dashgo'
@@ -1324,6 +1555,10 @@ export default function RedemptionPage() {
                                   onClick={() => {
                                     setCardType('dashpro')
                                     setSelectedCard(null)
+                                    // Log amount when DashPro is selected
+                                    if (amount) {
+                                      console.log('Amount for DashPro:', amount)
+                                    }
                                   }}
                                   className={`p-4 border-2 rounded-lg transition-colors ${
                                     cardType === 'dashpro'
@@ -1558,7 +1793,7 @@ export default function RedemptionPage() {
                                     </div>
                                   )}
 
-                                {/* Show message if no balance available */}
+                                {/* Show message if no balance available (only when balance is null, not when it's 0) */}
                                 {((cardType === 'dashgo' && dashGoBalance === null) ||
                                   ((cardType === 'dashpro' ||
                                     cardType === 'dashx' ||
@@ -1567,7 +1802,7 @@ export default function RedemptionPage() {
                                   (isAuthenticated || phoneNumber) && (
                                     <div className="p-4 bg-gray-50 rounded-lg">
                                       <Text variant="span" className="text-gray-600 text-sm">
-                                        No balance available for{' '}
+                                        Unable to fetch balance for{' '}
                                         {cardType === 'dashgo'
                                           ? 'DashGo'
                                           : cardType === 'dashpro'
@@ -1671,35 +1906,35 @@ export default function RedemptionPage() {
 
       {/* Add CSS animations */}
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(2deg); }
-        }
-        @keyframes pulse-ring {
-          0% {
-            transform: scale(0.8);
-            opacity: 1;
+          @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
           }
-          100% {
-            transform: scale(1.4);
-            opacity: 0;
+          @keyframes pulse-ring {
+            0% {
+              transform: scale(0.8);
+              opacity: 1;
+            }
+            100% {
+              transform: scale(1.4);
+              opacity: 0;
+            }
           }
-        }
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-        .animate-float-delay-2 {
-          animation: float 6s ease-in-out infinite;
-          animation-delay: 2s;
-        }
-        .animate-float-delay-4 {
-          animation: float 6s ease-in-out infinite;
-          animation-delay: 4s;
-        }
-        .animate-pulse-ring {
-          animation: pulse-ring 2s ease-out infinite;
-        }
-      `}</style>
+          .animate-float {
+            animation: float 6s ease-in-out infinite;
+          }
+          .animate-float-delay-2 {
+            animation: float 6s ease-in-out infinite;
+            animation-delay: 2s;
+          }
+          .animate-float-delay-4 {
+            animation: float 6s ease-in-out infinite;
+            animation-delay: 4s;
+          }
+          .animate-pulse-ring {
+            animation: pulse-ring 2s ease-out infinite;
+          }
+        `}</style>
     </div>
   )
 }

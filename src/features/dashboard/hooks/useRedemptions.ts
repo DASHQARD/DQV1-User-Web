@@ -1,4 +1,4 @@
-import { useRedemptionQueries } from './useRedemptionQueries'
+import { useRedemptionQueries } from './redemption/useRedemptionQueries'
 
 export function useRedemptions(params?: { limit?: number; after?: string; status?: string }) {
   const redemptionQueries = useRedemptionQueries()

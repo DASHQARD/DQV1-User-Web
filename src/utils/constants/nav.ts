@@ -50,6 +50,10 @@ export const CORPORATE_NAV_ITEMS = [
 
 export const USER_NAV_ITEMS = [
   {
+    section: 'Overview',
+    items: [{ path: ROUTES.IN_APP.DASHBOARD.HOME, label: 'Dashboard', icon: 'bi:speedometer2' }],
+  },
+  {
     section: 'Gift Cards',
     items: [
       { path: ROUTES.IN_APP.DASHBOARD.MY_CARDS, label: 'Cards', icon: 'bi:credit-card-2-front' },

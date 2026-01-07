@@ -15,7 +15,11 @@ import {
   type CardsRedemptionPayload,
   type UpdateRedemptionStatusPayload,
   type GetRedemptionsParams,
-} from '../services/redemptions'
+  getRedemptionsAmountDashGo,
+  getRedemptionsAmountDashPro,
+  type GetRedemptionsAmountDashGoParams,
+  type GetRedemptionsAmountDashProParams,
+} from '../../services/redemptions'
 
 export function useRedemptionQueries() {
   const toast = useToast()
@@ -93,6 +97,32 @@ export function useRedemptionQueries() {
     })
   }
 
+  function useGetRedemptionsAmountDashGoService(params?: GetRedemptionsAmountDashGoParams) {
+    return useQuery({
+      queryKey: ['redemptions-amount-dash-go', params],
+      queryFn: () => {
+        if (!params?.phone_number) {
+          throw new Error('Phone number is required')
+        }
+        return getRedemptionsAmountDashGo(params)
+      },
+      enabled: !!params?.phone_number,
+    })
+  }
+
+  function useGetRedemptionsAmountDashProService(params?: GetRedemptionsAmountDashProParams) {
+    return useQuery({
+      queryKey: ['redemptions-amount-dash-pro', params],
+      queryFn: () => {
+        if (!params?.phone_number) {
+          throw new Error('Phone number is required')
+        }
+        return getRedemptionsAmountDashPro(params)
+      },
+      enabled: !!params?.phone_number,
+    })
+  }
+
   return {
     useValidateVendorMobileMoneyService,
     useSearchVendorsService,
@@ -101,5 +131,7 @@ export function useRedemptionQueries() {
     useProcessCardsRedemptionService,
     useGetRedemptionsService,
     useUpdateRedemptionStatusService,
+    useGetRedemptionsAmountDashGoService,
+    useGetRedemptionsAmountDashProService,
   }
 }

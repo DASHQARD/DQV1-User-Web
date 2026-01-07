@@ -1,4 +1,5 @@
 import { axiosClient } from '@/libs'
+import { getList } from '@/services/requests'
 
 export interface VendorRedemption {
   id: string
@@ -116,11 +117,12 @@ export interface GetRedemptionsParams {
   status?: string
 }
 
-// Validate vendor mobile money number
+const commonUrl = '/redemptions'
+
 export const validateVendorMobileMoney = async (
   data: ValidateVendorMobileMoneyPayload,
 ): Promise<ValidateVendorMobileMoneyResponse> => {
-  const response = await axiosClient.post('/redemptions/validate/vendor-mobile-money', data)
+  const response = await axiosClient.post(`${commonUrl}/validate/vendor-mobile-money`, data)
   return response as unknown as ValidateVendorMobileMoneyResponse
 }
 
@@ -128,13 +130,13 @@ export const validateVendorMobileMoney = async (
 export const searchVendors = async (
   params?: SearchVendorsParams,
 ): Promise<SearchVendorsResponse> => {
-  const response = await axiosClient.get('/redemptions/search/vendors', { params })
+  const response = await axiosClient.get(`${commonUrl}/search/vendors`, { params })
   return response as unknown as SearchVendorsResponse
 }
 
 // Get card balance
 export const getCardBalance = async (params: CardBalanceParams): Promise<CardBalanceResponse> => {
-  const response = await axiosClient.get('/redemptions/card-balance', { params })
+  const response = await axiosClient.get(`${commonUrl}/card-balance`, { params })
   return response as unknown as CardBalanceResponse
 }
 
@@ -142,7 +144,7 @@ export const getCardBalance = async (params: CardBalanceParams): Promise<CardBal
 export const processDashProRedemption = async (
   data: DashProRedemptionPayload,
 ): Promise<RedemptionResponse> => {
-  const response = await axiosClient.post('/redemptions/dash-pro', data)
+  const response = await axiosClient.post(`${commonUrl}/dash-pro`, data)
   return response as unknown as RedemptionResponse
 }
 
@@ -150,7 +152,7 @@ export const processDashProRedemption = async (
 export const processCardsRedemption = async (
   data: CardsRedemptionPayload,
 ): Promise<RedemptionResponse> => {
-  const response = await axiosClient.post('/redemptions/cards', data)
+  const response = await axiosClient.post(`${commonUrl}/cards`, data)
   return response as unknown as RedemptionResponse
 }
 
@@ -158,7 +160,7 @@ export const processCardsRedemption = async (
 export const getRedemptions = async (
   params?: GetRedemptionsParams,
 ): Promise<RedemptionsListResponse> => {
-  const response = await axiosClient.get('/redemptions', { params })
+  const response = await axiosClient.get(`${commonUrl}`, { params })
   return response as unknown as RedemptionsListResponse
 }
 
@@ -166,12 +168,34 @@ export const getRedemptions = async (
 export const updateRedemptionStatus = async (
   data: UpdateRedemptionStatusPayload,
 ): Promise<RedemptionResponse> => {
-  const response = await axiosClient.post('/redemptions/update-status', data)
+  const response = await axiosClient.post(`${commonUrl}/update-status`, data)
   return response as unknown as RedemptionResponse
 }
 
 // Legacy endpoint - keep for backward compatibility
 export const getRedemptionsLegacy = async (): Promise<RedemptionsListResponse> => {
-  const response = await axiosClient.get('/vendors/redemptions')
+  const response = await axiosClient.get(`${commonUrl}/vendors/redemptions`)
   return response as unknown as RedemptionsListResponse
+}
+
+export interface GetRedemptionsAmountDashGoParams {
+  phone_number: string
+  branch_id?: number
+  vendor_id?: number
+}
+
+export interface GetRedemptionsAmountDashProParams {
+  phone_number: string
+}
+
+export const getRedemptionsAmountDashGo = async (
+  params: GetRedemptionsAmountDashGoParams,
+): Promise<any> => {
+  return await getList(`${commonUrl}/recipient-amounts/dash-go`, params)
+}
+
+export const getRedemptionsAmountDashPro = async (
+  params: GetRedemptionsAmountDashProParams,
+): Promise<any> => {
+  return await getList(`${commonUrl}/recipient-amounts/dash-pro`, params)
 }
