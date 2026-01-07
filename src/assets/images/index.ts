@@ -8,3 +8,4 @@ export { default as IndividualSavingsIllustration } from './individual-savings.p
 export { default as WalletIllustration } from './wallet-illustration.png'
 export { default as LogoWhite } from './logo-white.png'
 export { default as CreateAccountMan } from './create-account-man.png'
+export { default as BackgroundCardImage } from './background-card-image.png'

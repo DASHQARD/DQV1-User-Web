@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import DashXIllustration from '@/assets/svgs/Dashx_bg.svg'
 import DashGoIllustration from '@/assets/svgs/dashgo_bg.svg'
@@ -10,6 +11,7 @@ import { cn } from '@/libs/clsx'
 import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
 
 export default function MyCards() {
+  const navigate = useNavigate()
   const { data: metricsResponse, isLoading } = useGiftCardMetrics()
 
   // Get metrics data or default to 0
@@ -28,6 +30,7 @@ export default function MyCards() {
     () => [
       {
         id: '1',
+        cardType: 'dashx',
         title: 'DashX Gift Cards',
         value: metrics.DashX,
         totalGiftCards: metrics.DashX,
@@ -38,6 +41,7 @@ export default function MyCards() {
       },
       {
         id: '2',
+        cardType: 'dashgo',
         title: 'DashGo Gift Cards',
         value: metrics.DashGo,
         totalGiftCards: metrics.DashGo,
@@ -48,6 +52,7 @@ export default function MyCards() {
       },
       {
         id: '3',
+        cardType: 'dashpro',
         title: 'DashPro Gift Cards',
         value: metrics.DashPro,
         totalGiftCards: metrics.DashPro,
@@ -58,6 +63,7 @@ export default function MyCards() {
       },
       {
         id: '4',
+        cardType: 'dashpass',
         title: 'DashPass Gift Cards',
         value: metrics.DashPass,
         totalGiftCards: metrics.DashPass,
@@ -77,7 +83,7 @@ export default function MyCards() {
   if (isLoading) {
     return (
       <div className="w-full">
-        <div className="mb-6">
+        <div className="flex flex-col gap-2">
           <Text variant="h2" weight="semibold" className="text-primary-900">
             My Cards
           </Text>
@@ -118,8 +124,9 @@ export default function MyCards() {
           {CARD_INFO.map((card) => (
             <div
               key={card.id}
+              onClick={() => navigate(`/dashboard/my-cards/${card.cardType}`)}
               className={cn(
-                'flex relative rounded-xl pt-[18px] pb-6 pl-6 pr-4 border border-gray-100 items-center justify-between group bg-white w-full overflow-hidden hover:shadow-md transition-shadow',
+                'flex relative rounded-xl pt-[18px] pb-6 pl-6 pr-4 border border-gray-100 items-center justify-between group bg-white w-full overflow-hidden hover:shadow-md transition-shadow cursor-pointer',
               )}
             >
               <div className="flex items-start justify-between w-full">
