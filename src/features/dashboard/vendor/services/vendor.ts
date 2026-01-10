@@ -7,6 +7,9 @@ import type {
   BranchPaymentDetailsResponse,
   UpdateBranchPaymentDetailsPayload,
   AddBranchPaymentDetailsPayload,
+  BranchManagerInvitationsResponse,
+  GetBranchManagerInvitationsQuery,
+  RemoveBranchManagerPayload,
 } from '@/types'
 
 const commonUrl = '/vendors'
@@ -101,4 +104,32 @@ export const addBranchPaymentDetails = async (
   data: AddBranchPaymentDetailsPayload,
 ): Promise<any> => {
   return await postMethod(`/vendors/add/branch-payment-details`, data)
+}
+
+export const getBranchManagerInvitations = async (
+  query?: GetBranchManagerInvitationsQuery,
+): Promise<BranchManagerInvitationsResponse> => {
+  return await getList<BranchManagerInvitationsResponse>(
+    `/vendors/branch-manager-invitations`,
+    query,
+  )
+}
+
+export const cancelBranchManagerInvitation = async (invitationId: number): Promise<any> => {
+  return await postMethod(`/vendors/branch-manager-invitation/cancel/${invitationId}`)
+}
+
+export const deleteBranchManagerInvitation = async (invitationId: number): Promise<any> => {
+  return await deleteMethod(`/vendors/branch-manager-invitation/${invitationId}`)
+}
+
+export const removeBranchManager = async (data: RemoveBranchManagerPayload): Promise<any> => {
+  return await patchMethod(`/vendors/remove-branch-manager`, data)
+}
+
+export const acceptBranchManagerInvitation = async (data: {
+  token: string
+  password: string
+}): Promise<any> => {
+  return await postMethod(`/vendors/branch-manager-invitation/accept`, data)
 }

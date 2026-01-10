@@ -3,10 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { USER_NAV_ITEMS, ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
-import { Text, Tooltip, TooltipTrigger, TooltipContent, Avatar } from '@/components'
+import { Text, Tooltip, TooltipTrigger, TooltipContent, ImageUpload } from '@/components'
 import { useAuthStore } from '@/stores'
 import Logo from '@/assets/images/logo-placeholder.png'
-import { userProfile } from '@/hooks'
+import { userProfile, useUploadFiles, usePresignedURL } from '@/hooks'
 import { useAuth } from '@/features/auth'
 
 export default function UserSidebar() {
@@ -15,10 +15,62 @@ export default function UserSidebar() {
   const { logout } = useAuthStore()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
 
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService, useUpdateUserAvatarService } = userProfile()
   const { useLogoutService } = useAuth()
   const { mutateAsync: logoutMutation, isPending: isLoggingOut } = useLogoutService()
   const { data: userProfileData } = useGetUserProfileService()
+  const { mutateAsync: updateAvatar, isPending: isUploadingImage } = useUpdateUserAvatarService()
+  const { mutateAsync: uploadFiles } = useUploadFiles()
+  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
+
+  // State for avatar upload
+  const [file, setFile] = React.useState<File | null>(null)
+  const [imageUrl, setImageUrl] = React.useState<{ imageUrl: string | null } | null>(null)
+
+  // Fetch current avatar from user profile
+  React.useEffect(() => {
+    if (!userProfileData?.avatar) {
+      setImageUrl(null)
+      return
+    }
+
+    let cancelled = false
+    const loadAvatar = async () => {
+      try {
+        const url = await fetchPresignedURL(userProfileData.avatar!)
+        if (!cancelled) {
+          setImageUrl({
+            imageUrl: typeof url === 'string' ? url : (url as any)?.url || url,
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch avatar', error)
+        if (!cancelled) {
+          setImageUrl(null)
+        }
+      }
+    }
+    loadAvatar()
+    return () => {
+      cancelled = true
+    }
+  }, [userProfileData?.avatar, fetchPresignedURL])
+
+  // Handle image upload
+  const handleImageUpload = async (selectedFile: File) => {
+    try {
+      const uploadedFiles = await uploadFiles([selectedFile])
+      if (uploadedFiles && uploadedFiles.length > 0) {
+        const fileUrl = (uploadedFiles[0] as any).file_url || (uploadedFiles[0] as any).file_key
+        // Update avatar with file_url
+        await updateAvatar({ file_url: fileUrl })
+        // Reset file state after successful upload
+        setFile(null)
+      }
+    } catch (error: any) {
+      console.error('Failed to upload avatar:', error)
+    }
+  }
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -100,28 +152,34 @@ export default function UserSidebar() {
         {!isCollapsed && (
           <div className="p-4">
             {/* Workspace Card */}
-            <div className="rounded-lg bg-white border border-gray-200 shadow-sm p-3">
+            <div className="rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-200/60 shadow-sm p-4 mb-4">
               {/* Top Section - Workspace Info */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Avatar size="sm" />
-                  <div className="flex-1 flex flex-col gap-2 min-w-0">
-                    <Text
-                      variant="span"
-                      weight="bold"
-                      className="block text-sm text-gray-900 truncate"
-                    >
-                      {userProfileData?.fullname || 'Personal Account'}
-                    </Text>
-                    <button
-                      onClick={() =>
-                        navigate(ROUTES.IN_APP.DASHBOARD.SETTINGS.PERSONAL_INFORMATION)
-                      }
-                      className="flex items-center gap-2 text-xs text-gray-500 truncate hover:text-primary-500"
-                    >
-                      Edit
-                    </button>
-                  </div>
+              <div className="flex items-center gap-3">
+                <div className="relative shrink-0">
+                  <ImageUpload
+                    file={file}
+                    onFileChange={setFile}
+                    onUpload={handleImageUpload}
+                    isUploading={isUploadingImage}
+                    currentImageUrl={imageUrl?.imageUrl ?? undefined}
+                    className="!h-12 !w-12 !rounded-full shrink-0"
+                  />
+                </div>
+                <div className="flex-1 flex flex-col gap-1 min-w-0">
+                  <Text
+                    variant="span"
+                    weight="bold"
+                    className="block text-sm text-gray-900 truncate leading-tight"
+                  >
+                    {userProfileData?.fullname || 'Personal Account'}
+                  </Text>
+                  <button
+                    onClick={() => navigate(ROUTES.IN_APP.DASHBOARD.SETTINGS.PERSONAL_INFORMATION)}
+                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary-600 transition-colors w-fit"
+                  >
+                    <Icon icon="bi:pencil" className="text-xs" />
+                    <span>Edit</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -132,8 +190,8 @@ export default function UserSidebar() {
             (section) => (
               <React.Fragment key={section.section}>
                 {!isCollapsed && (
-                  <li className="py-5 px-5 mt-5 first:mt-3">
-                    <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-[#6c757d]/90 relative flex items-center after:content-[''] after:absolute after:bottom-[-6px] after:left-0 after:w-5 after:h-0.5 after:bg-linear-to-r after:from-[#402D87] after:to-[rgba(64,45,135,0.4)] after:rounded-sm after:shadow-[0_1px_2px_rgba(64,45,135,0.2)] before:content-[''] before:absolute before:-top-2 before:-left-5 before:-right-5 before:h-px before:bg-linear-to-r before:from-transparent before:via-black/6 before:to-transparent">
+                  <li className="py-3 px-4 mt-2 first:mt-0">
+                    <span className="text-[0.65rem] font-bold uppercase tracking-widest text-gray-500 relative flex items-center">
                       {section.section}
                     </span>
                   </li>
@@ -142,19 +200,15 @@ export default function UserSidebar() {
                   <li
                     key={item.path}
                     className={cn(
-                      'flex items-center mb-2 rounded-[10px] transition-all duration-200 relative overflow-hidden',
+                      'flex items-center mb-1 rounded-lg transition-all duration-200 relative overflow-hidden',
                       isActive(item.path) &&
-                        'bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
-                      !isActive(item.path) &&
-                        'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-px',
-                      isCollapsed && 'justify-center mb-3',
+                        'bg-gradient-to-r from-[#402D87]/10 to-[#402D87]/5 border-l-2 border-[#402D87]',
+                      !isActive(item.path) && 'hover:bg-gray-50',
+                      isCollapsed && 'justify-center mb-2',
                     )}
                   >
                     {isActive(item.path) && (
-                      <>
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-white/30 via-[#402D87] to-[#2d1a72] rounded-r-sm shadow-[2px_0_8px_rgba(64,45,135,0.4),2px_0_16px_rgba(64,45,135,0.2)]" />
-                        <div className="absolute inset-0 rounded-r-2xl bg-linear-to-br from-white/8 via-transparent to-[rgba(45,26,114,0.03)] pointer-events-none" />
-                      </>
+                      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#402D87] rounded-r" />
                     )}
                     {isCollapsed ? (
                       <Tooltip>
@@ -162,19 +216,17 @@ export default function UserSidebar() {
                           <Link
                             to={item.path}
                             className={cn(
-                              'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 justify-center',
-                              isActive(item.path) &&
-                                'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
-                              !isActive(item.path) && 'hover:text-[#402D87]',
+                              'flex items-center justify-center no-underline font-medium text-sm py-2.5 px-3 w-full transition-all duration-200 rounded-lg relative z-2',
+                              isActive(item.path) && 'text-[#402D87]',
+                              !isActive(item.path) && 'text-gray-600 hover:text-[#402D87]',
                             )}
                           >
                             <Icon
                               icon={item.icon}
                               className={cn(
-                                'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                                'w-5 h-5 flex items-center justify-center transition-all duration-200 shrink-0',
                                 isActive(item.path) && 'text-[#402D87]',
-                                !isActive(item.path) &&
-                                  'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                                !isActive(item.path) && 'text-gray-500',
                               )}
                             />
                           </Link>
@@ -185,26 +237,21 @@ export default function UserSidebar() {
                       <Link
                         to={item.path}
                         className={cn(
-                          'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
-                          isActive(item.path) &&
-                            'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
-                          !isActive(item.path) && 'hover:text-[#402D87]',
+                          'flex items-center gap-3 no-underline font-medium text-sm py-2.5 px-4 w-full transition-all duration-200 rounded-lg relative z-2',
+                          isActive(item.path) && 'text-[#402D87] font-semibold',
+                          !isActive(item.path) && 'text-gray-700 hover:text-[#402D87]',
                         )}
                       >
                         <Icon
                           icon={item.icon}
                           className={cn(
-                            'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                            'w-5 h-5 flex items-center justify-center transition-all duration-200 shrink-0',
                             isActive(item.path) && 'text-[#402D87]',
-                            !isActive(item.path) &&
-                              'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                            !isActive(item.path) && 'text-gray-500',
                           )}
                         />
                         <span>{item.label}</span>
                       </Link>
-                    )}
-                    {isCollapsed && isActive(item.path) && (
-                      <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-1 h-6 bg-linear-to-b from-[#402D87] to-[#2d1a72] rounded-l-sm" />
                     )}
                   </li>
                 ))}
@@ -215,26 +262,25 @@ export default function UserSidebar() {
       </nav>
 
       {/* Footer - Settings and Log Out */}
-      <div className="border-t border-gray-200 p-3 space-y-2">
+      <div className="border-t border-gray-200/60 p-3 space-y-1.5">
         {/* Settings */}
         <Link
           to="/dashboard/settings"
           className={cn(
-            'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
+            'flex items-center gap-3 no-underline font-medium text-sm py-2.5 px-4 w-full transition-all duration-200 rounded-lg relative z-2',
             isActive('/dashboard/settings') &&
-              'text-[#402D87] font-bold bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
+              'text-[#402D87] font-semibold bg-gradient-to-r from-[#402D87]/10 to-[#402D87]/5 border-l-2 border-[#402D87]',
             !isActive('/dashboard/settings') &&
-              'hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.04)]',
+              'text-gray-700 hover:text-[#402D87] hover:bg-gray-50',
             isCollapsed && 'justify-center px-2',
           )}
         >
           <Icon
             icon="bi:gear"
             className={cn(
-              'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+              'w-5 h-5 flex items-center justify-center transition-all duration-200 shrink-0',
               isActive('/dashboard/settings') && 'text-[#402D87]',
-              !isActive('/dashboard/settings') &&
-                'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+              !isActive('/dashboard/settings') && 'text-gray-500',
             )}
           />
           {!isCollapsed && <span>Settings</span>}
@@ -247,9 +293,9 @@ export default function UserSidebar() {
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="flex items-center justify-center gap-3.5 text-red-600 font-medium text-sm py-3 px-2 w-full transition-all duration-200 rounded-[10px] hover:bg-red-50 hover:text-red-700"
+                className="flex items-center justify-center text-red-600 font-medium text-sm py-2.5 px-2 w-full transition-all duration-200 rounded-lg hover:bg-red-50 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Icon icon="bi:box-arrow-right" className="w-5 h-5 text-base shrink-0" />
+                <Icon icon="bi:box-arrow-right" className="w-5 h-5 shrink-0" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">Log Out</TooltipContent>
@@ -258,9 +304,9 @@ export default function UserSidebar() {
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="flex items-center gap-3.5 text-red-600 font-semibold text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] hover:bg-red-50 hover:text-red-700 text-left disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-3 text-red-600 font-medium text-sm py-2.5 px-4 w-full transition-all duration-200 rounded-lg hover:bg-red-50 hover:text-red-700 text-left disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Icon icon="bi:box-arrow-right" className="w-5 h-5 text-base shrink-0" />
+            <Icon icon="bi:box-arrow-right" className="w-5 h-5 shrink-0" />
             <span>Log Out</span>
           </button>
         )}

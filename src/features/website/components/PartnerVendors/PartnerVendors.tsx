@@ -1,52 +1,58 @@
 import { useNavigate } from 'react-router-dom'
 import { VendorItems } from '../VendorItems'
-import { Loader, Text } from '@/components'
+import { Loader, Text, EmptyState } from '@/components'
 import { usePublicCatalogQueries } from '../../hooks/website'
+import { EmptyStateImage } from '@/assets/images'
 
 export const PartnerVendors = () => {
   const navigate = useNavigate()
   const { usePublicVendors } = usePublicCatalogQueries()
   const { data: vendors, isLoading } = usePublicVendors()
-  console.log('vendors', vendors)
 
   const displayVendors = vendors?.slice(0, 4) || []
 
   return (
-    <section className="py-12">
-      <div className="wrapper flex flex-col gap-4 bg-white rounded-2xl">
-        <div className="px-6 pt-6 pb-4 flex items-center justify-between">
+    <section className="py-8 md:py-12">
+      <div className="wrapper flex flex-col gap-4 bg-white rounded-2xl shadow-sm">
+        <div className="px-4 md:px-6 pt-4 md:pt-6 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <Text variant="h3" weight="medium" className="text-gray-900">
             Partner Vendors
           </Text>
           <button
             onClick={() => navigate('/vendors')}
-            className="text-sm font-medium text-[#014fd3] hover:underline"
+            className="text-sm font-medium text-[#014fd3] hover:underline whitespace-nowrap transition-colors"
           >
             See more
           </button>
         </div>
 
-        <div className="px-6 pb-6">
+        <div className="px-4 md:px-6 pb-4 md:pb-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader />
             </div>
           ) : displayVendors.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-gray-500">No vendors available</p>
-            </div>
+            <EmptyState
+              image={EmptyStateImage}
+              title="No vendors available"
+              description="Check back soon for new partner vendors or browse our full collection."
+            />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {displayVendors.map((vendor) => (
                 <div
                   key={vendor.vendor_id}
                   onClick={() => navigate(`/vendor?vendor_id=${vendor.vendor_id}`)}
-                  className="cursor-pointer transition-transform hover:scale-105"
+                  className="cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 >
                   <VendorItems
                     name={vendor.business_name || 'Unnamed Vendor'}
-                    branches={vendor.branches_with_cards.length}
+                    branches={vendor.branches_with_cards?.length || 0}
                     rating={4.5}
+                    logo={(vendor as any).business_logo || null}
+                    businessAddress={(vendor as any).business_address}
+                    businessCountry={(vendor as any).business_country}
+                    branchesWithCards={vendor.branches_with_cards || []}
                   />
                 </div>
               ))}

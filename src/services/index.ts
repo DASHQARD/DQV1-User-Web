@@ -39,4 +39,28 @@ const getPaymentById = async (id: string) => {
   return response.data
 }
 
-export { uploadFiles, getPresignedURL, getUserProfile, paymentInfo, getPaymentInfo, getPaymentById }
+const updateUserAvatar = async (data: { file_url: string }) => {
+  const response = await axiosClient.patch(`/users/avatar`, data)
+  return response.data
+}
+
+const createTicket = async (data: {
+  name: string
+  email: string
+  subject: string
+  message: string
+}) => {
+  const response = await axiosClient.post(`/tickets`, data)
+  return response.data
+}
+
+export {
+  uploadFiles,
+  getPresignedURL,
+  getUserProfile,
+  paymentInfo,
+  getPaymentInfo,
+  getPaymentById,
+  updateUserAvatar,
+  createTicket,
+}

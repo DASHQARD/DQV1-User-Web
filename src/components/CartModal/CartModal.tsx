@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCartStore } from '@/stores/cart'
 import { useCart } from '@/features/website/hooks/useCart'
@@ -7,7 +7,7 @@ import { EmptyState, Loader, Text } from '@/components'
 import type { CartListResponse } from '@/types/responses'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/svgs/dashpass_bg.svg'
+import DashpassBg from '@/assets/images/dashpass_bg.png'
 import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
 import { ENV_VARS } from '@/utils/constants'
 import { formatCurrency } from '@/utils/format'
@@ -16,7 +16,8 @@ import { EmptyStateImage } from '@/assets/images'
 export default function CartPopoverContent() {
   const navigate = useNavigate()
   const { closeCart } = useCartStore()
-  const { cartItems, isLoading, deleteCartItem, updateCartItem, isUpdating } = useCart()
+  const { cartItems, isLoading, deleteCartItemAsync, updateCartItem, isUpdating } = useCart()
+  const [deletingItemId, setDeletingItemId] = useState<number | null>(null)
 
   // Filter out paid carts
   const activeCartItems = useMemo(() => {
@@ -29,8 +30,19 @@ export default function CartPopoverContent() {
     navigate('/checkout')
   }
 
-  const handleRemoveItem = (cartId: number) => {
-    deleteCartItem(cartId)
+  const handleRemoveItem = async (cartItemId: number) => {
+    setDeletingItemId(cartItemId)
+    try {
+      await deleteCartItemAsync(cartItemId)
+    } catch (error) {
+      console.error('Failed to delete item', error)
+      setDeletingItemId(null)
+    } finally {
+      // Keep the deleting state briefly to allow animation
+      setTimeout(() => {
+        setDeletingItemId(null)
+      }, 200)
+    }
   }
 
   // Construct full image URL from file_url
@@ -185,8 +197,15 @@ export default function CartPopoverContent() {
                 // Generate QR code for the card
                 const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`${item.product}-${item.card_id}`)}&bgcolor=FFFFFF&color=000000&margin=0`
 
+                const isDeleting = deletingItemId === item.cart_item_id
+
                 return (
-                  <div key={`${cart.cart_id}-${item.card_id}`} className="flex gap-4">
+                  <div
+                    key={`${cart.cart_id}-${item.card_id}`}
+                    className={`flex gap-4 transition-all duration-300 ${
+                      isDeleting ? 'opacity-50 pointer-events-none' : 'opacity-100'
+                    }`}
+                  >
                     <div className="max-w-[210px] w-full h-[125px] shrink-0 rounded-lg overflow-hidden relative">
                       {/* Card Background - always shown as fallback */}
                       <img
@@ -280,10 +299,18 @@ export default function CartPopoverContent() {
                         <button
                           type="button"
                           onClick={() => handleRemoveItem(item.cart_item_id)}
-                          className="text-red-500 hover:text-red-500 transition-colors ml-auto"
+                          disabled={isDeleting || isUpdating}
+                          className="text-red-500 hover:text-red-700 transition-colors ml-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[24px] min-h-[24px]"
                           aria-label="Remove item"
                         >
-                          <Icon icon="bi:trash" className="text-lg" />
+                          {isDeleting ? (
+                            <Icon
+                              icon="mdi:loading"
+                              className="text-lg animate-spin text-red-500"
+                            />
+                          ) : (
+                            <Icon icon="bi:trash" className="text-lg" />
+                          )}
                         </button>
                       </div>
                     </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Icon } from '@/libs'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/svgs/dashpass_bg.svg'
+import DashpassBg from '@/assets/images/dashpass_bg.png'
 import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
 import { useCart } from '../../hooks/useCart'
 import { useCartStore } from '@/stores/cart'
@@ -98,22 +98,20 @@ export const CardItems = ({
   const handleQuickAdd = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
 
-    // If onGetQard is provided, use it instead of adding to cart
-    if (onGetQard) {
-      onGetQard()
-      return
-    }
-
     if (!card_id) {
       console.error('Card ID is required to add item to cart')
       return
     }
 
-    await addToCartAsync({
-      card_id: card_id,
-      quantity: 1,
-    })
-    openCart()
+    try {
+      await addToCartAsync({
+        card_id: card_id,
+        quantity: 1,
+      })
+      openCart()
+    } catch (error) {
+      console.error('Failed to add item to cart', error)
+    }
   }
 
   const handleCardClick = () => {

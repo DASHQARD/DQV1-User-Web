@@ -14,8 +14,9 @@ import {
   getAllVendorsDetails,
   getVendorPayments,
   getBranchPaymentDetails,
+  getBranchManagerInvitations,
 } from '../services'
-import type { QueryType } from '@/types'
+import type { QueryType, GetBranchManagerInvitationsQuery } from '@/types'
 import { userProfile } from '@/hooks'
 
 export function vendorQueries() {
@@ -130,6 +131,13 @@ export function vendorQueries() {
     })
   }
 
+  function useGetBranchManagerInvitationsService(query?: GetBranchManagerInvitationsQuery) {
+    return useQuery({
+      queryKey: ['branch-manager-invitations', query],
+      queryFn: () => getBranchManagerInvitations(query),
+    })
+  }
+
   return {
     useGetAllVendorsService,
     useGetAllVendorsDetailsService,
@@ -144,5 +152,6 @@ export function vendorQueries() {
     useGetAllVendorsDetailsForVendorService,
     useGetVendorPaymentsService,
     useGetBranchPaymentDetailsService,
+    useGetBranchManagerInvitationsService,
   }
 }

@@ -1,10 +1,19 @@
 import React from 'react'
 import { useNavigate, Link, useSearchParams, useParams } from 'react-router-dom'
-import { PaginatedTable, Text, Button } from '@/components'
+import {
+  PaginatedTable,
+  Text,
+  Button,
+  Modal,
+  Dropdown,
+  Combobox,
+  Tag,
+  EmptyState,
+} from '@/components'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
 import { DEFAULT_QUERY } from '@/utils/constants/shared'
-import { useReducerSpread, usePersistedModalState, userProfile } from '@/hooks'
+import { useReducerSpread, usePersistedModalState, userProfile, useToast } from '@/hooks'
 import {
   RedemptionDetails,
   BranchDetailsModal,
@@ -12,8 +21,10 @@ import {
 } from '@/features/dashboard/components'
 import { CardItems } from '@/features/website/components'
 import { ROUTES, MODALS } from '@/utils/constants'
-import { vendorQueries } from '@/features'
+import { vendorQueries, useVendorMutations } from '@/features'
 import LoaderGif from '@/assets/gifs/loader.gif'
+import { getStatusVariant } from '@/utils/helpers/common'
+import EmptyStateImage from '@/assets/images/empty-state.png'
 
 type QueryType = typeof DEFAULT_QUERY
 
@@ -348,6 +359,16 @@ export function BranchDetails() {
   const { useGetUserProfileService } = userProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useGetBranchesByVendorIdService } = vendorQueries()
+  const { useUpdateBranchStatusService, useDeleteBranchByVendorService } = useVendorMutations()
+  const { mutateAsync: updateBranchStatus, isPending: isUpdatingStatus } =
+    useUpdateBranchStatusService()
+  const { mutateAsync: deleteBranchByVendor, isPending: isDeletingBranch } =
+    useDeleteBranchByVendorService()
+  const { error } = useToast()
+
+  const [isStatusModalOpen, setIsStatusModalOpen] = React.useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
+  const [selectedStatus, setSelectedStatus] = React.useState<string>('')
 
   // Get vendor_id from URL params or user profile
   const vendorIdFromParams = searchParams.get('vendor_id')
@@ -462,6 +483,42 @@ export function BranchDetails() {
     )
   }, [])
 
+  // Handle status update
+  const handleStatusUpdate = async () => {
+    if (!branches?.id || !selectedStatus) return
+
+    try {
+      await updateBranchStatus({
+        branch_id: Number(branches.id),
+        status: selectedStatus,
+      })
+      setIsStatusModalOpen(false)
+      setSelectedStatus('')
+    } catch (err: any) {
+      error(err?.message || 'Failed to update branch status')
+    }
+  }
+
+  // Handle delete branch
+  const handleDeleteBranch = async () => {
+    if (!branches?.id) return
+
+    try {
+      await deleteBranchByVendor({
+        branch_id: Number(branches.id),
+      })
+      setIsDeleteModalOpen(false)
+    } catch (err: any) {
+      error(err?.message || 'Failed to delete branch')
+    }
+  }
+
+  // Status options (API only accepts: approved, suspended)
+  const statusOptions = [
+    { label: 'Approved', value: 'approved' },
+    { label: 'Suspended', value: 'suspended' },
+  ]
+
   // Show loading state
   if (isLoadingBranches || isLoadingVendorsDetails) {
     return (
@@ -493,7 +550,7 @@ export function BranchDetails() {
     <>
       <div className="md:py-10 space-y-10">
         <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
-          <div>
+          <div className="flex-1">
             <button
               onClick={() => navigate(ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES)}
               className="flex items-center gap-1 text-gray-500 text-xs cursor-pointer"
@@ -501,16 +558,66 @@ export function BranchDetails() {
               <Icon icon="hugeicons:arrow-left-01" className="text-primary-900" />
               Back to Branches
             </button>
-            <h2 className="text-2xl font-semibold text-primary-900 mt-2">Branch Details</h2>
+            <div className="flex items-center gap-3 mt-2 flex-wrap">
+              <h2 className="text-2xl font-semibold text-primary-900">
+                {branches?.branch_name || 'Branch Details'}
+              </h2>
+              {branches?.status && (
+                <Tag
+                  value={branches.status}
+                  variant={getStatusVariant(branches.status) as any}
+                  className={cn(branches.status === 'pending' && 'animate-pulse')}
+                />
+              )}
+              {branches?.status === 'pending' && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <Icon icon="bi:clock-history" className="text-yellow-600 text-sm" />
+                  <Text variant="span" className="text-xs font-medium text-yellow-800">
+                    Pending Approval
+                  </Text>
+                </div>
+              )}
+            </div>
+            {branches?.branch_location && (
+              <Text variant="span" className="text-sm text-gray-600 mt-1 block">
+                {branches.branch_location}
+              </Text>
+            )}
           </div>
-          <Button
-            variant="secondary"
-            size="medium"
-            onClick={() => branchModal.openModal(MODALS.BRANCH.VIEW, branches || undefined)}
-            className="rounded-full"
-          >
-            View Branch Details
-          </Button>
+          <div className="flex items-center gap-3">
+            {branches && (
+              <>
+                <Dropdown
+                  actions={[
+                    {
+                      label: 'Update Status',
+                      onClickFn: () => {
+                        setSelectedStatus(branches.status || '')
+                        setIsStatusModalOpen(true)
+                      },
+                    },
+                    {
+                      label: 'Delete Branch',
+                      onClickFn: () => setIsDeleteModalOpen(true),
+                    },
+                  ]}
+                >
+                  <Button variant="outline" size="medium" className="rounded-full">
+                    <Icon icon="hugeicons:more-vertical" className="mr-2" />
+                    Actions
+                  </Button>
+                </Dropdown>
+                <Button
+                  variant="secondary"
+                  size="medium"
+                  onClick={() => branchModal.openModal(MODALS.BRANCH.VIEW, branches || undefined)}
+                  className="rounded-full"
+                >
+                  View Branch Details
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Metrics Cards */}
@@ -568,40 +675,13 @@ export function BranchDetails() {
               View all <Icon icon="bi:arrow-right" className="ml-1" />
             </Link>
           </div>
-          {/* <div className="px-6 pb-6">
-            {recentRedemptions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Icon icon="bi:inbox" className="text-4xl mb-2 opacity-50" />
-                <p className="text-sm m-0">No redemptions to display</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recentRedemptions.map((redemption) => (
-                  <div
-                    key={redemption.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-[#402D87]/10 flex items-center justify-center">
-                        <Icon icon="bi:credit-card-2-front" className="text-[#402D87]" />
-                      </div>
-                      <div>
-                        <Text variant="span" weight="semibold" className="text-gray-900">
-                          {redemption.giftCardType}
-                        </Text>
-                        <Text variant="span" className="text-gray-500 text-sm block">
-                          {new Date(redemption.updated_at).toLocaleDateString()}
-                        </Text>
-                      </div>
-                    </div>
-                    <Text variant="span" weight="semibold" className="text-[#402D87]">
-                      {formatCurrency(redemption.amount, 'GHS')}
-                    </Text>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div> */}
+          <div className="px-6 pb-6">
+            <EmptyState
+              image={EmptyStateImage}
+              title="No Redemptions Yet"
+              description="Once redemptions are made for this branch, they will appear here."
+            />
+          </div>
         </div>
 
         {/* Experiences */}
@@ -745,6 +825,132 @@ export function BranchDetails() {
       <BranchDetailsModal branch={branches} />
       <RedemptionDetails />
       <ViewExperience />
+
+      {/* Update Status Modal */}
+      <Modal
+        isOpen={isStatusModalOpen}
+        setIsOpen={setIsStatusModalOpen}
+        panelClass="!max-w-md"
+        position="center"
+      >
+        <div className="p-6 space-y-4">
+          <div className="flex flex-col gap-4 items-center justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+              <Icon icon="bi:gear-fill" className="text-2xl text-blue-600" />
+            </div>
+            <div className="space-y-2 text-center w-full">
+              <Text variant="h3" className="font-semibold">
+                Update Branch Status
+              </Text>
+              <p className="text-sm text-gray-600">Select a new status for this branch</p>
+            </div>
+          </div>
+
+          <div className="w-full">
+            <Combobox
+              label="Branch Status"
+              value={selectedStatus}
+              onChange={(e: any) => {
+                const value = e?.target?.value || e?.value || ''
+                setSelectedStatus(value)
+              }}
+              options={statusOptions}
+            />
+            {branches && (
+              <div className="mt-3 flex items-center gap-2">
+                <Text variant="span" className="text-xs text-gray-500">
+                  Current Status:
+                </Text>
+                <span
+                  className={cn(
+                    'px-2 py-1 rounded-full text-xs font-medium',
+                    getStatusVariant(branches.status) === 'success' &&
+                      'bg-green-100 text-green-700',
+                    getStatusVariant(branches.status) === 'warning' &&
+                      'bg-yellow-100 text-yellow-700',
+                    getStatusVariant(branches.status) === 'error' && 'bg-red-100 text-red-700',
+                  )}
+                >
+                  {branches.status}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsStatusModalOpen(false)
+                setSelectedStatus('')
+              }}
+              className="flex-1 rounded-full"
+              disabled={isUpdatingStatus}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleStatusUpdate}
+              className="flex-1 rounded-full"
+              disabled={isUpdatingStatus || !selectedStatus}
+              loading={isUpdatingStatus}
+            >
+              Update Status
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Branch Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        setIsOpen={setIsDeleteModalOpen}
+        panelClass="!max-w-md"
+        position="center"
+      >
+        <div className="p-6 space-y-4">
+          <div className="flex flex-col gap-4 items-center justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+              <Icon icon="bi:exclamation-triangle-fill" className="text-2xl text-red-600" />
+            </div>
+            <div className="space-y-2 text-center">
+              <Text variant="h3" className="font-semibold">
+                Delete Branch
+              </Text>
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete{' '}
+                <strong>{branches?.branch_name || 'this branch'}</strong>? This action cannot be
+                undone and will remove all associated data.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="flex-1 rounded-full"
+              disabled={isDeletingBranch}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleDeleteBranch}
+              className="flex-1 rounded-full"
+              disabled={isDeletingBranch}
+              loading={isDeletingBranch}
+            >
+              Delete Branch
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </>
   )
 }
