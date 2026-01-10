@@ -1,14 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, Text, Loader, Modal } from '@/components'
+import { useQueryClient } from '@tanstack/react-query'
+import { Button, Text, Loader, Modal, Combobox } from '@/components'
 import { Icon } from '@/libs'
-import { useRecipientCards } from '@/features/website/hooks/useRecipientCards'
-import { useRedemptionQueries } from '@/features/dashboard/hooks'
+import { useRedemptionMutation, useCardMetricsDetails } from '@/features/dashboard/hooks'
+import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
+import { useDebouncedState, usePresignedURL } from '@/hooks'
 import { userProfile } from '@/hooks'
-import RedemptionOTPModal from '@/features/dashboard/components/RedemptionOTPModal'
+import type { DropdownOption } from '@/types'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/svgs/Dashx_bg.svg'
+import DashpassBg from '@/assets/svgs/dashpass_bg.svg'
 import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
 
 type CardType = 'dashx' | 'dashgo' | 'dashpro' | 'dashpass'
@@ -55,124 +57,368 @@ const formatCardTypeForAPI = (
   return undefined
 }
 
-// Example cards for demonstration
-const EXAMPLE_CARDS: Record<CardType, any[]> = {
-  dashx: [
-    {
-      id: 1,
-      card_id: 1,
-      card_name: 'Restaurant Gift Card',
-      card_type: 'dashx',
-      balance: 150,
-      amount: 200,
-      status: 'active',
-      expiry_date: '2025-12-31',
-      branch_name: 'Accra Main Branch',
-      vendor_name: 'ABC Restaurant',
-    },
-    {
-      id: 2,
-      card_id: 2,
-      card_name: 'Shopping Mall Gift Card',
-      card_type: 'dashx',
-      balance: 75.5,
-      amount: 100,
-      status: 'active',
-      expiry_date: '2025-06-30',
-      branch_name: 'Kumasi Branch',
-      vendor_name: 'XYZ Mall',
-    },
-  ],
-  dashgo: [
-    {
-      id: 3,
-      card_id: 3,
-      card_name: 'Flexible Spending Card',
-      card_type: 'dashgo',
-      balance: 500,
-      amount: 500,
-      status: 'active',
-      branch_name: 'Main Branch',
-      vendor_name: 'Multi-Vendor Store',
-    },
-  ],
-  dashpro: [
-    {
-      id: 4,
-      card_id: 4,
-      card_name: 'Prepaid Card',
-      card_type: 'dashpro',
-      balance: 1000,
-      amount: 1000,
-      status: 'active',
-    },
-  ],
-  dashpass: [
-    {
-      id: 5,
-      card_id: 5,
-      card_name: 'Monthly Subscription Pass',
-      card_type: 'dashpass',
-      balance: 0,
-      amount: 50,
-      status: 'active',
-      expiry_date: '2025-01-31',
-    },
-  ],
-}
-
 export default function CardDetailsPage() {
   const { cardType } = useParams<{ cardType: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [selectedCard, setSelectedCard] = useState<any>(null)
+  const [showVendorModal, setShowVendorModal] = useState(false)
   const [showRedemptionModal, setShowRedemptionModal] = useState(false)
-  const [showOTPModal, setShowOTPModal] = useState(false)
   const [isProcessingRedemption, setIsProcessingRedemption] = useState(false)
   const [agreeToTerms, setAgreeToTerms] = useState(false)
+  const [vendorSearch, setVendorSearch] = useState('')
+  const [selectedVendor, setSelectedVendor] = useState<any>(null)
+  const [selectedVendorId, setSelectedVendorId] = useState('')
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
+  const [paginationLimit, setPaginationLimit] = useState(10)
+  const [paginationAfter, setPaginationAfter] = useState<string>('')
 
   const normalizedCardType = cardType?.toLowerCase() as CardType | undefined
   const validCardType = normalizedCardType && CARD_TYPE_MAP[normalizedCardType]
 
-  const { useRecipientCardsService } = useRecipientCards()
-  const { data: recipientCardsResponse, isLoading } = useRecipientCardsService()
-  const { useProcessCardsRedemptionService } = useRedemptionQueries()
-  const processRedemptionMutation = useProcessCardsRedemptionService()
   const { useGetUserProfileService } = userProfile()
   const { data: user } = useGetUserProfileService()
 
-  // Filter cards by type - use example data if API data is not available
+  // Vendor queries - same as RedemptionPage
+  const { usePublicVendorsService } = usePublicCatalogQueries()
+
+  // Prepare params for the new endpoint
+  const cardMetricsParams = useMemo(() => {
+    if (!validCardType) return undefined
+
+    // Convert card type to API format (DashGo, DashPro, DashX, DashPass)
+    const cardTypeForAPI = formatCardTypeForAPI(validCardType)
+    if (!cardTypeForAPI) return undefined
+
+    return {
+      card_type: cardTypeForAPI,
+      limit: paginationLimit,
+      after: paginationAfter || undefined,
+    }
+  }, [validCardType, paginationLimit, paginationAfter])
+
+  // Fetch cards using the new endpoint
+  const { data: cardMetricsResponse, isLoading: isLoadingCards } =
+    useCardMetricsDetails(cardMetricsParams)
+
+  const { useProcessRedemptionCardsService, useInitiateRedemptionService } = useRedemptionMutation()
+  const processRedemptionMutation = useProcessRedemptionCardsService()
+  const initiateRedemptionMutation = useInitiateRedemptionService()
+  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
+
+  // Get pagination info from response
+  const pagination = useMemo(() => {
+    if (!cardMetricsResponse?.data) {
+      return {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        limit: paginationLimit,
+        next: null,
+        previous: null,
+      }
+    }
+    return {
+      hasNextPage: cardMetricsResponse.data.hasNextPage || false,
+      hasPreviousPage: cardMetricsResponse.data.hasPreviousPage || false,
+      limit: cardMetricsResponse.data.limit || paginationLimit,
+      next: cardMetricsResponse.data.next || null,
+      previous: cardMetricsResponse.data.previous || null,
+    }
+  }, [cardMetricsResponse?.data, paginationLimit])
+
+  // Vendor search and selection - same as RedemptionPage
+  const { value: debouncedVendorSearch } = useDebouncedState({
+    initialValue: vendorSearch,
+    onChange: setVendorSearch,
+    debounceTime: 500,
+  })
+
+  // Fetch vendors based on search - same endpoint as RedemptionPage
+  const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService(
+    debouncedVendorSearch
+      ? {
+          search: debouncedVendorSearch,
+          limit: 20,
+        }
+      : undefined,
+  )
+
+  // Extract vendors from response - same as RedemptionPage
+  const vendors = useMemo(() => {
+    if (!vendorsResponse) return []
+    if (Array.isArray(vendorsResponse)) return vendorsResponse
+    if (vendorsResponse && typeof vendorsResponse === 'object' && 'data' in vendorsResponse) {
+      return (vendorsResponse as any).data || []
+    }
+    return []
+  }, [vendorsResponse])
+
+  // Convert vendors to dropdown options
+  const vendorOptions: DropdownOption[] = useMemo(() => {
+    return vendors.map((vendor: any) => ({
+      label: vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
+      value: vendor.vendor_id?.toString() || '',
+    }))
+  }, [vendors])
+
+  // Extract unique branches from selected vendor - same as RedemptionPage
+  const availableBranches = useMemo(() => {
+    if (!selectedVendor || !selectedVendor.branches_with_cards) return []
+    const branchMap = new Map<number, any>()
+    selectedVendor.branches_with_cards.forEach((branch: any) => {
+      if (branch.branch_id && !branchMap.has(branch.branch_id)) {
+        branchMap.set(branch.branch_id, {
+          branch_id: branch.branch_id,
+          branch_name: branch.branch_name,
+          branch_location: branch.branch_location,
+        })
+      }
+    })
+    return Array.from(branchMap.values())
+  }, [selectedVendor])
+
+  // Create branch options for dropdown
+  const branchOptions: DropdownOption[] = useMemo(() => {
+    return availableBranches.map((branch) => {
+      const label = branch.branch_location
+        ? `${branch.branch_name} - ${branch.branch_location}`
+        : `${branch.branch_name}`
+      return {
+        label,
+        value: String(branch.branch_id),
+      }
+    })
+  }, [availableBranches])
+
+  // Extract and filter cards based on card type
   const filteredCards = useMemo(() => {
-    if (!validCardType) return []
+    if (!validCardType || isLoadingCards) return []
 
-    // Use example data for demonstration
-    const useExampleData = !recipientCardsResponse?.data || recipientCardsResponse.data.length === 0
+    // Extract cards from response
+    const cards = cardMetricsResponse?.data?.data || []
 
-    if (useExampleData) {
-      return EXAMPLE_CARDS[validCardType] || []
+    if (!Array.isArray(cards) || cards.length === 0) {
+      return []
     }
 
-    const cards = Array.isArray(recipientCardsResponse.data) ? recipientCardsResponse.data : []
+    // Map cards to the expected format based on API response structure
+    return cards.map((card: any) => {
+      // Parse price from string to number
+      const price = parseFloat(card.price || card.base_price || '0')
+      const balance = price // For user cards, balance equals the card price
 
-    return cards.filter((card: any) => {
-      const cardTypeLower = card.card_type?.toLowerCase() || card.type?.toLowerCase() || ''
-      return cardTypeLower === validCardType
+      return {
+        id: card.id, // Card record ID
+        // Use card.card_id (product card_id) for redemption - this is the identifier like "X-0005-01-01-000002"
+        card_id: card.card_id || card.id,
+        recipient_id: card.recipient_id, // May not be present in this endpoint
+        card_name:
+          card.product ||
+          card.card_name ||
+          card.name ||
+          `${CARD_DISPLAY_NAMES[validCardType]} Card`,
+        card_type: validCardType,
+        balance: balance,
+        amount: balance,
+        card_price: balance, // Card price for redemption
+        status: card.status || 'active',
+        expiry_date: card.expiry_date,
+        branch_id: card.branch_id, // May not be present in this endpoint
+        branch_name: card.branch_name, // May not be present in this endpoint
+        branch_location: card.branch_location, // May not be present in this endpoint
+        vendor_id: card.vendor_id,
+        vendor_name: card.vendor_name, // May not be present in this endpoint
+        currency: card.currency || 'GHS',
+        images: card.images || [], // May not be present in this endpoint
+      }
     })
-  }, [recipientCardsResponse, validCardType])
+  }, [validCardType, cardMetricsResponse, isLoadingCards])
 
-  // Handle redeem button click
+  const isLoading = isLoadingCards
+
+  // Handle pagination
+  const handleNextPage = () => {
+    if (pagination.hasNextPage && pagination.next) {
+      setPaginationAfter(pagination.next)
+    }
+  }
+
+  const handlePreviousPage = () => {
+    if (pagination.hasPreviousPage) {
+      // If previous is null, we're going to the first page
+      setPaginationAfter(pagination.previous || '')
+    }
+  }
+
+  const handlePageSizeChange = (newLimit: number) => {
+    setPaginationLimit(newLimit)
+    setPaginationAfter('') // Reset to first page when changing page size
+  }
+
+  // State for card images (DashX cards)
+  const [cardImageUrls, setCardImageUrls] = useState<Record<string, string>>({})
+
+  // Fetch presigned URLs for DashX card images
+  useEffect(() => {
+    if (validCardType !== 'dashx') {
+      setCardImageUrls({})
+      return
+    }
+
+    const fetchCardImages = async () => {
+      const imagePromises = filteredCards.map(async (card: any) => {
+        if (!card.images || card.images.length === 0) {
+          return { cardId: card.id || card.card_id, url: null }
+        }
+
+        try {
+          const firstImage = card.images[0]
+          const response = await fetchPresignedURL(firstImage.file_url)
+          const url = typeof response === 'string' ? response : (response as any)?.url || response
+          return { cardId: card.id || card.card_id, url }
+        } catch (error) {
+          console.error('Failed to fetch presigned URL for card image:', error)
+          return { cardId: card.id || card.card_id, url: null }
+        }
+      })
+
+      const results = await Promise.all(imagePromises)
+      const urlMap: Record<string, string> = {}
+      results.forEach((result) => {
+        if (result.url && result.cardId) {
+          urlMap[result.cardId] = result.url
+        }
+      })
+      setCardImageUrls(urlMap)
+    }
+
+    if (filteredCards.length > 0) {
+      fetchCardImages()
+    }
+  }, [filteredCards, validCardType, fetchPresignedURL])
+
+  // Handle redeem button click - show vendor selection modal first
   const handleRedeemClick = (card: any) => {
     setSelectedCard(card)
+    setShowVendorModal(true)
+    // Reset vendor selection when opening modal
+    setSelectedVendor(null)
+    setSelectedVendorId('')
+    setSelectedBranchId(null)
+    setVendorSearch('')
+  }
+
+  // Handle vendor selection
+  const handleVendorSelect = (vendorId: string) => {
+    const vendor = vendors.find((v: any) => v.vendor_id?.toString() === vendorId)
+    if (vendor) {
+      setSelectedVendor(vendor)
+      setSelectedVendorId(vendorId)
+      setSelectedBranchId(null) // Reset branch when vendor changes
+    }
+  }
+
+  // Handle vendor modal close
+  const handleCloseVendorModal = () => {
+    setShowVendorModal(false)
+    setSelectedCard(null)
+    setSelectedVendor(null)
+    setSelectedVendorId('')
+    setSelectedBranchId(null)
+    setVendorSearch('')
+  }
+
+  // Handle vendor confirmation - proceed to redemption modal
+  const handleConfirmVendor = () => {
+    if (!selectedVendor) return
+
+    // For DashX and DashPass, require branch selection if branches are available
+    if (
+      (validCardType === 'dashx' || validCardType === 'dashpass') &&
+      availableBranches.length > 0 &&
+      selectedBranchId === null
+    ) {
+      return
+    }
+
+    setShowVendorModal(false)
     setShowRedemptionModal(true)
   }
 
-  // Handle redemption confirmation
-  const handleConfirmRedemption = () => {
-    if (!selectedCard) return
+  // Handle redemption confirmation - initiate redemption and process directly
+  const handleConfirmRedemption = async () => {
+    if (!selectedCard || !validCardType || !user) return
     if (!agreeToTerms) {
       return
     }
-    setShowRedemptionModal(false)
-    setShowOTPModal(true)
+
+    const userPhone = (user as any)?.phonenumber || (user as any)?.phone || ''
+    if (!userPhone) {
+      return
+    }
+
+    const cardTypeForAPI = formatCardTypeForAPI(validCardType)
+    if (!cardTypeForAPI) {
+      return
+    }
+
+    // Build payload exactly like RedemptionPage
+    let payload: any
+
+    if (validCardType === 'dashgo' || validCardType === 'dashpro') {
+      // For DashGo and DashPro, amount is required, branch_id and card_id are optional
+      payload = {
+        card_type: cardTypeForAPI,
+        phone_number: userPhone,
+        amount: parseFloat(String(selectedCard.balance || selectedCard.amount || 0)),
+        branch_id: selectedBranchId !== null ? selectedBranchId : selectedCard?.branch_id || 0,
+        card_id: selectedCard?.card_id || 0,
+      }
+    } else {
+      // For DashX and DashPass, card_id and branch_id are required
+      if (!selectedCard) {
+        console.error('No card selected')
+        setIsProcessingRedemption(false)
+        return
+      }
+      payload = {
+        card_type: cardTypeForAPI,
+        phone_number: userPhone,
+        amount: selectedCard.card_price || selectedCard.balance || selectedCard.amount || 0,
+        branch_id: selectedBranchId !== null ? selectedBranchId : selectedCard.branch_id || 0,
+        card_id: selectedCard.card_id, // This is card.card_id (product card_id) like RedemptionPage
+      }
+    }
+
+    if (!payload.card_id || payload.amount <= 0) {
+      console.error('Invalid card data for redemption')
+      return
+    }
+
+    setIsProcessingRedemption(true)
+    try {
+      // Step 1: Initiate redemption first
+      await initiateRedemptionMutation.mutateAsync({
+        phone_number: userPhone,
+      })
+
+      // Step 2: Process the actual redemption - use payload exactly like RedemptionPage
+      await processRedemptionMutation.mutateAsync(payload)
+      // Invalidate card metrics details query to refresh card list
+      queryClient.invalidateQueries({ queryKey: ['card-metrics-details'] })
+      // Close modals and reset state on success
+      setShowRedemptionModal(false)
+      setSelectedCard(null)
+      setAgreeToTerms(false)
+      setSelectedVendor(null)
+      setSelectedVendorId('')
+      setSelectedBranchId(null)
+    } catch (error) {
+      console.error('Redemption error:', error)
+      // Error toast is handled by the mutation
+    } finally {
+      setIsProcessingRedemption(false)
+    }
   }
 
   // Reset terms agreement when modal closes
@@ -180,40 +426,6 @@ export default function CardDetailsPage() {
     setShowRedemptionModal(false)
     setSelectedCard(null)
     setAgreeToTerms(false)
-  }
-
-  // Handle OTP verification and process redemption
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleOTPVerify = async (_otp: string) => {
-    if (!selectedCard || !validCardType || !user) return
-
-    const userPhoneNumber = (user as any)?.phonenumber || (user as any)?.phone || ''
-    if (!userPhoneNumber) {
-      return
-    }
-
-    // Format phone number (replace +233 or 233 with 0, keep only digits)
-    const formattedPhone = userPhoneNumber.replace(/^\+?233/, '0').replace(/\D/g, '')
-
-    const cardTypeForAPI = formatCardTypeForAPI(validCardType)
-    if (!cardTypeForAPI) {
-      return
-    }
-
-    setIsProcessingRedemption(true)
-    try {
-      await processRedemptionMutation.mutateAsync({
-        card_type: cardTypeForAPI,
-        phone_number: formattedPhone,
-      })
-      setShowOTPModal(false)
-      setSelectedCard(null)
-      // Cards will refresh automatically via query invalidation
-    } catch (error) {
-      console.error('Redemption error:', error)
-    } finally {
-      setIsProcessingRedemption(false)
-    }
   }
 
   if (!validCardType) {
@@ -281,10 +493,12 @@ export default function CardDetailsPage() {
             const cardBackground = getCardBackground(validCardType)
             const displayAmount = card.balance || card.amount || 0
             const canRedeem = card.status === 'active' && displayAmount > 0
+            const cardId = card.id || card.card_id || index
+            const cardImageUrl = validCardType === 'dashx' ? cardImageUrls[cardId] : null
 
             return (
               <div
-                key={card.id || card.card_id || index}
+                key={cardId}
                 className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col"
               >
                 {/* Card Visual */}
@@ -292,11 +506,25 @@ export default function CardDetailsPage() {
                   className="relative overflow-hidden bg-gray-200"
                   style={{ paddingTop: '62.5%' }}
                 >
+                  {/* Card Background - always shown as fallback */}
                   <img
                     src={cardBackground}
                     alt={`${CARD_DISPLAY_NAMES[validCardType]} card background`}
                     className="absolute inset-0 h-full w-full object-cover"
                   />
+                  {/* Product Image - shown for DashX if available, falls back to background on error */}
+                  {cardImageUrl && validCardType === 'dashx' && (
+                    <img
+                      src={cardImageUrl}
+                      alt={`${card.card_name || CARD_DISPLAY_NAMES[validCardType]} card image`}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      onError={(e) => {
+                        // Hide product image if it fails to load
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                      }}
+                    />
+                  )}
 
                   {/* Card Overlay Content */}
                   <div className="absolute inset-0 p-4 flex flex-col justify-between text-white">
@@ -418,6 +646,166 @@ export default function CardDetailsPage() {
         </div>
       )}
 
+      {/* Pagination Controls */}
+      {filteredCards.length > 0 && (
+        <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <Text variant="span" className="text-gray-600 text-sm">
+              Items per page:
+            </Text>
+            <select
+              value={paginationLimit}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="small"
+              onClick={handlePreviousPage}
+              disabled={!pagination.hasPreviousPage || isLoading}
+              className="flex items-center gap-2"
+            >
+              <Icon icon="bi:arrow-left" />
+              <span>Previous</span>
+            </Button>
+            <Text variant="span" className="text-gray-600 text-sm">
+              Showing {filteredCards.length} card{filteredCards.length !== 1 ? 's' : ''}
+            </Text>
+            <Button
+              variant="outline"
+              size="small"
+              onClick={handleNextPage}
+              disabled={!pagination.hasNextPage || isLoading}
+              className="flex items-center gap-2"
+            >
+              <span>Next</span>
+              <Icon icon="bi:arrow-right" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Vendor Selection Modal */}
+      <Modal
+        title="Select Vendor & Branch"
+        isOpen={showVendorModal}
+        setIsOpen={handleCloseVendorModal}
+        panelClass="!max-w-[500px] py-8"
+      >
+        {selectedCard && (
+          <div className="px-6 pb-6">
+            <Text variant="p" className="text-gray-600 mb-6">
+              Please select the vendor and branch where you want to redeem this card.
+            </Text>
+
+            {/* Vendor Search */}
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Icon icon="bi:shop" className="text-primary-600" />
+                  Search Vendor by Name <span className="text-red-500">*</span>
+                </label>
+                {selectedVendor && (
+                  <span className="flex items-center gap-1 text-xs text-green-600">
+                    <Icon icon="bi:check-circle-fill" />
+                    Selected
+                  </span>
+                )}
+              </div>
+              {!selectedVendor ? (
+                <Combobox
+                  options={vendorOptions}
+                  value={selectedVendorId}
+                  onChange={(e: any) => {
+                    const vendorId = e.target.value
+                    if (vendorId) {
+                      handleVendorSelect(vendorId)
+                    }
+                  }}
+                  placeholder="Search for a vendor by name..."
+                  isLoading={isLoadingVendors}
+                />
+              ) : (
+                <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                        <Icon icon="bi:shop-window" className="text-white text-lg" />
+                      </div>
+                      <div>
+                        <Text variant="span" weight="semibold" className="text-gray-900">
+                          {selectedVendor.business_name ||
+                            selectedVendor.vendor_name ||
+                            'Unknown Vendor'}
+                        </Text>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedVendor(null)
+                        setSelectedVendorId('')
+                        setSelectedBranchId(null)
+                      }}
+                      className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                    >
+                      Change
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Branch Selection - Show if vendor has branches */}
+            {selectedVendor && availableBranches.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Select Branch <span className="text-red-500">*</span>
+                </label>
+                <Combobox
+                  options={branchOptions}
+                  value={selectedBranchId !== null ? String(selectedBranchId) : ''}
+                  onChange={(e: any) => {
+                    const branchId = e.target.value
+                    if (branchId) {
+                      setSelectedBranchId(Number(branchId))
+                    } else {
+                      setSelectedBranchId(null)
+                    }
+                  }}
+                  placeholder="Select a branch..."
+                />
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 mt-6">
+              <Button variant="outline" onClick={handleCloseVendorModal} className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleConfirmVendor}
+                disabled={
+                  !selectedVendor ||
+                  ((validCardType === 'dashx' || validCardType === 'dashpass') &&
+                    availableBranches.length > 0 &&
+                    selectedBranchId === null)
+                }
+                className="flex-1"
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Redemption Confirmation Modal */}
       <Modal
         title="Redemption Summary"
@@ -456,23 +844,31 @@ export default function CardDetailsPage() {
                     {CARD_DISPLAY_NAMES[validCardType]}
                   </Text>
                 </div>
-                {selectedCard.branch_name && (
-                  <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                    <Text variant="span" className="text-gray-600 text-sm">
-                      Branch
-                    </Text>
-                    <Text variant="span" weight="semibold" className="text-gray-900 text-sm">
-                      {selectedCard.branch_name}
-                    </Text>
-                  </div>
-                )}
-                {selectedCard.vendor_name && (
+                {(() => {
+                  const branchName =
+                    selectedBranchId !== null
+                      ? availableBranches.find((b) => b.branch_id === selectedBranchId)?.branch_name
+                      : selectedCard.branch_name
+                  return branchName ? (
+                    <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                      <Text variant="span" className="text-gray-600 text-sm">
+                        Branch
+                      </Text>
+                      <Text variant="span" weight="semibold" className="text-gray-900 text-sm">
+                        {branchName}
+                      </Text>
+                    </div>
+                  ) : null
+                })()}
+                {selectedVendor && (
                   <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                     <Text variant="span" className="text-gray-600 text-sm">
                       Vendor
                     </Text>
                     <Text variant="span" weight="semibold" className="text-gray-900 text-sm">
-                      {selectedCard.vendor_name}
+                      {selectedVendor.business_name ||
+                        selectedVendor.vendor_name ||
+                        selectedCard.vendor_name}
                     </Text>
                   </div>
                 )}
@@ -526,33 +922,27 @@ export default function CardDetailsPage() {
 
             {/* Action Buttons */}
             <div className="flex gap-3">
-              <Button variant="outline" onClick={handleCloseRedemptionModal} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={handleCloseRedemptionModal}
+                disabled={isProcessingRedemption}
+                className="flex-1"
+              >
                 Cancel
               </Button>
               <Button
                 variant="secondary"
                 onClick={handleConfirmRedemption}
-                disabled={!agreeToTerms}
+                disabled={!agreeToTerms || isProcessingRedemption}
+                loading={isProcessingRedemption}
                 className="flex-1"
               >
-                Continue to Verification
+                {isProcessingRedemption ? 'Processing...' : 'Redeem Card'}
               </Button>
             </div>
           </div>
         )}
       </Modal>
-
-      {/* OTP Verification Modal */}
-      <RedemptionOTPModal
-        isOpen={showOTPModal}
-        onClose={() => {
-          setShowOTPModal(false)
-          setSelectedCard(null)
-        }}
-        onVerify={handleOTPVerify}
-        isLoading={isProcessingRedemption}
-        userPhone={(user as any)?.phonenumber || (user as any)?.phone || ''}
-      />
     </div>
   )
 }

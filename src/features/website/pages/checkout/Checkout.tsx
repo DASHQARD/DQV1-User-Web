@@ -13,7 +13,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/svgs/Dashx_bg.svg'
+import DashpassBg from '@/assets/svgs/dashpass_bg.svg'
+import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
 import { ENV_VARS, MODAL_NAMES } from '@/utils/constants'
 import { bulkAssignRecipients } from '@/features/dashboard/services'
 import { userProfile } from '@/hooks'
@@ -237,7 +238,7 @@ export default function Checkout() {
       case 'dashpass':
         return DashpassBg
       case 'dashgo':
-        return DashxBg
+        return DashgoBg
       default:
         return DashxBg
     }

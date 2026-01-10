@@ -1,8 +1,12 @@
-import { getList, patchMethod, postMethod } from '@/services/requests'
+import { getList, patchMethod, postMethod, putMethod, deleteMethod } from '@/services/requests'
+
 import type {
   VendorsListResponse,
   UpdateVendorStatusPayload,
   VendorManagerDetailsResponse,
+  BranchPaymentDetailsResponse,
+  UpdateBranchPaymentDetailsPayload,
+  AddBranchPaymentDetailsPayload,
 } from '@/types'
 
 const commonUrl = '/vendors'
@@ -72,6 +76,29 @@ export const addPaymentDetails = async (data: {
   account_number?: string
   swift_code?: string
   sort_code?: string
+  branch_id?: number | string
 }): Promise<any> => {
   return await postMethod(`/payment-details`, data)
+}
+
+export const updateBranchPaymentDetails = async (
+  data: UpdateBranchPaymentDetailsPayload,
+): Promise<any> => {
+  return await putMethod(`/payment-details/update-branch`, data)
+}
+
+export const getBranchPaymentDetails = async (
+  branchId: number | string,
+): Promise<BranchPaymentDetailsResponse> => {
+  return await getList<BranchPaymentDetailsResponse>(`/payment-details/branch/${branchId}`)
+}
+
+export const deleteBranchPaymentDetails = async (branchId: number | string): Promise<any> => {
+  return await deleteMethod(`/payment-details/vendor/delete-branch/payment-details/${branchId}`, {})
+}
+
+export const addBranchPaymentDetails = async (
+  data: AddBranchPaymentDetailsPayload,
+): Promise<any> => {
+  return await postMethod(`/vendors/add/branch-payment-details`, data)
 }

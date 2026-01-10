@@ -10,7 +10,7 @@ import { useCartStore } from '@/stores/cart'
 import { usePresignedURL } from '@/hooks'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/svgs/Dashx_bg.svg'
+import DashpassBg from '@/assets/svgs/dashpass_bg.svg'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 
 export default function CardDetails() {
@@ -676,6 +676,7 @@ export default function CardDetails() {
                 onClick={handleAddToCart}
                 disabled={isAdding}
                 loading={isAdding}
+                variant="secondary"
                 className="flex-1 bg-primary-500 hover:bg-primary-700 text-white font-bold py-3 px-6 rounded-full shadow-lg"
               >
                 <Icon icon="bi:cart-plus" className="size-5 mr-2" />

@@ -7,7 +7,8 @@ import { EmptyState, Loader, Text } from '@/components'
 import type { CartListResponse } from '@/types/responses'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/svgs/Dashx_bg.svg'
+import DashpassBg from '@/assets/svgs/dashpass_bg.svg'
+import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
 import { ENV_VARS } from '@/utils/constants'
 import { formatCurrency } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
@@ -61,7 +62,7 @@ export default function CartPopoverContent() {
       case 'dashpass':
         return DashpassBg
       case 'dashgo':
-        return DashxBg // fallback
+        return DashgoBg
       default:
         return DashxBg
     }

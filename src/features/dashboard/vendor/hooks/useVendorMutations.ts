@@ -11,11 +11,15 @@ import {
   updateBusinessDetails,
   updateBusinessLogo,
   addPaymentDetails,
+  updateBranchPaymentDetails,
+  addBranchPaymentDetails,
+  deleteBranchPaymentDetails,
   updateCard,
   deleteCard,
   updateRequestStatus,
   updatePaymentPreferences,
 } from '../services'
+import type { UpdateBranchPaymentDetailsPayload, AddBranchPaymentDetailsPayload } from '@/types'
 import { useToast } from '@/hooks'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
@@ -174,8 +178,16 @@ export function useVendorMutations() {
     const queryClient = useQueryClient()
     return useMutation({
       mutationFn: addPaymentDetails,
-      onSuccess: (response: any) => {
+      onSuccess: (response: any, variables) => {
         queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+        // If branch_id is provided, invalidate branch payment details
+        if (variables.branch_id) {
+          queryClient.invalidateQueries({ queryKey: ['branches'] })
+          queryClient.invalidateQueries({ queryKey: ['branches-by-vendor-id'] })
+          queryClient.invalidateQueries({
+            queryKey: ['branch-payment-details', variables.branch_id],
+          })
+        }
         success(response?.message || 'Payment details added successfully')
       },
       onError: (err: { status: number; message: string }) => {
@@ -194,6 +206,54 @@ export function useVendorMutations() {
       },
       onError: (err: { status: number; message: string }) => {
         error(err?.message || 'Failed to update payment preferences. Please try again.')
+      },
+    })
+  }
+
+  function useAddBranchPaymentDetailsService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: AddBranchPaymentDetailsPayload) => addBranchPaymentDetails(data),
+      onSuccess: (response: any, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['branches'] })
+        queryClient.invalidateQueries({ queryKey: ['branches-by-vendor-id'] })
+        queryClient.invalidateQueries({ queryKey: ['branch-payment-details', variables.branch_id] })
+        success(response?.message || 'Branch payment details added successfully')
+      },
+      onError: (err: { status: number; message: string }) => {
+        error(err?.message || 'Failed to add branch payment details. Please try again.')
+      },
+    })
+  }
+
+  function useUpdateBranchPaymentDetailsService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: UpdateBranchPaymentDetailsPayload) => updateBranchPaymentDetails(data),
+      onSuccess: (response: any, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['branches'] })
+        queryClient.invalidateQueries({ queryKey: ['branches-by-vendor-id'] })
+        queryClient.invalidateQueries({ queryKey: ['branch-payment-details', variables.branch_id] })
+        success(response?.message || 'Branch payment details updated successfully')
+      },
+      onError: (err: { status: number; message: string }) => {
+        error(err?.message || 'Failed to update branch payment details. Please try again.')
+      },
+    })
+  }
+
+  function useDeleteBranchPaymentDetailsService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (branchId: number | string) => deleteBranchPaymentDetails(branchId),
+      onSuccess: (response: any, branchId) => {
+        queryClient.invalidateQueries({ queryKey: ['branches'] })
+        queryClient.invalidateQueries({ queryKey: ['branches-by-vendor-id'] })
+        queryClient.invalidateQueries({ queryKey: ['branch-payment-details', branchId] })
+        success(response?.message || 'Branch payment details deleted successfully')
+      },
+      onError: (err: { status: number; message: string }) => {
+        error(err?.message || 'Failed to delete branch payment details. Please try again.')
       },
     })
   }
@@ -226,6 +286,9 @@ export function useVendorMutations() {
     useUpdateBusinessDetailsService,
     useUpdateBusinessLogoService,
     useAddPaymentDetailsService,
+    useAddBranchPaymentDetailsService,
+    useUpdateBranchPaymentDetailsService,
+    useDeleteBranchPaymentDetailsService,
     useUpdateRequestStatusService,
     useUpdatePaymentPreferencesService,
   }

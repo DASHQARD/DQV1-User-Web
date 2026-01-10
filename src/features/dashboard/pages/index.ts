@@ -1,5 +1,6 @@
 export * from './orders'
 export * from './redeem'
+export * from './redemptions'
 export * from './settings'
 export * from './transactions'
 export * from './business_details'

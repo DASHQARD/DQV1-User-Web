@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router'
 
 import DashXIllustration from '@/assets/svgs/Dashx_bg.svg'
-import DashPassIllustration from '@/assets/svgs/Dashx_bg.svg'
+import DashPassIllustration from '@/assets/svgs/dashpass_bg.svg'
 import { CustomIcon, Dropdown, Text, Loader } from '@/components'
 import { Icon } from '@/libs'
 import { cn } from '@/libs/clsx'

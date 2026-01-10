@@ -109,6 +109,7 @@ export const MODALS = {
       VIEW: 'view',
       PROCESS: 'process',
       PREFERENCES: 'preferences',
+      PROFILE: 'profile',
     },
   },
 }

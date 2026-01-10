@@ -1,5 +1,5 @@
 import { axiosClient } from '@/libs'
-import { getList } from '@/services/requests'
+import { getList, postMethod } from '@/services/requests'
 
 export interface VendorRedemption {
   id: string
@@ -24,8 +24,116 @@ export interface RedemptionsListResponse {
   data: VendorRedemption[]
 }
 
+/**
+ * Helper function to detect mobile money provider from phone number in Ghana
+ * @param phoneNumber - Phone number in any format (+233XXXXXXXXX, 233XXXXXXXXX, 0XXXXXXXXX)
+ * @returns Provider name ('mtn', 'vodafone', 'airteltigo') or null if unable to detect
+ */
+export const detectMobileMoneyProvider = (
+  phoneNumber: string,
+): 'mtn' | 'vodafone' | 'airteltigo' | null => {
+  if (!phoneNumber) return null
+
+  // Extract only digits
+  const digitsOnly = phoneNumber.replace(/[^0-9]/g, '')
+  if (digitsOnly.length < 9) return null
+
+  // Remove country code (233) if present and convert to local format (0XXXXXXXXX)
+  let localNumber = digitsOnly
+  if (digitsOnly.startsWith('233')) {
+    localNumber = '0' + digitsOnly.slice(3)
+  } else if (!digitsOnly.startsWith('0')) {
+    // If it doesn't start with 0 or 233, add 0 prefix
+    localNumber = '0' + digitsOnly
+  } else {
+    localNumber = digitsOnly
+  }
+
+  // Get first 3 digits for provider detection
+  const prefix = localNumber.slice(0, 3)
+
+  // MTN prefixes: 024, 054, 055, 059, 056
+  if (
+    prefix === '024' ||
+    prefix === '054' ||
+    prefix === '055' ||
+    prefix === '059' ||
+    prefix === '056'
+  ) {
+    return 'mtn'
+  }
+
+  // Vodafone prefixes: 020, 050
+  if (prefix === '020' || prefix === '050') {
+    return 'vodafone'
+  }
+
+  // AirtelTigo prefixes: 027, 057, 026, 028, 029
+  if (
+    prefix === '027' ||
+    prefix === '057' ||
+    prefix === '026' ||
+    prefix === '028' ||
+    prefix === '029'
+  ) {
+    return 'airteltigo'
+  }
+
+  return null
+}
+
+/**
+ * Helper function to convert phone number to local format (0XXXXXXXXX)
+ * @param phoneNumber - Phone number in any format
+ * @returns Phone number in local format starting with 0
+ */
+export const convertToLocalPhoneFormat = (phoneNumber: string): string => {
+  if (!phoneNumber) return ''
+
+  // Extract only digits
+  const digitsOnly = phoneNumber.replace(/[^0-9]/g, '')
+
+  // Remove country code (233) if present and add 0 prefix
+  if (digitsOnly.startsWith('233')) {
+    return '0' + digitsOnly.slice(3)
+  }
+
+  // If it doesn't start with 0, add 0 prefix
+  if (!digitsOnly.startsWith('0')) {
+    return '0' + digitsOnly
+  }
+
+  return digitsOnly
+}
+
+/**
+ * Helper function to convert phone number to international format (233XXXXXXXXX)
+ * @param phoneNumber - Phone number in any format
+ * @returns Phone number in international format with country code 233, without + prefix
+ */
+export const convertToInternationalFormat = (phoneNumber: string): string => {
+  if (!phoneNumber) return ''
+
+  // Extract only digits
+  const digitsOnly = phoneNumber.replace(/[^0-9]/g, '')
+
+  // If it already starts with 233, return as is
+  if (digitsOnly.startsWith('233')) {
+    return digitsOnly
+  }
+
+  // If it starts with 0, replace with 233
+  if (digitsOnly.startsWith('0')) {
+    return '233' + digitsOnly.slice(1)
+  }
+
+  // If it doesn't start with 0 or 233, assume it's missing country code and add 233
+  return '233' + digitsOnly
+}
+
 export interface ValidateVendorMobileMoneyPayload {
-  phone_number: string
+  phone_number: string // International format: 233XXXXXXXXX (without + prefix)
+  provider: 'mtn' | 'vodafone' | 'airteltigo'
 }
 
 export interface ValidateVendorMobileMoneyResponse {
@@ -34,8 +142,9 @@ export interface ValidateVendorMobileMoneyResponse {
   message: string
   data?: {
     vendor_name?: string
-    gvid?: string
+    account_name?: string
     phone_number?: string
+    provider?: string
   }
 }
 
@@ -89,8 +198,15 @@ export interface DashProRedemptionPayload {
   user_phone_number: string
 }
 
+export interface InitiateRedemptionPayload {
+  phone_number: string
+}
+
 export interface CardsRedemptionPayload {
+  branch_id: number
   card_type: 'DashGo' | 'DashPro' | 'DashX' | 'DashPass'
+  amount: number
+  card_id: number
   phone_number: string
 }
 
@@ -114,7 +230,14 @@ export interface UpdateRedemptionStatusPayload {
 export interface GetRedemptionsParams {
   limit?: number
   after?: string
+  phone_number?: string
+  card_type?: 'DashPro' | 'DashGo' | 'DashX' | 'DashPass'
+  vendor_id?: number
+  dateFrom?: string // ISO date format
+  dateTo?: string // ISO date format
   status?: string
+  location?: string
+  branch?: string
 }
 
 const commonUrl = '/redemptions'
@@ -122,7 +245,7 @@ const commonUrl = '/redemptions'
 export const validateVendorMobileMoney = async (
   data: ValidateVendorMobileMoneyPayload,
 ): Promise<ValidateVendorMobileMoneyResponse> => {
-  const response = await axiosClient.post(`${commonUrl}/validate/vendor-mobile-money`, data)
+  const response = await axiosClient.post('/payments/mobile-money/account-details', data)
   return response as unknown as ValidateVendorMobileMoneyResponse
 }
 
@@ -188,6 +311,18 @@ export interface GetRedemptionsAmountDashProParams {
   phone_number: string
 }
 
+export interface GetRedemptionsAmountDashXParams {
+  phone_number: string
+  branch_id?: number
+  vendor_id?: number
+}
+
+export interface GetRedemptionsAmountDashPassParams {
+  phone_number: string
+  branch_id?: number
+  vendor_id?: number
+}
+
 export const getRedemptionsAmountDashGo = async (
   params: GetRedemptionsAmountDashGoParams,
 ): Promise<any> => {
@@ -198,4 +333,28 @@ export const getRedemptionsAmountDashPro = async (
   params: GetRedemptionsAmountDashProParams,
 ): Promise<any> => {
   return await getList(`${commonUrl}/recipient-amounts/dash-pro`, params)
+}
+
+export const getRedemptionsAmountDashX = async (
+  params: GetRedemptionsAmountDashXParams,
+): Promise<any> => {
+  return await getList(`${commonUrl}/recipient-amounts/dash-x`, params)
+}
+
+export const getRedemptionsAmountDashPass = async (
+  params: GetRedemptionsAmountDashPassParams,
+): Promise<any> => {
+  return await getList(`${commonUrl}/recipient-amounts/dash-pass`, params)
+}
+
+export const processRedemptionCards = async (data: CardsRedemptionPayload): Promise<any> => {
+  return await postMethod(`${commonUrl}/users/cards`, data)
+}
+
+// Initiate redemption
+export const initiateRedemption = async (
+  data: InitiateRedemptionPayload,
+): Promise<RedemptionResponse> => {
+  const response = await axiosClient.post(`${commonUrl}/initiate`, data)
+  return response as unknown as RedemptionResponse
 }

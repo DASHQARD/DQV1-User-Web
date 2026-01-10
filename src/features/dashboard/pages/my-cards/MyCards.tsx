@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import DashXIllustration from '@/assets/svgs/Dashx_bg.svg'
 import DashGoIllustration from '@/assets/svgs/dashgo_bg.svg'
 import DashProIllustration from '@/assets/svgs/dashpro_bg.svg'
-import DashPassIllustration from '@/assets/svgs/Dashx_bg.svg'
+import DashPassIllustration from '@/assets/svgs/dashpass_bg.svg'
 import { Text, Loader } from '@/components'
 import { Icon } from '@/libs'
 import { cn } from '@/libs/clsx'
@@ -13,6 +13,7 @@ import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
 export default function MyCards() {
   const navigate = useNavigate()
   const { data: metricsResponse, isLoading } = useGiftCardMetrics()
+  console.log('metricsResponse', metricsResponse)
 
   // Get metrics data or default to 0
   const metrics = useMemo(() => {
