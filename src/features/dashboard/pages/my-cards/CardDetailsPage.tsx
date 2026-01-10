@@ -10,7 +10,7 @@ import { userProfile } from '@/hooks'
 import type { DropdownOption } from '@/types'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/svgs/dashpass_bg.svg'
+import DashpassBg from '@/assets/images/dashpass_bg.png'
 import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
 
 type CardType = 'dashx' | 'dashgo' | 'dashpro' | 'dashpass'
