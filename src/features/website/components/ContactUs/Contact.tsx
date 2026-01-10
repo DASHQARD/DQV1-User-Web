@@ -1,19 +1,42 @@
+import { useState } from 'react'
 import { Input, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Icon } from '@/libs'
+import { createTicket } from '@/services'
+import { useToast } from '@/hooks'
 
 import { ContactUsSchema } from '@/utils/schemas'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 export default function Contact() {
+  const { success, error } = useToast()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const form = useForm<z.infer<typeof ContactUsSchema>>({
     resolver: zodResolver(ContactUsSchema),
   })
 
-  const onSubmit = (data: z.infer<typeof ContactUsSchema>) => {
-    console.log(data)
+  const onSubmit = async (data: z.infer<typeof ContactUsSchema>) => {
+    setIsSubmitting(true)
+    try {
+      const response = await createTicket({
+        name: data.name,
+        email: data.email,
+        subject: data.subject,
+        message: data.message,
+      })
+      success(response?.message || "Ticket created successfully. We'll get back to you soon!")
+      form.reset()
+    } catch (err: any) {
+      error(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Failed to create ticket. Please try again.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -172,6 +195,7 @@ export default function Contact() {
                 type="textarea"
                 rows={6}
                 label="Message"
+                innerClassName="!h-auto min-h-[200px]"
                 placeholder="Tell us more about your inquiry"
                 {...form.register('message')}
                 error={form.formState.errors.message?.message}
@@ -183,6 +207,8 @@ export default function Contact() {
                 variant="secondary"
                 icon="bi:send-fill"
                 iconPosition="left"
+                loading={isSubmitting}
+                disabled={isSubmitting}
               >
                 Send Message
               </Button>

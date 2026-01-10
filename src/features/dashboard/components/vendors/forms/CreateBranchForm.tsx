@@ -2,6 +2,7 @@ import React from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useNavigate } from 'react-router-dom'
 
 import {
   Button,
@@ -11,7 +12,6 @@ import {
   RadioGroupItem,
   Text,
   BasePhoneInput,
-  // Checkbox,
 } from '@/components'
 import { useCountriesData, userProfile } from '@/hooks'
 import { GHANA_BANKS } from '@/assets/data/banks'
@@ -19,8 +19,10 @@ import { CreateBranchFormSchema } from '@/utils/schemas'
 import { useVendorMutations } from '@/features/dashboard/vendor/hooks'
 import { Icon } from '@/libs'
 import { useAuth } from '@/features/auth/hooks'
+import { ROUTES } from '@/utils/constants'
 
 export default function CreateBranchForm() {
+  const navigate = useNavigate()
   const { useGetCountriesService } = useAuth()
   const { data: countries } = useGetCountriesService()
   const { countries: phoneCountries } = useCountriesData()
@@ -92,44 +94,6 @@ export default function CreateBranchForm() {
     }
   }, [countries, form])
 
-  // React.useEffect(() => {
-  //   if (sameAsCorporate && userProfile) {
-  //     if (userProfile.momo_accounts?.length) {
-  //       const momoAccount = userProfile.momo_accounts[0]
-  //       const digitsOnly = momoAccount.momo_number ? momoAccount.momo_number.replace(/\D/g, '') : ''
-  //       let localNumber = digitsOnly
-  //       if (digitsOnly.startsWith('233')) {
-  //         localNumber = digitsOnly.slice(3)
-  //       }
-  //       const formattedNumber = localNumber ? `+233-${localNumber}` : ''
-
-  //       form.setValue('payment_method', 'mobile_money')
-  //       form.setValue('mobile_money_provider', momoAccount.provider || '')
-  //       form.setValue('mobile_money_number', formattedNumber)
-  //     }
-  //     // Check if user has bank accounts
-  //     else if (userProfile.bank_accounts?.length) {
-  //       const bankAccount = userProfile.bank_accounts[0]
-  //       form.setValue('payment_method', 'bank')
-  //       form.setValue('bank_name', bankAccount.bank_name || '')
-  //       form.setValue('account_number', bankAccount.account_number || '')
-  //       form.setValue('account_name', bankAccount.account_holder_name || '')
-  //       form.setValue('sort_code', bankAccount.sort_code || '')
-  //       form.setValue('swift_code', bankAccount.swift_code || '')
-  //     }
-  //   } else if (!sameAsCorporate) {
-  //     // Clear payment fields when unchecked
-  //     form.setValue('payment_method', '')
-  //     form.setValue('mobile_money_provider', '')
-  //     form.setValue('mobile_money_number', '')
-  //     form.setValue('bank_name', '')
-  //     form.setValue('account_number', '')
-  //     form.setValue('account_name', '')
-  //     form.setValue('sort_code', '')
-  //     form.setValue('swift_code', '')
-  //   }
-  // }, [sameAsCorporate, userProfile, form])
-
   const mobileMoneyProviders = [
     { label: 'MTN Mobile Money', value: 'mtn' },
     { label: 'Vodafone Cash', value: 'vodafone' },
@@ -142,73 +106,79 @@ export default function CreateBranchForm() {
       return
     }
 
-    console.log('submitted data', data)
+    try {
+      // Remove mobile money fields if payment method is bank
+      if (data.payment_method === 'bank') {
+        const {
+          branch_name,
+          branch_location,
+          branch_manager_name,
+          branch_manager_email,
+          branch_manager_phone,
+          country,
+          country_code,
+          payment_method,
+          bank_name,
+          branch,
+          account_name,
+          account_number,
+          sort_code,
+          swift_code,
+        } = data
+        const bankData = {
+          branch_name,
+          branch_location,
+          branch_manager_name,
+          branch_manager_email,
+          branch_manager_phone,
+          country,
+          country_code,
+          payment_method,
+          bank_name,
+          branch,
+          account_name,
+          account_number,
+          sort_code,
+          swift_code,
+        }
+        await createBranch(bankData as typeof data)
+      }
+      // Remove bank fields if payment method is mobile_money
+      else if (data.payment_method === 'mobile_money') {
+        const {
+          branch_name,
+          branch_location,
+          branch_manager_name,
+          branch_manager_email,
+          branch_manager_phone,
+          country,
+          country_code,
+          payment_method,
+          mobile_money_provider,
+          mobile_money_number,
+        } = data
+        const mobileMoneyData = {
+          branch_name,
+          branch_location,
+          branch_manager_name,
+          branch_manager_email,
+          branch_manager_phone,
+          country,
+          country_code,
+          payment_method,
+          mobile_money_provider,
+          mobile_money_number,
+        }
+        await createBranch(mobileMoneyData as typeof data)
+      } else {
+        await createBranch(data)
+      }
 
-    // Remove mobile money fields if payment method is bank
-    if (data.payment_method === 'bank') {
-      const {
-        branch_name,
-        branch_location,
-        branch_manager_name,
-        branch_manager_email,
-        branch_manager_phone,
-        country,
-        country_code,
-        payment_method,
-        bank_name,
-        branch,
-        account_name,
-        account_number,
-        sort_code,
-        swift_code,
-      } = data
-      const bankData = {
-        branch_name,
-        branch_location,
-        branch_manager_name,
-        branch_manager_email,
-        branch_manager_phone,
-        country,
-        country_code,
-        payment_method,
-        bank_name,
-        branch,
-        account_name,
-        account_number,
-        sort_code,
-        swift_code,
-      }
-      await createBranch(bankData as typeof data)
-    }
-    // Remove bank fields if payment method is mobile_money
-    else if (data.payment_method === 'mobile_money') {
-      const {
-        branch_name,
-        branch_location,
-        branch_manager_name,
-        branch_manager_email,
-        branch_manager_phone,
-        country,
-        country_code,
-        payment_method,
-        mobile_money_provider,
-        mobile_money_number,
-      } = data
-      const mobileMoneyData = {
-        branch_name,
-        branch_location,
-        branch_manager_name,
-        branch_manager_email,
-        branch_manager_phone,
-        country,
-        country_code,
-        payment_method,
-        mobile_money_provider,
-        mobile_money_number: mobile_money_number?.replace('+233', '0'),
-      }
-      await createBranch(mobileMoneyData as typeof data)
-    } else {
-      await createBranch(data)
+      // Navigate to branch managers page after successful creation
+      navigate(`${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCH_MANAGERS}?account=vendor`)
+    } catch (error) {
+      // Error handling is done in the mutation hook
+      console.error('Failed to create branch:', error)
     }
   }
 

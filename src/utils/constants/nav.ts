@@ -58,7 +58,6 @@ export const USER_NAV_ITEMS = [
     items: [
       { path: ROUTES.IN_APP.DASHBOARD.MY_CARDS, label: 'Cards', icon: 'bi:credit-card-2-front' },
       { path: ROUTES.IN_APP.DASHBOARD.ORDERS, label: 'My Orders', icon: 'bi:gift' },
-      { path: ROUTES.IN_APP.DASHBOARD.REDEEM, label: 'Redeem', icon: 'bi:card-checklist' },
       {
         path: ROUTES.IN_APP.DASHBOARD.REDEMPTIONS,
         label: 'Redemptions',
@@ -103,6 +102,16 @@ export const VENDOR_NAV_ITEMS = [
         label: 'Branches',
         icon: 'bi:building',
       },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCH_MANAGERS,
+        label: 'Branch Managers',
+        icon: 'bi:people-fill',
+      },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_BRANCH_MANAGER,
+        label: 'Create Branch',
+        icon: 'bi:building-add',
+      },
     ],
   },
   {
@@ -132,11 +141,6 @@ export const VENDOR_NAV_ITEMS = [
         path: ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS,
         label: 'Requests',
         icon: 'bi:clipboard-check',
-      },
-      {
-        path: ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_BRANCH_MANAGER,
-        label: 'Create Branch',
-        icon: 'bi:building-add',
       },
       {
         path: ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_ADMIN,

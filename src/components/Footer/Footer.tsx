@@ -34,35 +34,27 @@ export default function Footer() {
       url: ROUTES.IN_APP.ABOUT,
     },
     {
-      label: 'Faq',
-      url: ROUTES.IN_APP.FAQ,
-    },
-    {
       label: 'Contact Us',
       url: ROUTES.IN_APP.CONTACT,
     },
     {
       label: 'Get Started',
-      url: ROUTES.IN_APP.SIGNUP,
+      url: ROUTES.IN_APP.AUTH.REGISTER,
     },
   ]
 
   const services = [
     {
       label: 'Gift Cards',
-      url: ROUTES.IN_APP.GIFT_CARDS,
+      url: ROUTES.IN_APP.DASHQARDS,
     },
     {
-      label: 'Bulk Gifting',
-      url: ROUTES.IN_APP.BULK_GIFTING,
+      label: 'Vendors',
+      url: ROUTES.IN_APP.VENDORS,
     },
     {
-      label: 'Corporate Solutions',
-      url: ROUTES.IN_APP.CORPORATE_SOLUTIONS,
-    },
-    {
-      label: 'API Integration',
-      url: ROUTES.IN_APP.API_INTEGRATION,
+      label: 'Redeem',
+      url: ROUTES.IN_APP.REDEEM,
     },
   ]
   return (
@@ -209,22 +201,6 @@ export default function Footer() {
               className="hover:text-yellow-500 transition-colors hover:underline"
             >
               Terms of Service
-            </Link>
-          </li>
-          <li>
-            <Link
-              to={ROUTES.IN_APP.PRIVACY_POLICY}
-              className="hover:text-yellow-500 transition-colors hover:underline"
-            >
-              Privacy Policy
-            </Link>
-          </li>
-          <li>
-            <Link
-              to={ROUTES.IN_APP.COOKIE_POLICY}
-              className="hover:text-yellow-500 transition-colors hover:underline"
-            >
-              Cookie Policy
             </Link>
           </li>
         </ul>

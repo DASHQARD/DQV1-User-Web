@@ -101,9 +101,8 @@ export default function CardDetailsPage() {
   const { data: cardMetricsResponse, isLoading: isLoadingCards } =
     useCardMetricsDetails(cardMetricsParams)
 
-  const { useProcessRedemptionCardsService, useInitiateRedemptionService } = useRedemptionMutation()
+  const { useProcessRedemptionCardsService } = useRedemptionMutation()
   const processRedemptionMutation = useProcessRedemptionCardsService()
-  const initiateRedemptionMutation = useInitiateRedemptionService()
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
 
   // Get pagination info from response
@@ -134,13 +133,20 @@ export default function CardDetailsPage() {
   })
 
   // Fetch vendors based on search - same endpoint as RedemptionPage
+  // If searching, use search. Otherwise, if card has vendor_id and no search, fetch that vendor
+  const shouldFetchVendorById = !debouncedVendorSearch && selectedCard?.vendor_id && !vendorSearch
   const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService(
     debouncedVendorSearch
       ? {
           search: debouncedVendorSearch,
           limit: 20,
         }
-      : undefined,
+      : shouldFetchVendorById
+        ? {
+            vendor_id: String(selectedCard.vendor_id),
+            limit: 1,
+          }
+        : undefined,
   )
 
   // Extract vendors from response - same as RedemptionPage
@@ -152,6 +158,24 @@ export default function CardDetailsPage() {
     }
     return []
   }, [vendorsResponse])
+
+  // Auto-select vendor when vendors are loaded and selectedCard has vendor_id
+  useEffect(() => {
+    if (
+      selectedCard?.vendor_id &&
+      vendors.length > 0 &&
+      !selectedVendor &&
+      showVendorModal // Only auto-select when modal is open
+    ) {
+      const vendor = vendors.find(
+        (v: any) => v.vendor_id?.toString() === String(selectedCard.vendor_id),
+      )
+      if (vendor) {
+        setSelectedVendor(vendor)
+        setSelectedVendorId(String(vendor.vendor_id))
+      }
+    }
+  }, [vendors, selectedCard, selectedVendor, showVendorModal])
 
   // Convert vendors to dropdown options
   const vendorOptions: DropdownOption[] = useMemo(() => {
@@ -301,10 +325,15 @@ export default function CardDetailsPage() {
   const handleRedeemClick = (card: any) => {
     setSelectedCard(card)
     setShowVendorModal(true)
-    // Reset vendor selection when opening modal
+    // Preselect branch if card has branch_id
+    if (card.branch_id) {
+      setSelectedBranchId(card.branch_id)
+    } else {
+      setSelectedBranchId(null)
+    }
+    // Reset vendor selection - will be auto-selected when vendors load
     setSelectedVendor(null)
     setSelectedVendorId('')
-    setSelectedBranchId(null)
     setVendorSearch('')
   }
 
@@ -345,7 +374,7 @@ export default function CardDetailsPage() {
     setShowRedemptionModal(true)
   }
 
-  // Handle redemption confirmation - initiate redemption and process directly
+  // Handle redemption confirmation - process redemption directly (same as RedemptionPage)
   const handleConfirmRedemption = async () => {
     if (!selectedCard || !validCardType || !user) return
     if (!agreeToTerms) {
@@ -362,20 +391,22 @@ export default function CardDetailsPage() {
       return
     }
 
-    // Build payload exactly like RedemptionPage
+    // Build payload exactly like RedemptionPage (lines 1048-1112)
+    // Use card.id instead of card.card_id as per user request
     let payload: any
 
     if (validCardType === 'dashgo' || validCardType === 'dashpro') {
       // For DashGo and DashPro, amount is required, branch_id and card_id are optional
+      // Use selectedCard.id (the record ID) instead of card_id
       payload = {
         card_type: cardTypeForAPI,
         phone_number: userPhone,
         amount: parseFloat(String(selectedCard.balance || selectedCard.amount || 0)),
         branch_id: selectedBranchId !== null ? selectedBranchId : selectedCard?.branch_id || 0,
-        card_id: selectedCard?.card_id || 0,
+        card_id: selectedCard?.id || 0, // Use id instead of card_id
       }
-    } else {
-      // For DashX and DashPass, card_id and branch_id are required
+    } else if (validCardType === 'dashpass') {
+      // For DashPass, card_id and branch_id are required
       if (!selectedCard) {
         console.error('No card selected')
         setIsProcessingRedemption(false)
@@ -386,7 +417,21 @@ export default function CardDetailsPage() {
         phone_number: userPhone,
         amount: selectedCard.card_price || selectedCard.balance || selectedCard.amount || 0,
         branch_id: selectedBranchId !== null ? selectedBranchId : selectedCard.branch_id || 0,
-        card_id: selectedCard.card_id, // This is card.card_id (product card_id) like RedemptionPage
+        card_id: selectedCard.id, // Use id instead of card_id
+      }
+    } else {
+      // For DashX, card_id and branch_id are required from selectedCard
+      if (!selectedCard) {
+        console.error('No card selected')
+        setIsProcessingRedemption(false)
+        return
+      }
+      payload = {
+        card_type: cardTypeForAPI,
+        phone_number: userPhone,
+        amount: selectedCard.card_price || selectedCard.balance || selectedCard.amount || 0,
+        branch_id: selectedBranchId !== null ? selectedBranchId : selectedCard.branch_id || 0,
+        card_id: selectedCard.id, // Use id instead of card_id
       }
     }
 
@@ -397,23 +442,26 @@ export default function CardDetailsPage() {
 
     setIsProcessingRedemption(true)
     try {
-      // Step 1: Initiate redemption first
-      await initiateRedemptionMutation.mutateAsync({
-        phone_number: userPhone,
-      })
+      // Process redemption directly (same as RedemptionPage line 1114 - no initiation step)
+      const response = await processRedemptionMutation.mutateAsync(payload)
 
-      // Step 2: Process the actual redemption - use payload exactly like RedemptionPage
-      await processRedemptionMutation.mutateAsync(payload)
-      // Invalidate card metrics details query to refresh card list
-      queryClient.invalidateQueries({ queryKey: ['card-metrics-details'] })
-      // Close modals and reset state on success
-      setShowRedemptionModal(false)
-      setSelectedCard(null)
-      setAgreeToTerms(false)
-      setSelectedVendor(null)
-      setSelectedVendorId('')
-      setSelectedBranchId(null)
-    } catch (error) {
+      // Check response like RedemptionPage does (lines 1118-1128)
+      if (
+        response?.status === 'success' ||
+        response?.statusCode === 200 ||
+        response?.statusCode === 201
+      ) {
+        // Invalidate card metrics details query to refresh card list
+        queryClient.invalidateQueries({ queryKey: ['card-metrics-details'] })
+        // Close modals and reset state on success
+        setShowRedemptionModal(false)
+        setSelectedCard(null)
+        setAgreeToTerms(false)
+        setSelectedVendor(null)
+        setSelectedVendorId('')
+        setSelectedBranchId(null)
+      }
+    } catch (error: any) {
       console.error('Redemption error:', error)
       // Error toast is handled by the mutation
     } finally {

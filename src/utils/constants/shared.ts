@@ -41,6 +41,7 @@ export const ROUTES = {
         PAYMENTS: '/dashboard/vendor/payments',
         INVITE_BRANCH_MANAGER: '/dashboard/vendor/invite-branch-manager',
         INVITE_ADMIN: '/dashboard/vendor/invite-admin',
+        BRANCH_MANAGERS: '/dashboard/vendor/branch-managers',
         COMPLIANCE: {
           ROOT: '/dashboard/vendor/compliance',
           PROFILE_INFORMATION: '/dashboard/vendor/compliance/profile',

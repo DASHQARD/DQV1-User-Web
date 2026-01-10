@@ -45,7 +45,7 @@ export default function VendorSidebar() {
     if (isBranchManager && branchManagerName) {
       return branchManagerName
     }
-    return (user as any)?.fullname || (user as any)?.name || 'User'
+    return user?.fullname || 'User'
   }, [isBranchManager, branchManagerName, user])
 
   const { useBranchesService, useGetAllVendorsDetailsService } = vendorQueries()
@@ -128,8 +128,7 @@ export default function VendorSidebar() {
           const url = await fetchPresignedURL(vendor.vendor_logo)
           return { vendorId: vendor.vendor_id, url }
         } catch (error) {
-          console.error(`Failed to fetch logo for vendor ${vendor.vendor_id}`, error)
-          return null
+          throw new Error(`Failed to fetch logo for vendor ${vendor.vendor_id}: ${error}`)
         }
       })
 
@@ -504,13 +503,10 @@ export default function VendorSidebar() {
                       weight="bold"
                       className="block text-sm text-gray-900 truncate"
                     >
-                      {vendorName}{' '}
-                      {vendorGvid && (
-                        <span className="text-gray-500 font-normal text-xs">({vendorGvid})</span>
-                      )}
+                      {vendorName}
                     </Text>
                     <Text variant="span" className="block text-xs text-gray-500 truncate">
-                      {displayName}
+                      {vendorGvid || displayName}
                     </Text>
                   </div>
                 </div>

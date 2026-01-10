@@ -1043,31 +1043,6 @@ export default function RedemptionPage() {
 
       setIsProcessingRedemption(true)
       try {
-        // Build payload based on card type
-
-        //     {
-        // "status": "success",
-        // "statusCode": 200,
-        // "message": "DashPro recipient amounts retrieved successfully",
-        // "data": {
-        //     "phone_number": "+233559617908",
-        //     "total_balance": 1000,
-        //     "currency": "GHS",
-        //     "cards": [
-        //         {
-        //             "recipient_id": 328,
-        //             "amount": 1000,
-        //             "redemption_code": null,
-        //             "assigned_at": "2026-01-08T19:22:57.190Z",
-        //             "cart_item_id": 135,
-        //             "cart_id": 40,
-        //             "card_id": 56,
-        //             "currency": "GHS"
-        //         }
-        //     ]
-        // },
-        // "url": "/api/v1/redemptions/recipient-amounts/dash-pro?phone_number=%2B233559617908"
-        // }
         let payload: CardsRedemptionPayload
 
         if (cardType === 'dashgo' || cardType === 'dashpro') {
@@ -1199,7 +1174,7 @@ export default function RedemptionPage() {
 
             {/* Main Visual - Secure Badge */}
             <div className="relative my-8">
-              <div className="relative w-32 h-32 bg-gradient-to-br from-[#5B47D4] to-[#402D87] rounded-full flex items-center justify-center shadow-2xl">
+              <div className="relative w-32 h-32 bg-linear-to-br from-[#5B47D4] to-[#402D87] rounded-full flex items-center justify-center shadow-2xl">
                 <Icon icon="bi:shield-lock-fill" className="text-5xl text-white z-10" />
                 <div className="absolute inset-0 border-2 border-white/30 rounded-full animate-pulse-ring"></div>
               </div>

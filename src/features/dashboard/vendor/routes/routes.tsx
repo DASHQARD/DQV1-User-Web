@@ -10,9 +10,11 @@ import { Requests } from '../pages/requests'
 import { AuditLogs } from '../pages/auditLogs'
 import { PaymentInfo } from '../pages/payment'
 import Payments from '../pages/payments/Payments'
-import { Invite } from '../pages/invite'
 import { Compliance, ProfileInformation, UploadID, BusinessDetails } from '../pages/compliance'
 import { Settings } from '../pages/settings'
+import { BranchManagers } from '../pages/branchManagers'
+import { CreateBranch } from '../pages/branches'
+import { InviteAdminPage } from '../pages/admin'
 
 // Vendor-specific dashboard routes. These are mounted under "/dashboard".
 export const vendorRoutes: RouteObject[] = [
@@ -39,6 +41,10 @@ export const vendorRoutes: RouteObject[] = [
     ],
   },
   {
+    path: 'branch-managers',
+    element: <BranchManagers />,
+  },
+  {
     path: 'payment-methods',
     element: <PaymentInfo />,
   },
@@ -60,11 +66,11 @@ export const vendorRoutes: RouteObject[] = [
   },
   {
     path: 'invite-branch-manager',
-    element: <Invite />,
+    element: <CreateBranch />,
   },
   {
     path: 'invite-admin',
-    element: <Invite />,
+    element: <InviteAdminPage />,
   },
   {
     path: 'compliance',

@@ -254,6 +254,7 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
         // Use POST /vendors/add/branch-payment-details to add new payment details
         const payload: AddBranchPaymentDetailsPayload = {
           branch_id: Number(branch.id),
+          payment_method: data.payment_method || 'mobile_money',
         }
 
         if (
@@ -261,78 +262,38 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
           data.mobile_money_provider &&
           data.mobile_money_number
         ) {
-          // Convert phone number from BasePhoneInput format (+233-XXXXXXXXX) to API format (0XXXXXXXXX)
-          let phoneNumber = data.mobile_money_number.replace(/\D/g, '') // Remove non-digits
-          if (phoneNumber.startsWith('233')) {
-            phoneNumber = phoneNumber.slice(3) // Remove '233' prefix
-          }
-          // Ensure it starts with '0' for local format
-          const formattedNumber = phoneNumber.startsWith('0') ? phoneNumber : `0${phoneNumber}`
-
-          payload.mobile_money_accounts = [
-            {
-              momo_number: formattedNumber, // Use formattedNumber for API (e.g., "0507301396")
-              provider: data.mobile_money_provider,
-            },
-          ]
+          payload.mobile_money_provider = data.mobile_money_provider
+          payload.mobile_money_number = data.mobile_money_number
         } else if (data.payment_method === 'bank') {
-          payload.bank_accounts = [
-            {
-              account_number: data.account_number || '',
-              account_holder_name: data.account_holder_name || '',
-              bank_name: data.bank_name || '',
-              bank_branch: data.bank_branch || '',
-              swift_code: data.swift_code || '',
-              sort_code: data.sort_code || '',
-            },
-          ]
+          payload.bank_name = data.bank_name || ''
+          payload.branch = data.bank_branch || ''
+          payload.account_name = data.account_holder_name || ''
+          payload.account_number = data.account_number || ''
+          payload.sort_code = data.sort_code || ''
+          payload.swift_code = data.swift_code || ''
         }
 
         await addBranchPaymentDetails(payload)
       } else {
-        // Use PUT /payment-details/update-branch to update existing payment details
-        const payload: UpdateBranchPaymentDetailsPayload = {
-          branch_id: Number(branch.id),
+        if (!data.payment_method) {
+          throw new Error('Payment method is required')
         }
 
-        if (
-          data.payment_method === 'mobile_money' &&
-          data.mobile_money_provider &&
-          data.mobile_money_number
-        ) {
-          // Get existing account ID if available, otherwise use 0 for new
-          const existingAccountId = mobileMoneyAccounts[0]?.id || 0
+        const payload: UpdateBranchPaymentDetailsPayload = {
+          branch_id: Number(branch.id),
+          payment_method: data.payment_method,
+        }
 
-          // Convert phone number from BasePhoneInput format (+233-XXXXXXXXX) to API format (0XXXXXXXXX)
-          let phoneNumber = data.mobile_money_number.replace(/\D/g, '') // Remove non-digits
-          if (phoneNumber.startsWith('233')) {
-            phoneNumber = phoneNumber.slice(3) // Remove '233' prefix
-          }
-          // Ensure it starts with '0' for local format
-          const formattedNumber = phoneNumber.startsWith('0') ? phoneNumber : `0${phoneNumber}`
-
-          payload.mobile_money_accounts = [
-            {
-              id: existingAccountId,
-              momo_number: formattedNumber, // Use formattedNumber for API (e.g., "0507301396")
-              provider: data.mobile_money_provider,
-            },
-          ]
+        if (data.payment_method === 'mobile_money') {
+          payload.mobile_money_provider = data.mobile_money_provider
+          payload.mobile_money_number = data.mobile_money_number
         } else if (data.payment_method === 'bank') {
-          // Get existing account ID if available, otherwise use 0 for new
-          const existingAccountId = bankAccounts[0]?.id || 0
-
-          payload.bank_accounts = [
-            {
-              id: existingAccountId,
-              account_number: data.account_number || '',
-              account_holder_name: data.account_holder_name || '', // PUT endpoint uses 'account_holder_name'
-              bank_name: data.bank_name || '',
-              bank_branch: data.bank_branch || '', // PUT endpoint uses 'bank_branch'
-              swift_code: data.swift_code || '',
-              sort_code: data.sort_code || '',
-            },
-          ]
+          payload.bank_name = data.bank_name
+          payload.branch = data.bank_branch
+          payload.account_name = data.account_holder_name
+          payload.account_number = data.account_number
+          payload.sort_code = data.sort_code
+          payload.swift_code = data.swift_code
         }
 
         await updateBranchPaymentDetails(payload)

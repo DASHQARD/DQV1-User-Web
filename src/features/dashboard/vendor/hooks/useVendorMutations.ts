@@ -5,6 +5,7 @@ import {
   cancelVendorInvitation,
   createVendor,
   deleteBranch,
+  deleteBranchByVendor,
   removeVendorAdmin,
   VendorInvite,
   createExperience,
@@ -18,8 +19,17 @@ import {
   deleteCard,
   updateRequestStatus,
   updatePaymentPreferences,
+  cancelBranchManagerInvitation,
+  deleteBranchManagerInvitation,
+  removeBranchManager,
+  updateBranchStatus,
 } from '../services'
-import type { UpdateBranchPaymentDetailsPayload, AddBranchPaymentDetailsPayload } from '@/types'
+import type {
+  UpdateBranchPaymentDetailsPayload,
+  AddBranchPaymentDetailsPayload,
+  RemoveBranchManagerPayload,
+  UpdateBranchStatusPayload,
+} from '@/types'
 import { useToast } from '@/hooks'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
@@ -272,6 +282,82 @@ export function useVendorMutations() {
     })
   }
 
+  function useCancelBranchManagerInvitationService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (invitationId: number) => cancelBranchManagerInvitation(invitationId),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Branch manager invitation cancelled successfully')
+        queryClient.invalidateQueries({ queryKey: ['branch-manager-invitations'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to cancel branch manager invitation. Please try again.')
+      },
+    })
+  }
+
+  function useDeleteBranchManagerInvitationService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (invitationId: number) => deleteBranchManagerInvitation(invitationId),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Branch manager invitation deleted successfully')
+        queryClient.invalidateQueries({ queryKey: ['branch-manager-invitations'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to delete branch manager invitation. Please try again.')
+      },
+    })
+  }
+
+  function useRemoveBranchManagerService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: RemoveBranchManagerPayload) => removeBranchManager(data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Branch manager removed successfully')
+        queryClient.invalidateQueries({ queryKey: ['branch-manager-invitations'] })
+        queryClient.invalidateQueries({ queryKey: ['branches'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to remove branch manager. Please try again.')
+      },
+    })
+  }
+
+  function useUpdateBranchStatusService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: UpdateBranchStatusPayload) => updateBranchStatus(data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Branch status updated successfully')
+        queryClient.invalidateQueries({ queryKey: ['branches'] })
+        queryClient.invalidateQueries({ queryKey: ['branch-manager-invitations'] })
+        queryClient.invalidateQueries({ queryKey: ['branches-by-vendor-id'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to update branch status. Please try again.')
+      },
+    })
+  }
+
+  function useDeleteBranchByVendorService() {
+    const queryClient = useQueryClient()
+    const navigate = useNavigate()
+    return useMutation({
+      mutationFn: (data: { branch_id: number }) => deleteBranchByVendor(data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Branch deleted successfully')
+        queryClient.invalidateQueries({ queryKey: ['branches'] })
+        queryClient.invalidateQueries({ queryKey: ['branches-by-vendor-id'] })
+        navigate(ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES)
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to delete branch. Please try again.')
+      },
+    })
+  }
+
   return {
     useCreateVendorService,
     useVendorInviteService,
@@ -291,5 +377,10 @@ export function useVendorMutations() {
     useDeleteBranchPaymentDetailsService,
     useUpdateRequestStatusService,
     useUpdatePaymentPreferencesService,
+    useCancelBranchManagerInvitationService,
+    useDeleteBranchManagerInvitationService,
+    useRemoveBranchManagerService,
+    useUpdateBranchStatusService,
+    useDeleteBranchByVendorService,
   }
 }

@@ -98,22 +98,20 @@ export const CardItems = ({
   const handleQuickAdd = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
 
-    // If onGetQard is provided, use it instead of adding to cart
-    if (onGetQard) {
-      onGetQard()
-      return
-    }
-
     if (!card_id) {
       console.error('Card ID is required to add item to cart')
       return
     }
 
-    await addToCartAsync({
-      card_id: card_id,
-      quantity: 1,
-    })
-    openCart()
+    try {
+      await addToCartAsync({
+        card_id: card_id,
+        quantity: 1,
+      })
+      openCart()
+    } catch (error) {
+      console.error('Failed to add item to cart', error)
+    }
   }
 
   const handleCardClick = () => {

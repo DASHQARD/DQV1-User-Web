@@ -25,6 +25,10 @@ export const deleteBranch = async (id: string) => {
   return await deleteMethod(`/branches/${id}`)
 }
 
+export const deleteBranchByVendor = async (payload: { branch_id: number }): Promise<any> => {
+  return await deleteMethod(`/vendors/delete/branch`, payload)
+}
+
 export const bulkUploadBranches = async (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
@@ -32,7 +36,7 @@ export const bulkUploadBranches = async (file: File) => {
 }
 
 export const updateBranchStatus = async (payload: UpdateBranchStatusPayload): Promise<any> => {
-  return await patchMethod(`${commonUrl}/manage-status`, payload)
+  return await patchMethod(`/branches/manage-status`, payload)
 }
 
 export const getBranchManagerInvitation = async (token: string): Promise<any> => {
