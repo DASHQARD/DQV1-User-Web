@@ -1,28 +1,29 @@
-import { Loader, PaginatedTable, Text, Button } from '@/components'
-import { Icon } from '@/libs'
+import { Loader, PaginatedTable, Text } from '@/components'
 import { vendorQueries } from '@/features'
 import {
   vendorPaymentListColumns,
   vendorPaymentListCsvHeaders,
 } from '@/features/dashboard/components/vendors/tableConfigs/VendorPaymentList'
-import {
-  VendorPaymentDetails,
-  VendorPaymentPreferences,
-} from '@/features/dashboard/components/vendors/modals'
+import { BranchDetailsModal } from '@/features/dashboard/components/vendors/modals'
 import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
 import type { QueryType } from '@/types'
 import { useReducerSpread, usePersistedModalState } from '@/hooks'
+import type { Branch } from '@/utils/schemas'
 
 export default function Payments() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
   const { useGetVendorPaymentsService } = vendorQueries()
   const { data: paymentsResponse, isLoading } = useGetVendorPaymentsService(query)
-  const preferencesModal = usePersistedModalState({
-    paramName: MODALS.VENDOR_PAYMENT_MANAGEMENT.PARAM_NAME,
+
+  const branchModal = usePersistedModalState<Branch>({
+    paramName: MODALS.BRANCH.VIEW,
   })
 
   const payments = paymentsResponse?.data || []
   const total = paymentsResponse?.pagination?.limit ? payments.length : payments.length
+
+  // Get branch data from modal data if available
+  const branchData = branchModal.modalData
 
   if (isLoading) {
     return (
@@ -40,16 +41,6 @@ export default function Payments() {
             <Text variant="h2" weight="semibold" className="text-primary-900">
               Payments
             </Text>
-            <Button
-              variant="outline"
-              onClick={() =>
-                preferencesModal.openModal(MODALS.VENDOR_PAYMENT_MANAGEMENT.CHILDREN.PREFERENCES)
-              }
-              className="flex items-center gap-2"
-            >
-              <Icon icon="bi:gear" />
-              Update Payment Preferences
-            </Button>
           </div>
           <div className="relative space-y-[37px]">
             <div className="text-[#0c4b77] py-2 border-b-2 border-[#0c4b77] w-fit">
@@ -72,8 +63,8 @@ export default function Payments() {
           </div>
         </div>
       </div>
-      <VendorPaymentDetails />
-      <VendorPaymentPreferences />
+
+      <BranchDetailsModal branch={branchData || null} />
     </>
   )
 }

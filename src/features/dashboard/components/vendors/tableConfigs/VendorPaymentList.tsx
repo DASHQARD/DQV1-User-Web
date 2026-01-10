@@ -1,25 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
-import { Dropdown, DateCell, Tag, CurrencyCell } from '@/components'
+import { Dropdown, DateCell, CurrencyCell, StatusCell } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
 import type { CsvHeader, TableCellProps } from '@/types/shared'
 import { formatCurrency } from '@/utils/format'
 import { useToast } from '@/hooks/useToast'
 import { MODALS } from '@/utils/constants'
-
-// Helper function to get status variant
-const getStatusVariant = (status: string): 'success' | 'warning' | 'error' | 'gray' => {
-  switch (status?.toLowerCase()) {
-    case 'paid':
-      return 'success'
-    case 'pending':
-      return 'warning'
-    case 'overdue':
-      return 'error'
-    default:
-      return 'gray'
-  }
-}
 
 // Helper function to format payment frequency
 const formatPaymentFrequency = (freq: string | undefined): string => {
@@ -110,7 +96,7 @@ export const vendorPaymentListColumns = [
   {
     header: 'Status',
     accessorKey: 'status',
-    cell: VendorPaymentStatusCell,
+    cell: StatusCell,
   },
   {
     header: 'Due Date',
@@ -165,14 +151,9 @@ export const vendorPaymentListCsvHeaders: Array<CsvHeader> = [
   },
 ]
 
-function VendorPaymentStatusCell({ getValue }: { getValue: () => string }) {
-  const status = getValue()
-  return <>{status ? <Tag value={status} variant={getStatusVariant(status)} /> : '-'}</>
-}
-
 export function VendorPaymentActionCell({ row }: TableCellProps<{ id: string }>) {
-  const modal = usePersistedModalState({
-    paramName: MODALS.VENDOR_PAYMENT_MANAGEMENT.PARAM_NAME,
+  const branchModal = usePersistedModalState({
+    paramName: MODALS.BRANCH.VIEW,
   })
   const toast = useToast()
 
@@ -181,16 +162,30 @@ export function VendorPaymentActionCell({ row }: TableCellProps<{ id: string }>)
     toast.success('Invoice download started')
   }
 
+  const handleViewBranchDetails = () => {
+    // Create a minimal Branch object from payment data
+    // Note: This assumes we have branch_id or we'll need to fetch full branch data
+    const payment = row.original
+    const branchData = payment.branch_id
+      ? ({
+          id: String(payment.branch_id),
+          branch_location: payment.branch_location || '',
+          vendor_id: payment.vendor_id,
+          // Other required fields will be fetched by BranchDetailsModal via branch_id
+        } as any)
+      : null
+
+    if (branchData) {
+      branchModal.openModal(MODALS.BRANCH.VIEW, branchData)
+    } else {
+      toast.error('Branch information not available for this payment')
+    }
+  }
+
   const actions = [
     {
-      label: 'View Details',
-      onClickFn: () => {
-        console.log('View Details clicked', {
-          modalName: MODALS.VENDOR_PAYMENT_MANAGEMENT.CHILDREN.VIEW,
-          data: row.original,
-        })
-        modal.openModal(MODALS.VENDOR_PAYMENT_MANAGEMENT.CHILDREN.VIEW, row.original)
-      },
+      label: 'View Branch Details',
+      onClickFn: handleViewBranchDetails,
     },
     {
       label: 'Download Invoice',

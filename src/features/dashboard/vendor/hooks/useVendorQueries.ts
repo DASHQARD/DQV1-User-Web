@@ -13,6 +13,7 @@ import {
   getCardsMetrics,
   getAllVendorsDetails,
   getVendorPayments,
+  getBranchPaymentDetails,
 } from '../services'
 import type { QueryType } from '@/types'
 import { userProfile } from '@/hooks'
@@ -121,6 +122,14 @@ export function vendorQueries() {
     })
   }
 
+  function useGetBranchPaymentDetailsService(branchId: number | string | null) {
+    return useQuery({
+      queryKey: ['branch-payment-details', branchId],
+      queryFn: () => getBranchPaymentDetails(branchId!),
+      enabled: !!branchId,
+    })
+  }
+
   return {
     useGetAllVendorsService,
     useGetAllVendorsDetailsService,
@@ -134,5 +143,6 @@ export function vendorQueries() {
     useGetCardsMetricsService,
     useGetAllVendorsDetailsForVendorService,
     useGetVendorPaymentsService,
+    useGetBranchPaymentDetailsService,
   }
 }

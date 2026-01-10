@@ -8,6 +8,7 @@ export interface VendorPayment {
   amount: number
   payment_period: string
   payment_frequency?: 'weekly' | 'bi_weekly' | 'monthly' | 'quarterly' | 'custom'
+  branch_id?: number | string
   branch_location?: string
   status: 'pending' | 'paid' | 'overdue'
   due_date: string

@@ -62,6 +62,7 @@ export const ROUTES = {
       MY_CARDS: '/dashboard/my-cards',
       ORDERS: '/dashboard/orders',
       REDEEM: '/dashboard/redeem/dashpro',
+      REDEMPTIONS: '/dashboard/redemptions',
       RECIPIENTS: '/dashboard/recipients',
       TRANSACTIONS: '/dashboard/transactions',
       COMPLIANCE: {
@@ -142,6 +143,13 @@ export const DEFAULT_QUERY = {
   after: '',
   status: '',
   search: '',
+  card_type: '',
+  phone_number: '',
+  vendor_id: '',
+  dateFrom: '',
+  dateTo: '',
+  location: '',
+  branch: '',
 }
 
 export const MODAL_NAMES = {

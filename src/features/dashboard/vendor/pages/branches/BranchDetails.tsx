@@ -367,23 +367,28 @@ export function BranchDetails() {
     isError: isErrorBranches,
   } = useGetBranchesByVendorIdService(vendorId, false)
 
-  console.log('branchData', branchData)
-
-  const branchesResponse = branchData?.[0]
-
-  const branches = React.useMemo(() => {
-    if (!branchesResponse) return null
-    return branchesResponse
-  }, [branchesResponse])
-
-  // Extract branch_id from URL path, query params, or branch data
+  // Extract branch_id from URL path or query params first
   const branchId = React.useMemo(() => {
-    // Priority: 1. Query param, 2. URL path param, 3. Branch data
+    // Priority: 1. Query param, 2. URL path param
     if (branchIdFromParams) return Number(branchIdFromParams)
     if (branchIdFromPath) return Number(branchIdFromPath)
-    if (branches?.branch_id) return Number(branches.branch_id)
     return null
-  }, [branchIdFromParams, branchIdFromPath, branches?.branch_id])
+  }, [branchIdFromParams, branchIdFromPath])
+
+  // Find the specific branch that matches branchId from the branches array
+  const branches = React.useMemo(() => {
+    if (!branchData || !Array.isArray(branchData)) return null
+    if (!branchId) {
+      // If no branchId specified, return first branch as fallback
+      return branchData[0] || null
+    }
+    // Find branch that matches the branchId
+    const foundBranch = branchData.find((branch: any) => {
+      const bId = branch.id || branch.branch_id
+      return String(bId) === String(branchId)
+    })
+    return foundBranch || branchData[0] || null
+  }, [branchData, branchId])
 
   // Extract cards for the specific branch from vendors details
   const experiences = React.useMemo(() => {
@@ -501,7 +506,7 @@ export function BranchDetails() {
           <Button
             variant="secondary"
             size="medium"
-            onClick={() => branchModal.openModal(MODALS.BRANCH.VIEW)}
+            onClick={() => branchModal.openModal(MODALS.BRANCH.VIEW, branches || undefined)}
             className="rounded-full"
           >
             View Branch Details
@@ -601,7 +606,7 @@ export function BranchDetails() {
 
         {/* Experiences */}
         <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
-          <div className="p-6 pb-0 flex justify-between items-center mb-5">
+          <div className="p-6 pb-0 flex justify-between items-center mb-6">
             <h5 className="text-lg font-semibold text-[#495057] m-0 flex items-center">
               <Icon icon="bi:briefcase-fill" className="text-[#402D87] mr-2" /> Experiences
             </h5>
@@ -621,7 +626,7 @@ export function BranchDetails() {
                 </Text>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-md:gap-4">
                 {experiences
                   .slice(0, 6)
                   .map(

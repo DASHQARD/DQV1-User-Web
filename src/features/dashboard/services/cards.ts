@@ -1,4 +1,5 @@
 import { axiosClient } from '@/libs'
+import { patchMethod } from '@/services/requests'
 import type {
   CreateCardData,
   UpdateCardData,
@@ -60,4 +61,72 @@ export interface GiftCardMetricsResponse {
 export const getGiftCardMetrics = async (): Promise<GiftCardMetricsResponse> => {
   const response = await axiosClient.get('/cards/users/metrics')
   return response as unknown as GiftCardMetricsResponse
+}
+
+export interface GetCardMetricsDetailsParams {
+  limit?: number
+  after?: string
+  card_type?: string
+  vendor_ids?: number | number[]
+  min_price?: number
+}
+
+export interface CardMetricsDetail {
+  id: number
+  card_id: string
+  product: string
+  description?: string
+  price: string
+  base_price?: string
+  markup_amount?: string
+  service_fee?: string
+  currency: string
+  type: string
+  status: string
+  expiry_date?: string
+  issue_date?: string
+  vendor_id: number
+  created_at?: string
+  updated_at?: string
+  created_by?: number
+  last_modified_by?: number | null
+  is_activated?: boolean
+  rating?: number
+  // Optional fields that may be present in some responses
+  recipient_id?: string
+  branch_id?: number
+  branch_name?: string
+  branch_location?: string
+  vendor_name?: string
+  images?: Array<{ file_url: string }>
+}
+
+export interface CardMetricsDetailsResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: {
+    data: CardMetricsDetail[] // Array of cards
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+    limit: number
+    next: string | null
+    previous: string | null
+  }
+}
+
+export const getCardMetricsDetails = async (
+  params?: GetCardMetricsDetailsParams,
+): Promise<CardMetricsDetailsResponse> => {
+  const response = await axiosClient.get('/cards/users/metrics/details', { params })
+  return response as unknown as CardMetricsDetailsResponse
+}
+
+export interface RateCardPayload {
+  card_id: number
+  rating: number
+}
+
+export const rateCard = async (data: RateCardPayload): Promise<any> => {
+  return await patchMethod('/cards/rate', data)
 }

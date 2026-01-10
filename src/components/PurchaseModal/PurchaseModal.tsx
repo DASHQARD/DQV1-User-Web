@@ -5,6 +5,8 @@ import { Text } from '../Text'
 import { Icon } from '@/libs'
 import DashProBG from '@/assets/svgs/dashpro_bg.svg'
 import DashxBG from '@/assets/svgs/Dashx_bg.svg'
+import DashPassBG from '@/assets/svgs/dashpass_bg.svg'
+import DashGoBG from '@/assets/svgs/dashgo_bg.svg'
 import { useRecipients } from '@/features/dashboard/hooks'
 import { useForm } from 'react-hook-form'
 import { AssignRecipientSchema } from '@/utils/schemas/cards'
@@ -82,8 +84,10 @@ export default function PurchaseModal() {
         return DashxBG
       case 'dashpro':
         return DashProBG
+      case 'dashpass':
+        return DashPassBG
       case 'dashgo':
-        return DashxBG // fallback for now
+        return DashGoBG
       default:
         return DashProBG // default fallback
     }
@@ -97,6 +101,8 @@ export default function PurchaseModal() {
         return 'DASHX'
       case 'dashpro':
         return 'DASHPRO'
+      case 'dashpass':
+        return 'DASHPASS'
       case 'dashgo':
         return 'DASHGO'
       default:

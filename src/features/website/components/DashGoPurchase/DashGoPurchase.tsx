@@ -1,12 +1,17 @@
 import React from 'react'
-import { Button, Input, Text } from '@/components'
+import { Button, Input, Text, Combobox } from '@/components'
 import { Icon } from '@/libs'
-import DashxBG from '@/assets/svgs/Dashx_bg.svg'
-import { useForm } from 'react-hook-form'
+import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
+import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { formatCurrency } from '@/utils/format'
-import { DashGoAndDashProPurchaseFormSchema } from '@/utils/schemas'
+import { DashGoPurchaseFormSchema } from '@/utils/schemas'
+import { usePublicCatalogQueries } from '../../hooks/website/usePublicCatalogQueries'
+import { usePublicCatalogMutations } from '../../hooks/website/usePublicCatalogMutations'
+import { vendorQueries } from '@/features/dashboard/vendor/hooks'
+import { userProfile } from '@/hooks'
+import { useCartStore } from '@/stores/cart'
 
 const QRPlaceholder = () => {
   const pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
@@ -26,29 +31,97 @@ const QRPlaceholder = () => {
 export default function DashGoPurchase() {
   const [isCardFlipped, setIsCardFlipped] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
-  const [assignToSelf, setAssignToSelf] = React.useState(true)
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const { usePublicVendorsService } = usePublicCatalogQueries()
+  const { useCreateDashGoAndAssignService } = usePublicCatalogMutations()
+  const { useGetBranchesByVendorIdService } = vendorQueries()
+  const { data: vendorsResponse } = usePublicVendorsService({ limit: 100 })
+  const { openCart } = useCartStore()
+  const createDashGoMutationAsync = useCreateDashGoAndAssignService()
+
+  // Get user details
+  const userDetails = React.useMemo(() => {
+    if (!userProfileData) return null
+    return {
+      name: userProfileData?.fullname || '',
+      phone: userProfileData?.phonenumber || '',
+      email: userProfileData?.email || '',
+    }
+  }, [userProfileData])
+
+  // Extract vendors from response
+  const vendors = React.useMemo(() => {
+    if (!vendorsResponse) return []
+    const vendorsData = Array.isArray(vendorsResponse) ? vendorsResponse : [vendorsResponse]
+    return vendorsData.map((vendor: any) => ({
+      id: vendor.id || vendor.vendor_id,
+      vendor_id: vendor.vendor_id || vendor.id,
+      name: vendor.business_name || vendor.branch_name || vendor.vendor_name || 'Unknown Vendor',
+    }))
+  }, [vendorsResponse])
+
+  // Watch selected vendor ID
+  const [selectedVendorId, setSelectedVendorId] = React.useState<number | null>(null)
+
+  // Get branches for selected vendor
+  const { data: branchesData } = useGetBranchesByVendorIdService(selectedVendorId, false)
+  const branches = React.useMemo(() => {
+    if (!branchesData) return []
+    return Array.isArray(branchesData) ? branchesData : branchesData?.data || []
+  }, [branchesData])
 
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
-    getValues,
-  } = useForm<z.infer<typeof DashGoAndDashProPurchaseFormSchema>>({
-    resolver: zodResolver(DashGoAndDashProPurchaseFormSchema),
+    setValue,
+    watch,
+  } = useForm<z.infer<typeof DashGoPurchaseFormSchema>>({
+    resolver: zodResolver(DashGoPurchaseFormSchema),
+    defaultValues: {
+      assign_to_self: true,
+      vendor_id: 0,
+      recipient_name: '',
+      recipient_phone: '',
+      recipient_email: '',
+      recipient_message: 'Your personalized message will appear here...',
+      recipient_card_amount: 100,
+      recipient_card_currency: 'GHS',
+      recipient_card_issue_date: new Date().toISOString().split('T')[0],
+      recipient_card_expiry_date: '',
+      recipient_card_images: [],
+    },
   })
 
-  const toggleCardFlip = () => {
-    if (!isMobile) setIsCardFlipped((prev) => !prev)
-  }
+  // Watch form values for card preview
+  const amount = useWatch({ control, name: 'recipient_card_amount' })
+  const recipientName = useWatch({ control, name: 'recipient_name' })
+  const message = useWatch({ control, name: 'recipient_message' })
+  const assignToSelfFormValue = useWatch({ control, name: 'assign_to_self' })
+  const vendorId = useWatch({ control, name: 'vendor_id' })
 
-  const handleAssignToSelf = () => {
-    const newValue = !assignToSelf
-    setAssignToSelf(newValue)
-
-    if (newValue) {
-      // When assigning to self, populate with user info but these will be ignored in API
+  // Update selected vendor ID when form value changes
+  React.useEffect(() => {
+    if (vendorId && vendorId > 0) {
+      setSelectedVendorId(vendorId)
     }
-  }
+  }, [vendorId])
+
+  // Populate user details when assign to self is checked
+  React.useEffect(() => {
+    if (assignToSelfFormValue && userDetails) {
+      setValue('recipient_name', userDetails.name)
+      setValue('recipient_phone', userDetails.phone)
+      setValue('recipient_email', userDetails.email)
+    } else if (!assignToSelfFormValue) {
+      // Clear fields when assign to self is unchecked
+      setValue('recipient_name', '')
+      setValue('recipient_phone', '')
+      setValue('recipient_email', '')
+    }
+  }, [assignToSelfFormValue, userDetails, setValue])
 
   React.useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -57,8 +130,46 @@ export default function DashGoPurchase() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const onSubmit = (data: z.infer<typeof DashGoAndDashProPurchaseFormSchema>) => {
-    console.log(data)
+  const toggleCardFlip = () => {
+    if (!isMobile) setIsCardFlipped((prev) => !prev)
+  }
+
+  const handleAssignToSelf = () => {
+    const currentValue = watch('assign_to_self')
+    const newValue = !currentValue
+    setValue('assign_to_self', newValue)
+  }
+
+  const onSubmit = async (data: z.infer<typeof DashGoPurchaseFormSchema>) => {
+    // Calculate issue date in YYYY-MM-DD format
+    const today = new Date()
+    const issueDate = today.toISOString().split('T')[0] // YYYY-MM-DD format
+
+    // Get selected vendor name
+    const selectedVendor = vendors.find((v) => v.vendor_id === data.vendor_id)
+    const vendorName = selectedVendor?.name || 'Unknown Vendor'
+
+    // Map branches to redemption_branches format
+    const redemptionBranches = branches.map((branch: any) => ({
+      branch_id: Number(branch.id || branch.branch_id),
+    }))
+
+    try {
+      await createDashGoMutationAsync.mutateAsync({
+        vendor_id: data.vendor_id,
+        product: 'DashGo Gift Card',
+        description: `Custom DashGo card for ${vendorName}`,
+        price: data.recipient_card_amount,
+        currency: data.recipient_card_currency || 'GHS',
+        issue_date: issueDate,
+        redemption_branches: redemptionBranches,
+      })
+      // Open cart on success
+      openCart()
+    } catch (error) {
+      // Error is already handled by the mutation hook
+      console.error('Failed to create DashGo card:', error)
+    }
   }
 
   return (
@@ -104,23 +215,22 @@ export default function DashGoPurchase() {
                     {/* Front */}
                     <div className="absolute inset-0 rounded-2xl shadow-xl backface-hidden">
                       <img
-                        src={DashxBG}
+                        src={DashgoBg}
                         alt={`DashGo background`}
                         className="h-full w-full object-cover"
                       />
                       <div className="absolute inset-0 grid grid-cols-2 grid-rows-[auto_1fr_auto] text-white">
                         <div className="p-4 text-2xl font-black tracking-[0.3em]">DashGo</div>
                         <div className="p-4 text-right text-2xl font-semibold">
-                          {formatCurrency(getValues('recipient_card_amount'), 'GHS')}
+                          {amount ? formatCurrency(amount.toString(), 'GHS') : 'GHS 0'}
                         </div>
                         <div className="p-4 text-lg font-semibold uppercase">
-                          {getValues('recipient_name')}
+                          {assignToSelfFormValue
+                            ? userDetails?.name || 'Your Name'
+                            : recipientName || 'Recipient Name'}
                         </div>
                         <div className="flex items-end justify-end p-4">
-                          {getValues('recipient_card_amount') &&
-                          (assignToSelf || getValues('recipient_name')) ? (
-                            <QRPlaceholder />
-                          ) : null}
+                          {amount && (assignToSelfFormValue || recipientName) && <QRPlaceholder />}
                         </div>
                       </div>
                       {!isMobile && (
@@ -140,7 +250,7 @@ export default function DashGoPurchase() {
                             Personal Message
                           </div>
                           <p className="rounded-xl border border-yellow-200 bg-white/90 p-4 text-sm italic shadow-sm">
-                            {getValues('recipient_message')}
+                            {message || 'Your personalized message will appear here...'}
                           </p>
                           <p className="text-right text-xs text-gray-600">From: Sender Name</p>
                         </div>
@@ -184,6 +294,40 @@ export default function DashGoPurchase() {
             </div>
           </section>
 
+          {/* Vendor Selection */}
+          <section className="border-b border-gray-100 px-10 py-8 max-w-2xl grid gap-6">
+            <div>
+              <Text variant="h3" weight="semibold" className="text-[#212529]">
+                Select Vendor
+              </Text>
+              <Text variant="span" weight="medium" className="text-gray-500">
+                Choose the vendor for this DashGo gift card
+              </Text>
+            </div>
+            <Controller
+              control={control}
+              name="vendor_id"
+              render={({ field, fieldState: { error } }) => (
+                <Combobox
+                  label="Vendor"
+                  options={vendors.map((vendor) => ({
+                    label: vendor.name,
+                    value: vendor.vendor_id,
+                  }))}
+                  value={field.value || undefined}
+                  onChange={(e: any) => {
+                    const value = e?.target?.value || e?.value
+                    const numValue = value ? Number(value) : 0
+                    field.onChange(numValue)
+                    setSelectedVendorId(numValue > 0 ? numValue : null)
+                  }}
+                  error={error?.message}
+                  placeholder="Select a vendor"
+                />
+              )}
+            />
+          </section>
+
           {/* Assign to self */}
           <section className="px-10 py-8">
             <div className="rounded-2xl bg-[#f8f9fa] p-6 text-center">
@@ -192,12 +336,20 @@ export default function DashGoPurchase() {
                   <div className="relative h-6 w-11">
                     <input
                       type="checkbox"
-                      checked={assignToSelf}
+                      checked={assignToSelfFormValue}
                       onChange={handleAssignToSelf}
                       className="peer sr-only"
                     />
-                    <span className="absolute inset-0 rounded-full bg-gray-300 transition peer-checked:bg-primary-500" />
-                    <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5" />
+                    <span
+                      className={`absolute inset-0 rounded-full transition ${
+                        assignToSelfFormValue ? 'bg-primary-500' : 'bg-gray-300'
+                      }`}
+                    />
+                    <span
+                      className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition ${
+                        assignToSelfFormValue ? 'translate-x-5' : ''
+                      }`}
+                    />
                   </div>
                   <span className="text-sm font-semibold text-gray-700">
                     <Icon icon="bi:person-check" className="mr-2 inline size-4 text-primary-500" />
@@ -205,8 +357,10 @@ export default function DashGoPurchase() {
                   </span>
                 </label>
                 <p className="text-xs text-gray-500">
-                  {assignToSelf
-                    ? 'Card will be assigned to your account. Name, email, and phone fields will be ignored.'
+                  {assignToSelfFormValue
+                    ? userDetails
+                      ? `Card will be assigned to ${userDetails.name || 'your account'}. Name, email, and phone fields are auto-filled.`
+                      : 'Card will be assigned to your account. Name, email, and phone fields will be ignored.'
                     : 'Card will be assigned to someone else. Please provide recipient details below.'}
                 </p>
               </div>
@@ -224,7 +378,8 @@ export default function DashGoPurchase() {
               </Text>
             </div>
             <Input
-              register={register('recipient_card_amount')}
+              type="number"
+              register={register('recipient_card_amount', { valueAsNumber: true })}
               error={errors.recipient_card_amount?.message}
               prefix="GHS"
               placeholder="Enter amount"
@@ -248,8 +403,12 @@ export default function DashGoPurchase() {
                 type="text"
                 register={register('recipient_name')}
                 error={errors.recipient_name?.message}
-                placeholder="Enter recipient's full name"
-                disabled={assignToSelf}
+                placeholder={
+                  assignToSelfFormValue
+                    ? userDetails?.name || 'Your name'
+                    : "Enter recipient's full name"
+                }
+                disabled={assignToSelfFormValue}
               />
 
               <Input
@@ -257,8 +416,12 @@ export default function DashGoPurchase() {
                 type="tel"
                 register={register('recipient_phone')}
                 error={errors.recipient_phone?.message}
-                placeholder="Enter phone number"
-                disabled={assignToSelf}
+                placeholder={
+                  assignToSelfFormValue
+                    ? userDetails?.phone || 'Your phone number'
+                    : 'Enter phone number'
+                }
+                disabled={assignToSelfFormValue}
               />
 
               <Input
@@ -266,8 +429,12 @@ export default function DashGoPurchase() {
                 type="email"
                 register={register('recipient_email')}
                 error={errors.recipient_email?.message}
-                placeholder="Enter email address"
-                disabled={assignToSelf}
+                placeholder={
+                  assignToSelfFormValue
+                    ? userDetails?.email || 'Your email address'
+                    : 'Enter email address'
+                }
+                disabled={assignToSelfFormValue}
               />
 
               <Input
@@ -288,7 +455,17 @@ export default function DashGoPurchase() {
             <Button type="button" variant="outline" className="md:w-auto">
               Cancel
             </Button>
-            <Button type="submit" variant="secondary" className="md:w-auto">
+            <Button
+              type="submit"
+              variant="secondary"
+              className="md:w-auto"
+              loading={createDashGoMutationAsync.isPending}
+              disabled={
+                createDashGoMutationAsync.isPending ||
+                !watch('vendor_id') ||
+                watch('vendor_id') === 0
+              }
+            >
               Create Customized DashGo Gift Card
             </Button>
           </div>

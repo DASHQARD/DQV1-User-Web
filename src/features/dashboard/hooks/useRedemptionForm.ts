@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useRedemptionQueries } from './redemption/useRedemptionQueries'
+import { useRedemptionMutation } from './redemption/useRedemptionMutation'
 import { useAuthStore } from '@/stores'
+import { detectMobileMoneyProvider, convertToInternationalFormat } from '../services/redemptions'
 
 interface RedemptionForm {
   redemptionAmount: number | null
@@ -17,7 +18,7 @@ export function useRedemptionForm() {
     useGetCardBalanceService,
     useProcessDashProRedemptionService,
     useProcessCardsRedemptionService,
-  } = useRedemptionQueries()
+  } = useRedemptionMutation()
 
   const validateVendorMutation = useValidateVendorMobileMoneyService()
   const getBalanceMutation = useGetCardBalanceService()
@@ -30,6 +31,7 @@ export function useRedemptionForm() {
     cardType: undefined,
   })
   const [rawVendor, setRawVendor] = useState('')
+  const [debouncedVendor, setDebouncedVendor] = useState('')
   const [validatingVendor, setValidatingVendor] = useState(false)
   const [vendorError, setVendorError] = useState<string | null>(null)
   const [vendorName, setVendorName] = useState<string | null>(null)
@@ -40,25 +42,44 @@ export function useRedemptionForm() {
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const [redemptionReferenceId, setRedemptionReferenceId] = useState<string | null>(null)
 
-  // Validate vendor phone number
+  // Debounce vendor phone number input - only validate after user stops typing
   useEffect(() => {
-    if (rawVendor && rawVendor.length >= 10) {
+    const timer = setTimeout(() => {
+      setDebouncedVendor(rawVendor)
+    }, 800) // Wait 800ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [rawVendor])
+
+  // Validate vendor phone number only after debounce
+  useEffect(() => {
+    if (debouncedVendor && debouncedVendor.length >= 10) {
       setValidatingVendor(true)
       setVendorError(null)
       setVendorName(null)
 
-      // Extract phone number (remove country code prefix if present)
-      const phoneNumber = rawVendor.replace(/^\+?233/, '').replace(/\D/g, '')
+      // Extract phone number and detect provider
+      const internationalPhone = convertToInternationalFormat(debouncedVendor)
+      const provider = detectMobileMoneyProvider(debouncedVendor)
+
+      if (!provider) {
+        setVendorError(
+          'Unable to detect mobile money provider. Please enter a valid Ghana phone number.',
+        )
+        setVendorName(null)
+        setValidatingVendor(false)
+        return
+      }
 
       validateVendorMutation.mutate(
-        { phone_number: phoneNumber },
+        { phone_number: internationalPhone, provider },
         {
           onSuccess: (response: any) => {
             const vendorData = response?.data
             if (vendorData?.vendor_name) {
               setVendorName(vendorData.vendor_name)
               setVendorError(null)
-              setForm((prev) => ({ ...prev, vendorPhone: phoneNumber }))
+              setForm((prev) => ({ ...prev, vendorPhone: rawVendor }))
             } else {
               setVendorError(
                 response?.message || 'Vendor not found. Please check the phone number.',
@@ -74,29 +95,29 @@ export function useRedemptionForm() {
           },
         },
       )
-    } else if (rawVendor && rawVendor.length > 0 && rawVendor.length < 10) {
+    } else if (debouncedVendor && debouncedVendor.length > 0 && debouncedVendor.length < 10) {
       setVendorName(null)
       setVendorError(null)
       setValidatingVendor(false)
-    } else {
+    } else if (!debouncedVendor) {
       setVendorName(null)
       setVendorError(null)
       setValidatingVendor(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawVendor])
+  }, [debouncedVendor])
 
   // Check balance when amount is entered
   useEffect(() => {
-    if (form.redemptionAmount && form.redemptionAmount > 0 && userPhone) {
+    if (form.redemptionAmount && form.redemptionAmount > 0 && rawVendor) {
       setBalanceCheckComplete(false)
       setBalanceError(null)
 
-      // Extract phone number (remove country code prefix if present)
-      const phoneNumber = userPhone.replace(/^\+?233/, '').replace(/\D/g, '')
+      // Extract phone number in international format
+      const internationalPhone = convertToInternationalFormat(rawVendor)
 
       getBalanceMutation.mutate(
-        { phone_number: phoneNumber, card_type: form.cardType },
+        { phone_number: internationalPhone, card_type: form.cardType },
         {
           onSuccess: (response: any) => {
             const balanceData = response?.data
@@ -125,7 +146,7 @@ export function useRedemptionForm() {
       setBalanceError(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.redemptionAmount, form.cardType, userPhone])
+  }, [form.redemptionAmount, form.cardType, rawVendor])
 
   const isFormValid = useMemo(() => {
     return (
@@ -167,8 +188,6 @@ export function useRedemptionForm() {
     setIsSubmitting(true)
     try {
       // Extract phone numbers (remove country code prefix if present)
-      const vendorPhoneNumber = form.vendorPhone.replace(/^\+?233/, '').replace(/\D/g, '')
-      const userPhoneNumber = userPhone.replace(/^\+?233/, '').replace(/\D/g, '')
 
       // Determine redemption type based on card type
       // For now, we'll default to DashPro if no card type is specified
@@ -177,10 +196,13 @@ export function useRedemptionForm() {
 
       if (cardType === 'DashPro') {
         // Process DashPro redemption
+        const vendorInternationalPhone = convertToInternationalFormat(rawVendor)
+        const userInternationalPhone = convertToInternationalFormat(userPhone)
+
         const result = await dashProRedemptionMutation.mutateAsync({
-          vendor_phone_number: vendorPhoneNumber,
+          vendor_phone_number: vendorInternationalPhone,
           amount: form.redemptionAmount!,
-          user_phone_number: userPhoneNumber,
+          user_phone_number: userInternationalPhone,
         })
 
         if (result?.data?.reference_id) {
@@ -189,15 +211,15 @@ export function useRedemptionForm() {
         }
       } else {
         // Process cards redemption (DashGo, DashX, DashPass)
-        const result = await cardsRedemptionMutation.mutateAsync({
-          card_type: cardType,
-          phone_number: userPhoneNumber,
-        })
-
-        if (result?.data?.reference_id) {
-          setRedemptionReferenceId(result.data.reference_id)
-          setShowSummaryModal(true)
-        }
+        // Note: CardsRedemptionPayload requires branch_id, card_id, and amount
+        // This implementation is incomplete - the form needs to collect these fields
+        // For now, we'll log an error as this requires additional form fields
+        console.error(
+          'Cards redemption requires branch_id, card_id, and amount. These fields are not currently collected in the form.',
+        )
+        throw new Error(
+          'Cards redemption is not fully implemented. Missing required fields: branch_id, card_id.',
+        )
       }
     } catch (error: any) {
       console.error('Redemption submission error:', error)
@@ -211,8 +233,8 @@ export function useRedemptionForm() {
     form.vendorPhone,
     form.redemptionAmount,
     form.cardType,
+    rawVendor,
     dashProRedemptionMutation,
-    cardsRedemptionMutation,
   ])
 
   return {

@@ -3,59 +3,28 @@ import { useNavigate } from 'react-router-dom'
 import { Text, Loader } from '@/components'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
-import { useRecipientCards } from '@/features/website/hooks/useRecipientCards'
+import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
 import { userProfile } from '@/hooks'
 import { formatCurrency } from '@/utils/format'
 import { BackgroundCardImage } from '@/assets/images'
 
 export default function UserDashboard() {
   const navigate = useNavigate()
-  const { useRecipientCardsService } = useRecipientCards()
-  const { data: recipientCardsResponse, isLoading } = useRecipientCardsService()
+  const { data: metricsResponse, isLoading } = useGiftCardMetrics()
   const { useGetUserProfileService } = userProfile()
   const { data: user } = useGetUserProfileService()
 
-  // Group cards by type
-  const cardsByType = useMemo(() => {
-    if (!recipientCardsResponse?.data) {
-      return {
-        dashx: [],
-        dashgo: [],
-        dashpro: [],
-        dashpass: [],
+  // Get metrics data or default to 0
+  const metrics = useMemo(() => {
+    return (
+      metricsResponse?.data || {
+        DashX: 0,
+        DashGo: 0,
+        DashPass: 0,
+        DashPro: 0,
       }
-    }
-    const cards = Array.isArray(recipientCardsResponse.data) ? recipientCardsResponse.data : []
-    const grouped: Record<string, any[]> = {
-      dashx: [],
-      dashgo: [],
-      dashpro: [],
-      dashpass: [],
-    }
-
-    if (cards && cards.length > 0) {
-      cards.forEach((card: any) => {
-        if (card) {
-          const cardType = (card.card_type || card.type || '').toLowerCase()
-          if (grouped[cardType]) {
-            grouped[cardType].push(card)
-          }
-        }
-      })
-    }
-
-    return grouped
-  }, [recipientCardsResponse])
-
-  // Get card counts
-  const cardCounts = useMemo(() => {
-    return {
-      dashx: cardsByType?.dashx?.length || 0,
-      dashgo: cardsByType?.dashgo?.length || 0,
-      dashpro: cardsByType?.dashpro?.length || 0,
-      dashpass: cardsByType?.dashpass?.length || 0,
-    }
-  }, [cardsByType])
+    )
+  }, [metricsResponse])
 
   // Recent transactions (mock data for now)
   const recentTransactions = [
@@ -122,7 +91,7 @@ export default function UserDashboard() {
             Total Cards
           </Text>
           <Text variant="h1" weight="bold" className="text-white text-4xl mb-2">
-            {cardCounts.dashx + cardCounts.dashgo + cardCounts.dashpro + cardCounts.dashpass}
+            {metrics.DashX + metrics.DashGo + metrics.DashPro + metrics.DashPass}
           </Text>
           <Text variant="span" className="text-white/70 text-sm">
             Active gift cards
@@ -157,7 +126,7 @@ export default function UserDashboard() {
 
           <div className="bg-white py-1 px-2 rounded-md w-fit border border-[#402D87]">
             <p className="text-[#402D87] text-xs font-semibold">
-              {cardCounts.dashx} {cardCounts.dashx === 1 ? 'card' : 'cards'}
+              {metrics.DashX} {metrics.DashX === 1 ? 'card' : 'cards'}
             </p>
           </div>
         </section>
@@ -185,7 +154,7 @@ export default function UserDashboard() {
 
           <div className="bg-white py-1 px-2 rounded-md w-fit border border-[#BB0613]">
             <p className="text-[#BB0613] text-xs font-semibold">
-              {cardCounts.dashgo} {cardCounts.dashgo === 1 ? 'card' : 'cards'}
+              {metrics.DashGo} {metrics.DashGo === 1 ? 'card' : 'cards'}
             </p>
           </div>
         </section>
@@ -213,7 +182,7 @@ export default function UserDashboard() {
 
           <div className="bg-white py-1 px-2 rounded-md w-fit border border-[#F3CE04]">
             <p className="text-[#F3CE04] text-xs font-semibold">
-              {cardCounts.dashpro} {cardCounts.dashpro === 1 ? 'card' : 'cards'}
+              {metrics.DashPro} {metrics.DashPro === 1 ? 'card' : 'cards'}
             </p>
           </div>
         </section>
@@ -239,7 +208,7 @@ export default function UserDashboard() {
 
           <div className="bg-white py-1 px-2 rounded-md w-fit border border-[#402D87]">
             <p className="text-[#402D87] text-xs font-semibold">
-              {cardCounts.dashpass} {cardCounts.dashpass === 1 ? 'card' : 'cards'}
+              {metrics.DashPass} {metrics.DashPass === 1 ? 'card' : 'cards'}
             </p>
           </div>
         </section>

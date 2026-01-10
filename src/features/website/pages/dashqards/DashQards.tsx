@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import DashXImage from '@/assets/images/DashX.png'
 import DashGoImage from '@/assets/images/DashGo.png'
 import DashProImage from '@/assets/images/DashPro.png'
-import { CardItems, DashProPurchase } from '../../components'
+import { CardItems, DashProPurchase, DashGoPurchase } from '../../components'
 import type { PublicCardResponse } from '@/types/responses'
 import { usePublicCatalog } from '../../hooks/website'
 import { usePublicCatalogQueries } from '../../hooks/website/usePublicCatalogQueries'
@@ -18,7 +18,7 @@ const heroImages = {
 
 export default function DashQards() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<'dashx' | 'dashpro' | 'dashpass'>('dashx')
+  const [activeTab, setActiveTab] = useState<'dashx' | 'dashpro' | 'dashpass' | 'dashgo'>('dashx')
   const { publicCards, query, setQuery, cardTabs, priceRanges } = usePublicCatalog()
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { data: vendorsResponse } = usePublicVendorsService({ limit: 100 })
@@ -58,10 +58,13 @@ export default function DashQards() {
     return allCards.filter((card) => {
       // Filter by card type (activeTab) - client-side only
       const cardType = card.type?.toLowerCase()
-      if (activeTab !== 'dashx' && cardType !== activeTab) {
-        return false
-      }
-      if (activeTab === 'dashx' && cardType !== 'dashx' && cardType !== 'dashpass') {
+      if (activeTab === 'dashx') {
+        // DashX shows both DashX and DashPass
+        if (cardType !== 'dashx' && cardType !== 'dashpass') {
+          return false
+        }
+      } else if (cardType !== activeTab) {
+        // For other tabs, show only matching type
         return false
       }
 
@@ -90,6 +93,9 @@ export default function DashQards() {
   // Get card count by type
   const getCardTypeCount = useCallback(
     (typeId: string) => {
+      if (typeId === 'dashpro' || typeId === 'dashgo') {
+        return 1
+      }
       return allCards.filter((card) => {
         const cardType = card.type?.toLowerCase()
         // Count only cards of the specific type
@@ -270,7 +276,8 @@ export default function DashQards() {
                             if (
                               tab.id === 'dashx' ||
                               tab.id === 'dashpro' ||
-                              tab.id === 'dashpass'
+                              tab.id === 'dashpass' ||
+                              tab.id === 'dashgo'
                             ) {
                               setActiveTab(tab.id)
                             }
@@ -634,6 +641,10 @@ export default function DashQards() {
               {activeTab === 'dashpro' ? (
                 <div className="w-full">
                   <DashProPurchase />
+                </div>
+              ) : activeTab === 'dashgo' ? (
+                <div className="w-full">
+                  <DashGoPurchase />
                 </div>
               ) : filteredQardsAll.length === 0 ? (
                 <div className="text-center py-20 px-5 text-grey-500">

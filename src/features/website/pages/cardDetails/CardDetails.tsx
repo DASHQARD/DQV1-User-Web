@@ -676,6 +676,7 @@ export default function CardDetails() {
                 onClick={handleAddToCart}
                 disabled={isAdding}
                 loading={isAdding}
+                variant="secondary"
                 className="flex-1 bg-primary-500 hover:bg-primary-700 text-white font-bold py-3 px-6 rounded-full shadow-lg"
               >
                 <Icon icon="bi:cart-plus" className="size-5 mr-2" />

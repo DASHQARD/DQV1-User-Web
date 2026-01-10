@@ -13,6 +13,7 @@ import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
 export default function MyCards() {
   const navigate = useNavigate()
   const { data: metricsResponse, isLoading } = useGiftCardMetrics()
+  console.log('metricsResponse', metricsResponse)
 
   // Get metrics data or default to 0
   const metrics = useMemo(() => {

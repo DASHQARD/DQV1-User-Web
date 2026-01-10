@@ -134,8 +134,8 @@ export function BusinessDetailsSettings() {
         digital_address: data.digital_address || '',
       } as z.output<typeof UpdateBusinessDetailsSchema>
       await updateBusinessDetails(payload)
-    } catch (error) {
-      console.error('Failed to update business details:', error)
+    } catch (error: any) {
+      throw new Error(error?.message || 'Failed to update business details')
     }
   }
 

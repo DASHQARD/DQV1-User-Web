@@ -65,6 +65,7 @@ export function usePublicCatalog(
     { id: 'dashx', label: 'DashX' },
     { id: 'dashpro', label: 'DashPro' },
     { id: 'dashpass', label: 'DashPass' },
+    { id: 'dashgo', label: 'DashGo' },
   ]
 
   const priceRanges = [

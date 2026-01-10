@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { Icon } from '@/libs'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/svgs/Dashx_bg.svg'
+import DashpassBg from '@/assets/svgs/dashpass_bg.svg'
+import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
 import { useCart } from '../../hooks/useCart'
 import { useCartStore } from '@/stores/cart'
 import { formatCurrency } from '@/utils/format'
@@ -65,8 +66,7 @@ export const CardItems = ({
       case 'dashpass':
         return DashpassBg
       case 'dashgo':
-        // If dashgo SVG exists, import it here
-        return DashxBg // fallback for now
+        return DashgoBg
       default:
         return DashxBg // default fallback
     }
@@ -195,25 +195,21 @@ export const CardItems = ({
           </Text>
 
           {rating > 0 && (
-            <div className="mt-2.5 flex items-center justify-start">
-              <div
-                className="inline-flex items-center gap-1.5 text-[0.95rem] text-yellow-500"
-                aria-label={`Rating ${rating} out of 5`}
-              >
-                {Array.from({ length: 5 }).map((_, n) => {
-                  const starNumber = n + 1
-                  return (
-                    <Icon
-                      key={starNumber}
-                      icon={starNumber <= roundedRating ? 'bi:star-fill' : 'bi:star'}
-                      className="size-4 text-yellow-500"
-                    />
-                  )
-                })}
-                <span className="ml-1.5 text-[0.85rem] font-semibold text-[#7a7a7a]">
-                  {rating.toFixed(1)}
-                </span>
-              </div>
+            <div
+              className="inline-flex items-center gap-1.5"
+              aria-label={`Rating ${rating} out of 5`}
+            >
+              {Array.from({ length: 5 }).map((_, n) => {
+                const starNumber = n + 1
+                return (
+                  <Icon
+                    key={starNumber}
+                    icon={starNumber <= roundedRating ? 'bi:star-fill' : 'bi:star'}
+                    className="size-4 text-yellow-500"
+                  />
+                )
+              })}
+              <span className="text-sm font-semibold text-[#7a7a7a]">{rating.toFixed(1)}</span>
             </div>
           )}
 

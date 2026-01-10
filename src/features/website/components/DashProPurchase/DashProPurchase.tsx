@@ -93,10 +93,9 @@ export default function DashProPurchase() {
         onSuccess: (response: any) => {
           console.log('response', response)
           addToCart({
-            card_id: response.card_id,
+            card_id: response?.data?.id,
             quantity: 1,
-            ...(amount ? { amount } : {}),
-          } as any)
+          })
         },
       },
     )

@@ -59,6 +59,11 @@ export const USER_NAV_ITEMS = [
       { path: ROUTES.IN_APP.DASHBOARD.MY_CARDS, label: 'Cards', icon: 'bi:credit-card-2-front' },
       { path: ROUTES.IN_APP.DASHBOARD.ORDERS, label: 'My Orders', icon: 'bi:gift' },
       { path: ROUTES.IN_APP.DASHBOARD.REDEEM, label: 'Redeem', icon: 'bi:card-checklist' },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.REDEMPTIONS,
+        label: 'Redemptions',
+        icon: 'bi:arrow-left-right',
+      },
       // { path: ROUTES.IN_APP.DASHBOARD.RECIPIENTS, label: 'Recipients', icon: 'bi:people-fill' },
       // { path: ROUTES.IN_APP.DASHBOARD.TRANSACTIONS, label: 'Transactions', icon: 'bi:receipt' },
     ],
