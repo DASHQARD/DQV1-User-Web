@@ -41,7 +41,11 @@ export default function ImageUpload({
   }, [file, currentImageUrl])
 
   // Check if custom size is provided via className
-  const hasSmallSize = className.includes('h-10') || className.includes('w-10') || className.includes('h-12') || className.includes('w-12')
+  const hasSmallSize =
+    className.includes('h-10') ||
+    className.includes('w-10') ||
+    className.includes('h-12') ||
+    className.includes('w-12')
   const isRounded = className.includes('rounded-full')
   const iconSize = hasSmallSize ? 'text-lg' : 'text-[48px]'
   const buttonSize = hasSmallSize ? 'h-5 w-5 bottom-0 right-0' : 'h-8 w-8 bottom-1 -right-1'
@@ -67,7 +71,10 @@ export default function ImageUpload({
             className={`w-full h-full object-cover ${borderRadius}`}
           />
         ) : (
-          <Icon icon="hugeicons:user" className={`${iconSize} object-cover mx-auto my-auto text-gray-400`} />
+          <Icon
+            icon="hugeicons:user"
+            className={`${iconSize} object-cover mx-auto my-auto text-gray-400`}
+          />
         )}
       </div>
       <button
