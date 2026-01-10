@@ -10,7 +10,7 @@ import { useCartStore } from '@/stores/cart'
 import { usePresignedURL } from '@/hooks'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/svgs/Dashx_bg.svg'
+import DashpassBg from '@/assets/svgs/dashpass_bg.svg'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 
 export default function CardDetails() {
