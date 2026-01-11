@@ -596,13 +596,6 @@ export default function Checkout() {
               >
                 {isCheckingOut ? 'Processing...' : 'Complete Purchase'}
               </Button>
-
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-start gap-2 text-xs text-gray-500">
-                  <Icon icon="bi:shield-check" className="size-4 shrink-0 mt-0.5" />
-                  <span>Your payment information is secure and encrypted</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>

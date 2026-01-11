@@ -12,6 +12,7 @@ export default function Orders() {
   const { useGetPaymentByIdService } = usePaymentInfoService()
 
   const { data: paymentData, isLoading } = useGetPaymentByIdService()
+  console.log('paymentData', paymentData)
   // getPaymentById returns PaymentInfoData (single object), but we need an array for the table
   // If it's an array, use it directly; if it's a single object, wrap it in an array
   const payment = Array.isArray(paymentData) ? paymentData : paymentData ? [paymentData] : []

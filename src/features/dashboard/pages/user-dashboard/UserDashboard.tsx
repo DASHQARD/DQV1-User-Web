@@ -4,15 +4,21 @@ import { Text, Loader } from '@/components'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
 import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
+import { usePaymentInfoService } from '@/features/dashboard/hooks'
 import { userProfile } from '@/hooks'
-import { formatCurrency } from '@/utils/format'
+import { formatCurrency, formatDate } from '@/utils/format'
 import { BackgroundCardImage } from '@/assets/images'
+import type { PaymentInfoData } from '@/types/user'
 
 export default function UserDashboard() {
   const navigate = useNavigate()
   const { data: metricsResponse, isLoading } = useGiftCardMetrics()
   const { useGetUserProfileService } = userProfile()
   const { data: user } = useGetUserProfileService()
+
+  // Fetch payments/transactions using the same endpoint as Orders page
+  const { useGetPaymentByIdService } = usePaymentInfoService()
+  const { data: paymentResponse, isLoading: isLoadingPayments } = useGetPaymentByIdService()
 
   // Get metrics data or default to 0
   const metrics = useMemo(() => {
@@ -26,35 +32,73 @@ export default function UserDashboard() {
     )
   }, [metricsResponse])
 
-  // Recent transactions (mock data for now)
-  const recentTransactions = [
-    {
-      id: 1,
-      type: 'purchase',
-      description: 'DashX Gift Card Purchase',
-      amount: 100,
-      date: '30th Nov, 2023 - 08:00 AM',
-      status: 'successful',
-    },
-    {
-      id: 2,
-      type: 'redemption',
-      description: 'DashPro Redemption',
-      amount: 50,
-      date: '29th Nov, 2023 - 02:30 PM',
-      status: 'successful',
-    },
-    {
-      id: 3,
-      type: 'purchase',
-      description: 'DashGo Gift Card Purchase',
-      amount: 200,
-      date: '28th Nov, 2023 - 10:15 AM',
-      status: 'successful',
-    },
-  ]
+  // Extract and transform recent transactions from payments
+  const recentTransactions = useMemo(() => {
+    if (!paymentResponse) return []
 
-  if (isLoading) {
+    // Handle both direct array and object with data property
+    // getPaymentById can return either a single object or an array
+    const response = paymentResponse as any
+    const paymentsArray = Array.isArray(response)
+      ? response
+      : response?.data || (response ? [response] : [])
+
+    if (!Array.isArray(paymentsArray) || paymentsArray.length === 0) {
+      return []
+    }
+
+    // Transform payments to transaction format
+    return paymentsArray
+      .map((payment: PaymentInfoData | any) => {
+        // Determine transaction type and description
+        const paymentType = payment.type?.toLowerCase() || 'purchase'
+        let description = 'Gift Card Purchase'
+
+        // Get card type from cart_details if available
+        const cartItems = payment.cart_details?.items || []
+        if (cartItems.length > 0) {
+          const cardTypes = cartItems.map((item: any) => {
+            const type = item.type?.toLowerCase() || ''
+            switch (type) {
+              case 'dashx':
+                return 'DashX'
+              case 'dashpro':
+                return 'DashPro'
+              case 'dashpass':
+                return 'DashPass'
+              case 'dashgo':
+                return 'DashGo'
+              default:
+                return type
+            }
+          })
+          const uniqueTypes = [...new Set(cardTypes)]
+          description = `${uniqueTypes.join(', ')} Gift Card${uniqueTypes.length > 1 ? 's' : ''} Purchase`
+        }
+
+        return {
+          id: payment.id,
+          type:
+            paymentType === 'checkout' || paymentType === 'purchase' ? 'purchase' : 'redemption',
+          description,
+          amount: parseFloat(payment.amount || '0'),
+          date: payment.created_at ? formatDate(payment.created_at) : 'N/A',
+          status: payment.status || 'unknown',
+          receipt_number: payment.receipt_number,
+          created_at: payment.created_at, // Keep for sorting
+          paymentData: payment, // Keep full payment data for potential future use
+        }
+      })
+      .sort((a: any, b: any) => {
+        // Sort by date (most recent first)
+        const dateA = new Date(a.created_at || 0).getTime()
+        const dateB = new Date(b.created_at || 0).getTime()
+        return dateB - dateA
+      })
+      .slice(0, 5) // Get only the 5 most recent after sorting
+  }, [paymentResponse])
+
+  if (isLoading || isLoadingPayments) {
     return (
       <div className="w-full flex items-center justify-center py-12">
         <Loader />
@@ -230,63 +274,90 @@ export default function UserDashboard() {
             </button>
           </div>
           <div className="space-y-4">
-            {recentTransactions.map((transaction) => (
-              <div
-                key={transaction.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      transaction.type === 'purchase'
-                        ? 'bg-green-100'
-                        : transaction.type === 'redemption'
-                          ? 'bg-blue-100'
-                          : 'bg-gray-100'
-                    }`}
-                  >
-                    <Icon
-                      icon={
-                        transaction.type === 'purchase'
-                          ? 'bi:arrow-down-circle-fill'
-                          : 'bi:arrow-up-circle-fill'
-                      }
-                      className={`text-lg ${
-                        transaction.type === 'purchase' ? 'text-green-600' : 'text-blue-600'
-                      }`}
-                    />
-                  </div>
-                  <div>
-                    <Text variant="span" weight="medium" className="text-gray-900 block">
-                      {transaction.description}
-                    </Text>
-                    <Text variant="span" className="text-gray-500 text-xs">
-                      {transaction.date}
-                    </Text>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <Text
-                    variant="span"
-                    weight="semibold"
-                    className={`block ${
-                      transaction.type === 'purchase' ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {transaction.type === 'purchase' ? '+' : '-'}{' '}
-                    {formatCurrency(transaction.amount, 'GHS')}
-                  </Text>
-                  <Text
-                    variant="span"
-                    className={`text-xs ${
-                      transaction.status === 'successful' ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {transaction.status}
-                  </Text>
-                </div>
+            {recentTransactions.length === 0 ? (
+              <div className="text-center py-8">
+                <Icon icon="bi:receipt" className="text-4xl text-gray-300 mx-auto mb-2" />
+                <Text variant="p" className="text-gray-500 text-sm">
+                  No recent transactions
+                </Text>
+                <Text variant="span" className="text-gray-400 text-xs">
+                  Your transaction history will appear here
+                </Text>
               </div>
-            ))}
+            ) : (
+              recentTransactions.map((transaction) => {
+                const statusNormalized = transaction.status?.toLowerCase() || ''
+                const isSuccessful =
+                  statusNormalized === 'paid' ||
+                  statusNormalized === 'successful' ||
+                  statusNormalized === 'completed'
+
+                return (
+                  <div
+                    key={transaction.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                    onClick={() => {
+                      // Could navigate to order details or open payment details modal
+                      navigate(ROUTES.IN_APP.DASHBOARD.ORDERS)
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          transaction.type === 'purchase'
+                            ? 'bg-green-100'
+                            : transaction.type === 'redemption'
+                              ? 'bg-blue-100'
+                              : 'bg-gray-100'
+                        }`}
+                      >
+                        <Icon
+                          icon={
+                            transaction.type === 'purchase'
+                              ? 'bi:arrow-down-circle-fill'
+                              : 'bi:arrow-up-circle-fill'
+                          }
+                          className={`text-lg ${
+                            transaction.type === 'purchase' ? 'text-green-600' : 'text-blue-600'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <Text variant="span" weight="medium" className="text-gray-900 block">
+                          {transaction.description}
+                        </Text>
+                        <Text variant="span" className="text-gray-500 text-xs">
+                          {transaction.date}
+                        </Text>
+                        {transaction.receipt_number && (
+                          <Text variant="span" className="text-gray-400 text-xs block mt-0.5">
+                            {transaction.receipt_number}
+                          </Text>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Text
+                        variant="span"
+                        weight="semibold"
+                        className={`block ${
+                          transaction.type === 'purchase' ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {transaction.type === 'purchase' ? '+' : '-'}{' '}
+                        {formatCurrency(transaction.amount, 'GHS')}
+                      </Text>
+                      <Text
+                        variant="span"
+                        className={`text-xs ${isSuccessful ? 'text-green-600' : 'text-red-600'}`}
+                      >
+                        {transaction.status}
+                      </Text>
+                    </div>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
 

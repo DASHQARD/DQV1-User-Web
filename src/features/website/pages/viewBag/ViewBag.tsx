@@ -12,6 +12,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
 import DashpassBg from '@/assets/images/dashpass_bg.png'
+import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
 import { ENV_VARS } from '@/utils/constants'
 import { deleteCartItem } from '../../services/cart'
 import { formatCurrency } from '@/utils/format'
@@ -92,7 +93,7 @@ export default function ViewBag() {
       case 'dashpass':
         return DashpassBg
       case 'dashgo':
-        return DashxBg
+        return DashgoBg
       default:
         return DashxBg
     }

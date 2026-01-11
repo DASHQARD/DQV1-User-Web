@@ -184,45 +184,34 @@ export default function DashQards() {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section
-        className="bg-linear-to-br from-primary-500 to-primary-700 text-white pt-20 pb-12"
+        className="bg-[#402D87] text-white pt-20 pb-16"
         style={{ marginTop: '-72px', paddingTop: '88px' }}
       >
         <div className="wrapper">
           <div className="grid grid-cols-[1.1fr_0.9fr] gap-12 items-center max-md:grid-cols-1 max-md:text-center max-md:gap-8">
             <div className="hero__text">
-              <h1 className="text-[clamp(32px,5vw,48px)] font-extrabold mb-4 leading-tight">
+              <h1 className="text-[clamp(32px,5vw,48px)] font-extrabold mb-4 leading-tight text-white">
                 Give the Gift of Choice
               </h1>
-              <p className="text-lg opacity-90 mb-8 leading-relaxed">
-                DashX, DashGo, and DashPro gift qards — perfect for every moment and every budget.
+              <p className="text-lg opacity-90 mb-8 leading-relaxed text-white">
+                DashX, DashGo, and DashPro gift cards — perfect for every moment and every budget.
               </p>
-              <div className="flex gap-4 flex-wrap max-md:justify-center">
-                <Button
-                  variant="primary"
-                  className="rounded-full! px-6 py-3 font-extrabold shadow-[0_4px_16px_rgba(255,199,10,0.3)] hover:brightness-95 hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(255,199,10,0.4)]!"
-                >
-                  Browse Qards
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="rounded-full! px-6 py-3 font-extrabold border-2 border-white/35 bg-transparent text-white hover:border-white hover:bg-white/10!"
-                >
-                  View Cart
-                </Button>
-              </div>
             </div>
-            <div className="relative h-[260px] max-md:h-[220px]" aria-label="Card brands">
-              <div className="absolute top-6 left-0 w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.3)] rotate-6deg opacity-85 max-md:w-[220px] max-md:top-[18px]">
+            <div className="relative h-[280px] max-md:h-[240px]" aria-label="Card brands">
+              {/* DashGo Card - Back (Pink/Orange, Leftmost) */}
+              <div className="absolute top-8 right-0 w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.35)] opacity-85 max-md:w-[220px] max-md:top-[20px] transform rotate-[6deg]">
+                <img src={heroImages.go} alt="DashGo card" className="w-full h-full object-cover" />
+              </div>
+              {/* DashPro Card - Middle (Yellow/Orange, Center-left) */}
+              <div className="absolute top-4 left-12 w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.35)] opacity-92 max-md:w-[220px] max-md:left-10 max-md:top-1 transform rotate-[4deg] z-10">
                 <img
                   src={heroImages.pro}
                   alt="DashPro card"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="absolute top-1.5 left-14 w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.3)] rotate-[4deg] opacity-92 max-md:w-[220px] max-md:left-10 max-md:top-1">
-                <img src={heroImages.go} alt="DashGo card" className="w-full h-full object-cover" />
-              </div>
-              <div className="absolute top-11 left-[110px] w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.3)] -rotate-2deg max-md:w-[220px] max-md:left-[88px] max-md:top-10">
+              {/* DashX Card - Front (Purple/Blue, Rightmost) */}
+              <div className="absolute bottom-0 left-[110px] w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.35)] max-md:w-[220px] max-md:left-[88px] max-md:top-10 transform -rotate-[2deg] z-20">
                 <img src={heroImages.x} alt="DashX card" className="w-full h-full object-cover" />
               </div>
             </div>
