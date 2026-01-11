@@ -2,6 +2,7 @@ import { Button, Input, Text } from '@/components'
 import { Icon } from '@/libs'
 import { useForm } from 'react-hook-form'
 import { usePublicCatalogMutations } from '../../hooks/website/usePublicCatalogMutations'
+import { useCartStore } from '@/stores/cart'
 
 interface PublicDashGoFormProps {
   vendorName: string
@@ -16,14 +17,13 @@ export default function PublicDashGoForm({
   vendorName,
   vendorDetails,
   availableBranches,
-
   quickAmounts,
   selectedAmount,
-
   vendor_id,
 }: PublicDashGoFormProps) {
   const { useCreateDashGoAndAssignService } = usePublicCatalogMutations()
   const createDashGoMutation = useCreateDashGoAndAssignService()
+  const { openCart } = useCartStore()
 
   const form = useForm<{ amount: string }>({
     defaultValues: {
@@ -46,15 +46,22 @@ export default function PublicDashGoForm({
       branch_id: branch.branch_id,
     }))
 
-    createDashGoMutation.mutate({
-      vendor_id: parseInt(vendor_id, 10),
-      product: 'DashGo Gift Card',
-      description: `Custom DashGo card for ${vendorName}`,
-      price: cardAmount,
-      currency: 'GHS',
-      issue_date: new Date().toISOString().split('T')[0],
-      redemption_branches: redemptionBranches,
-    })
+    createDashGoMutation.mutate(
+      {
+        vendor_id: parseInt(vendor_id, 10),
+        product: 'DashGo Gift Card',
+        description: `Custom DashGo card for ${vendorName}`,
+        price: cardAmount,
+        currency: 'GHS',
+        issue_date: new Date().toISOString().split('T')[0],
+        redemption_branches: redemptionBranches,
+      },
+      {
+        onSuccess: () => {
+          openCart()
+        },
+      },
+    )
   }
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

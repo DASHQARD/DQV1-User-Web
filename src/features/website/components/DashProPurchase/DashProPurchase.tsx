@@ -9,6 +9,9 @@ import { formatCurrency } from '@/utils/format'
 import { AssignRecipientSchema } from '@/utils/schemas'
 import { useCreateCard } from '@/features/dashboard/hooks'
 import { useCart } from '../../hooks'
+import { useCartStore } from '@/stores/cart'
+import { userProfile } from '@/hooks'
+import { useRecipients } from '@/features/dashboard/hooks'
 
 const QRPlaceholder = () => {
   const pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
@@ -30,14 +33,7 @@ export default function DashProPurchase() {
   const [isMobile, setIsMobile] = React.useState(false)
   const [assignToSelf, setAssignToSelf] = React.useState(true)
 
-  const {
-    control,
-    register,
-    handleSubmit,
-    formState: { errors },
-    getValues,
-    setValue,
-  } = useForm<z.infer<typeof AssignRecipientSchema>>({
+  const form = useForm<z.infer<typeof AssignRecipientSchema>>({
     resolver: zodResolver(AssignRecipientSchema),
     defaultValues: {
       assign_to_self: true,
@@ -49,6 +45,15 @@ export default function DashProPurchase() {
     },
   })
 
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState: { errors },
+    getValues,
+    setValue,
+  } = form
+
   // Watch form values for card preview
   const amount = useWatch({ control, name: 'amount' })
   const recipientName = useWatch({ control, name: 'name' })
@@ -56,7 +61,12 @@ export default function DashProPurchase() {
   const assignToSelfFormValue = useWatch({ control, name: 'assign_to_self' })
 
   const { mutate: createDashProCard, isPending: isCreatingDashProCard } = useCreateCard()
-  const { addToCart } = useCart()
+  const { addToCartAsync, refetch: refetchCart } = useCart()
+  const { openCart } = useCartStore()
+  const { useGetUserProfileService } = userProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const { useAssignRecipientService } = useRecipients()
+  const assignRecipientMutation = useAssignRecipientService()
 
   // Sync assignToSelf state with form value
   React.useEffect(() => {
@@ -71,35 +81,128 @@ export default function DashProPurchase() {
     const newValue = !assignToSelf
     setAssignToSelf(newValue)
     setValue('assign_to_self', newValue)
+
+    if (newValue) {
+      // Populate form fields with user's profile data
+      setValue('name', userProfileData?.fullname || '')
+      setValue('email', userProfileData?.email || '')
+      setValue('phone', userProfileData?.phonenumber || '')
+    } else {
+      // Clear fields when not assigning to self
+      setValue('name', '')
+      setValue('email', '')
+      setValue('phone', '')
+    }
   }
 
-  const onSubmit = (data: z.infer<typeof AssignRecipientSchema>) => {
-    // Calculate issue date in YYYY-MM-DD format
-    const today = new Date()
-    const issueDate = today.toISOString().split('T')[0] // YYYY-MM-DD format
+  // Populate form fields with user data when assignToSelf is true
+  React.useEffect(() => {
+    if (assignToSelf && userProfileData) {
+      setValue('name', userProfileData?.fullname || '')
+      setValue('email', userProfileData?.email || '')
+      setValue('phone', userProfileData?.phonenumber || '')
+    }
+  }, [assignToSelf, userProfileData, setValue])
 
-    createDashProCard(
-      {
-        product: 'DashPro',
-        description: 'DashPro',
-        type: 'DashPro',
-        price: amount,
-        currency: 'GHS',
-        issue_date: issueDate,
-        images: [],
-        terms_and_conditions: [],
-      },
-      {
-        onSuccess: (response: any) => {
-          console.log('response', response)
-          addToCart({
-            card_id: response?.data?.id,
-            quantity: 1,
-          })
-        },
-      },
-    )
-    console.log('Form submitted:', data)
+  const onSubmit = async (data: z.infer<typeof AssignRecipientSchema>) => {
+    try {
+      // Calculate issue date in YYYY-MM-DD format
+      const today = new Date()
+      const issueDate = today.toISOString().split('T')[0] // YYYY-MM-DD format
+
+      // Step 1: Create the DashPro card
+      const cardResponse = await new Promise<any>((resolve, reject) => {
+        createDashProCard(
+          {
+            product: 'DashPro',
+            description: 'DashPro',
+            type: 'DashPro',
+            price: amount,
+            currency: 'GHS',
+            issue_date: issueDate,
+            images: [],
+            terms_and_conditions: [],
+          },
+          {
+            onSuccess: (response: any) => {
+              resolve(response)
+            },
+            onError: (error: any) => {
+              reject(error)
+            },
+          },
+        )
+      })
+
+      const cardId = cardResponse?.data?.id || cardResponse?.data?.card_id
+      if (!cardId) {
+        console.error('Failed to get card ID from response')
+        return
+      }
+
+      // Step 2: Add card to cart
+      await addToCartAsync({
+        card_id: cardId,
+        quantity: 1,
+      })
+
+      // Step 2b: Refetch cart items to get the cart_item_id
+      const cartItemsResponse = await refetchCart()
+      const cartItems = cartItemsResponse?.data || []
+
+      // Find the cart item that matches our card_id
+      let cartItemId: number | null = null
+      if (Array.isArray(cartItems)) {
+        for (const cart of cartItems) {
+          if (cart.items) {
+            const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
+            const matchingItem = itemsArray.find((item: any) => item.card_id === cardId)
+            if (matchingItem?.cart_item_id) {
+              cartItemId = matchingItem.cart_item_id
+              break
+            }
+          }
+        }
+      }
+
+      if (!cartItemId) {
+        console.error('Failed to get cart_item_id after adding to cart')
+        // Still open cart even if we can't assign recipient
+        openCart()
+        return
+      }
+
+      // Step 3: Assign recipient to the cart item
+      const assignPayload: any = {
+        cart_item_id: cartItemId,
+        assign_to_self: data.assign_to_self,
+        quantity: 1,
+        amount: amount,
+        message: data.message || '',
+      }
+
+      // Only include name, email, phone if assign_to_self is false
+      if (!data.assign_to_self) {
+        if (data.name && data.name.trim().length > 0) {
+          assignPayload.name = data.name.trim()
+        }
+        if (data.email && data.email.trim().length > 0) {
+          assignPayload.email = data.email.trim()
+        }
+        if (data.phone && data.phone.trim().length > 0) {
+          assignPayload.phone = data.phone.trim()
+        }
+      }
+
+      await assignRecipientMutation.mutateAsync(assignPayload)
+
+      // Step 4: Open cart on success
+      openCart()
+    } catch (error: any) {
+      console.error('Error creating DashPro card and assigning recipient:', error)
+      // Open cart anyway if card was created
+      openCart()
+    }
   }
 
   React.useEffect(() => {
@@ -111,7 +214,12 @@ export default function DashProPurchase() {
 
   // Computed values for card preview
   const displayedCardAmount = amount ? formatCurrency(amount.toString(), 'GHS') : 'GHS 0'
-  const displayedCardRecipient = assignToSelf ? 'Your Name' : recipientName || 'Recipient Name'
+  const displayedCardRecipient = React.useMemo(() => {
+    if (assignToSelf) {
+      return userProfileData?.fullname || 'Your Name'
+    }
+    return recipientName || 'Recipient Name'
+  }, [assignToSelf, recipientName, userProfileData])
   const displayedCardMessage = message || 'Your personalized message will appear here...'
 
   return (
@@ -383,7 +491,8 @@ export default function DashProPurchase() {
               type="submit"
               variant="secondary"
               className="md:w-auto"
-              disabled={isCreatingDashProCard}
+              disabled={isCreatingDashProCard || assignRecipientMutation.isPending}
+              loading={isCreatingDashProCard || assignRecipientMutation.isPending}
             >
               Create and customize DashPro Gift Card
             </Button>

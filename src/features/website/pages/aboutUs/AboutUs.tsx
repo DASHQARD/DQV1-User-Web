@@ -1,33 +1,16 @@
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { Button } from '@/components/Button'
-import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
-import { ROUTES, MODAL_NAMES } from '@/utils/constants'
-import { usePersistedModalState } from '@/hooks'
+import { ROUTES } from '@/utils/constants'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
 
 export default function AboutUs() {
-  const modal = usePersistedModalState({
-    paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
-  })
-
+  const navigate = useNavigate()
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
-
-  const openPurchaseModal = () => {
-    // PurchaseModal requires cart_item_id, but this is just a demo button
-    // You may want to redirect to purchase page instead
-    modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
-      cart_item_id: 0, // This won't work without a real cart_item_id
-      cardType: 'dashpro',
-      cardProduct: 'DashPro Gift Card',
-      cardCurrency: 'GHS',
-      amount: 0,
-    })
-  }
 
   return (
     <div className="min-h-screen">
@@ -507,8 +490,8 @@ export default function AboutUs() {
                 <Button
                   variant="primary"
                   size="default"
-                  className="!rounded-full"
-                  onClick={openPurchaseModal}
+                  className="rounded-full!"
+                  onClick={() => navigate(ROUTES.IN_APP.DASHQARDS)}
                 >
                   <Icon icon="bi:cart" className="mr-2" />
                   Purchase Gift Card
@@ -530,9 +513,6 @@ export default function AboutUs() {
           </div>
         </div>
       </section>
-
-      {/* Purchase Modal */}
-      <PurchaseModal />
     </div>
   )
 }

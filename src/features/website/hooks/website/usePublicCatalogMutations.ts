@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createCard } from '@/features/dashboard/services/cards'
 import { useToast } from '@/hooks'
-import { createDashGoAndAssign } from '../../services/cards'
+import { createDashGoAndAssign, createDashProAndAssign } from '../../services/cards'
 
 export function usePublicCatalogMutations() {
   function useCreateCardService() {
@@ -36,8 +36,25 @@ export function usePublicCatalogMutations() {
     })
   }
 
+  function useCreateDashProAndAssignService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationKey: ['create-dashpro-and-assign'],
+      mutationFn: createDashProAndAssign,
+      onSuccess: (response) => {
+        success(response.message || 'DashPro card created and assigned successfully')
+        queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+      },
+      onError: (err: any) => {
+        error(err.message || 'Failed to create and assign DashPro card')
+      },
+    })
+  }
+
   return {
     useCreateCardService,
     useCreateDashGoAndAssignService,
+    useCreateDashProAndAssignService,
   }
 }
