@@ -1,4 +1,4 @@
-import { Loader, PaginatedTable, Text } from '@/components'
+import { PaginatedTable, Text } from '@/components'
 import { vendorQueries } from '@/features'
 import {
   vendorPaymentListColumns,
@@ -13,25 +13,19 @@ import type { Branch } from '@/utils/schemas'
 export default function Payments() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
   const { useGetVendorPaymentsService } = vendorQueries()
-  const { data: paymentsResponse, isLoading } = useGetVendorPaymentsService(query)
+  // wrong endpoint being used here
+  const { data: vendorPaymentsResponse, isLoading: isLoadingVendorPayments } =
+    useGetVendorPaymentsService(query)
 
   const branchModal = usePersistedModalState<Branch>({
     paramName: MODALS.BRANCH.VIEW,
   })
 
-  const payments = paymentsResponse?.data || []
-  const total = paymentsResponse?.pagination?.limit ? payments.length : payments.length
+  const payments = vendorPaymentsResponse?.data || []
+  const total = vendorPaymentsResponse?.pagination?.limit ? payments.length : payments.length
 
   // Get branch data from modal data if available
   const branchData = branchModal.modalData
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <Loader />
-      </div>
-    )
-  }
 
   return (
     <>
@@ -53,7 +47,7 @@ export default function Payments() {
               columns={vendorPaymentListColumns}
               data={payments}
               total={total}
-              loading={isLoading}
+              loading={isLoadingVendorPayments}
               query={query}
               setQuery={setQuery}
               searchPlaceholder="Search by vendor name, business name, or payment period..."

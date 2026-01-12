@@ -10,6 +10,7 @@ import type {
   BranchManagerInvitationsResponse,
   GetBranchManagerInvitationsQuery,
   RemoveBranchManagerPayload,
+  QueryType,
 } from '@/types'
 
 const commonUrl = '/vendors'
@@ -94,6 +95,10 @@ export const getBranchPaymentDetails = async (
   branchId: number | string,
 ): Promise<BranchPaymentDetailsResponse> => {
   return await getList<BranchPaymentDetailsResponse>(`/payment-details/branch/${branchId}`)
+}
+
+export const getVendorPayments = async (query?: QueryType): Promise<any> => {
+  return await getList<any>(`/vendor-payments`, query)
 }
 
 export const deleteBranchPaymentDetails = async (branchId: number | string): Promise<any> => {

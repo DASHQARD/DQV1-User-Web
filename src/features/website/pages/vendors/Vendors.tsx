@@ -95,7 +95,7 @@ export default function Vendors() {
                     name={vendorName}
                     branches={vendor.branches_with_cards?.length || 0}
                     rating={4.5}
-                    logo={(vendor as any).business_logo || null}
+                    business_logo={(vendor as any).business_logo || null}
                     businessAddress={(vendor as any).business_address}
                     businessCountry={(vendor as any).business_country}
                     branchesWithCards={vendor.branches_with_cards || []}

@@ -1,11 +1,11 @@
 import React from 'react'
-import { Loader, PaginatedTable, Text } from '@/components'
-import { useRedemptions } from '../../hooks/useRedemptions'
+import { PaginatedTable, Text } from '@/components'
 import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
 import { userRedemptionsColumns, userRedemptionsCsvHeaders } from '../../components'
 import { OPTIONS } from '@/utils/constants/filter'
+import { useRedemptionQueries } from '../../hooks'
 
 export default function UserRedemptions() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
@@ -57,37 +57,17 @@ export default function UserRedemptions() {
     return apiParams
   }, [query])
 
-  const { data: redemptionsResponse, isLoading } = useRedemptions(params)
+  const { useGetUserRedemptionsService } = useRedemptionQueries()
+  const { data: userRedemptionsResponse, isLoading: isLoadingUserRedemptions } =
+    useGetUserRedemptionsService(params)
 
-  console.log('redemptionsResponse', redemptionsResponse)
+  const redemptions = userRedemptionsResponse?.data || []
+  const pagination = userRedemptionsResponse?.pagination
 
-  const redemptions = redemptionsResponse?.data || []
-  const pagination = redemptionsResponse?.pagination
-  // For cursor-based pagination, we show the current page's data length
-  // If there's a next page, we indicate there are more items
   const total =
     redemptions.length > 0 && pagination?.hasNextPage
       ? redemptions.length + (pagination?.limit || 10)
       : redemptions.length
-
-  // Card type options for filter
-  const cardTypeOptions = React.useMemo(() => {
-    return [
-      { label: 'All Types', value: '' },
-      { label: 'DashPro', value: 'DashPro' },
-      { label: 'DashGo', value: 'DashGo' },
-      { label: 'DashX', value: 'DashX' },
-      { label: 'DashPass', value: 'DashPass' },
-    ]
-  }, [])
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <Loader />
-      </div>
-    )
-  }
 
   return (
     <>
@@ -109,15 +89,16 @@ export default function UserRedemptions() {
               columns={userRedemptionsColumns}
               data={redemptions}
               total={total}
-              loading={isLoading}
+              loading={isLoadingUserRedemptions}
               query={query}
               setQuery={setQuery}
               searchPlaceholder="Search by card type, amount, or phone number..."
               csvHeaders={userRedemptionsCsvHeaders}
               printTitle="Redemptions"
+              noSearch
               filterBy={{
                 simpleSelects: [
-                  { label: 'card_type', options: cardTypeOptions },
+                  { label: 'card_type', options: OPTIONS.CARD_TYPE },
                   { label: 'status', options: OPTIONS.TRANSACTION_STATUS },
                 ],
               }}

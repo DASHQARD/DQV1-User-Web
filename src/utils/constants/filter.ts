@@ -12,4 +12,5 @@ export const OPTIONS = {
   EXPERIENCE_STATUS: ['initiated', 'authorized', 'approved', 'rejected'],
   BRANCH_MANAGEMENT_STATUS: ['active', 'inactive'],
   PURCHASE_STATUS: ['pending', 'processing', 'failed', 'successful', 'cancelled', 'rejected'],
+  CARD_TYPE: ['DashPro', 'DashGo', 'DashX', 'DashPass'],
 }

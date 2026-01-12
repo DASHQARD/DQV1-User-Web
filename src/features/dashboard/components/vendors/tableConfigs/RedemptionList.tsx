@@ -1,16 +1,28 @@
-import { DateCell, CurrencyCell } from '@/components'
+import { DateCell, CurrencyCell, StatusCell } from '@/components'
 import type { CsvHeader } from '@/types'
-import { formatDate, formatCurrency } from '@/utils/format'
-import { RedemptionActionCell } from './RedemptionActionCell'
+import { formatDate } from '@/utils/format'
+// import { RedemptionActionCell } from './RedemptionActionCell'
 
 export const redemptionListColumns = [
   {
-    header: 'ID',
-    accessorKey: 'id',
+    header: 'Redemption ID',
+    accessorKey: 'redemption_id',
+  },
+  {
+    header: 'Phone Number',
+    accessorKey: 'phone_number',
+  },
+  {
+    header: 'Vendor',
+    accessorKey: 'vendor_name',
+  },
+  {
+    header: 'Branch',
+    accessorKey: 'branch_name',
   },
   {
     header: 'Card Type',
-    accessorKey: 'giftCardType',
+    accessorKey: 'card_type',
   },
   {
     header: 'Amount',
@@ -19,37 +31,54 @@ export const redemptionListColumns = [
   },
   {
     header: 'Date',
-    accessorKey: 'updated_at',
+    accessorKey: 'redemption_date',
     cell: DateCell,
   },
   {
-    id: 'actions',
-    header: '',
-    accessorKey: '',
-    cell: RedemptionActionCell,
+    header: 'Status',
+    accessorKey: 'status',
+    cell: StatusCell,
   },
+  // {
+  //   id: 'actions',
+  //   header: '',
+  //   accessorKey: '',
+  //   cell: RedemptionActionCell,
+  // },
 ]
 
 export const redemptionListCsvHeaders: Array<CsvHeader> = [
   {
-    name: 'ID',
-    accessor: 'id',
+    name: 'Redemption ID',
+    accessor: 'redemption_id',
+  },
+  {
+    name: 'Phone Number',
+    accessor: 'phone_number',
+  },
+  {
+    name: 'Vendor',
+    accessor: 'vendor_name',
+  },
+  {
+    name: 'Branch',
+    accessor: 'branch_name',
   },
   {
     name: 'Card Type',
-    accessor: 'giftCardType',
+    accessor: 'card_type',
   },
   {
     name: 'Amount',
     accessor: 'amount',
-    transform: (value: any) => {
-      const amount = parseFloat(value as string)
-      return formatCurrency(amount, 'GHS')
-    },
+  },
+  {
+    name: 'Status',
+    accessor: 'status',
   },
   {
     name: 'Date',
-    accessor: 'updated_at',
+    accessor: 'redemption_date',
     transform: (value) => formatDate(value),
   },
 ]

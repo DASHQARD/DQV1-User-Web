@@ -120,7 +120,7 @@ export default function UserDashboard() {
         </div>
       </div>
 
-      <div className="relative rounded-xl shadow-lg p-6 text-white overflow-hidden bg-gradient-to-br from-[#402D87] to-[#5B47D4]">
+      <div className="relative rounded-xl shadow-lg p-6 text-white overflow-hidden bg-linear-to-br from-[#402D87] to-[#5B47D4]">
         {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-100"
@@ -369,7 +369,7 @@ export default function UserDashboard() {
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => navigate('/dashqards')}
-              className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg hover:shadow-md transition-shadow"
+              className="flex flex-col items-center justify-center p-4 bg-linear-to-br from-primary-50 to-primary-100 rounded-lg hover:shadow-md transition-shadow"
             >
               <Icon icon="bi:gift-fill" className="text-primary-600 text-2xl mb-2" />
               <Text variant="span" weight="medium" className="text-gray-900 text-sm">
@@ -378,7 +378,7 @@ export default function UserDashboard() {
             </button>
             <button
               onClick={() => navigate(ROUTES.IN_APP.DASHBOARD.MY_CARDS)}
-              className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg hover:shadow-md transition-shadow"
+              className="flex flex-col items-center justify-center p-4 bg-linear-to-br from-blue-50 to-blue-100 rounded-lg hover:shadow-md transition-shadow"
             >
               <Icon icon="bi:credit-card-2-front" className="text-blue-600 text-2xl mb-2" />
               <Text variant="span" weight="medium" className="text-gray-900 text-sm">
@@ -387,7 +387,7 @@ export default function UserDashboard() {
             </button>
             <button
               onClick={() => navigate(ROUTES.IN_APP.DASHBOARD.REDEEM)}
-              className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg hover:shadow-md transition-shadow"
+              className="flex flex-col items-center justify-center p-4 bg-linear-to-br from-green-50 to-green-100 rounded-lg hover:shadow-md transition-shadow"
             >
               <Icon icon="bi:arrow-repeat" className="text-green-600 text-2xl mb-2" />
               <Text variant="span" weight="medium" className="text-gray-900 text-sm">
@@ -396,7 +396,7 @@ export default function UserDashboard() {
             </button>
             <button
               onClick={() => navigate(ROUTES.IN_APP.DASHBOARD.ORDERS)}
-              className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg hover:shadow-md transition-shadow"
+              className="flex flex-col items-center justify-center p-4 bg-linear-to-br from-purple-50 to-purple-100 rounded-lg hover:shadow-md transition-shadow"
             >
               <Icon icon="bi:receipt" className="text-purple-600 text-2xl mb-2" />
               <Text variant="span" weight="medium" className="text-gray-900 text-sm">
