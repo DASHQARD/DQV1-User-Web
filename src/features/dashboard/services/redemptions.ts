@@ -132,7 +132,7 @@ export const convertToInternationalFormat = (phoneNumber: string): string => {
 }
 
 export interface ValidateVendorMobileMoneyPayload {
-  phone_number: string // International format: 233XXXXXXXXX (without + prefix)
+  phone_number: string
   provider: 'mtn' | 'vodafone' | 'airteltigo'
 }
 
@@ -196,6 +196,7 @@ export interface DashProRedemptionPayload {
   vendor_phone_number: string
   amount: number
   user_phone_number: string
+  token: string
 }
 
 export interface InitiateRedemptionPayload {
@@ -219,6 +220,7 @@ export interface RedemptionResponse {
     transaction_id?: string
     amount?: number
     status?: string
+    token?: string
   }
 }
 
@@ -273,9 +275,8 @@ const commonUrl = '/redemptions'
 
 export const validateVendorMobileMoney = async (
   data: ValidateVendorMobileMoneyPayload,
-): Promise<ValidateVendorMobileMoneyResponse> => {
-  const response = await axiosClient.post('/payments/mobile-money/account-details', data)
-  return response as unknown as ValidateVendorMobileMoneyResponse
+): Promise<any> => {
+  return await postMethod('/payments/mobile-money/account-details', data)
 }
 
 // Search vendors
