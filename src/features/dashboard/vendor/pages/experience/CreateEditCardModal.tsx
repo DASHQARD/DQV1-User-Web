@@ -219,14 +219,11 @@ export function CreateEditCardModal({ isOpen, onClose, editingCard }: CreateEdit
       isOpen={isOpen}
       setIsOpen={(open) => !open && onClose()}
       showClose
+      title={isEditing ? 'Edit Experience' : 'Add Experience'}
       position="side"
-      panelClass="md:w-[728px] w-full  overflow-y-auto"
+      panelClass="md:w-[728px] w-full overflow-y-auto p-8"
     >
       <div className="p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          {isEditing ? 'Edit Experience' : 'Add Experience'}
-        </h2>
-
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <Input

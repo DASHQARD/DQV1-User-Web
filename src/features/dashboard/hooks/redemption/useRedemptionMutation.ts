@@ -70,7 +70,6 @@ export function useRedemptionMutation() {
   function useValidateVendorMobileMoneyService() {
     return useMutation({
       mutationFn: (data: ValidateVendorMobileMoneyPayload) => validateVendorMobileMoney(data),
-      // Success is handled in the component to extract vendor_name
       onError: (err: any) => {
         error(err?.message || 'Failed to validate vendor. Please try again.')
       },

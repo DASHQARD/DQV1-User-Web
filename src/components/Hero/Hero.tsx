@@ -130,6 +130,7 @@ export default function Hero() {
                   className="rounded-4xl! w-full sm:max-w-[220px] sm:w-full"
                   icon="mdi:arrow-right-thin"
                   iconPosition="right"
+                  onClick={() => navigate(ROUTES.IN_APP.AUTH.REGISTER)}
                   iconProps={{ className: 'size-4 md:size-5 text-primary-500' }}
                 >
                   Get Started

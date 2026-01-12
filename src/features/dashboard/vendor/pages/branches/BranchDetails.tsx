@@ -22,9 +22,12 @@ import {
 import { CardItems } from '@/features/website/components'
 import { ROUTES, MODALS } from '@/utils/constants'
 import { vendorQueries, useVendorMutations } from '@/features'
+import { useRedemptionQueries } from '@/features/dashboard/hooks'
 import LoaderGif from '@/assets/gifs/loader.gif'
 import { getStatusVariant } from '@/utils/helpers/common'
 import EmptyStateImage from '@/assets/images/empty-state.png'
+import { formatCurrency, formatDate } from '@/utils/format'
+import { StatusCell } from '@/components'
 
 type QueryType = typeof DEFAULT_QUERY
 
@@ -470,11 +473,26 @@ export function BranchDetails() {
     }))
   }, [vendorsDetailsResponse, vendorId, branchId])
 
-  // Get all redemptions for this branch, sorted by most recent first
+  // Fetch branch redemptions
+  const { useGetBranchRedemptionsService } = useRedemptionQueries()
+  const { data: branchRedemptionsResponse, isLoading: isLoadingRedemptions } =
+    useGetBranchRedemptionsService({
+      limit: 5, // Get only 5 most recent redemptions
+    })
 
-  // Filter redemptions by selected card type from query
-
-  // Get recent redemptions (first 5) - always from all redemptions
+  // Get recent redemptions (first 5) - sorted by most recent first
+  const recentRedemptions = React.useMemo(() => {
+    if (!branchRedemptionsResponse?.data) return []
+    const redemptions = branchRedemptionsResponse.data || []
+    // Sort by date (most recent first) and limit to 5
+    return redemptions
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.redemption_date || a.created_at || a.updated_at || 0).getTime()
+        const dateB = new Date(b.redemption_date || b.created_at || b.updated_at || 0).getTime()
+        return dateB - dateA
+      })
+      .slice(0, 5)
+  }, [branchRedemptionsResponse])
 
   // Get audit logs for this branch
   const branchAuditLogs = React.useMemo(() => {
@@ -676,11 +694,84 @@ export function BranchDetails() {
             </Link>
           </div>
           <div className="px-6 pb-6">
-            <EmptyState
-              image={EmptyStateImage}
-              title="No Redemptions Yet"
-              description="Once redemptions are made for this branch, they will appear here."
-            />
+            {isLoadingRedemptions ? (
+              <div className="flex items-center justify-center py-8">
+                <img src={LoaderGif} alt="Loading..." className="w-8 h-8" />
+              </div>
+            ) : recentRedemptions.length === 0 ? (
+              <EmptyState
+                image={EmptyStateImage}
+                title="No Redemptions Yet"
+                description="Once redemptions are made for this branch, they will appear here."
+              />
+            ) : (
+              <div className="space-y-3">
+                {recentRedemptions.map((redemption: any) => {
+                  const redemptionDate =
+                    redemption.redemption_date || redemption.created_at || redemption.updated_at
+                  return (
+                    <div
+                      key={redemption.id || redemption.redemption_id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="w-10 h-10 rounded-full bg-[#402D87]/10 flex items-center justify-center shrink-0">
+                          <Icon icon="bi:arrow-left-right" className="text-[#402D87] text-lg" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Text
+                              variant="span"
+                              weight="semibold"
+                              className="text-gray-900 text-sm"
+                            >
+                              {redemption.card_type || 'Gift Card'}
+                            </Text>
+                            {redemption.redemption_id && (
+                              <Text variant="span" className="text-gray-500 text-xs">
+                                #{redemption.redemption_id}
+                              </Text>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                            {redemption.phone_number && (
+                              <span className="flex items-center gap-1">
+                                <Icon icon="bi:phone" className="size-3" />
+                                {redemption.phone_number}
+                              </span>
+                            )}
+                            {redemptionDate && (
+                              <span className="flex items-center gap-1">
+                                <Icon icon="bi:calendar" className="size-3" />
+                                {formatDate(redemptionDate)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 ml-4">
+                        <div className="text-right">
+                          <Text variant="span" weight="bold" className="text-gray-900 block">
+                            {formatCurrency(redemption.amount || '0', redemption.currency || 'GHS')}
+                          </Text>
+                          {redemption.status && (
+                            <StatusCell
+                              getValue={() => redemption.status}
+                              row={{
+                                original: {
+                                  id: redemption.id || redemption.redemption_id || '',
+                                  status: redemption.status,
+                                },
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
 

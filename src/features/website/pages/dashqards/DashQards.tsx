@@ -199,7 +199,7 @@ export default function DashQards() {
             </div>
             <div className="relative h-[280px] max-md:h-[240px]" aria-label="Card brands">
               {/* DashGo Card - Back (Pink/Orange, Leftmost) */}
-              <div className="absolute top-8 right-0 w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.35)] opacity-85 max-md:w-[220px] max-md:top-[20px] transform rotate-[6deg]">
+              <div className="absolute top-8 right-0 w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.35)] opacity-85 max-md:w-[220px] max-md:top-[20px] transform rotate-6">
                 <img src={heroImages.go} alt="DashGo card" className="w-full h-full object-cover" />
               </div>
               {/* DashPro Card - Middle (Yellow/Orange, Center-left) */}
@@ -211,7 +211,7 @@ export default function DashQards() {
                 />
               </div>
               {/* DashX Card - Front (Purple/Blue, Rightmost) */}
-              <div className="absolute bottom-0 left-[110px] w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.35)] max-md:w-[220px] max-md:left-[88px] max-md:top-10 transform -rotate-[2deg] z-20">
+              <div className="absolute bottom-0 left-[110px] w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.35)] max-md:w-[220px] max-md:left-[88px] max-md:top-10 transform -rotate-2 z-20">
                 <img src={heroImages.x} alt="DashX card" className="w-full h-full object-cover" />
               </div>
             </div>

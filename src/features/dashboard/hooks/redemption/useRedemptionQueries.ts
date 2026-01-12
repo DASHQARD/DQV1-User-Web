@@ -3,8 +3,14 @@ import { useQuery } from '@tanstack/react-query'
 import {
   searchVendors,
   getRedemptions,
+  getUserRedemptions,
+  getVendorRedemptions,
+  getBranchRedemptions,
   type SearchVendorsParams,
   type GetRedemptionsParams,
+  type GetUserRedemptionsParams,
+  type GetVendorRedemptionsParams,
+  type GetBranchRedemptionsParams,
   getRedemptionsAmountDashGo,
   getRedemptionsAmountDashPro,
   type GetRedemptionsAmountDashGoParams,
@@ -28,6 +34,27 @@ export function useRedemptionQueries() {
     return useQuery({
       queryKey: ['redemptions', params],
       queryFn: () => getRedemptions(params),
+    })
+  }
+
+  function useGetUserRedemptionsService(params?: GetUserRedemptionsParams) {
+    return useQuery({
+      queryKey: ['user-redemptions', params],
+      queryFn: () => getUserRedemptions(params),
+    })
+  }
+
+  function useGetVendorRedemptionsService(params?: GetVendorRedemptionsParams) {
+    return useQuery({
+      queryKey: ['vendor-redemptions', params],
+      queryFn: () => getVendorRedemptions(params),
+    })
+  }
+
+  function useGetBranchRedemptionsService(params?: GetBranchRedemptionsParams) {
+    return useQuery({
+      queryKey: ['branch-redemptions', params],
+      queryFn: () => getBranchRedemptions(params),
     })
   }
 
@@ -85,6 +112,9 @@ export function useRedemptionQueries() {
   return {
     useSearchVendorsService,
     useGetRedemptionsService,
+    useGetUserRedemptionsService,
+    useGetVendorRedemptionsService,
+    useGetBranchRedemptionsService,
     useGetRedemptionsAmountDashGoService,
     useGetRedemptionsAmountDashProService,
     useGetRedemptionsAmountDashXService,

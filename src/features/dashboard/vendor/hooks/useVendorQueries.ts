@@ -12,9 +12,9 @@ import {
   getCardById,
   getCardsMetrics,
   getAllVendorsDetails,
-  getVendorPayments,
   getBranchPaymentDetails,
   getBranchManagerInvitations,
+  getVendorPayments,
 } from '../services'
 import type { QueryType, GetBranchManagerInvitationsQuery } from '@/types'
 import { userProfile } from '@/hooks'

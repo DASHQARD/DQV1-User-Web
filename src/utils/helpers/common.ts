@@ -50,6 +50,8 @@ export function getStatusVariant(status?: string) {
       return 'error'
     case 'deactivated':
       return 'error'
+    case 'cancelled':
+      return 'error'
     case 'rejected':
       return 'error'
     default:

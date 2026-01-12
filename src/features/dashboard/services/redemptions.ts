@@ -240,6 +240,35 @@ export interface GetRedemptionsParams {
   branch?: string
 }
 
+export interface GetUserRedemptionsParams {
+  limit?: number
+  after?: string
+  card_type?: string
+  status?: string
+  dateFrom?: string // ISO date format
+  dateTo?: string // ISO date format
+}
+
+export interface GetVendorRedemptionsParams {
+  limit?: number
+  after?: string
+  card_type?: string
+  status?: string
+  phone_number?: string
+  dateFrom?: string // ISO date format
+  dateTo?: string // ISO date format
+}
+
+export interface GetBranchRedemptionsParams {
+  limit?: number
+  after?: string
+  card_type?: string
+  status?: string
+  phone_number?: string
+  dateFrom?: string // ISO date format
+  dateTo?: string // ISO date format
+}
+
 const commonUrl = '/redemptions'
 
 export const validateVendorMobileMoney = async (
@@ -284,6 +313,30 @@ export const getRedemptions = async (
   params?: GetRedemptionsParams,
 ): Promise<RedemptionsListResponse> => {
   const response = await axiosClient.get(`${commonUrl}`, { params })
+  return response as unknown as RedemptionsListResponse
+}
+
+// Get authenticated user's redeemed cards
+export const getUserRedemptions = async (
+  params?: GetUserRedemptionsParams,
+): Promise<RedemptionsListResponse> => {
+  const response = await axiosClient.get(`${commonUrl}/users`, { params })
+  return response as unknown as RedemptionsListResponse
+}
+
+// Get authenticated vendor's redeemed cards
+export const getVendorRedemptions = async (
+  params?: GetVendorRedemptionsParams,
+): Promise<RedemptionsListResponse> => {
+  const response = await axiosClient.get(`${commonUrl}/vendors`, { params })
+  return response as unknown as RedemptionsListResponse
+}
+
+// Get authenticated branch's redeemed cards
+export const getBranchRedemptions = async (
+  params?: GetBranchRedemptionsParams,
+): Promise<RedemptionsListResponse> => {
+  const response = await axiosClient.get(`${commonUrl}/branches`, { params })
   return response as unknown as RedemptionsListResponse
 }
 
