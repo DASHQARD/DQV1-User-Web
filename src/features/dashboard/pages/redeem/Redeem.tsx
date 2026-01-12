@@ -44,12 +44,11 @@ export default function Redeem() {
     setShowOTPModal(true)
   }
 
-  const handleOTPVerify = async (_otp: string) => {
-    console.log('OTP verified:', _otp)
+  const handleOTPVerify = async (otp: string) => {
     // Close OTP modal and proceed with redemption
-    // TODO: Verify OTP with backend API when available
+    // Pass the OTP as token to submitRedemption
     setShowOTPModal(false)
-    await submitRedemption()
+    await submitRedemption(otp)
   }
 
   const handleModalClose = () => {

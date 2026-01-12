@@ -182,60 +182,68 @@ export function useRedemptionForm() {
     setRedemptionReferenceId(null)
   }, [])
 
-  const submitRedemption = useCallback(async () => {
-    if (!isFormValid || !userPhone || !form.vendorPhone) return
+  const submitRedemption = useCallback(
+    async (token?: string) => {
+      if (!isFormValid || !userPhone || !form.vendorPhone) return
 
-    setIsSubmitting(true)
-    try {
-      // Extract phone numbers (remove country code prefix if present)
+      setIsSubmitting(true)
+      try {
+        // Extract phone numbers (remove country code prefix if present)
 
-      // Determine redemption type based on card type
-      // For now, we'll default to DashPro if no card type is specified
-      // In the future, you might want to add a card type selector to the form
-      const cardType = form.cardType || 'DashPro'
+        // Determine redemption type based on card type
+        // For now, we'll default to DashPro if no card type is specified
+        // In the future, you might want to add a card type selector to the form
+        const cardType = form.cardType || 'DashPro'
 
-      if (cardType === 'DashPro') {
-        // Process DashPro redemption
-        const vendorInternationalPhone = convertToInternationalFormat(rawVendor)
-        const userInternationalPhone = convertToInternationalFormat(userPhone)
+        if (cardType === 'DashPro') {
+          // Process DashPro redemption
+          const vendorInternationalPhone = convertToInternationalFormat(rawVendor)
+          const userInternationalPhone = convertToInternationalFormat(userPhone)
 
-        const result = await dashProRedemptionMutation.mutateAsync({
-          vendor_phone_number: vendorInternationalPhone,
-          amount: form.redemptionAmount!,
-          user_phone_number: userInternationalPhone,
-        })
+          if (!token) {
+            throw new Error('OTP token is required for DashPro redemption')
+          }
 
-        if (result?.data?.reference_id) {
-          setRedemptionReferenceId(result.data.reference_id)
-          setShowSummaryModal(true)
+          const result = await dashProRedemptionMutation.mutateAsync({
+            vendor_phone_number: vendorInternationalPhone,
+            amount: form.redemptionAmount!,
+            user_phone_number: userInternationalPhone,
+            token: token,
+          })
+
+          if (result?.data?.reference_id) {
+            setRedemptionReferenceId(result.data.reference_id)
+            setShowSummaryModal(true)
+          }
+        } else {
+          // Process cards redemption (DashGo, DashX, DashPass)
+          // Note: CardsRedemptionPayload requires branch_id, card_id, and amount
+          // This implementation is incomplete - the form needs to collect these fields
+          // For now, we'll log an error as this requires additional form fields
+          console.error(
+            'Cards redemption requires branch_id, card_id, and amount. These fields are not currently collected in the form.',
+          )
+          throw new Error(
+            'Cards redemption is not fully implemented. Missing required fields: branch_id, card_id.',
+          )
         }
-      } else {
-        // Process cards redemption (DashGo, DashX, DashPass)
-        // Note: CardsRedemptionPayload requires branch_id, card_id, and amount
-        // This implementation is incomplete - the form needs to collect these fields
-        // For now, we'll log an error as this requires additional form fields
-        console.error(
-          'Cards redemption requires branch_id, card_id, and amount. These fields are not currently collected in the form.',
-        )
-        throw new Error(
-          'Cards redemption is not fully implemented. Missing required fields: branch_id, card_id.',
-        )
+      } catch (error: any) {
+        console.error('Redemption submission error:', error)
+        // Error handling is done in the mutation's onError callback
+      } finally {
+        setIsSubmitting(false)
       }
-    } catch (error: any) {
-      console.error('Redemption submission error:', error)
-      // Error handling is done in the mutation's onError callback
-    } finally {
-      setIsSubmitting(false)
-    }
-  }, [
-    isFormValid,
-    userPhone,
-    form.vendorPhone,
-    form.redemptionAmount,
-    form.cardType,
-    rawVendor,
-    dashProRedemptionMutation,
-  ])
+    },
+    [
+      isFormValid,
+      userPhone,
+      form.vendorPhone,
+      form.redemptionAmount,
+      form.cardType,
+      rawVendor,
+      dashProRedemptionMutation,
+    ],
+  )
 
   return {
     form,

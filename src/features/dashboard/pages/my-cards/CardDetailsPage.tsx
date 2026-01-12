@@ -132,19 +132,17 @@ export default function CardDetailsPage() {
     debounceTime: 500,
   })
 
-  // Fetch vendors based on search - same endpoint as RedemptionPage
-  // If searching, use search. Otherwise, if card has vendor_id and no search, fetch that vendor
-  const shouldFetchVendorById = !debouncedVendorSearch && selectedCard?.vendor_id && !vendorSearch
+  // Fetch vendors based on search - show all vendors when modal is open and no search
+  // Priority: 1) Search term, 2) All vendors when modal is open, 3) Specific vendor by ID if needed
   const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService(
     debouncedVendorSearch
       ? {
           search: debouncedVendorSearch,
           limit: 20,
         }
-      : shouldFetchVendorById
+      : showVendorModal
         ? {
-            vendor_id: String(selectedCard.vendor_id),
-            limit: 1,
+            limit: 100, // Fetch all vendors when modal is open
           }
         : undefined,
   )

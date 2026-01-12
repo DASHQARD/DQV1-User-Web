@@ -28,6 +28,7 @@ import {
   useRedemptionQueries,
   useRateCard,
 } from '@/features/dashboard/hooks'
+import RedemptionOTPModal from '@/features/website/components/RedemptionOTPModal'
 
 type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
@@ -75,6 +76,8 @@ export default function RedemptionPage() {
   const [validatingVendor, setValidatingVendor] = useState(false)
   const [vendorValidatedName, setVendorValidatedName] = useState('')
   const [vendorSearch, setVendorSearch] = useState('')
+  const [validationAttempts, setValidationAttempts] = useState(0)
+  const [validatedPhoneNumbers, setValidatedPhoneNumbers] = useState<Set<string>>(new Set())
   const [selectedVendor, setSelectedVendor] = useState<any>(null)
   const [selectedVendorId, setSelectedVendorId] = useState('')
   const [cardType, setCardType] = useState<CardType | ''>('')
@@ -91,6 +94,8 @@ export default function RedemptionPage() {
   const [redeemedCardId, setRedeemedCardId] = useState<number | null>(null)
   const [rating, setRating] = useState<number>(0)
   const [isSubmittingRating, setIsSubmittingRating] = useState(false)
+  const [showOTPModal, setShowOTPModal] = useState(false)
+  const [isVerifyingOTP, setIsVerifyingOTP] = useState(false)
   const toast = useToast()
 
   // Get redemption queries hooks
@@ -100,10 +105,16 @@ export default function RedemptionPage() {
     useGetRedemptionsAmountDashXService,
     useGetRedemptionsAmountDashPassService,
   } = useRedemptionQueries()
-  const { useProcessRedemptionCardsService, useValidateVendorMobileMoneyService } =
-    useRedemptionMutation()
+  const {
+    useProcessRedemptionCardsService,
+    useValidateVendorMobileMoneyService,
+    useInitiateRedemptionService,
+    useProcessDashProRedemptionService,
+  } = useRedemptionMutation()
   const processRedemptionMutation = useProcessRedemptionCardsService()
   const validateVendorMobileMoneyMutation = useValidateVendorMobileMoneyService()
+  const initiateRedemptionMutation = useInitiateRedemptionService()
+  const processDashProRedemptionMutation = useProcessDashProRedemptionService()
   const rateCardMutation = useRateCard()
 
   // Get phone number for balance queries
@@ -524,8 +535,6 @@ export default function RedemptionPage() {
                   card_type: cardTypeForAPI,
                 })
 
-                console.log('response lemme see', response)
-
                 if (response?.data?.balance !== undefined) {
                   setBalance(response.data.balance)
                   setBalanceError(null)
@@ -733,47 +742,6 @@ export default function RedemptionPage() {
   const handleVendorSelect = (vendorId: string) => {
     const vendor = vendors.find((v: any) => v.vendor_id?.toString() === vendorId)
     if (vendor) {
-      /**
-       * ✅ Successful Vendor Retrieval Structure:
-       *
-       * Example response structure:
-       * {
-       *   vendor_id: 123,
-       *   business_name: "ABC Restaurant",
-       *   vendor_name: "ABC Restaurant",
-       *   vendor_email: "contact@abcrestaurant.com",
-       *   gvid: "GV-12345",
-       *   country: "Ghana",
-       *   status: "active",
-       *   branches_with_cards: [
-       *     {
-       *       branch_id: 456,
-       *       branch_name: "Main Branch",
-       *       branch_location: "Accra, Ghana",
-       *       branch_code: "BR-001",
-       *       full_branch_id: "FB-456",
-       *       cards: [
-       *         {
-       *           card_id: 789,
-       *           card_name: "DashX Gift Card",
-       *           card_type: "dashx",
-       *           card_price: 100,
-       *           currency: "GHS",
-       *           status: "active"
-       *         },
-       *         {
-       *           card_id: 790,
-       *           card_name: "DashPass Subscription",
-       *           card_type: "dashpass",
-       *           card_price: 50,
-       *           currency: "GHS",
-       *           status: "active"
-       *         }
-       *       ]
-       *     }
-       *   ]
-       * }
-       */
       setSelectedVendor(vendor)
       setSelectedVendorId(vendorId)
       setVendorName(vendor.business_name || vendor.vendor_name || 'Unknown Vendor')
@@ -803,7 +771,6 @@ export default function RedemptionPage() {
   const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastValidatedPhoneRef = useRef<string>('')
 
-  // Handle vendor mobile money validation with debouncing
   const handleVendorMobileMoneyChange = (value: string) => {
     setVendorMobileMoneyRaw(value)
     // Format: "+233-551681617" -> extract all digits for phone number
@@ -824,8 +791,22 @@ export default function RedemptionPage() {
       return
     }
 
+    // Convert to international format for checking
+    const internationalPhoneNumber = convertToInternationalFormat(phoneNumber)
+
+    // If this phone number was already successfully validated, don't validate again
+    if (validatedPhoneNumbers.has(internationalPhoneNumber)) {
+      return
+    }
+
     // If already validating or same number is being validated, don't trigger again
     if (validatingVendor || lastValidatedPhoneRef.current === phoneNumber) {
+      return
+    }
+
+    // Check if we've exceeded the maximum attempts (3 tries)
+    if (validationAttempts >= 3) {
+      toast.error('Maximum validation attempts (3) reached. Please refresh the page to try again.')
       return
     }
 
@@ -836,15 +817,28 @@ export default function RedemptionPage() {
         return
       }
 
+      // Convert to international format (233XXXXXXXXX without + prefix)
+      const internationalPhoneNumberForValidation = convertToInternationalFormat(phoneNumber)
+
       // Check if already validating or if this number was already validated
       if (validatingVendor || lastValidatedPhoneRef.current === phoneNumber) {
         return
       }
 
-      lastValidatedPhoneRef.current = phoneNumber
+      // Check if this phone number was already successfully validated
+      if (validatedPhoneNumbers.has(internationalPhoneNumberForValidation)) {
+        return
+      }
 
-      // Convert to international format (233XXXXXXXXX without + prefix)
-      const internationalPhoneNumber = convertToInternationalFormat(phoneNumber)
+      // Check if we've exceeded the maximum attempts
+      if (validationAttempts >= 3) {
+        toast.error(
+          'Maximum validation attempts (3) reached. Please refresh the page to try again.',
+        )
+        return
+      }
+
+      lastValidatedPhoneRef.current = phoneNumber
 
       // Detect provider from phone number
       const provider = detectMobileMoneyProvider(phoneNumber)
@@ -857,9 +851,12 @@ export default function RedemptionPage() {
 
       setValidatingVendor(true)
       try {
+        // Increment validation attempts
+        setValidationAttempts((prev) => prev + 1)
+
         // Call the validation endpoint with international format phone number and provider
         const response = await validateVendorMobileMoneyMutation.mutateAsync({
-          phone_number: internationalPhoneNumber,
+          phone_number: internationalPhoneNumberForValidation,
           provider: provider,
         })
 
@@ -870,6 +867,10 @@ export default function RedemptionPage() {
         if (response?.status === 'success' && accountName) {
           setVendorValidatedName(accountName)
           setVendorName(accountName)
+          // Mark this phone number as successfully validated
+          setValidatedPhoneNumbers((prev) =>
+            new Set(prev).add(internationalPhoneNumberForValidation),
+          )
         } else {
           // If validation failed, clear the vendor name
           setVendorValidatedName('')
@@ -906,10 +907,6 @@ export default function RedemptionPage() {
   // Handle amount validation
   const handleAmountChange = (value: string) => {
     setAmount(value)
-    // Log amount when DashGo or DashPro is selected
-    if ((cardType === 'dashgo' || cardType === 'dashpro') && value) {
-      console.log(`Amount for ${cardType}:`, value)
-    }
   }
 
   // Handle redemption submission
@@ -1133,10 +1130,103 @@ export default function RedemptionPage() {
         setIsProcessingRedemption(false)
       }
     } else {
-      // For vendor_mobile_money, handle DashPro redemption
-      // TODO: Implement DashPro redemption flow if needed
-      toast.error('DashPro redemption via vendor mobile money is not yet implemented')
+      // For vendor_mobile_money, handle DashPro redemption with OTP flow
+      // Step 1: Initiate redemption to get OTP token
+      const userPhoneNumber = isAuthenticated
+        ? (user as any)?.phonenumber || (user as any)?.phone || ''
+        : phoneNumber
+
+      if (!userPhoneNumber) {
+        toast.error('Phone number is required')
+        return
+      }
+
+      if (!vendorValidatedName || !vendorMobileMoney || !amount) {
+        toast.error('Please fill in all required fields')
+        return
+      }
+
+      setIsProcessingRedemption(true)
+      try {
+        // Convert phone numbers to international format
+        const userInternationalPhone = convertToInternationalFormat(userPhoneNumber)
+
+        // Step 1: Initiate redemption - this sends OTP to user's phone
+        const initiateResponse = await initiateRedemptionMutation.mutateAsync({
+          phone_number: userInternationalPhone,
+        })
+
+        console.log('initiateResponse', initiateResponse)
+
+        if (initiateResponse?.status === 'success') {
+          // OTP has been sent to user's phone, show OTP modal
+          setShowOTPModal(true)
+          setIsProcessingRedemption(false)
+        } else {
+          toast.error(initiateResponse?.message || 'Failed to initiate redemption')
+          setIsProcessingRedemption(false)
+        }
+      } catch (error: any) {
+        console.error('Initiate redemption error:', error)
+        setIsProcessingRedemption(false)
+        // Error toast is already handled by the mutation hook
+      }
     }
+  }
+
+  // Handle OTP verification and complete DashPro redemption
+  // The OTP entered by user is used as the token for dash-pro endpoint
+  const handleOTPVerify = async (otp: string) => {
+    if (!otp || !vendorMobileMoney || !amount) {
+      toast.error('Missing required information for redemption')
+      return
+    }
+
+    const userPhoneNumber = isAuthenticated
+      ? (user as any)?.phonenumber || (user as any)?.phone || ''
+      : phoneNumber
+
+    if (!userPhoneNumber) {
+      toast.error('Phone number is required')
+      return
+    }
+
+    setIsVerifyingOTP(true)
+    try {
+      // Convert phone numbers to international format
+      const vendorInternationalPhone = convertToInternationalFormat(vendorMobileMoney)
+      const userInternationalPhone = convertToInternationalFormat(userPhoneNumber)
+
+      // Step 2: Process DashPro redemption with OTP as token
+      const response = await processDashProRedemptionMutation.mutateAsync({
+        vendor_phone_number: vendorInternationalPhone,
+        amount: parseFloat(amount),
+        user_phone_number: userInternationalPhone,
+        token: otp, // Use the OTP entered by user as the token
+      })
+
+      // Success toast is already handled by the mutation hook
+      // Check response and navigate to success step
+      if (
+        response?.status === 'success' ||
+        response?.statusCode === 200 ||
+        response?.statusCode === 201
+      ) {
+        setShowOTPModal(false)
+        setStep('success')
+      }
+    } catch (error: any) {
+      console.error('DashPro redemption error:', error)
+      // Error toast is already handled by the mutation hook
+    } finally {
+      setIsVerifyingOTP(false)
+    }
+  }
+
+  // Handle OTP modal close
+  const handleOTPModalClose = () => {
+    setShowOTPModal(false)
+    setIsVerifyingOTP(false)
   }
 
   // Reset vendor selection
@@ -1151,6 +1241,13 @@ export default function RedemptionPage() {
     setAmount('')
     setBalance(null)
     setDashGoBalance(null)
+    // Reset validation attempts and validated phone numbers when resetting vendor
+    setValidationAttempts(0)
+    setValidatedPhoneNumbers(new Set())
+    setVendorValidatedName('')
+    setVendorMobileMoney('')
+    setVendorMobileMoneyRaw('')
+    lastValidatedPhoneRef.current = ''
   }
 
   return (
@@ -1303,17 +1400,29 @@ export default function RedemptionPage() {
                             <Icon icon="bi:shop" className="text-primary-600" />
                             Vendor Mobile Money
                           </label>
-                          {validatingVendor ? (
-                            <span className="flex items-center gap-1 text-xs text-blue-600">
-                              <Icon icon="bi:spinner" className="animate-spin" />
-                              Verifying vendor...
-                            </span>
-                          ) : vendorValidatedName ? (
-                            <span className="flex items-center gap-1 text-xs text-green-600">
-                              <Icon icon="bi:check-circle-fill" />
-                              Verified
-                            </span>
-                          ) : null}
+                          <div className="flex items-center gap-2">
+                            {validationAttempts > 0 && (
+                              <span className="text-xs text-gray-500">
+                                Attempts: {validationAttempts}/3
+                              </span>
+                            )}
+                            {validatingVendor ? (
+                              <span className="flex items-center gap-1 text-xs text-blue-600">
+                                <Icon icon="bi:spinner" className="animate-spin" />
+                                Verifying vendor...
+                              </span>
+                            ) : vendorValidatedName ? (
+                              <span className="flex items-center gap-1 text-xs text-green-600">
+                                <Icon icon="bi:check-circle-fill" />
+                                Verified
+                              </span>
+                            ) : validationAttempts >= 3 ? (
+                              <span className="flex items-center gap-1 text-xs text-red-600">
+                                <Icon icon="bi:exclamation-triangle-fill" />
+                                Max attempts reached
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
 
                         <div
@@ -1765,10 +1874,6 @@ export default function RedemptionPage() {
                                   onClick={() => {
                                     setCardType('dashgo')
                                     setSelectedCard(null)
-                                    // Log amount when DashGo is selected
-                                    if (amount) {
-                                      console.log('Amount for DashGo:', amount)
-                                    }
                                   }}
                                   className={`p-4 border-2 rounded-lg transition-colors ${
                                     cardType === 'dashgo'
@@ -1782,10 +1887,6 @@ export default function RedemptionPage() {
                                   onClick={() => {
                                     setCardType('dashpro')
                                     setSelectedCard(null)
-                                    // Log amount when DashPro is selected
-                                    if (amount) {
-                                      console.log('Amount for DashPro:', amount)
-                                    }
                                   }}
                                   className={`p-4 border-2 rounded-lg transition-colors ${
                                     cardType === 'dashpro'
@@ -2192,6 +2293,17 @@ export default function RedemptionPage() {
           </div>
         </div>
       </div>
+
+      {/* OTP Modal */}
+      <RedemptionOTPModal
+        isOpen={showOTPModal}
+        onClose={handleOTPModalClose}
+        onVerify={handleOTPVerify}
+        isLoading={isVerifyingOTP}
+        userPhone={
+          isAuthenticated ? (user as any)?.phonenumber || (user as any)?.phone || '' : phoneNumber
+        }
+      />
 
       {/* Add CSS animations */}
       <style>{`
