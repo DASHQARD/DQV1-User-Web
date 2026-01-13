@@ -9,7 +9,7 @@ export const PartnerVendors = () => {
   const { usePublicVendors } = usePublicCatalogQueries()
   const { data: vendors, isLoading } = usePublicVendors()
 
-  const displayVendors = vendors?.slice(0, 4) || []
+  const vendorsWithCards = vendors?.filter((vendor) => vendor.branches_with_cards?.length > 0)
 
   return (
     <section className="py-8 md:py-12">
@@ -31,7 +31,7 @@ export const PartnerVendors = () => {
             <div className="flex items-center justify-center py-12">
               <Loader />
             </div>
-          ) : displayVendors.length === 0 ? (
+          ) : vendorsWithCards?.length === 0 ? (
             <EmptyState
               image={EmptyStateImage}
               title="No vendors available"
@@ -39,7 +39,7 @@ export const PartnerVendors = () => {
             />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {displayVendors.map((vendor) => (
+              {vendorsWithCards?.map((vendor) => (
                 <div
                   key={vendor.vendor_id}
                   onClick={() => navigate(`/vendor?vendor_id=${vendor.vendor_id}`)}

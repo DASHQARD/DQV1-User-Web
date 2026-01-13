@@ -8,7 +8,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { PaymentChangeNotifications } from '../corporate/notifications/PaymentChangeNotifications'
 import { CreateVendorAccount } from '../corporate/modals'
 import { MODALS } from '@/utils/constants'
-import { usePersistedModalState, userProfile, usePresignedURL } from '@/hooks'
+import { usePersistedModalState, useUserProfile, usePresignedURL } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import Logo from '@/assets/images/logo-placeholder.png'
 import { vendorQueries } from '../../vendor'
@@ -18,7 +18,7 @@ export default function CorporateSidebar() {
   const navigate = useNavigate()
   const { logout } = useAuthStore()
 
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
 
   const { useGetAllVendorsDetailsService } = vendorQueries()

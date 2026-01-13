@@ -13,7 +13,7 @@ import {
 import { Icon } from '@/libs'
 import { useAuthStore } from '@/stores'
 import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
-import { useDebouncedState, useCountriesData, userProfile } from '@/hooks'
+import { useDebouncedState, useCountriesData, useUserProfile } from '@/hooks'
 import type { DropdownOption } from '@/types'
 import { useToast } from '@/hooks'
 import {
@@ -65,7 +65,7 @@ export default function RedemptionPage() {
   const { isAuthenticated } = useAuthStore()
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { countries: phoneCountries } = useCountriesData()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
 
   // State management

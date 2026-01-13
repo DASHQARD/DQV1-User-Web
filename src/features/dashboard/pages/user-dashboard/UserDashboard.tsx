@@ -5,7 +5,7 @@ import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
 import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
 import { usePaymentInfoService } from '@/features/dashboard/hooks'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { BackgroundCardImage } from '@/assets/images'
 import type { PaymentInfoData } from '@/types/user'
@@ -13,7 +13,7 @@ import type { PaymentInfoData } from '@/types/user'
 export default function UserDashboard() {
   const navigate = useNavigate()
   const { data: metricsResponse, isLoading } = useGiftCardMetrics()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
 
   // Fetch payments/transactions using the same endpoint as Orders page

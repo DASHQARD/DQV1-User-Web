@@ -1,11 +1,11 @@
 import React from 'react'
 import { FileUploader, Text, Button, Avatar } from '@/components'
 import { useVendorMutations } from '../../hooks/useVendorMutations'
-import { userProfile, useUploadFiles, usePresignedURL } from '@/hooks'
+import { useUserProfile, useUploadFiles, usePresignedURL } from '@/hooks'
 import { useToast } from '@/hooks'
 
 export function BusinessLogoSettings() {
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useUpdateBusinessLogoService } = useVendorMutations()
   const { mutateAsync: updateBusinessLogo, isPending } = useUpdateBusinessLogoService()

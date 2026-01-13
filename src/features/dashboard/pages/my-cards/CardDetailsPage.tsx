@@ -6,7 +6,7 @@ import { Icon } from '@/libs'
 import { useRedemptionMutation, useCardMetricsDetails } from '@/features/dashboard/hooks'
 import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
 import { useDebouncedState, usePresignedURL } from '@/hooks'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import type { DropdownOption } from '@/types'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
@@ -76,7 +76,7 @@ export default function CardDetailsPage() {
   const normalizedCardType = cardType?.toLowerCase() as CardType | undefined
   const validCardType = normalizedCardType && CARD_TYPE_MAP[normalizedCardType]
 
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
 
   // Vendor queries - same as RedemptionPage

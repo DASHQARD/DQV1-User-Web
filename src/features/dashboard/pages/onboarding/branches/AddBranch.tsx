@@ -12,7 +12,7 @@ import {
   Loader,
 } from '@/components'
 import { Icon } from '@/libs'
-import { useToast, userProfile } from '@/hooks'
+import { useToast, useUserProfile } from '@/hooks'
 import React from 'react'
 // import { useMutation, useQueryClient } from '@tanstack/react-query'
 // import { bulkUploadBranches } from '@/features/dashboard/services/vendor/branches'
@@ -21,7 +21,7 @@ export default function AddBranch() {
   const navigate = useNavigate()
   const toast = useToast()
   // const queryClient = useQueryClient()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData, isLoading } = useGetUserProfileService()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 

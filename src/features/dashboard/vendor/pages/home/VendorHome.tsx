@@ -8,7 +8,7 @@ import {
   VendorQardsPerformance,
   CompleteVendorWidget,
 } from '@/features/dashboard/components'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { vendorQueries } from '@/features'
 import { cn } from '@/libs'
 import { formatCurrency } from '@/utils/format'
@@ -16,7 +16,7 @@ import { EmptyStateImage } from '@/assets/images'
 import BranchHome from '../branches/BranchHome'
 
 export default function VendorHome() {
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useGetBranchesByVendorIdService, useGetCardsByVendorIdService } = vendorQueries()
 

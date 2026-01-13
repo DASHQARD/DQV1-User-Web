@@ -13,7 +13,7 @@ import {
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
 import { DEFAULT_QUERY } from '@/utils/constants/shared'
-import { useReducerSpread, usePersistedModalState, userProfile, useToast } from '@/hooks'
+import { useReducerSpread, usePersistedModalState, useUserProfile, useToast } from '@/hooks'
 import {
   RedemptionDetails,
   BranchDetailsModal,
@@ -359,7 +359,7 @@ export function BranchDetails() {
     useGetAllVendorsDetailsForVendorService()
 
   // Get user profile and vendor ID
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useGetBranchesByVendorIdService } = vendorQueries()
   const { useUpdateBranchStatusService, useDeleteBranchByVendorService } = useVendorMutations()

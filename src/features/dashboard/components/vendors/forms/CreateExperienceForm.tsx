@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { FileUploader, Input, Combobox, Button, Text } from '@/components'
 import { useUploadFiles } from '@/hooks'
 import { useToast } from '@/hooks'
-import { usePersistedModalState, userProfile } from '@/hooks'
+import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { MODALS, ROUTES } from '@/utils/constants'
 import { useAuthStore } from '@/stores'
 import { useVendorMutations, vendorQueries } from '@/features'
@@ -21,7 +21,7 @@ export default function CreateExperienceForm() {
   const { mutateAsync: createExperience, isPending: isCreating } = useCreateExperienceService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
   const { user } = useAuthStore()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useBranchesService } = vendorQueries()
   const { data: branches, isLoading: isLoadingBranches } = useBranchesService()

@@ -2,7 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { Button } from '@/components/Button'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import { Loader } from '@/components'
 
@@ -25,7 +25,7 @@ const formatStage = (stage?: string) => {
 
 export default function Compliance() {
   const navigate = useNavigate()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData, isLoading, refetch, isFetching } = useGetUserProfileService()
 
   const checklist = React.useMemo<ChecklistItem[]>(() => {

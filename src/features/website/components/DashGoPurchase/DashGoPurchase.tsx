@@ -6,12 +6,13 @@ import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { formatCurrency } from '@/utils/format'
-import { DashGoPurchaseFormSchema } from '@/utils/schemas'
+import { DashGoAssignRecipientSchema } from '@/utils/schemas'
 import { usePublicCatalogQueries } from '../../hooks/website/usePublicCatalogQueries'
 import { usePublicCatalogMutations } from '../../hooks/website/usePublicCatalogMutations'
 import { vendorQueries } from '@/features/dashboard/vendor/hooks'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { useCartStore } from '@/stores/cart'
+import { useCart, useRecipients } from '../../hooks'
 
 const QRPlaceholder = () => {
   const pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
@@ -31,34 +32,100 @@ const QRPlaceholder = () => {
 export default function DashGoPurchase() {
   const [isCardFlipped, setIsCardFlipped] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
-  const { useGetUserProfileService } = userProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const { usePublicVendorsService } = usePublicCatalogQueries()
+  const [assignToSelf, setAssignToSelf] = React.useState(true)
+
+  const form = useForm<z.infer<typeof DashGoAssignRecipientSchema>>({
+    resolver: zodResolver(DashGoAssignRecipientSchema),
+    defaultValues: {
+      assign_to_self: true,
+      vendor_id: 0,
+      recipient_name: '',
+      recipient_phone: '',
+      recipient_email: '',
+      recipient_message: '',
+      recipient_card_amount: 100,
+      recipient_card_currency: 'GHS',
+      recipient_card_issue_date: new Date().toISOString().split('T')[0],
+      recipient_card_expiry_date: '',
+      recipient_card_images: [],
+    },
+  })
+
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = form
+
+  console.log('errors', errors)
+
+  // Watch form values for card preview
+  const amount = useWatch({ control, name: 'recipient_card_amount' })
+  const recipientName = useWatch({ control, name: 'recipient_name' })
+  const message = useWatch({ control, name: 'recipient_message' })
+  const assignToSelfFormValue = useWatch({ control, name: 'assign_to_self' })
+  const vendorId = useWatch({ control, name: 'vendor_id' })
+
   const { useCreateDashGoAndAssignService } = usePublicCatalogMutations()
+  const createDashGoMutationAsync = useCreateDashGoAndAssignService()
+  const { addToCartAsync } = useCart()
+  const { openCart } = useCartStore()
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const { useAssignRecipientService } = useRecipients()
+  const assignRecipientMutation = useAssignRecipientService()
+
+  const { usePublicVendorsService } = usePublicCatalogQueries()
+
   const { useGetBranchesByVendorIdService } = vendorQueries()
   const { data: vendorsResponse } = usePublicVendorsService({ limit: 100 })
-  const { openCart } = useCartStore()
-  const createDashGoMutationAsync = useCreateDashGoAndAssignService()
 
-  // Get user details
-  const userDetails = React.useMemo(() => {
-    if (!userProfileData) return null
-    return {
-      name: userProfileData?.fullname || '',
-      phone: userProfileData?.phonenumber || '',
-      email: userProfileData?.email || '',
+  React.useEffect(() => {
+    setAssignToSelf(assignToSelfFormValue)
+  }, [assignToSelfFormValue])
+
+  const toggleCardFlip = () => {
+    if (!isMobile) setIsCardFlipped((prev) => !prev)
+  }
+
+  const handleAssignToSelf = () => {
+    const newValue = !assignToSelf
+    setAssignToSelf(newValue)
+    setValue('assign_to_self', newValue)
+
+    if (newValue) {
+      setValue('recipient_name', userProfileData?.fullname || '')
+      setValue('recipient_email', userProfileData?.email || '')
+      setValue('recipient_phone', userProfileData?.phonenumber || '')
+    } else {
+      setValue('recipient_name', '')
+      setValue('recipient_email', '')
+      setValue('recipient_phone', '')
     }
-  }, [userProfileData])
+  }
+
+  React.useEffect(() => {
+    if (assignToSelf && userProfileData) {
+      setValue('recipient_name', userProfileData?.fullname || '')
+      setValue('recipient_email', userProfileData?.email || '')
+      setValue('recipient_phone', userProfileData?.phonenumber || '')
+    }
+  }, [assignToSelf, userProfileData, setValue])
 
   // Extract vendors from response
   const vendors = React.useMemo(() => {
     if (!vendorsResponse) return []
     const vendorsData = Array.isArray(vendorsResponse) ? vendorsResponse : [vendorsResponse]
-    return vendorsData.map((vendor: any) => ({
-      id: vendor.id || vendor.vendor_id,
-      vendor_id: vendor.vendor_id || vendor.id,
-      name: vendor.business_name || vendor.branch_name || vendor.vendor_name || 'Unknown Vendor',
-    }))
+    return vendorsData
+      .filter((vendor: any) => vendor.branches_with_cards?.length > 0)
+      .map((vendor: any) => ({
+        id: vendor.id || vendor.vendor_id,
+        vendor_id: vendor.vendor_id || vendor.id,
+        name: vendor.business_name || vendor.branch_name || vendor.vendor_name || 'Unknown Vendor',
+      }))
   }, [vendorsResponse])
 
   // Watch selected vendor ID
@@ -71,57 +138,12 @@ export default function DashGoPurchase() {
     return Array.isArray(branchesData) ? branchesData : branchesData?.data || []
   }, [branchesData])
 
-  const {
-    control,
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch,
-  } = useForm<z.infer<typeof DashGoPurchaseFormSchema>>({
-    resolver: zodResolver(DashGoPurchaseFormSchema),
-    defaultValues: {
-      assign_to_self: true,
-      vendor_id: 0,
-      recipient_name: '',
-      recipient_phone: '',
-      recipient_email: '',
-      recipient_message: 'Your personalized message will appear here...',
-      recipient_card_amount: 100,
-      recipient_card_currency: 'GHS',
-      recipient_card_issue_date: new Date().toISOString().split('T')[0],
-      recipient_card_expiry_date: '',
-      recipient_card_images: [],
-    },
-  })
-
-  // Watch form values for card preview
-  const amount = useWatch({ control, name: 'recipient_card_amount' })
-  const recipientName = useWatch({ control, name: 'recipient_name' })
-  const message = useWatch({ control, name: 'recipient_message' })
-  const assignToSelfFormValue = useWatch({ control, name: 'assign_to_self' })
-  const vendorId = useWatch({ control, name: 'vendor_id' })
-
   // Update selected vendor ID when form value changes
   React.useEffect(() => {
     if (vendorId && vendorId > 0) {
       setSelectedVendorId(vendorId)
     }
   }, [vendorId])
-
-  // Populate user details when assign to self is checked
-  React.useEffect(() => {
-    if (assignToSelfFormValue && userDetails) {
-      setValue('recipient_name', userDetails.name)
-      setValue('recipient_phone', userDetails.phone)
-      setValue('recipient_email', userDetails.email)
-    } else if (!assignToSelfFormValue) {
-      // Clear fields when assign to self is unchecked
-      setValue('recipient_name', '')
-      setValue('recipient_phone', '')
-      setValue('recipient_email', '')
-    }
-  }, [assignToSelfFormValue, userDetails, setValue])
 
   React.useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -130,17 +152,7 @@ export default function DashGoPurchase() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const toggleCardFlip = () => {
-    if (!isMobile) setIsCardFlipped((prev) => !prev)
-  }
-
-  const handleAssignToSelf = () => {
-    const currentValue = watch('assign_to_self')
-    const newValue = !currentValue
-    setValue('assign_to_self', newValue)
-  }
-
-  const onSubmit = async (data: z.infer<typeof DashGoPurchaseFormSchema>) => {
+  const onSubmit = async (data: z.infer<typeof DashGoAssignRecipientSchema>) => {
     // Calculate issue date in YYYY-MM-DD format
     const today = new Date()
     const issueDate = today.toISOString().split('T')[0] // YYYY-MM-DD format
@@ -155,17 +167,64 @@ export default function DashGoPurchase() {
     }))
 
     try {
-      await createDashGoMutationAsync.mutateAsync({
-        vendor_id: data.vendor_id,
-        product: 'DashGo Gift Card',
-        description: `Custom DashGo card for ${vendorName}`,
-        price: data.recipient_card_amount,
-        currency: data.recipient_card_currency || 'GHS',
-        issue_date: issueDate,
-        redemption_branches: redemptionBranches,
-      })
+      await createDashGoMutationAsync.mutateAsync(
+        {
+          vendor_id: data.vendor_id,
+          product: 'DashGo Gift Card',
+          description: `Custom DashGo card for ${vendorName}`,
+          price: data.recipient_card_amount,
+          currency: data.recipient_card_currency || 'GHS',
+          issue_date: issueDate,
+          redemption_branches: redemptionBranches,
+        },
+        {
+          onSuccess: async (response: any) => {
+            console.log('response from create dash go', response)
+
+            await addToCartAsync(
+              {
+                card_id: response.data.card.id,
+                quantity: 1,
+              },
+              {
+                onSuccess: async (response: any) => {
+                  console.log('response from add to cart', response)
+                  if (data.assign_to_self) {
+                    await assignRecipientMutation.mutateAsync({
+                      cart_item_id: response.data.cart_item_id,
+                      assign_to_self: data.assign_to_self,
+                      quantity: 1,
+                      amount: data.recipient_card_amount,
+                      message: data.recipient_message,
+                    })
+                  } else {
+                    await assignRecipientMutation.mutateAsync({
+                      cart_item_id: response.data.cart_item_id,
+                      assign_to_self: data.assign_to_self,
+                      quantity: 1,
+                      amount: data.recipient_card_amount,
+                      message: data.recipient_message,
+                      name: data.recipient_name,
+                      phone: data.recipient_phone,
+                      email: data.recipient_email,
+                    })
+                  }
+                  openCart()
+                },
+                onError: (error: any) => {
+                  console.error('Failed to add card to cart:', error)
+                },
+              },
+            )
+          },
+
+          onError: (error: any) => {
+            console.error('Failed to create DashGo card:', error)
+          },
+        },
+      )
+
       // Open cart on success
-      openCart()
     } catch (error) {
       // Error is already handled by the mutation hook
       console.error('Failed to create DashGo card:', error)
@@ -226,7 +285,7 @@ export default function DashGoPurchase() {
                         </div>
                         <div className="p-4 text-lg font-semibold uppercase">
                           {assignToSelfFormValue
-                            ? userDetails?.name || 'Your Name'
+                            ? userProfileData?.fullname || 'Your Name'
                             : recipientName || 'Recipient Name'}
                         </div>
                         <div className="flex items-end justify-end p-4">
@@ -328,45 +387,6 @@ export default function DashGoPurchase() {
             />
           </section>
 
-          {/* Assign to self */}
-          <section className="px-10 py-8">
-            <div className="rounded-2xl bg-[#f8f9fa] p-6 text-center">
-              <div className="flex flex-col items-center gap-4">
-                <label className="inline-flex cursor-pointer items-center gap-3">
-                  <div className="relative h-6 w-11">
-                    <input
-                      type="checkbox"
-                      checked={assignToSelfFormValue}
-                      onChange={handleAssignToSelf}
-                      className="peer sr-only"
-                    />
-                    <span
-                      className={`absolute inset-0 rounded-full transition ${
-                        assignToSelfFormValue ? 'bg-primary-500' : 'bg-gray-300'
-                      }`}
-                    />
-                    <span
-                      className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition ${
-                        assignToSelfFormValue ? 'translate-x-5' : ''
-                      }`}
-                    />
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700">
-                    <Icon icon="bi:person-check" className="mr-2 inline size-4 text-primary-500" />
-                    Assign to Self
-                  </span>
-                </label>
-                <p className="text-xs text-gray-500">
-                  {assignToSelfFormValue
-                    ? userDetails
-                      ? `Card will be assigned to ${userDetails.name || 'your account'}. Name, email, and phone fields are auto-filled.`
-                      : 'Card will be assigned to your account. Name, email, and phone fields will be ignored.'
-                    : 'Card will be assigned to someone else. Please provide recipient details below.'}
-                </p>
-              </div>
-            </div>
-          </section>
-
           {/* Amount Section */}
           <section className="border-b border-gray-100 px-10 py-8 max-w-2xl grid gap-6">
             <div>
@@ -398,55 +418,122 @@ export default function DashGoPurchase() {
               </Text>
             </div>
             <div className="grid max-w-2xl gap-6">
-              <Input
-                label="Full Name"
-                type="text"
-                register={register('recipient_name')}
-                error={errors.recipient_name?.message}
-                placeholder={
-                  assignToSelfFormValue
-                    ? userDetails?.name || 'Your name'
-                    : "Enter recipient's full name"
-                }
-                disabled={assignToSelfFormValue}
-              />
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Full Name {!assignToSelf && '*'}
+                </label>
+                <input
+                  type="text"
+                  {...register('recipient_name')}
+                  disabled={assignToSelf}
+                  className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
+                    assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder={
+                    assignToSelf
+                      ? 'Will use your account information'
+                      : "Enter recipient's full name"
+                  }
+                />
+                {errors.recipient_name && (
+                  <p className="mt-1 text-xs text-red-500">{errors.recipient_name.message}</p>
+                )}
+                {assignToSelf && (
+                  <p className="mt-1 text-xs text-gray-500">Will use your account name</p>
+                )}
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Phone Number {!assignToSelf && '*'}
+                </label>
+                <input
+                  type="tel"
+                  {...register('recipient_phone')}
+                  disabled={assignToSelf}
+                  className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
+                    assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder={assignToSelf ? 'Will use your account phone' : 'Enter phone number'}
+                />
+                {errors.recipient_phone && (
+                  <p className="mt-1 text-xs text-red-500">{errors.recipient_phone.message}</p>
+                )}
+                {assignToSelf && (
+                  <p className="mt-1 text-xs text-gray-500">Will use your account phone number</p>
+                )}
+              </div>
 
-              <Input
-                label="Phone Number"
-                type="tel"
-                register={register('recipient_phone')}
-                error={errors.recipient_phone?.message}
-                placeholder={
-                  assignToSelfFormValue
-                    ? userDetails?.phone || 'Your phone number'
-                    : 'Enter phone number'
-                }
-                disabled={assignToSelfFormValue}
-              />
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Email Address {!assignToSelf && '*'}
+                </label>
+                <input
+                  type="email"
+                  {...register('recipient_email')}
+                  disabled={assignToSelf}
+                  className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
+                    assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder={assignToSelf ? 'Will use your account email' : 'Enter email address'}
+                />
+                {errors.recipient_email && (
+                  <p className="mt-1 text-xs text-red-500">{errors.recipient_email.message}</p>
+                )}
+                {assignToSelf && (
+                  <p className="mt-1 text-xs text-gray-500">Will use your account email</p>
+                )}
+              </div>
 
-              <Input
-                label="Email Address"
-                type="email"
-                register={register('recipient_email')}
-                error={errors.recipient_email?.message}
-                placeholder={
-                  assignToSelfFormValue
-                    ? userDetails?.email || 'Your email address'
-                    : 'Enter email address'
-                }
-                disabled={assignToSelfFormValue}
-              />
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Personal Message
+                </label>
+                <textarea
+                  rows={3}
+                  {...register('recipient_message')}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                  placeholder="Write a personal message for the recipient..."
+                />
+              </div>
+            </div>
+          </section>
 
-              <Input
-                type="textarea"
-                label="Personal Message"
-                rows={10}
-                innerClassName="!h-auto min-h-[200px]"
-                inputClassName="resize-none"
-                register={register('recipient_message')}
-                error={errors.recipient_message?.message}
-                placeholder="Write a personal message for the recipient..."
-              />
+          {/* Assign to self */}
+          <section className="px-10 py-8">
+            <div className="rounded-2xl bg-[#f8f9fa] p-6 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <label className="inline-flex cursor-pointer items-center gap-3">
+                  <div className="relative h-6 w-11">
+                    <input
+                      type="checkbox"
+                      checked={assignToSelfFormValue}
+                      onChange={handleAssignToSelf}
+                      className="peer sr-only"
+                    />
+                    <span
+                      className={`absolute inset-0 rounded-full transition ${
+                        assignToSelfFormValue ? 'bg-primary-500' : 'bg-gray-300'
+                      }`}
+                    />
+                    <span
+                      className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition ${
+                        assignToSelfFormValue ? 'translate-x-5' : ''
+                      }`}
+                    />
+                  </div>
+                  <span className="text-sm font-semibold text-gray-700">
+                    <Icon icon="bi:person-check" className="mr-2 inline size-4 text-primary-500" />
+                    Assign to Self
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500">
+                  {assignToSelfFormValue
+                    ? userProfileData?.fullname
+                      ? `Card will be assigned to ${userProfileData.fullname || 'your account'}. Name, email, and phone fields are auto-filled.`
+                      : 'Card will be assigned to your account. Name, email, and phone fields will be ignored.'
+                    : 'Card will be assigned to someone else. Please provide recipient details below.'}
+                </p>
+              </div>
             </div>
           </section>
 

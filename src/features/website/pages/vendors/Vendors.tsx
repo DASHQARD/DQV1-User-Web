@@ -10,6 +10,8 @@ export default function Vendors() {
   const navigate = useNavigate()
   const { vendors, vendorsLoading, query, setQuery } = usePublicCatalog()
 
+  const vendorsWithCards = vendors?.filter((vendor) => vendor.branches_with_cards?.length > 0)
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -49,11 +51,11 @@ export default function Vendors() {
                 className="w-full"
               />
             </div>
-            {vendors && vendors.length > 0 && (
+            {vendorsWithCards && vendorsWithCards.length > 0 && (
               <div className="flex items-center gap-2 text-sm text-gray-600 bg-white px-4 py-2 rounded-lg border border-gray-200">
                 <Icon icon="bi:building" className="size-4 text-primary-600" />
                 <span className="font-medium">
-                  {vendors.length} {vendors.length === 1 ? 'Vendor' : 'Vendors'}
+                  {vendorsWithCards.length} {vendorsWithCards.length === 1 ? 'Vendor' : 'Vendors'}
                 </span>
               </div>
             )}
@@ -65,7 +67,7 @@ export default function Vendors() {
           <div className="flex items-center justify-center py-20">
             <Loader />
           </div>
-        ) : vendors?.length === 0 ? (
+        ) : vendorsWithCards?.length === 0 ? (
           <div className="py-12">
             <EmptyState
               image={EmptyStateImage}
@@ -79,7 +81,7 @@ export default function Vendors() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {vendors?.map((vendor: any) => {
+            {vendorsWithCards?.map((vendor: any) => {
               const vendorName = vendor.business_name || vendor.vendor_name || 'Unnamed Vendor'
               return (
                 <div

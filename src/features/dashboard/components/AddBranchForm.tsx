@@ -17,7 +17,7 @@ import {
 import { useAuth } from '@/features/auth/hooks'
 import { AddBranchSchema } from '@/utils/schemas'
 import { ROUTES, MODALS } from '@/utils/constants'
-import { userProfile, usePersistedModalState, useCountriesData } from '@/hooks'
+import { useUserProfile, usePersistedModalState, useCountriesData } from '@/hooks'
 import React from 'react'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
@@ -30,7 +30,7 @@ export default function AddBranchForm() {
   const modal = usePersistedModalState({
     paramName: MODALS.BRANCH.CREATE,
   })
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData, isLoading } = useGetUserProfileService()
   const { useGetCountriesService } = useAuth()
   const { useAddBranchService } = useVendorMutations()

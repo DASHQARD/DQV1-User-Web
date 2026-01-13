@@ -3,7 +3,7 @@ import { Text, Loader, EmptyState } from '@/components'
 import { Icon } from '@/libs'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { vendorQueries } from '@/features'
 import { useRedemptionQueries } from '@/features/dashboard/hooks'
 import { cn } from '@/libs'
@@ -15,7 +15,7 @@ import { CompleteVendorWidget } from '@/features/dashboard/components'
 import { MetricsCard } from '@/features/dashboard/components/branch'
 
 export default function BranchHome() {
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useGetAllVendorsDetailsForVendorService } = vendorQueries()
 
