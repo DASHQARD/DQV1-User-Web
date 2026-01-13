@@ -6,7 +6,7 @@ import { Combobox, Input, Text, FileUploader, Loader } from '@/components'
 import { Button } from '@/components/Button'
 import { ProfileAndIdentitySchema } from '@/utils/schemas'
 import { useAuth } from '../../../../auth/hooks'
-import { userProfile, useUploadFiles, usePresignedURL, useToast } from '@/hooks'
+import { useUserProfile, useUploadFiles, usePresignedURL, useToast } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import React from 'react'
 import { cn } from '@/libs'
@@ -17,7 +17,7 @@ export default function OnboardingForm() {
   const { user } = useAuthStore()
   const userType = (user as any)?.user_type
   const isBranchManager = userType === 'branch'
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData, isLoading } = useGetUserProfileService()
   const toast = useToast()
 

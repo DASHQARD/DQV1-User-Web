@@ -10,7 +10,7 @@ import { AssignRecipientSchema } from '@/utils/schemas'
 import { useCreateCard } from '@/features/dashboard/hooks'
 import { useCart } from '../../hooks'
 import { useCartStore } from '@/stores/cart'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { useRecipients } from '@/features/dashboard/hooks'
 
 const QRPlaceholder = () => {
@@ -63,7 +63,7 @@ export default function DashProPurchase() {
   const { mutate: createDashProCard, isPending: isCreatingDashProCard } = useCreateCard()
   const { addToCartAsync, refetch: refetchCart } = useCart()
   const { openCart } = useCartStore()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useAssignRecipientService } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()

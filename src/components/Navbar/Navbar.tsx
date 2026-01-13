@@ -9,7 +9,7 @@ import { useAuthStore, useCartStore } from '@/stores'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { Modal } from '@/components'
 import { CartPopoverContent } from '@/components/CartModal'
-import { userProfile, usePresignedURL } from '@/hooks'
+import { useUserProfile, usePresignedURL } from '@/hooks'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -19,7 +19,7 @@ export default function Navbar() {
 
   const { isAuthenticated, user, logout } = useAuthStore()
   const [accountPopoverOpen, setAccountPopoverOpen] = useState(false)
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   // const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0)

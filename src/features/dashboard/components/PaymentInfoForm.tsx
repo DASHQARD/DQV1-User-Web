@@ -16,11 +16,11 @@ import { usePaymentInfoService } from '../hooks/usePayment'
 import { useCountriesData } from '@/hooks'
 import { GHANA_BANKS } from '@/assets/data/banks'
 import React from 'react'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { Icon } from '@/libs'
 
 export default function PaymentInfoForm() {
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   console.log('userProfileData', userProfileData)
   const { useUpdatePaymentInfoService } = usePaymentInfoService()

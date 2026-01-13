@@ -8,7 +8,13 @@ import { z } from 'zod'
 import { useAuth } from '../../../../auth/hooks'
 import { useNavigate } from 'react-router-dom'
 import { BasePhoneInput, RadioGroup, RadioGroupItem } from '@/components'
-import { useCountriesData, userProfile, useUploadFiles, usePresignedURL, useToast } from '@/hooks'
+import {
+  useCountriesData,
+  useUserProfile,
+  useUploadFiles,
+  usePresignedURL,
+  useToast,
+} from '@/hooks'
 import React from 'react'
 import LoaderGif from '@/assets/gifs/loader.gif'
 
@@ -18,7 +24,7 @@ const DRAFT_STORAGE_KEY = 'business_details_form_draft'
 
 export default function BusinessDetailsForm() {
   const { useBusinessDetailsWithDocumentsService } = useAuth()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { mutateAsync: submitBusinessDetails, isPending: isSubmittingDetails } =
     useBusinessDetailsWithDocumentsService()

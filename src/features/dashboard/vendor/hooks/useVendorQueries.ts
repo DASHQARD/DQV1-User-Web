@@ -17,7 +17,7 @@ import {
   getVendorPayments,
 } from '../services'
 import type { QueryType, GetBranchManagerInvitationsQuery } from '@/types'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 
 export function vendorQueries() {
   function useGetAllVendorsService() {
@@ -83,7 +83,7 @@ export function vendorQueries() {
   }
 
   function useGetCardsByVendorIdService() {
-    const { useGetUserProfileService } = userProfile()
+    const { useGetUserProfileService } = useUserProfile()
     const { data: userProfileData } = useGetUserProfileService()
     const vendor_id = userProfileData?.vendor_id
 

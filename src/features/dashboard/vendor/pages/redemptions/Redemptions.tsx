@@ -7,12 +7,12 @@ import React from 'react'
 import { OPTIONS } from '@/utils/constants/filter'
 import { useRedemptionQueries } from '@/features/dashboard/hooks'
 import { useAuthStore } from '@/stores'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 
 export default function Redemptions() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
   const { user } = useAuthStore()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
 
   const userType = (user as any)?.user_type || userProfileData?.user_type

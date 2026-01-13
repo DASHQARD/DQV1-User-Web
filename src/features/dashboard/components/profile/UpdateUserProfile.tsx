@@ -1,5 +1,5 @@
 import { Button, Input } from '@/components'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { UpdateUserInfoSchema } from '@/utils/schemas'
 import { zodResolver } from '@hookform/resolvers/zod'
 import React from 'react'
@@ -9,7 +9,7 @@ import { z } from 'zod'
 
 export default function UpdateUserProfile() {
   const { useUpdateUserInfoService } = useUserInfo()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { mutate: updateUserInfo, isPending: isUpdatingUserInfo } = useUpdateUserInfoService()
   const form = useForm<z.infer<typeof UpdateUserInfoSchema>>({

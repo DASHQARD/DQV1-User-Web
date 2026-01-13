@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input } from '../Input'
 import type { AssignRecipientPayload } from '@/types/responses'
-import { usePersistedModalState, userProfile } from '@/hooks'
+import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { MODAL_NAMES } from '@/utils/constants'
 
 const QRPlaceholder = () => {
@@ -48,7 +48,7 @@ export default function PurchaseModal() {
   const { useAssignRecipientService } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()
 
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
 
   // Get data from modal
@@ -174,7 +174,7 @@ export default function PurchaseModal() {
         form.setValue('amount', modalData.amount)
       }
     }
-  }, [assignToSelf, userProfile, form, modalData])
+  }, [assignToSelf, useUserProfile, form, modalData])
 
   // Close modal on successful assignment
   React.useEffect(() => {

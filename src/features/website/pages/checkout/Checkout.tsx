@@ -17,7 +17,7 @@ import DashpassBg from '@/assets/images/dashpass_bg.png'
 import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
 import { ENV_VARS, MODAL_NAMES } from '@/utils/constants'
 import { bulkAssignRecipients } from '@/features/dashboard/services'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { usePayments } from '../../hooks'
 import { formatCurrency } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
@@ -45,7 +45,7 @@ export default function Checkout() {
     )
   }, [cartItems])
 
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
 
   const { useCheckoutService } = usePayments()

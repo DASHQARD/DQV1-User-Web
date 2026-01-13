@@ -6,7 +6,7 @@ import { cn } from '@/libs'
 import { Text, Tooltip, TooltipTrigger, TooltipContent, ImageUpload } from '@/components'
 import { useAuthStore } from '@/stores'
 import Logo from '@/assets/images/logo-placeholder.png'
-import { userProfile, useUploadFiles, usePresignedURL } from '@/hooks'
+import { useUserProfile, useUploadFiles, usePresignedURL } from '@/hooks'
 import { useAuth } from '@/features/auth'
 
 export default function UserSidebar() {
@@ -15,7 +15,7 @@ export default function UserSidebar() {
   const { logout } = useAuthStore()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
 
-  const { useGetUserProfileService, useUpdateUserAvatarService } = userProfile()
+  const { useGetUserProfileService, useUpdateUserAvatarService } = useUserProfile()
   const { useLogoutService } = useAuth()
   const { mutateAsync: logoutMutation, isPending: isLoggingOut } = useLogoutService()
   const { data: userProfileData } = useGetUserProfileService()

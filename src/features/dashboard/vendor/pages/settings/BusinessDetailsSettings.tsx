@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button, Input, CreatableCombobox } from '@/components'
 import { useVendorMutations } from '../../hooks/useVendorMutations'
-import { userProfile, useCountriesData } from '@/hooks'
+import { useUserProfile, useCountriesData } from '@/hooks'
 import { BasePhoneInput } from '@/components'
 
 const UpdateBusinessDetailsSchema = z.object({
@@ -19,7 +19,7 @@ const UpdateBusinessDetailsSchema = z.object({
 })
 
 export function BusinessDetailsSettings() {
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useUpdateBusinessDetailsService } = useVendorMutations()
   const { mutateAsync: updateBusinessDetails, isPending } = useUpdateBusinessDetailsService()

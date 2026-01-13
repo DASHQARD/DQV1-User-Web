@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { Button, Input, Text, Combobox } from '@/components'
 import { Icon } from '@/libs'
 import { useAuth } from '@/features/auth/hooks/auth'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import type { OnboardingData } from '@/types/auth/auth'
 
 // Schema for personal information form
@@ -30,7 +30,7 @@ const ID_TYPE_OPTIONS = [
 export function PersonalInformationSettings() {
   const { usePersonalDetailsService } = useAuth()
   const { mutate: updatePersonalDetails, isPending } = usePersonalDetailsService()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
 
   const form = useForm<PersonalInformationFormData>({

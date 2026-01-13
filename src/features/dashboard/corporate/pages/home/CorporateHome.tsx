@@ -10,14 +10,14 @@ import {
   SummaryCards,
 } from '@/features/dashboard/components'
 import { useDashboardMetrics } from '../../../hooks/useDashboardMetrics'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 
 export default function CorporateHome() {
   const { metrics, formatCurrency, isLoading } = useDashboardMetrics()
 
   const navigate = useNavigate()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
 
   const addAccountParam = (path: string): string => {

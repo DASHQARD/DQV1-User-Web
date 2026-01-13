@@ -13,7 +13,7 @@ import {
   Text,
   BasePhoneInput,
 } from '@/components'
-import { useCountriesData, userProfile } from '@/hooks'
+import { useCountriesData, useUserProfile } from '@/hooks'
 import { GHANA_BANKS } from '@/assets/data/banks'
 import { CreateBranchFormSchema } from '@/utils/schemas'
 import { useVendorMutations } from '@/features/dashboard/vendor/hooks'
@@ -26,7 +26,7 @@ export default function CreateBranchForm() {
   const { useGetCountriesService } = useAuth()
   const { data: countries } = useGetCountriesService()
   const { countries: phoneCountries } = useCountriesData()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
 
   const { useAddBranchService } = useVendorMutations()

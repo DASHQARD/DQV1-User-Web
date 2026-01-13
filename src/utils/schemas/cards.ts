@@ -117,3 +117,48 @@ export const AssignRecipientSchema = z
       }
     }
   })
+
+export const DashGoAssignRecipientSchema = z
+  .object({
+    assign_to_self: z.boolean(),
+    vendor_id: z.number().min(1, 'Vendor is required'),
+    recipient_name: z.string().optional().or(z.literal('')),
+    recipient_phone: z.string().optional().or(z.literal('')),
+    recipient_email: z.string().optional().or(z.literal('')),
+    recipient_message: z.string().optional(),
+    recipient_card_amount: z.number().min(1).max(10000),
+    recipient_card_currency: z.string().min(1),
+    recipient_card_issue_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Issue date must be in YYYY-MM-DD format'),
+    recipient_card_expiry_date: z.string().optional().or(z.literal('')),
+    recipient_card_images: z.array(
+      z.object({
+        file_url: z.string(),
+        file_name: z.string(),
+      }),
+    ),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.assign_to_self) {
+      if (!data.recipient_name || data.recipient_name.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Recipient name is required when not assigning to self',
+          path: ['recipient_name'],
+        })
+      }
+
+      if (
+        data.recipient_email &&
+        data.recipient_email.trim() !== '' &&
+        !isEmail(data.recipient_email)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please provide a valid email address',
+          path: ['recipient_email'],
+        })
+      }
+    }
+  })

@@ -2,14 +2,14 @@ import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import { Text } from '@/components'
 import { vendorQueries } from '@/features'
 
 export default function CompleteVendorWidget() {
   const [isExpanded, setIsExpanded] = React.useState(false)
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useBranchesService } = vendorQueries()
   const { data: branches } = useBranchesService()

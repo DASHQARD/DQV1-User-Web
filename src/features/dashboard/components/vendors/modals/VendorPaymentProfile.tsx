@@ -3,7 +3,7 @@ import { Modal, Text, Button } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { Icon } from '@/libs'
-import { userProfile } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 
 interface PaymentProfile {
   payment_method?: 'mobile_money' | 'bank'
@@ -50,7 +50,7 @@ export function VendorPaymentProfile() {
   const modal = usePersistedModalState({
     paramName: MODALS.VENDOR_PAYMENT_MANAGEMENT.PARAM_NAME,
   })
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
 
   // Get payment profile from user profile

@@ -6,7 +6,7 @@ import { VendorItems } from '@/features/website/components/VendorItems/VendorIte
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import DashProBg from '@/assets/svgs/dashpro_bg.svg'
 import BulkUploadTemplate from '@/assets/Bulk Upload Structure.xlsx?url'
-import { usePersistedModalState, useToast, userProfile } from '@/hooks'
+import { usePersistedModalState, useToast, useUserProfile } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
 import { corporateQueries, corporateMutations } from '@/features/dashboard/corporate/hooks'
@@ -77,7 +77,7 @@ export function BulkPurchaseEmployeesModal({
   const [cartId, setCartId] = React.useState<number | null>(null)
   const toast = useToast()
   const queryClient = useQueryClient()
-  const { useGetUserProfileService } = userProfile()
+  const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
 
   const {
