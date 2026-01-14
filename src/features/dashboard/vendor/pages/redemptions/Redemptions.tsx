@@ -6,17 +6,10 @@ import { useReducerSpread } from '@/hooks'
 import React from 'react'
 import { OPTIONS } from '@/utils/constants/filter'
 import { useRedemptionQueries } from '@/features/dashboard/hooks'
-import { useAuthStore } from '@/stores'
-import { useUserProfile } from '@/hooks'
+import { branchQueries } from '@/features/dashboard/branch/hooks'
 
 export default function Redemptions() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
-  const { user } = useAuthStore()
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-
-  const userType = (user as any)?.user_type || userProfileData?.user_type
-  const isBranchManager = userType === 'branch'
 
   const params = React.useMemo(() => {
     const apiParams: any = {
@@ -52,26 +45,18 @@ export default function Redemptions() {
     return apiParams
   }, [query])
 
-  // Use branch endpoint for branch managers, vendor endpoint for vendors
-  const { useGetBranchRedemptionsService, useGetVendorRedemptionsService } = useRedemptionQueries()
+  const { useGetVendorRedemptionsService } = useRedemptionQueries()
+  const { data: vendorRedemptionsResponse, isLoading: isLoadingVendorRedemptions } =
+    useGetVendorRedemptionsService(params)
 
-  const branchRedemptionsQuery = useGetBranchRedemptionsService(
-    isBranchManager ? params : undefined,
-  )
-  const vendorRedemptionsQuery = useGetVendorRedemptionsService(
-    !isBranchManager ? params : undefined,
-  )
+  const { useGetBranchRedemptionsService } = branchQueries()
+  const { data: branchRedemptionsResponse, isLoading: isLoadingBranchRedemptions } =
+    useGetBranchRedemptionsService()
 
-  // Get the active redemption data based on user type
-  const redemptionsResponse = isBranchManager
-    ? branchRedemptionsQuery.data
-    : vendorRedemptionsQuery.data
-  const isLoading = isBranchManager
-    ? branchRedemptionsQuery.isLoading
-    : vendorRedemptionsQuery.isLoading
+  const redemptionsResponse = vendorRedemptionsResponse || branchRedemptionsResponse
+  const isLoading = isLoadingVendorRedemptions || isLoadingBranchRedemptions
 
-  const redemptions = redemptionsResponse?.data || []
-  const total = redemptionsResponse?.pagination?.limit ? redemptions.length : redemptions.length
+  const total = redemptionsResponse?.pagination?.limit || 0
 
   return (
     <>
@@ -85,13 +70,13 @@ export default function Redemptions() {
           <div className="relative space-y-[37px]">
             <div className="text-[#0c4b77] py-2 border-b-2 border-[#0c4b77] w-fit">
               <Text variant="h6" weight="medium">
-                Redemptions ({redemptions.length})
+                Redemptions ({redemptionsResponse?.pagination?.limit || 0})
               </Text>
             </div>
             <PaginatedTable
               filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
               columns={redemptionListColumns}
-              data={redemptions}
+              data={redemptionsResponse}
               total={total}
               loading={isLoading}
               query={query}

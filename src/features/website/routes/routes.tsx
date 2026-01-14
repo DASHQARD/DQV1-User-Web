@@ -8,6 +8,7 @@ import {
   LandingPage,
   OrdersPage,
   RedemptionPage,
+  TermsOfService,
   WebsiteVendors,
   VendorsProfile,
   ViewBag,
@@ -57,5 +58,9 @@ export const websiteRoutes: RouteObject[] = [
   {
     path: 'redeem',
     element: <RedemptionPage />,
+  },
+  {
+    path: 'terms-of-service',
+    element: <TermsOfService />,
   },
 ]

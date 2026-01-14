@@ -72,6 +72,13 @@ export const MODALS = {
     DELETE: 'delete-experience',
     APPROVAL: 'experience-approval',
   },
+  BRANCH_EXPERIENCE: {
+    ROOT: 'branch-experience-modal',
+    VIEW: 'view-branch-experience',
+    EDIT: 'edit-branch-experience',
+    DELETE: 'delete-branch-experience',
+    APPROVAL: 'branch-experience-approval',
+  },
   PAYMENT: {
     ROOT: 'payment-modal',
     VIEW: 'view-payment',

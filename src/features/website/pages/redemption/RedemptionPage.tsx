@@ -230,9 +230,15 @@ export default function RedemptionPage() {
   // Extract vendors from response
   const vendors = useMemo(() => {
     if (!vendorsResponse) return []
-    if (Array.isArray(vendorsResponse)) return vendorsResponse
+    if (Array.isArray(vendorsResponse)) {
+      return vendorsResponse.filter((vendor: any) => vendor.branches_with_cards?.length > 0)
+    }
     if (vendorsResponse && typeof vendorsResponse === 'object' && 'data' in vendorsResponse) {
-      return (vendorsResponse as any).data || []
+      return (
+        (vendorsResponse as any).data?.filter(
+          (vendor: any) => vendor.branches_with_cards?.length > 0,
+        ) || []
+      )
     }
     return []
   }, [vendorsResponse])

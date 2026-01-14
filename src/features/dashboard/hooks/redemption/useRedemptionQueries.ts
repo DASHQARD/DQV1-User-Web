@@ -5,12 +5,10 @@ import {
   getRedemptions,
   getUserRedemptions,
   getVendorRedemptions,
-  getBranchRedemptions,
   type SearchVendorsParams,
   type GetRedemptionsParams,
   type GetUserRedemptionsParams,
   type GetVendorRedemptionsParams,
-  type GetBranchRedemptionsParams,
   getRedemptionsAmountDashGo,
   getRedemptionsAmountDashPro,
   type GetRedemptionsAmountDashGoParams,
@@ -20,6 +18,7 @@ import {
   getRedemptionsAmountDashPass,
   type GetRedemptionsAmountDashPassParams,
 } from '../../services/redemptions'
+import { useUserProfile } from '@/hooks'
 
 export function useRedemptionQueries() {
   function useSearchVendorsService(params?: SearchVendorsParams) {
@@ -45,16 +44,15 @@ export function useRedemptionQueries() {
   }
 
   function useGetVendorRedemptionsService(params?: GetVendorRedemptionsParams) {
+    const { useGetUserProfileService } = useUserProfile()
+    const { data: userProfileData } = useGetUserProfileService()
+    const isBranch = userProfileData?.user_type === 'branch'
+
+    // is not branch
     return useQuery({
       queryKey: ['vendor-redemptions', params],
       queryFn: () => getVendorRedemptions(params),
-    })
-  }
-
-  function useGetBranchRedemptionsService(params?: GetBranchRedemptionsParams) {
-    return useQuery({
-      queryKey: ['branch-redemptions', params],
-      queryFn: () => getBranchRedemptions(params),
+      enabled: !isBranch,
     })
   }
 
@@ -114,7 +112,6 @@ export function useRedemptionQueries() {
     useGetRedemptionsService,
     useGetUserRedemptionsService,
     useGetVendorRedemptionsService,
-    useGetBranchRedemptionsService,
     useGetRedemptionsAmountDashGoService,
     useGetRedemptionsAmountDashProService,
     useGetRedemptionsAmountDashXService,

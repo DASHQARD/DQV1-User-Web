@@ -22,12 +22,12 @@ import {
 import { CardItems } from '@/features/website/components'
 import { ROUTES, MODALS } from '@/utils/constants'
 import { vendorQueries, useVendorMutations } from '@/features'
-import { useRedemptionQueries } from '@/features/dashboard/hooks'
 import LoaderGif from '@/assets/gifs/loader.gif'
 import { getStatusVariant } from '@/utils/helpers/common'
 import EmptyStateImage from '@/assets/images/empty-state.png'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { StatusCell } from '@/components'
+import { branchQueries } from '@/features/dashboard/branch/hooks'
 
 type QueryType = typeof DEFAULT_QUERY
 
@@ -474,11 +474,9 @@ export function BranchDetails() {
   }, [vendorsDetailsResponse, vendorId, branchId])
 
   // Fetch branch redemptions
-  const { useGetBranchRedemptionsService } = useRedemptionQueries()
+  const { useGetBranchRedemptionsService } = branchQueries()
   const { data: branchRedemptionsResponse, isLoading: isLoadingRedemptions } =
-    useGetBranchRedemptionsService({
-      limit: 5, // Get only 5 most recent redemptions
-    })
+    useGetBranchRedemptionsService()
 
   // Get recent redemptions (first 5) - sorted by most recent first
   const recentRedemptions = React.useMemo(() => {

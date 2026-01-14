@@ -45,6 +45,7 @@ export function useAuth() {
     return useMutation({
       mutationFn: signUp,
       onSuccess: (response: any) => {
+        console.log('sign up response', response)
         success(
           response.data?.message ||
             'Account created successfully. Email verification link has been sent to your email.',

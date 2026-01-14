@@ -1,8 +1,9 @@
 import { Modal, Text, Button } from '@/components'
-import { usePersistedModalState } from '@/hooks'
+import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { useVendorMutations } from '@/features'
 import { Icon } from '@/libs'
+import { useBranchMutations } from '@/features/dashboard/branch'
 
 export function DeleteExperience() {
   const modal = usePersistedModalState({
@@ -12,15 +13,29 @@ export function DeleteExperience() {
   const card = modal.modalData as any
   const { useDeleteCardService } = useVendorMutations()
   const deleteCardMutation = useDeleteCardService()
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const isBranch = userProfileData?.user_type === 'branch'
+  const { useDeleteBranchExperienceService } = useBranchMutations()
+  const { mutateAsync: deleteBranchExperience, isPending: isDeletingBranchExperience } =
+    useDeleteBranchExperienceService()
 
   const handleDelete = () => {
     if (!card?.id) return
 
-    deleteCardMutation.mutate(card.id, {
-      onSuccess: () => {
-        modal.closeModal()
-      },
-    })
+    if (isBranch) {
+      deleteBranchExperience(card.id, {
+        onSuccess: () => {
+          modal.closeModal()
+        },
+      })
+    } else {
+      deleteCardMutation.mutate(card.id, {
+        onSuccess: () => {
+          modal.closeModal()
+        },
+      })
+    }
   }
 
   if (!card) return null
@@ -67,7 +82,7 @@ export function DeleteExperience() {
               variant="danger"
               className="flex-1"
               disabled={deleteCardMutation.isPending}
-              loading={deleteCardMutation.isPending}
+              loading={deleteCardMutation.isPending || isDeletingBranchExperience}
             >
               Delete
             </Button>
