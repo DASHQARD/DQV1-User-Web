@@ -3,12 +3,13 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { FileUploader, Input, Combobox, Button, Modal, Text } from '@/components'
-import { useUploadFiles, usePersistedModalState, usePresignedURL } from '@/hooks'
+import { useUploadFiles, usePersistedModalState, usePresignedURL, useUserProfile } from '@/hooks'
 import { useToast } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { useVendorMutations, vendorQueries } from '@/features'
 import { CreateExperienceSchema } from '@/utils/schemas'
 import { Icon } from '@/libs'
+import { useBranchMutations } from '@/features/dashboard/branch/hooks'
 
 type FormData = z.infer<typeof CreateExperienceSchema> & { id: number }
 
@@ -18,12 +19,19 @@ export function EditExperience() {
   })
 
   const card = modal.modalData as any
+
   const { useUpdateCardService } = useVendorMutations()
   const { mutateAsync: updateCard, isPending: isUpdating } = useUpdateCardService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const { useBranchesService } = vendorQueries()
   const { data: branches } = useBranchesService()
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const isBranch = userProfileData?.user_type === 'branch'
+  const { useUpdateBranchExperienceService } = useBranchMutations()
+  const { mutateAsync: updateBranchExperience, isPending: isUpdatingBranchExperience } =
+    useUpdateBranchExperienceService()
 
   const toast = useToast()
 
@@ -57,6 +65,22 @@ export function EditExperience() {
 
   const isModalOpen = modal.isModalOpen(MODALS.EXPERIENCE.EDIT)
 
+  useEffect(() => {
+    if (!isModalOpen || !card) return
+    form.reset({
+      id: card.id,
+      product: card.product,
+      description: card.description,
+      type: card.type,
+      price: card.price ? parseFloat(card.price) : 0,
+      currency: card.currency || 'GHS',
+      issue_date: card.issue_date ? card.issue_date.split('T')[0] : '',
+      expiry_date: card.expiry_date ? card.expiry_date.split('T')[0] : '',
+      images: [],
+      terms_and_conditions: [],
+      redemption_branches: [],
+    })
+  }, [isModalOpen, card])
   // Load existing images and terms
   useEffect(() => {
     if (!isModalOpen || !card) return
@@ -185,7 +209,35 @@ export function EditExperience() {
         redemption_branches: branchIds.length > 0 ? branchIds.map((id) => ({ branch_id: id })) : [],
       }
 
-      await updateCard(payload)
+      const branchPayload: any = {
+        card_id: card.id,
+        product: data.product,
+        description: data.description,
+        type: data.type,
+        price: data.price,
+        currency: data.currency,
+        issue_date: data.issue_date,
+        expiry_date: data.expiry_date,
+        images: uploadedImages.map((img: any) => ({
+          file_url: img.file_url,
+          file_name: img.file_name,
+        })),
+        terms_and_conditions: uploadedTerms.map((img: any) => ({
+          file_url: img.file_url,
+          file_name: img.file_name,
+        })),
+        redemption_branches: [
+          {
+            branch_id: userProfileData?.branches?.[0]?.id,
+          },
+        ],
+      }
+
+      if (isBranch) {
+        await updateBranchExperience(branchPayload)
+      } else {
+        await updateCard(payload)
+      }
 
       modal.closeModal()
     } catch (error: any) {
@@ -195,7 +247,7 @@ export function EditExperience() {
 
   if (!card) return null
 
-  const isPending = isUpdating || isUploading
+  const isPending = isUpdating || isUploading || isUpdatingBranchExperience
 
   return (
     <Modal

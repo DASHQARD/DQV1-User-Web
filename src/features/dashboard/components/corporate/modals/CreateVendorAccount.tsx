@@ -431,7 +431,7 @@ function CreateVendorAccountContent({
                 ''
               : data.business_industry || '',
             country: country,
-            country_code: countryCode.replace('+', ''),
+            country_code: '01',
             employer_identification_number: vendorDetailsSameAsCorporate
               ? corporateUser?.employee_identification_number ||
                 corporateBusinessDocs[0]?.employer_identification_number ||

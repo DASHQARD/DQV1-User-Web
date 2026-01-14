@@ -23,6 +23,7 @@ import {
   deleteBranchManagerInvitation,
   removeBranchManager,
   updateBranchStatus,
+  createBranchExperience,
 } from '../services'
 import type {
   UpdateBranchPaymentDetailsPayload,
@@ -41,6 +42,20 @@ export function useVendorMutations() {
     const queryClient = useQueryClient()
     return useMutation({
       mutationFn: createExperience,
+      onSuccess: (response: any) => {
+        success(response?.message || 'Experience created successfully')
+        queryClient.invalidateQueries({ queryKey: ['cards-by-vendor-id'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to create experience. Please try again.')
+      },
+    })
+  }
+
+  function useCreateBranchExperienceService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: createBranchExperience,
       onSuccess: (response: any) => {
         success(response?.message || 'Experience created successfully')
         queryClient.invalidateQueries({ queryKey: ['cards-by-vendor-id'] })
@@ -382,5 +397,6 @@ export function useVendorMutations() {
     useRemoveBranchManagerService,
     useUpdateBranchStatusService,
     useDeleteBranchByVendorService,
+    useCreateBranchExperienceService,
   }
 }

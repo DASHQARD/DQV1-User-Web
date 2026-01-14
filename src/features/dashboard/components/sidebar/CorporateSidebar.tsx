@@ -21,6 +21,8 @@ export default function CorporateSidebar() {
   const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
 
+  console.log('user', user)
+
   const { useGetAllVendorsDetailsService } = vendorQueries()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
 
@@ -134,7 +136,7 @@ export default function CorporateSidebar() {
 
   const accountMenuContent = (() => {
     // Hide account menu for corporate admin users
-    if (user?.user_type === 'corporate admin') {
+    if (user?.user_type === 'corporate admin' || user?.user_type === 'vendor') {
       return null
     }
 

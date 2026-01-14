@@ -25,6 +25,9 @@ export default function CreateExperienceForm() {
   const { data: userProfileData } = useGetUserProfileService()
   const { useBranchesService } = vendorQueries()
   const { data: branches, isLoading: isLoadingBranches } = useBranchesService()
+  const { useCreateBranchExperienceService } = useVendorMutations()
+  const { mutateAsync: createBranchExperience, isPending: isCreatingBranchExperience } =
+    useCreateBranchExperienceService()
 
   const toast = useToast()
 
@@ -43,8 +46,6 @@ export default function CreateExperienceForm() {
 
   const userType = (user as any)?.user_type
   const isBranchManager = userType === 'branch'
-  // const isVendor = userType === 'vendor' || userType === 'corporate_vendor'
-  // const isCorporate = userType === 'corporate'
 
   const cardTypes = ['DashX', 'DashPass']
 
@@ -64,7 +65,7 @@ export default function CreateExperienceForm() {
     },
   })
 
-  const isPending = isCreating || isUploading
+  const isPending = isCreating || isUploading || isCreatingBranchExperience
 
   const isModalOpen = modal.isModalOpen(MODALS.EXPERIENCE.CREATE)
 
@@ -210,7 +211,11 @@ export default function CreateExperienceForm() {
         redemption_branches: branchIds.length > 0 ? branchIds.map((id) => ({ branch_id: id })) : [],
       }
 
-      await createExperience(payload)
+      if (isBranchManager) {
+        await createBranchExperience(payload)
+      } else {
+        await createExperience(payload)
+      }
 
       form.reset()
       setImageFiles([])

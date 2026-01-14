@@ -326,19 +326,8 @@ export const getUserRedemptions = async (
 }
 
 // Get authenticated vendor's redeemed cards
-export const getVendorRedemptions = async (
-  params?: GetVendorRedemptionsParams,
-): Promise<RedemptionsListResponse> => {
-  const response = await axiosClient.get(`${commonUrl}/vendors`, { params })
-  return response as unknown as RedemptionsListResponse
-}
-
-// Get authenticated branch's redeemed cards
-export const getBranchRedemptions = async (
-  params?: GetBranchRedemptionsParams,
-): Promise<RedemptionsListResponse> => {
-  const response = await axiosClient.get(`${commonUrl}/branches`, { params })
-  return response as unknown as RedemptionsListResponse
+export const getVendorRedemptions = async (params?: GetVendorRedemptionsParams): Promise<any> => {
+  return await getList(`${commonUrl}/vendors`, params)
 }
 
 // Update redemption status

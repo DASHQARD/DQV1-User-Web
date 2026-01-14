@@ -222,6 +222,22 @@ export default function CardDetailsPage() {
     if (!Array.isArray(cards) || cards.length === 0) {
       return []
     }
+    if (validCardType === 'dashpro') {
+      const totalAmount = cards.reduce((sum: number, c: any) => sum + parseFloat(c.price || '0'), 0)
+
+      return [
+        {
+          id: 'dashpro-wallet',
+          card_name: 'DashPro Wallet',
+          balance: totalAmount,
+          amount: totalAmount,
+          card_price: totalAmount,
+          status: 'active',
+          currency: 'GHS',
+          isAggregated: true,
+        },
+      ]
+    }
 
     // Map cards to the expected format based on API response structure
     return cards.map((card: any) => {
