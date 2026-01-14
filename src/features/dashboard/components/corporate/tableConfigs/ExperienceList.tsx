@@ -14,7 +14,7 @@ export const experienceListColumns = [
   },
   {
     header: 'Price',
-    accessorKey: 'price',
+    accessorKey: 'base_price',
   },
   {
     header: 'Status',
@@ -50,15 +50,11 @@ export const experienceListCsvHeaders: Array<CsvHeader> = [
   },
   {
     name: 'Price',
-    accessor: 'price',
+    accessor: 'base_price',
     transform: (value: any) => {
-      const price = parseFloat(value as string)
-      return formatCurrency(price, 'GHS')
+      const basePrice = parseFloat(value as string)
+      return formatCurrency(basePrice, 'GHS')
     },
-  },
-  {
-    name: 'Currency',
-    accessor: 'currency',
   },
   {
     name: 'Status',
