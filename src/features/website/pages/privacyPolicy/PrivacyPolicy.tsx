@@ -137,42 +137,66 @@ export default function PrivacyPolicy() {
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-start gap-3 p-5 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200">
-                        <Icon icon="bi:person-circle" className="text-primary-500 text-2xl flex-shrink-0 mt-1" />
+                        <Icon
+                          icon="bi:person-circle"
+                          className="text-primary-500 text-2xl flex-shrink-0 mt-1"
+                        />
                         <div>
                           <strong className="block text-gray-900 mb-1">Personal Information</strong>
-                          <p className="text-gray-700 text-sm">Full name, email address, phone number</p>
+                          <p className="text-gray-700 text-sm">
+                            Full name, email address, phone number
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3 p-5 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200">
-                        <Icon icon="bi:credit-card" className="text-primary-500 text-2xl flex-shrink-0 mt-1" />
+                        <Icon
+                          icon="bi:credit-card"
+                          className="text-primary-500 text-2xl flex-shrink-0 mt-1"
+                        />
                         <div>
                           <strong className="block text-gray-900 mb-1">Payment Data</strong>
-                          <p className="text-gray-700 text-sm">Mobile money or payment-related data</p>
+                          <p className="text-gray-700 text-sm">
+                            Mobile money or payment-related data
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3 p-5 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200">
-                        <Icon icon="bi:clock-history" className="text-primary-500 text-2xl flex-shrink-0 mt-1" />
+                        <Icon
+                          icon="bi:clock-history"
+                          className="text-primary-500 text-2xl flex-shrink-0 mt-1"
+                        />
                         <div>
                           <strong className="block text-gray-900 mb-1">Transaction History</strong>
                           <p className="text-gray-700 text-sm">Transaction history and logs</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3 p-5 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200">
-                        <Icon icon="bi:router" className="text-primary-500 text-2xl flex-shrink-0 mt-1" />
+                        <Icon
+                          icon="bi:router"
+                          className="text-primary-500 text-2xl flex-shrink-0 mt-1"
+                        />
                         <div>
                           <strong className="block text-gray-900 mb-1">Technical Data</strong>
-                          <p className="text-gray-700 text-sm">IP address and device/browser info</p>
+                          <p className="text-gray-700 text-sm">
+                            IP address and device/browser info
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3 p-5 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200">
-                        <Icon icon="bi:geo-alt" className="text-primary-500 text-2xl flex-shrink-0 mt-1" />
+                        <Icon
+                          icon="bi:geo-alt"
+                          className="text-primary-500 text-2xl flex-shrink-0 mt-1"
+                        />
                         <div>
                           <strong className="block text-gray-900 mb-1">Location Data</strong>
                           <p className="text-gray-700 text-sm">Location data (if enabled)</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3 p-5 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200">
-                        <Icon icon="bi:headset" className="text-primary-500 text-2xl flex-shrink-0 mt-1" />
+                        <Icon
+                          icon="bi:headset"
+                          className="text-primary-500 text-2xl flex-shrink-0 mt-1"
+                        />
                         <div>
                           <strong className="block text-gray-900 mb-1">Support Data</strong>
                           <p className="text-gray-700 text-sm">Customer support interactions</p>
@@ -188,37 +212,56 @@ export default function PrivacyPolicy() {
                     <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-xl flex items-center justify-center text-xl font-bold flex-shrink-0">
                       3
                     </div>
-                    <h2 className="text-3xl font-semibold text-gray-900">How We Use Your Information</h2>
+                    <h2 className="text-3xl font-semibold text-gray-900">
+                      How We Use Your Information
+                    </h2>
                   </div>
                   <div className="ml-0 md:ml-20">
-                    <p className="text-gray-700 leading-relaxed text-lg mb-4">Your data is used to:</p>
+                    <p className="text-gray-700 leading-relaxed text-lg mb-4">
+                      Your data is used to:
+                    </p>
                     <ul className="list-none space-y-3">
                       <li className="flex items-start gap-3">
-                        <Icon icon="bi:check-circle" className="text-green-500 text-xl flex-shrink-0 mt-0.5" />
+                        <Icon
+                          icon="bi:check-circle"
+                          className="text-green-500 text-xl flex-shrink-0 mt-0.5"
+                        />
                         <span className="text-gray-700 leading-relaxed">
                           Deliver, manage, and improve the DashQard platform
                         </span>
                       </li>
                       <li className="flex items-start gap-3">
-                        <Icon icon="bi:check-circle" className="text-green-500 text-xl flex-shrink-0 mt-0.5" />
+                        <Icon
+                          icon="bi:check-circle"
+                          className="text-green-500 text-xl flex-shrink-0 mt-0.5"
+                        />
                         <span className="text-gray-700 leading-relaxed">
                           Verify identity and secure transactions
                         </span>
                       </li>
                       <li className="flex items-start gap-3">
-                        <Icon icon="bi:check-circle" className="text-green-500 text-xl flex-shrink-0 mt-0.5" />
+                        <Icon
+                          icon="bi:check-circle"
+                          className="text-green-500 text-xl flex-shrink-0 mt-0.5"
+                        />
                         <span className="text-gray-700 leading-relaxed">
                           Communicate updates, alerts, and offers
                         </span>
                       </li>
                       <li className="flex items-start gap-3">
-                        <Icon icon="bi:check-circle" className="text-green-500 text-xl flex-shrink-0 mt-0.5" />
+                        <Icon
+                          icon="bi:check-circle"
+                          className="text-green-500 text-xl flex-shrink-0 mt-0.5"
+                        />
                         <span className="text-gray-700 leading-relaxed">
                           Support technical and customer service
                         </span>
                       </li>
                       <li className="flex items-start gap-3">
-                        <Icon icon="bi:check-circle" className="text-green-500 text-xl flex-shrink-0 mt-0.5" />
+                        <Icon
+                          icon="bi:check-circle"
+                          className="text-green-500 text-xl flex-shrink-0 mt-0.5"
+                        />
                         <span className="text-gray-700 leading-relaxed">
                           Comply with legal obligations
                         </span>
@@ -233,37 +276,49 @@ export default function PrivacyPolicy() {
                     <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-xl flex items-center justify-center text-xl font-bold flex-shrink-0">
                       4
                     </div>
-                    <h2 className="text-3xl font-semibold text-gray-900">Sharing Your Information</h2>
+                    <h2 className="text-3xl font-semibold text-gray-900">
+                      Sharing Your Information
+                    </h2>
                   </div>
                   <div className="ml-0 md:ml-20">
-                    <p className="text-gray-700 leading-relaxed text-lg mb-6">We may share your data with:</p>
+                    <p className="text-gray-700 leading-relaxed text-lg mb-6">
+                      We may share your data with:
+                    </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="bg-white border-2 border-gray-200 rounded-xl p-6 text-center transition-all hover:border-primary-500 hover:-translate-y-1 hover:shadow-lg">
                         <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Icon icon="bi:credit-card-2-front" className="text-white text-2xl" />
                         </div>
-                        <h4 className="text-gray-900 font-semibold text-lg mb-2">Payment Processors</h4>
+                        <h4 className="text-gray-900 font-semibold text-lg mb-2">
+                          Payment Processors
+                        </h4>
                         <p className="text-gray-600 text-sm">Secure payment processing partners</p>
                       </div>
                       <div className="bg-white border-2 border-gray-200 rounded-xl p-6 text-center transition-all hover:border-primary-500 hover:-translate-y-1 hover:shadow-lg">
                         <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Icon icon="bi:shop" className="text-white text-2xl" />
                         </div>
-                        <h4 className="text-gray-900 font-semibold text-lg mb-2">Partner Vendors</h4>
+                        <h4 className="text-gray-900 font-semibold text-lg mb-2">
+                          Partner Vendors
+                        </h4>
                         <p className="text-gray-600 text-sm">For gift card validation</p>
                       </div>
                       <div className="bg-white border-2 border-gray-200 rounded-xl p-6 text-center transition-all hover:border-primary-500 hover:-translate-y-1 hover:shadow-lg">
                         <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Icon icon="bi:shield-check" className="text-white text-2xl" />
                         </div>
-                        <h4 className="text-gray-900 font-semibold text-lg mb-2">Government & Law Enforcement</h4>
+                        <h4 className="text-gray-900 font-semibold text-lg mb-2">
+                          Government & Law Enforcement
+                        </h4>
                         <p className="text-gray-600 text-sm">When required by law</p>
                       </div>
                       <div className="bg-white border-2 border-gray-200 rounded-xl p-6 text-center transition-all hover:border-primary-500 hover:-translate-y-1 hover:shadow-lg">
                         <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Icon icon="bi:people" className="text-white text-2xl" />
                         </div>
-                        <h4 className="text-gray-900 font-semibold text-lg mb-2">Third-Party Service Providers</h4>
+                        <h4 className="text-gray-900 font-semibold text-lg mb-2">
+                          Third-Party Service Providers
+                        </h4>
                         <p className="text-gray-600 text-sm">Approved partners (under NDA)</p>
                       </div>
                     </div>
@@ -280,17 +335,21 @@ export default function PrivacyPolicy() {
                   </div>
                   <div className="ml-0 md:ml-20">
                     <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-l-4 border-primary-500 rounded-xl p-5 mb-5 flex items-center gap-3">
-                      <Icon icon="bi:clock-history" className="text-primary-500 text-xl flex-shrink-0" />
+                      <Icon
+                        icon="bi:clock-history"
+                        className="text-primary-500 text-xl flex-shrink-0"
+                      />
                       <div>
                         <strong className="text-gray-900">Retention Policy:</strong>{' '}
                         <span className="text-gray-700">
-                          We retain your personal information as long as legally required for business,
-                          legal, and regulatory compliance.
+                          We retain your personal information as long as legally required for
+                          business, legal, and regulatory compliance.
                         </span>
                       </div>
                     </div>
                     <p className="text-gray-700 leading-relaxed text-lg">
-                      For any further information about our data retention practices, please contact:{' '}
+                      For any further information about our data retention practices, please
+                      contact:{' '}
                       <a
                         href="mailto:support@dashqard.com"
                         className="text-primary-500 hover:text-primary-700 font-medium underline"
@@ -316,7 +375,9 @@ export default function PrivacyPolicy() {
                         Your data is protected with industry-standard security measures
                       </span>
                     </div>
-                    <p className="text-gray-700 leading-relaxed text-lg mb-4">We protect your data using:</p>
+                    <p className="text-gray-700 leading-relaxed text-lg mb-4">
+                      We protect your data using:
+                    </p>
                     <div className="space-y-3 mb-5">
                       <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg">
                         <Icon icon="bi:lock-fill" className="text-green-500 text-xl" />
@@ -334,7 +395,10 @@ export default function PrivacyPolicy() {
                       </div>
                     </div>
                     <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-4 flex items-start gap-3">
-                      <Icon icon="bi:exclamation-triangle" className="text-yellow-500 text-xl flex-shrink-0 mt-0.5" />
+                      <Icon
+                        icon="bi:exclamation-triangle"
+                        className="text-yellow-500 text-xl flex-shrink-0 mt-0.5"
+                      />
                       <span className="text-yellow-800 text-sm">
                         However, no system is entirely immune from breaches. Users are encouraged to
                         use strong passwords and report suspicious activity.
@@ -362,23 +426,39 @@ export default function PrivacyPolicy() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg border-l-3 border-primary-500">
-                        <Icon icon="bi:eye" className="text-primary-500 text-xl flex-shrink-0 mt-0.5" />
+                        <Icon
+                          icon="bi:eye"
+                          className="text-primary-500 text-xl flex-shrink-0 mt-0.5"
+                        />
                         <span className="text-gray-700">Access, correct, or delete your data</span>
                       </div>
                       <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg border-l-3 border-primary-500">
-                        <Icon icon="bi:download" className="text-primary-500 text-xl flex-shrink-0 mt-0.5" />
+                        <Icon
+                          icon="bi:download"
+                          className="text-primary-500 text-xl flex-shrink-0 mt-0.5"
+                        />
                         <span className="text-gray-700">
                           Request data portability, where applicable in accordance with the law of
                           jurisdiction
                         </span>
                       </div>
                       <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg border-l-3 border-primary-500">
-                        <Icon icon="bi:pause-circle" className="text-primary-500 text-xl flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700">Restrict processing in specific contexts</span>
+                        <Icon
+                          icon="bi:pause-circle"
+                          className="text-primary-500 text-xl flex-shrink-0 mt-0.5"
+                        />
+                        <span className="text-gray-700">
+                          Restrict processing in specific contexts
+                        </span>
                       </div>
                       <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg border-l-3 border-primary-500">
-                        <Icon icon="bi:x-circle" className="text-primary-500 text-xl flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700">Withdraw consent for non-essential processing</span>
+                        <Icon
+                          icon="bi:x-circle"
+                          className="text-primary-500 text-xl flex-shrink-0 mt-0.5"
+                        />
+                        <span className="text-gray-700">
+                          Withdraw consent for non-essential processing
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -396,12 +476,13 @@ export default function PrivacyPolicy() {
                     <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-l-4 border-primary-500 rounded-xl p-5 mb-5 flex items-center gap-3">
                       <Icon icon="bi:bell" className="text-primary-500 text-xl flex-shrink-0" />
                       <span className="text-gray-900">
-                        We may update this Privacy Policy to reflect changes in our practices or legal
-                        requirements.
+                        We may update this Privacy Policy to reflect changes in our practices or
+                        legal requirements.
                       </span>
                     </div>
                     <p className="text-gray-700 leading-relaxed text-lg">
-                      We will notify you of significant changes via email or dashboard announcements.
+                      We will notify you of significant changes via email or dashboard
+                      announcements.
                     </p>
                   </div>
                 </div>
