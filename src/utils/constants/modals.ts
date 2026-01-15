@@ -98,6 +98,12 @@ export const MODALS = {
       CREATE: 'create',
     },
   },
+  RECIPIENT: {
+    PARAM_NAME: 'recipient',
+    CHILDREN: {
+      VIEW: 'view',
+    },
+  },
   NOTIFICATIONS: {
     ROOT: 'notifications-modal',
     PAYMENT_CHANGE: 'payment-change-notification',

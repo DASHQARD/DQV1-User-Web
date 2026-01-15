@@ -1,10 +1,15 @@
 import { Dropdown } from '@/components'
+import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
 import type { TableCellProps } from '@/types'
 import { corporateMutations } from '@/features/dashboard/corporate/hooks'
 import { useToast } from '@/hooks'
+import { MODALS } from '@/utils/constants'
 
 export function RecipientActionCell({ row }: TableCellProps<any>) {
+  const modal = usePersistedModalState({
+    paramName: MODALS.RECIPIENT.PARAM_NAME,
+  })
   const { useDeleteRecipientService } = corporateMutations()
   const { mutateAsync: deleteRecipient, isPending } = useDeleteRecipientService()
   const toast = useToast()
@@ -25,6 +30,12 @@ export function RecipientActionCell({ row }: TableCellProps<any>) {
   }
 
   const actions = [
+    {
+      label: 'View',
+      onClickFn: () => {
+        modal.openModal(MODALS.RECIPIENT.CHILDREN.VIEW, { ...row.original })
+      },
+    },
     {
       label: 'Delete',
       onClickFn: handleDelete,

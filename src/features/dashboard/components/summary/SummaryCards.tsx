@@ -116,9 +116,10 @@ export default function SummaryCards() {
           My Gift Cards
         </Text>
 
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <section className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           {CARD_INFO.map((card) => (
             <div
+              key={card.id}
               id={card.title}
               className={cn(
                 'flex relative rounded-xl pt-[18px] pb-6 pl-6 pr-4 border border-gray-100 items-center justify-between group bg-white w-full overflow-hidden',
@@ -190,13 +191,14 @@ export default function SummaryCards() {
                             ]),
                       ]}
                     >
-                      <button
-                        type="button"
-                        className="btn rounded-lg no-print"
+                      <div
+                        className="btn rounded-lg no-print cursor-pointer"
                         aria-label="View actions"
+                        role="button"
+                        tabIndex={0}
                       >
                         <CustomIcon name="MoreVertical" width={24} height={24} />
-                      </button>
+                      </div>
                     </Dropdown>
                   </section>
 

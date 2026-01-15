@@ -141,10 +141,10 @@ export function PurchaseDetails() {
             </div>
 
             <div className="flex justify-between items-center gap-3">
-              <Button onClick={modal.closeModal} className="w-1/2">
+              <Button variant="outline" onClick={modal.closeModal} className="w-1/2">
                 Cancel
               </Button>
-              <Button className="w-1/2" variant="outline" onClick={globalThis.print}>
+              <Button className="w-1/2" variant="secondary" onClick={globalThis.print}>
                 Download PDF
               </Button>
             </div>

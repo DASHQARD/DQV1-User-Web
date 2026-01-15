@@ -1,18 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
-import {
-  getPaymentChangeNotifications,
-  approvePaymentChange,
-  rejectPaymentChange,
-} from '../services/notifications'
-
-export function usePaymentChangeNotifications() {
-  return useQuery({
-    queryKey: ['payment-change-notifications'],
-    queryFn: getPaymentChangeNotifications,
-    enabled: false,
-  })
-}
+import { approvePaymentChange, rejectPaymentChange } from '../services/notifications'
 
 export function useApprovePaymentChange() {
   const queryClient = useQueryClient()

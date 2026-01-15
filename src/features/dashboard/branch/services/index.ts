@@ -1,8 +1,9 @@
-import { deleteMethod, getList, getMethod, putMethod } from '@/services/requests'
+import { deleteMethod, getList, getMethod, postMethod, putMethod } from '@/services/requests'
 import type {
   GetBranchRedemptionsParams,
   RedemptionsListResponse,
 } from '../../services/redemptions'
+import type { CreateExperienceData } from '@/types'
 
 const commonManagerUrl = '/cards'
 const commonUrl = '/redemptions'
@@ -29,4 +30,8 @@ export const getBranchRedemptions = async (
   params?: GetBranchRedemptionsParams,
 ): Promise<RedemptionsListResponse> => {
   return await getList(`${commonUrl}/branches`, { params })
+}
+
+export const createBranchExperience = async (payload: CreateExperienceData) => {
+  return await postMethod(`${commonManagerUrl}/branch`, payload)
 }

@@ -3,14 +3,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { CORPORATE_NAV_ITEMS, ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
-import { Text, Tooltip, TooltipTrigger, TooltipContent, Avatar } from '@/components'
+import { Text, Tooltip, TooltipTrigger, TooltipContent, Avatar, Tag } from '@/components'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { PaymentChangeNotifications } from '../corporate/notifications/PaymentChangeNotifications'
 import { CreateVendorAccount } from '../corporate/modals'
 import { MODALS } from '@/utils/constants'
 import { usePersistedModalState, useUserProfile, usePresignedURL } from '@/hooks'
 import { useAuthStore } from '@/stores'
-import Logo from '@/assets/images/logo-placeholder.png'
 import { vendorQueries } from '../../vendor'
 
 export default function CorporateSidebar() {
@@ -20,8 +19,6 @@ export default function CorporateSidebar() {
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
-
-  console.log('user', user)
 
   const { useGetAllVendorsDetailsService } = vendorQueries()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
@@ -298,14 +295,15 @@ export default function CorporateSidebar() {
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center gap-3 flex-1 justify-between w-full">
           {!isCollapsed && (
-            <Link to={ROUTES.IN_APP.HOME} className="shrink-0">
-              <img
-                src={Logo}
-                alt="Logo"
-                className={cn('h-8 w-auto object-contain', isCollapsed && 'h-6 w-6')}
+            <Link to={ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME} className="shrink-0">
+              <Avatar
+                size="sm"
+                src={logoUrl}
+                name={user?.business_details?.[0]?.name || 'Corporate Account'}
               />
             </Link>
           )}
+
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={cn(
@@ -345,20 +343,18 @@ export default function CorporateSidebar() {
               {/* Top Section - Workspace Info */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Avatar
-                    size="sm"
-                    src={logoUrl}
-                    name={user?.business_details?.[0]?.name || 'Corporate Account'}
-                  />
                   <div className="flex-1 min-w-0">
-                    <Text
-                      variant="span"
-                      weight="bold"
-                      className="block text-sm text-gray-900 truncate"
-                    >
-                      {user?.business_details?.[0]?.name || 'Corporate Account'}{' '}
-                      {user?.corporate_id}
-                    </Text>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Text
+                        variant="span"
+                        weight="bold"
+                        className="block text-sm text-gray-900 truncate"
+                      >
+                        {user?.business_details?.[0]?.name || 'Corporate Account'}{' '}
+                        {user?.corporate_id}
+                      </Text>
+                      <Tag value="Corporate" variant="success" className="text-xs" />
+                    </div>
                     <Text variant="span" className="block text-xs text-gray-500 truncate">
                       {displayName}
                     </Text>

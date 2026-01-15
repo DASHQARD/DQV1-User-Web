@@ -120,6 +120,7 @@ export function vendorQueries() {
     return useQuery({
       queryKey: ['vendor-payments', query],
       queryFn: () => getVendorPayments(query),
+      enabled: false,
     })
   }
 

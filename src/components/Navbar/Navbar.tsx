@@ -37,10 +37,19 @@ export default function Navbar() {
     return !userType || userType === 'user'
   }, [user, userProfileData])
 
-  // Fetch current avatar from user profile (only for regular users)
+  // Get user type
+  const currentUserType = (user as any)?.user_type || userProfileData?.user_type
+  const isCorporateUser =
+    currentUserType === 'corporate admin' ||
+    currentUserType === 'corporate super admin' ||
+    currentUserType === 'corporate'
+
+  // Fetch current avatar from user profile (for regular users)
   useEffect(() => {
     if (!isAuthenticated || !isRegularUser || !userProfileData?.avatar) {
-      setAvatarUrl(null)
+      if (isRegularUser) {
+        setAvatarUrl(null)
+      }
       return
     }
 
@@ -65,8 +74,44 @@ export default function Navbar() {
     }
   }, [isAuthenticated, isRegularUser, userProfileData?.avatar, fetchPresignedURL])
 
-  // Get user type and status (reuse from isRegularUser check)
-  const currentUserType = (user as any)?.user_type || userProfileData?.user_type
+  // Fetch corporate logo from business_documents
+  useEffect(() => {
+    if (!isAuthenticated || !isCorporateUser || !userProfileData?.business_documents) {
+      if (isCorporateUser) {
+        setAvatarUrl(null)
+      }
+      return
+    }
+
+    const logoDocument = userProfileData.business_documents.find((doc: any) => doc.type === 'logo')
+
+    if (!logoDocument?.file_url) {
+      setAvatarUrl(null)
+      return
+    }
+
+    let cancelled = false
+    const loadLogo = async () => {
+      try {
+        const url = await fetchPresignedURL(logoDocument.file_url)
+        if (!cancelled) {
+          const avatarUrlValue = typeof url === 'string' ? url : (url as any)?.url || url
+          setAvatarUrl(avatarUrlValue)
+        }
+      } catch (error) {
+        console.error('Failed to fetch corporate logo', error)
+        if (!cancelled) {
+          setAvatarUrl(null)
+        }
+      }
+    }
+    loadLogo()
+    return () => {
+      cancelled = true
+    }
+  }, [isAuthenticated, isCorporateUser, userProfileData?.business_documents, fetchPresignedURL])
+
+  // Get user type and status
   const userStatus = (user as any)?.status || userProfileData?.status
   const userType = currentUserType
   const isCorporateAdmin = userType === 'corporate admin'
@@ -299,7 +344,7 @@ export default function Navbar() {
                       className="bg-gray-50 flex items-center justify-center rounded-full overflow-hidden relative hover:bg-gray-100 transition-colors ring-2 ring-transparent hover:ring-primary-200"
                       aria-label="Account"
                     >
-                      {isRegularUser && avatarUrl ? (
+                      {(isRegularUser || isCorporateUser) && avatarUrl ? (
                         <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                           <img
                             src={avatarUrl}
@@ -448,7 +493,7 @@ export default function Navbar() {
                 <>
                   <div className="border-t border-gray-200 pt-3 mt-3">
                     <div className="flex items-center gap-3 px-4 py-3 mb-2">
-                      {isRegularUser && avatarUrl ? (
+                      {(isRegularUser || isCorporateUser) && avatarUrl ? (
                         <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                           <img
                             src={avatarUrl}

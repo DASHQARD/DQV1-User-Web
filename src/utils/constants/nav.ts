@@ -98,6 +98,11 @@ export const VENDOR_NAV_ITEMS = [
     section: 'Branch Management',
     items: [
       {
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_BRANCH_MANAGER,
+        label: 'Create Branch',
+        icon: 'bi:building-add',
+      },
+      {
         path: ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES,
         label: 'Branches',
         icon: 'bi:building',
@@ -106,11 +111,6 @@ export const VENDOR_NAV_ITEMS = [
         path: ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCH_MANAGERS,
         label: 'Branch Managers',
         icon: 'bi:people-fill',
-      },
-      {
-        path: ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_BRANCH_MANAGER,
-        label: 'Create Branch',
-        icon: 'bi:building-add',
       },
     ],
   },
@@ -151,6 +151,35 @@ export const VENDOR_NAV_ITEMS = [
         path: ROUTES.IN_APP.DASHBOARD.VENDOR.AUDIT_LOGS,
         label: 'Audit Logs',
         icon: 'bi:journal-text',
+      },
+    ],
+  },
+]
+
+export const BRANCH_NAV_ITEMS = [
+  {
+    section: 'Overview',
+    items: [
+      { path: ROUTES.IN_APP.DASHBOARD.VENDOR.HOME, label: 'Dashboard', icon: 'bi:speedometer2' },
+    ],
+  },
+  {
+    section: 'Experience',
+    items: [
+      {
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.EXPERIENCE,
+        label: 'My Experience',
+        icon: 'bi:briefcase-fill',
+      },
+    ],
+  },
+  {
+    section: 'Redemptions',
+    items: [
+      {
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.REDEMPTIONS,
+        label: 'Redemptions',
+        icon: 'bi:arrow-left-right',
       },
     ],
   },

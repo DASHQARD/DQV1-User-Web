@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
-import { updateBranchExperience, deleteBranchExperience } from '../services'
+import { updateBranchExperience, deleteBranchExperience, createBranchExperience } from '../services'
 
 export function useBranchMutations() {
   const { success, error } = useToast()
@@ -28,8 +28,23 @@ export function useBranchMutations() {
       },
     })
   }
+
+  function useCreateBranchExperienceService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: createBranchExperience,
+      onSuccess: (response: any) => {
+        success(response?.message || 'Experience created successfully')
+        queryClient.invalidateQueries()
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to create experience. Please try again.')
+      },
+    })
+  }
   return {
     useUpdateBranchExperienceService,
     useDeleteBranchExperienceService,
+    useCreateBranchExperienceService,
   }
 }

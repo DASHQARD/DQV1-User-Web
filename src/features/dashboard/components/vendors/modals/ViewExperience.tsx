@@ -72,7 +72,9 @@ export function ViewExperience() {
               Price
             </Text>
             <Text variant="p" className="text-sm font-medium text-gray-900 mt-1">
-              {card.price ? formatCurrency(parseFloat(card.price), card.currency || 'GHS') : '-'}
+              {card.price
+                ? formatCurrency(parseFloat(card.base_price), card.currency || 'GHS')
+                : '-'}
             </Text>
           </div>
 

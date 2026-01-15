@@ -34,11 +34,6 @@ export interface NotificationsResponse {
   data: PaymentChangeNotification[]
 }
 
-export const getPaymentChangeNotifications = async (): Promise<NotificationsResponse> => {
-  const response = await axiosClient.get('/notifications/payment-changes')
-  return response as unknown as NotificationsResponse
-}
-
 export const approvePaymentChange = async (
   notificationId: number,
 ): Promise<{ status: string; message: string }> => {

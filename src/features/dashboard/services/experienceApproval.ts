@@ -21,11 +21,6 @@ export interface ExperienceApprovalsResponse {
   data: ExperienceApproval[]
 }
 
-export const getPendingExperienceApprovals = async (): Promise<ExperienceApprovalsResponse> => {
-  const response = await axiosClient.get('/cards/pending-approvals')
-  return response as unknown as ExperienceApprovalsResponse
-}
-
 export const approveExperience = async (
   cardId: number,
 ): Promise<{ status: string; message: string }> => {
