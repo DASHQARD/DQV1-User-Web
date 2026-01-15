@@ -48,7 +48,7 @@ export function ToastProvider({ children }: Readonly<{ children: React.ReactNode
   )
 
   const variantStyles: Record<ToastNotificationType, string> = {
-    success: 'bg-success border border-success text-[#27303a]',
+    success: 'bg-success border border-success text-white',
     error: 'bg-error-500 text-white',
     info: 'bg-neutral-grey-500 text-white',
   }
@@ -60,19 +60,19 @@ export function ToastProvider({ children }: Readonly<{ children: React.ReactNode
   }
 
   const variantIconStyles: Record<ToastNotificationType, string> = {
-    success: 'text-[#039855]',
+    success: 'text-white',
     error: 'text-white',
     info: 'text-white',
   }
 
   const variantTextStyles: Record<ToastNotificationType, string> = {
-    success: 'text-[#27303a]',
+    success: 'text-white',
     error: 'text-white',
     info: 'text-white',
   }
 
   const variantMessageStyles: Record<ToastNotificationType, string> = {
-    success: 'text-[#2f3f53]',
+    success: 'text-white',
     error: 'text-white',
     info: 'text-white',
   }

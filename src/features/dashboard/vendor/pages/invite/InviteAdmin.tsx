@@ -80,7 +80,7 @@ export function InviteAdmin() {
           >
             Clear
           </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button type="submit" variant="secondary" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? 'Sending...' : 'Send Invitation'}
           </Button>
         </div>

@@ -268,7 +268,7 @@ export default function VendorsProfile() {
                   key={card.card_id}
                   {...card}
                   id={card.card_id}
-                  type={(card.type as 'dashpro' | 'dashpass' | 'dashgo' | 'DashX') || 'DashX'}
+                  type={(card.type as 'dashPass' | 'DashX') || 'DashX'}
                   branch_name={card.branch_name}
                   branch_location={card.branch_location}
                 />

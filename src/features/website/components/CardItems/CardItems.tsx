@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
@@ -54,6 +55,7 @@ export const CardItems = ({
   const [isHovered, setIsHovered] = useState(false)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
+  const navigate = useNavigate()
 
   // Get background SVG based on card type
   const getCardBackground = () => {
@@ -115,7 +117,9 @@ export const CardItems = ({
   }
 
   const handleCardClick = () => {
-    if (onGetQard) {
+    if (card_id) {
+      navigate(`/card/${card_id}`)
+    } else if (onGetQard) {
       onGetQard()
     }
   }

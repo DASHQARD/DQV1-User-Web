@@ -10,6 +10,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { Modal } from '@/components'
 import { CartPopoverContent } from '@/components/CartModal'
 import { useUserProfile, usePresignedURL } from '@/hooks'
+import { vendorQueries } from '@/features'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -22,6 +23,7 @@ export default function Navbar() {
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
+  const { useGetBranchesByVendorIdService } = vendorQueries()
   // const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0)
   const displayName =
     user?.fullname || user?.name || user?.email?.split('@')[0] || user?.username || 'there'
@@ -74,6 +76,26 @@ export default function Navbar() {
     }
   }, [isAuthenticated, isRegularUser, userProfileData?.avatar, fetchPresignedURL])
 
+  // Get user type and status (moved up to use in useEffect)
+  const userStatus = (user as any)?.status || userProfileData?.status
+  const userType = currentUserType
+  const isCorporateAdmin = userType === 'corporate admin'
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
+  const isCorporate = userType === 'corporate' || isCorporateSuperAdmin
+  const isVendor = userType === 'vendor' || userType === 'corporate_vendor'
+  const isBranchManager = userType === 'branch'
+  const isApprovedOrVerified = userStatus === 'approved' || userStatus === 'verified'
+
+  // Get vendor_id for fetching branches
+  const vendorId = userProfileData?.vendor_id ? Number(userProfileData.vendor_id) : null
+  const { data: branchesData } = useGetBranchesByVendorIdService(vendorId, false)
+
+  // Get first branch for navigation
+  const firstBranch = useMemo(() => {
+    if (!branchesData || !Array.isArray(branchesData) || branchesData.length === 0) return null
+    return branchesData[0]
+  }, [branchesData])
+
   // Fetch corporate logo from business_documents
   useEffect(() => {
     if (!isAuthenticated || !isCorporateUser || !userProfileData?.business_documents) {
@@ -111,16 +133,42 @@ export default function Navbar() {
     }
   }, [isAuthenticated, isCorporateUser, userProfileData?.business_documents, fetchPresignedURL])
 
-  // Get user type and status
-  const userStatus = (user as any)?.status || userProfileData?.status
-  const userType = currentUserType
-  const isCorporateAdmin = userType === 'corporate admin'
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
-  const isCorporate = userType === 'corporate' || isCorporateSuperAdmin
-  const isVendor = userType === 'vendor' || userType === 'corporate_vendor'
-  const isBranchManager = userType === 'branch'
-  const isApprovedOrVerified = userStatus === 'approved' || userStatus === 'verified'
+  // Fetch vendor logo from business_documents
+  useEffect(() => {
+    if (!isAuthenticated || !isVendor || !userProfileData?.business_documents) {
+      if (isVendor) {
+        setAvatarUrl(null)
+      }
+      return
+    }
 
+    const logoDocument = userProfileData.business_documents.find((doc: any) => doc.type === 'logo')
+
+    if (!logoDocument?.file_url) {
+      setAvatarUrl(null)
+      return
+    }
+
+    let cancelled = false
+    const loadLogo = async () => {
+      try {
+        const url = await fetchPresignedURL(logoDocument.file_url)
+        if (!cancelled) {
+          const avatarUrlValue = typeof url === 'string' ? url : (url as any)?.url || url
+          setAvatarUrl(avatarUrlValue)
+        }
+      } catch (error) {
+        console.error('Failed to fetch vendor logo', error)
+        if (!cancelled) {
+          setAvatarUrl(null)
+        }
+      }
+    }
+    loadLogo()
+    return () => {
+      cancelled = true
+    }
+  }, [isAuthenticated, isVendor, userProfileData?.business_documents, fetchPresignedURL])
   // Menu items based on user type
   const menuItems = useMemo(() => {
     // Branch manager menu items
@@ -146,6 +194,19 @@ export default function Navbar() {
 
     // Vendor menu items
     if (isVendor) {
+      // Build branches path - navigate to first branch if available, otherwise listing page
+      const branchesPath = (() => {
+        if (firstBranch) {
+          const branchId = firstBranch.id || firstBranch.branch_id
+          const queryParams = new URLSearchParams()
+          queryParams.set('account', 'vendor')
+          if (vendorId) queryParams.set('vendor_id', String(vendorId))
+          if (branchId) queryParams.set('branch_id', String(branchId))
+          return `${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}/${branchId}?${queryParams.toString()}`
+        }
+        return `${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}?account=vendor`
+      })()
+
       return [
         {
           label: 'Dashboard',
@@ -160,7 +221,7 @@ export default function Navbar() {
         {
           label: 'Branches',
           icon: 'bi:building',
-          path: `${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}?account=vendor`,
+          path: branchesPath,
         },
         {
           label: 'Redemptions',
@@ -236,13 +297,28 @@ export default function Navbar() {
     return [
       {
         label: 'Dashboard',
-        icon: 'bi:grid',
+        icon: 'bi:speedometer2',
         path: ROUTES.IN_APP.DASHBOARD.HOME,
       },
       {
+        label: 'Cards',
+        icon: 'bi:credit-card-2-front',
+        path: ROUTES.IN_APP.DASHBOARD.MY_CARDS,
+      },
+      {
         label: 'My Orders',
-        icon: 'bi:box',
+        icon: 'bi:gift',
         path: ROUTES.IN_APP.DASHBOARD.ORDERS,
+      },
+      {
+        label: 'Redemptions',
+        icon: 'bi:arrow-left-right',
+        path: ROUTES.IN_APP.DASHBOARD.REDEMPTIONS,
+      },
+      {
+        label: 'Notifications',
+        icon: 'bi:bell-fill',
+        path: '/dashboard/notifications',
       },
     ]
   }, [
@@ -252,6 +328,8 @@ export default function Navbar() {
     isVendor,
     isBranchManager,
     isApprovedOrVerified,
+    firstBranch,
+    vendorId,
   ])
 
   const navItems = [
@@ -344,7 +422,7 @@ export default function Navbar() {
                       className="bg-gray-50 flex items-center justify-center rounded-full overflow-hidden relative hover:bg-gray-100 transition-colors ring-2 ring-transparent hover:ring-primary-200"
                       aria-label="Account"
                     >
-                      {(isRegularUser || isCorporateUser) && avatarUrl ? (
+                      {(isRegularUser || isCorporateUser || isVendor) && avatarUrl ? (
                         <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                           <img
                             src={avatarUrl}
@@ -493,7 +571,7 @@ export default function Navbar() {
                 <>
                   <div className="border-t border-gray-200 pt-3 mt-3">
                     <div className="flex items-center gap-3 px-4 py-3 mb-2">
-                      {(isRegularUser || isCorporateUser) && avatarUrl ? (
+                      {(isRegularUser || isCorporateUser || isVendor) && avatarUrl ? (
                         <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                           <img
                             src={avatarUrl}

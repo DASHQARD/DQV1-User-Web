@@ -20,14 +20,13 @@ export default function VendorSidebar() {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
 
-  console.log('vendor lemme see something', user)
-
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
 
-  const userType = (user as any)?.user_type
+  const userType = (user as any)?.user_type || userProfileData?.user_type
+  const isVendor = userType === 'vendor'
 
   // Get display name - always show "Vendor" when on vendor dashboard
   const displayName = React.useMemo(() => {
@@ -478,7 +477,7 @@ export default function VendorSidebar() {
                     </Text>
                   </div>
                 </div>
-                {accountMenuContent && (
+                {accountMenuContent && !isVendor && (
                   <div className="flex items-center gap-2">{accountMenuContent}</div>
                 )}
               </div>
@@ -521,7 +520,7 @@ export default function VendorSidebar() {
             </div>
           </div>
         )}
-        {isCollapsed && accountMenuContent && (
+        {isCollapsed && accountMenuContent && !isVendor && (
           <div className="flex items-center justify-center w-full p-4">{accountMenuContent}</div>
         )}
         <ul className="py-2 px-3">

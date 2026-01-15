@@ -307,7 +307,7 @@ export default function ViewBag() {
                 <Icon icon="bi:cart-x" className="text-6xl text-gray-300 mb-4 mx-auto" />
                 <p className="text-gray-600 text-lg font-medium">Your bag is empty</p>
                 <p className="text-gray-500 text-sm mt-2">Add items to get started</p>
-                <Button onClick={() => navigate('/dashqards')} className="mt-6" variant="primary">
+                <Button variant="secondary" onClick={() => navigate('/dashqards')} className="mt-6">
                   Browse Cards
                 </Button>
               </div>

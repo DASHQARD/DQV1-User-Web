@@ -27,3 +27,7 @@ export const deleteCard = async (id: string | number) => {
 export const getCardsMetrics = async () => {
   return await getMethod(`${commonManagerUrl}/users/metrics`)
 }
+
+export const getCardsPerformanceMetrics = async () => {
+  return await getMethod(`${commonManagerUrl}/users/metrics/performance`)
+}
