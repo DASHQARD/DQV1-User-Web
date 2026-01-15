@@ -1,12 +1,10 @@
 import React from 'react'
-import { Button, FileUploader, Modal, Text, Input, Checkbox, Tabs, Loader } from '@/components'
-import { DebouncedSearch } from '@/components/SearchBox'
+import { Button, FileUploader, Modal, Text, Input, Checkbox, Tabs, Combobox } from '@/components'
 import { CardItems } from '@/features/website/components/CardItems/CardItems'
-import { VendorItems } from '@/features/website/components/VendorItems/VendorItems'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import DashProBg from '@/assets/svgs/dashpro_bg.svg'
 import BulkUploadTemplate from '@/assets/Bulk Upload Structure.xlsx?url'
-import { usePersistedModalState, useToast, useUserProfile } from '@/hooks'
+import { usePersistedModalState, useToast, useUserProfile, useDebouncedState } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
 import { corporateQueries, corporateMutations } from '@/features/dashboard/corporate/hooks'
@@ -14,6 +12,7 @@ import { getCarts } from '@/features/dashboard/corporate/services'
 import { formatCurrency } from '@/utils/format'
 import { useQueryClient } from '@tanstack/react-query'
 import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
+import type { DropdownOption } from '@/types'
 
 type RecipientRow = {
   id?: number
@@ -73,6 +72,7 @@ export function BulkPurchaseEmployeesModal({
   >({})
   const [dashGoAmount, setDashGoAmount] = React.useState<string>('')
   const [vendorSearch, setVendorSearch] = React.useState('')
+  const [selectedVendorId, setSelectedVendorId] = React.useState<string>('')
   const [activeTab, setActiveTab] = React.useState<'vendors' | 'dashpro'>('vendors')
   const [cartId, setCartId] = React.useState<number | null>(null)
   const toast = useToast()
@@ -97,9 +97,23 @@ export function BulkPurchaseEmployeesModal({
   const addToCartMutation = useAddToCartService()
   const checkoutMutation = useCheckoutService()
 
+  // Debounce vendor search like redemption page
+  const { value: debouncedVendorSearch } = useDebouncedState({
+    initialValue: vendorSearch,
+    onChange: setVendorSearch,
+    debounceTime: 500,
+  })
+
   const { usePublicVendorsService } = usePublicCatalogQueries()
-  const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService()
-  console.log('vendorsResponse', vendorsResponse)
+  // Fetch vendors based on search query
+  const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService(
+    debouncedVendorSearch
+      ? {
+          search: debouncedVendorSearch,
+          limit: 20,
+        }
+      : undefined,
+  )
 
   const { data: cartsResponse } = useGetCartsService()
   const { refetch: refetchRecipients } = useGetAllRecipientsService()
@@ -116,21 +130,33 @@ export function BulkPurchaseEmployeesModal({
 
   // Filter past purchases (completed carts)
 
-  // Extract vendors from API response
+  // Extract vendors from API response (same pattern as redemption)
   const vendors = React.useMemo(() => {
-    const vendorsData = vendorsResponse || []
-    return vendorsData?.map((vendor: any) => ({
-      id: vendor.vendor_id,
-      vendor_id: String(vendor.vendor_id),
-      branch_name: vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
-      shops: vendor.branches_with_cards?.length || 0,
-      rating: 0,
-    }))
+    if (!vendorsResponse) return []
+    if (Array.isArray(vendorsResponse)) {
+      return vendorsResponse.filter((vendor: any) => vendor.branches_with_cards?.length > 0)
+    }
+    if (vendorsResponse && typeof vendorsResponse === 'object' && 'data' in vendorsResponse) {
+      return (
+        (vendorsResponse as any).data?.filter(
+          (vendor: any) => vendor.branches_with_cards?.length > 0,
+        ) || []
+      )
+    }
+    return []
   }, [vendorsResponse])
+
+  // Convert vendors to dropdown options
+  const vendorOptions: DropdownOption[] = React.useMemo(() => {
+    return vendors.map((vendor: any) => ({
+      label: vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
+      value: vendor.vendor_id?.toString() || '',
+    }))
+  }, [vendors])
 
   // Store full vendor data for later use (branches_with_cards)
   const vendorsDataMap = React.useMemo(() => {
-    const vendorsData = vendorsResponse || []
+    const vendorsData = vendors || []
     const map = new Map()
     vendorsData.forEach((vendor: any) => {
       if (vendor.vendor_id) {
@@ -138,11 +164,17 @@ export function BulkPurchaseEmployeesModal({
       }
     })
     return map
-  }, [vendorsResponse])
+  }, [vendors])
 
-  // Extract cards from vendors response (from vendor_cards and branches_with_cards)
+  // Get selected vendor object
+  const selectedVendorData = React.useMemo(() => {
+    if (!selectedVendor) return null
+    return vendors.find((v: any) => v.vendor_id === selectedVendor) || null
+  }, [selectedVendor, vendors])
+
+  // Extract cards from vendors (from vendor_cards and branches_with_cards)
   const allCards = React.useMemo(() => {
-    const vendorsData = vendorsResponse || []
+    const vendorsData = vendors || []
     const cardsFromVendors: any[] = []
 
     vendorsData.forEach((vendor: any) => {
@@ -207,14 +239,7 @@ export function BulkPurchaseEmployeesModal({
     })
 
     return Array.from(allCardsMap.values())
-  }, [vendorsResponse])
-
-  // Filter vendors based on search
-  const filteredVendors = React.useMemo(() => {
-    if (!vendorSearch) return vendors
-    const searchLower = vendorSearch.toLowerCase()
-    return vendors.filter((vendor: any) => vendor.branch_name.toLowerCase().includes(searchLower))
-  }, [vendorSearch, vendors])
+  }, [vendors])
 
   // Get cards for selected vendor (excluding DashPro and DashGo)
   const vendorCards = React.useMemo(() => {
@@ -223,8 +248,9 @@ export function BulkPurchaseEmployeesModal({
   }, [selectedVendor, allCards])
 
   const selectedVendorName = React.useMemo(() => {
-    return vendors.find((v: any) => v.id === selectedVendor)?.branch_name || ''
-  }, [selectedVendor, vendors])
+    if (!selectedVendorData) return ''
+    return selectedVendorData.business_name || selectedVendorData.vendor_name || 'Unknown Vendor'
+  }, [selectedVendorData])
 
   // Get or create cart and load existing recipients
   React.useEffect(() => {
@@ -303,16 +329,21 @@ export function BulkPurchaseEmployeesModal({
     }
   }
 
-  const handleVendorSelect = (vendorId: number) => {
-    setSelectedVendor(vendorId)
-    setSelectedCardId(null)
-    setSelectedCardType(null)
-    setSelectedRecipients(new Set())
-    setDashGoAmount('')
+  const handleVendorSelect = (vendorIdString: string) => {
+    const vendorId = Number(vendorIdString)
+    if (vendorId) {
+      setSelectedVendor(vendorId)
+      setSelectedVendorId(vendorIdString)
+      setSelectedCardId(null)
+      setSelectedCardType(null)
+      setSelectedRecipients(new Set())
+      setDashGoAmount('')
+    }
   }
 
   const handleBackToVendors = () => {
     setSelectedVendor(null)
+    setSelectedVendorId('')
     setSelectedCardId(null)
     setSelectedCardType(null)
     setVendorSearch('')
@@ -331,18 +362,39 @@ export function BulkPurchaseEmployeesModal({
     } else {
       setSelectedRecipients(new Set())
     }
+    // Scroll to recipients table
+    setTimeout(() => {
+      const recipientsSection = document.getElementById('recipients-table-section')
+      if (recipientsSection) {
+        recipientsSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 100)
   }
 
   const handleDashGoSelect = () => {
     setSelectedCardType('dashgo')
     setSelectedCardId(selectedVendor || 0) // Use vendor ID as identifier for DashGo
     setSelectedRecipients(new Set())
+    // Scroll to recipients table
+    setTimeout(() => {
+      const recipientsSection = document.getElementById('recipients-table-section')
+      if (recipientsSection) {
+        recipientsSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 100)
   }
 
   const handleDashProSelect = () => {
     setSelectedCardType('dashpro')
     setSelectedCardId(0) // DashPro doesn't have a card ID
     setSelectedRecipients(new Set())
+    // Scroll to recipients table
+    setTimeout(() => {
+      const recipientsSection = document.getElementById('recipients-table-section')
+      if (recipientsSection) {
+        recipientsSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 100)
   }
 
   const handleSaveCardAssignment = async () => {
@@ -851,44 +903,45 @@ export function BulkPurchaseEmployeesModal({
                 />
 
                 {activeTab === 'vendors' ? (
-                  <>
-                    <DebouncedSearch
-                      value={vendorSearch}
-                      onChange={setVendorSearch}
-                      placeholder="Search vendors..."
-                      className="w-full"
-                    />
-
-                    {isLoadingVendors ? (
-                      <div className="text-center py-12">
-                        <Loader />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
-                        {filteredVendors.length === 0 ? (
-                          <div className="col-span-full text-center py-12">
-                            <Text variant="p" className="text-gray-500">
-                              No vendors found
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Select Vendor <span className="text-red-500">*</span>
+                      </label>
+                      <Combobox
+                        options={vendorOptions}
+                        value={selectedVendorId}
+                        onChange={(e: any) => {
+                          const vendorId = e.target.value
+                          if (vendorId) {
+                            handleVendorSelect(vendorId)
+                          } else {
+                            setSelectedVendor(null)
+                            setSelectedVendorId('')
+                          }
+                        }}
+                        placeholder="Search for a vendor by name..."
+                        isLoading={isLoadingVendors}
+                        isClearable
+                        className="w-full"
+                      />
+                      {selectedVendor && selectedVendorData && (
+                        <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Icon icon="bi:check-circle-fill" className="text-green-600" />
+                            <Text variant="span" weight="medium" className="text-green-900">
+                              {selectedVendorName}
                             </Text>
                           </div>
-                        ) : (
-                          filteredVendors.map((vendor: any) => (
-                            <div
-                              key={vendor.id}
-                              onClick={() => handleVendorSelect(vendor.id)}
-                              className="cursor-pointer transition-all hover:scale-105"
-                            >
-                              <VendorItems
-                                name={vendor.branch_name}
-                                branches={vendor.shops}
-                                rating={vendor.rating}
-                              />
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </>
+                          {selectedVendorData.branches_with_cards && (
+                            <Text variant="span" className="text-sm text-green-700 block mt-1">
+                              {selectedVendorData.branches_with_cards.length} branch(es) available
+                            </Text>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   <div className="bg-linear-to-br from-[#f8f9fa] to-[#e9ecef] rounded-lg p-6 border border-gray-200">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
@@ -1360,7 +1413,10 @@ export function BulkPurchaseEmployeesModal({
 
                 {/* Recipients Table - Only show when a card is selected */}
                 {(selectedCardId || selectedCardType) && (
-                  <div className="space-y-4 border-t border-gray-200 pt-4">
+                  <div
+                    id="recipients-table-section"
+                    className="space-y-4 border-t border-gray-200 pt-4 mt-6"
+                  >
                     <div className="flex items-center justify-between">
                       <Text variant="span" weight="medium" className="text-gray-700 block">
                         Select Recipients for{' '}

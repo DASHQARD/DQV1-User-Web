@@ -1,40 +1,40 @@
-import {
-  usePaymentChangeNotifications,
-  useApprovePaymentChange,
-  useRejectPaymentChange,
-} from '@/features/dashboard/hooks/useNotifications'
-import { Button, Modal, Text } from '@/components'
-import { usePersistedModalState } from '@/hooks'
-import { Icon } from '@/libs'
-import { MODALS } from '@/utils/constants'
-import { formatDate } from '@/utils/format'
+// import {
+//   usePaymentChangeNotifications,
+//   useApprovePaymentChange,
+//   useRejectPaymentChange,
+// } from '@/features/dashboard/hooks/useNotifications'
+// import { Button, Modal, Text } from '@/components'
+// import { usePersistedModalState } from '@/hooks'
+// import { Icon } from '@/libs'
+// import { MODALS } from '@/utils/constants'
+// import { formatDate } from '@/utils/format'
 
 export function PaymentChangeNotifications() {
-  const modal = usePersistedModalState({
-    paramName: MODALS.NOTIFICATIONS?.PAYMENT_CHANGE || 'payment-change-notification',
-  })
-  const { data: notificationsResponse, isLoading } = usePaymentChangeNotifications()
-  const { mutate: approvePayment, isPending: isApproving } = useApprovePaymentChange()
-  const { mutate: rejectPayment, isPending: isRejecting } = useRejectPaymentChange()
+  // const modal = usePersistedModalState({
+  //   paramName: MODALS.NOTIFICATIONS?.PAYMENT_CHANGE || 'payment-change-notification',
+  // })
+  // const { data: notificationsResponse, isLoading } = usePaymentChangeNotifications()
+  // const { mutate: approvePayment, isPending: isApproving } = useApprovePaymentChange()
+  // const { mutate: rejectPayment, isPending: isRejecting } = useRejectPaymentChange()
 
-  const notifications = notificationsResponse?.data || []
-  const pendingNotifications = notifications.filter((n) => n.status === 'pending')
+  // const notifications = notificationsResponse?.data || []
+  // const pendingNotifications = notifications.filter((n) => n.status === 'pending')
 
-  const handleApprove = (notificationId: number) => {
-    if (window.confirm('Are you sure you want to approve this payment change?')) {
-      approvePayment(notificationId)
-    }
-  }
+  // const handleApprove = (notificationId: number) => {
+  //   if (window.confirm('Are you sure you want to approve this payment change?')) {
+  //     approvePayment(notificationId)
+  //   }
+  // }
 
-  const handleReject = (notificationId: number) => {
-    if (window.confirm('Are you sure you want to reject this payment change?')) {
-      rejectPayment(notificationId)
-    }
-  }
+  // const handleReject = (notificationId: number) => {
+  //   if (window.confirm('Are you sure you want to reject this payment change?')) {
+  //     rejectPayment(notificationId)
+  //   }
+  // }
 
   return (
     <>
-      {pendingNotifications.length > 0 && (
+      {/* {pendingNotifications.length > 0 && (
         <button
           type="button"
           onClick={() =>
@@ -50,8 +50,8 @@ export function PaymentChangeNotifications() {
             </span>
           )}
         </button>
-      )}
-      <Modal
+      )} */}
+      {/* <Modal
         isOpen={modal.isModalOpen(
           MODALS.NOTIFICATIONS?.PAYMENT_CHANGE || 'payment-change-notification',
         )}
@@ -196,7 +196,7 @@ export function PaymentChangeNotifications() {
             </div>
           )}
         </div>
-      </Modal>
+      </Modal> */}
     </>
   )
 }

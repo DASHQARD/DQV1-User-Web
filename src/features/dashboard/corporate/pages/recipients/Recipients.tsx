@@ -5,47 +5,13 @@ import type { QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
 import { Icon } from '@/libs'
 import { corporateQueries } from '../../hooks'
-import { CreateCorporateRecipient } from '@/features/dashboard/components/corporate/modals'
+import {
+  CreateCorporateRecipient,
+  ViewRecipientDetails,
+} from '@/features/dashboard/components/corporate/modals'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
-import type { RecipientResponse } from '@/types/responses'
-import { RecipientActionCell } from '@/features/dashboard/components/corporate/tableConfigs'
-
-// Table columns for recipients
-const recipientsColumns = [
-  {
-    header: 'Name',
-    accessorKey: 'name',
-  },
-  {
-    header: 'Email',
-    accessorKey: 'email',
-  },
-  {
-    header: 'Phone',
-    accessorKey: 'phone',
-    cell: ({ row }: any) => {
-      const recipient = row.original as RecipientResponse
-      return (
-        <Text variant="span" className="text-sm text-gray-700">
-          {recipient.phone || 'N/A'}
-        </Text>
-      )
-    },
-  },
-  {
-    header: 'Actions',
-    accessorKey: 'actions',
-    cell: RecipientActionCell,
-  },
-]
-
-const recipientsCsvHeaders = [
-  { name: 'Name', accessor: 'name' },
-  { name: 'Email', accessor: 'email' },
-  { name: 'Phone', accessor: 'phone' },
-  { name: 'Message', accessor: 'message' },
-]
+import { recipientsColumns, recipientsCsvHeaders } from '@/features/dashboard/components'
 
 export default function Recipients() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
@@ -93,6 +59,7 @@ export default function Recipients() {
         </div>
       </div>
       <CreateCorporateRecipient />
+      <ViewRecipientDetails />
     </>
   )
 }

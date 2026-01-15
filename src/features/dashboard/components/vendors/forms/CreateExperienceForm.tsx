@@ -12,6 +12,7 @@ import { useVendorMutations, vendorQueries } from '@/features'
 import { CreateExperienceSchema } from '@/utils/schemas'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
+import { useBranchMutations } from '@/features/dashboard/branch'
 
 type FormData = z.infer<typeof CreateExperienceSchema>
 
@@ -25,7 +26,7 @@ export default function CreateExperienceForm() {
   const { data: userProfileData } = useGetUserProfileService()
   const { useBranchesService } = vendorQueries()
   const { data: branches, isLoading: isLoadingBranches } = useBranchesService()
-  const { useCreateBranchExperienceService } = useVendorMutations()
+  const { useCreateBranchExperienceService } = useBranchMutations()
   const { mutateAsync: createBranchExperience, isPending: isCreatingBranchExperience } =
     useCreateBranchExperienceService()
 
@@ -167,7 +168,6 @@ export default function CreateExperienceForm() {
   }
 
   const onSubmit = async (data: FormData) => {
-    console.log('data', data)
     try {
       // Validate files
       if (imageFiles.length === 0) {

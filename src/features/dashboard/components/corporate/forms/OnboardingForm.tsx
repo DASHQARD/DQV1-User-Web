@@ -184,7 +184,7 @@ export default function OnboardingForm() {
       await submitPersonalDetailsWithID(onboardingPayload, {
         onSuccess: () => {
           if (isBranchManager) {
-            navigate(`${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor`)
+            navigate(-1)
           } else {
             const businessDetailsUrl = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS}?account=corporate`
             navigate(businessDetailsUrl)

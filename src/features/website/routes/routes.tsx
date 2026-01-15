@@ -7,6 +7,7 @@ import {
   DashQards,
   LandingPage,
   OrdersPage,
+  PrivacyPolicy,
   RedemptionPage,
   TermsOfService,
   WebsiteVendors,
@@ -62,5 +63,9 @@ export const websiteRoutes: RouteObject[] = [
   {
     path: 'terms-of-service',
     element: <TermsOfService />,
+  },
+  {
+    path: 'privacy-policy',
+    element: <PrivacyPolicy />,
   },
 ]

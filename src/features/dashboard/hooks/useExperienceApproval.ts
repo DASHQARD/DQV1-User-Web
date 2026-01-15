@@ -1,18 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
-import {
-  getPendingExperienceApprovals,
-  approveExperience,
-  rejectExperience,
-} from '../services/experienceApproval'
-
-export function usePendingExperienceApprovals() {
-  return useQuery({
-    queryKey: ['pending-experience-approvals'],
-    queryFn: getPendingExperienceApprovals,
-    enabled: false,
-  })
-}
+import { approveExperience, rejectExperience } from '../services/experienceApproval'
 
 export function useApproveExperience() {
   const queryClient = useQueryClient()

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/stores'
 import CorporateSidebar from './sidebar/CorporateSidebar'
 import VendorSidebar from './sidebar/VendorSidebar'
+import BranchSidebar from './sidebar/BranchSidebar'
 import UserSidebar from './sidebar/UserSidebar'
 
 export default function Sidebar() {
@@ -60,7 +61,10 @@ export default function Sidebar() {
     }
   }, [searchParams, currentProfile, canSwitchProfiles, navigate])
 
-  // Render appropriate sidebar based on profile
+  if (userType === 'branch') {
+    return <BranchSidebar />
+  }
+
   if (currentProfile === 'corporate') {
     return <CorporateSidebar />
   }

@@ -18,7 +18,7 @@ import {
   getRedemptionsAmountDashPass,
   type GetRedemptionsAmountDashPassParams,
 } from '../../services/redemptions'
-import { useUserProfile } from '@/hooks'
+import { useAuthStore } from '@/stores'
 
 export function useRedemptionQueries() {
   function useSearchVendorsService(params?: SearchVendorsParams) {
@@ -44,11 +44,10 @@ export function useRedemptionQueries() {
   }
 
   function useGetVendorRedemptionsService(params?: GetVendorRedemptionsParams) {
-    const { useGetUserProfileService } = useUserProfile()
-    const { data: userProfileData } = useGetUserProfileService()
-    const isBranch = userProfileData?.user_type === 'branch'
+    const { user } = useAuthStore()
+    const isBranch = user?.user_type === 'branch'
 
-    // is not branch
+    // Only enable if user profile is loaded and user is NOT a branch manager
     return useQuery({
       queryKey: ['vendor-redemptions', params],
       queryFn: () => getVendorRedemptions(params),
