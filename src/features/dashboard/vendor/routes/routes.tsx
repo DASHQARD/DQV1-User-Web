@@ -3,7 +3,6 @@ import { Outlet } from 'react-router-dom'
 
 import { VendorHome } from '../pages/home'
 import ExperiencePage from '../pages/experience'
-import { BranchManagement } from '../pages/branches'
 import { BranchDetails } from '../pages/branches'
 import { Redemptions } from '../pages/redemptions'
 import { Requests } from '../pages/requests'
@@ -30,10 +29,6 @@ export const vendorRoutes: RouteObject[] = [
     path: 'branches',
     element: <Outlet />,
     children: [
-      {
-        index: true,
-        element: <BranchManagement />,
-      },
       {
         path: ':id',
         element: <BranchDetails />,

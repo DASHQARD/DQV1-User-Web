@@ -5,6 +5,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Dropdown, Loader, Text } from '@/components'
 import { Icon } from '@/libs'
 import { formatCurrency } from '@/utils/format'
+import { vendorQueries } from '@/features'
 
 type ChartDatum = {
   month: string
@@ -186,40 +187,6 @@ function transformToChartData(
     }))
 }
 
-// Mock data for vendor gift cards performance (only DashX and DashPass)
-const MOCK_VENDOR_QARDS_PERFORMANCE: QardsPerformanceData[] = [
-  {
-    period_key: '2024-01',
-    dashx_amount: 18900.25,
-    dashpass_amount: 8750.0,
-  },
-  {
-    period_key: '2024-02',
-    dashx_amount: 22100.5,
-    dashpass_amount: 10200.25,
-  },
-  {
-    period_key: '2024-03',
-    dashx_amount: 26500.75,
-    dashpass_amount: 11800.5,
-  },
-  {
-    period_key: '2024-04',
-    dashx_amount: 24300.5,
-    dashpass_amount: 9800.0,
-  },
-  {
-    period_key: '2024-05',
-    dashx_amount: 28900.25,
-    dashpass_amount: 13200.75,
-  },
-  {
-    period_key: '2024-06',
-    dashx_amount: 31200.5,
-    dashpass_amount: 14500.25,
-  },
-]
-
 const LEGEND_ITEMS = [
   { key: 'dashX' as const, label: 'DashX', color: '#402D87' },
   { key: 'dashPass' as const, label: 'DashPass', color: '#ED186A' },
@@ -258,7 +225,8 @@ function QardsTooltip({ active, payload, label }: TooltipProps) {
 
 export default function VendorQardsPerformance() {
   const [timeframe, setTimeframe] = React.useState<TimeframeOption>('Monthly')
-  const [isLoading] = React.useState(false)
+  const { useGetCardsPerformanceMetricsService } = vendorQueries()
+  const { data: performanceData, isLoading } = useGetCardsPerformanceMetricsService()
 
   const dropdownActions = React.useMemo(
     () =>
@@ -269,10 +237,41 @@ export default function VendorQardsPerformance() {
     [],
   )
 
+  // Extract performance data from API response
+  const apiData: QardsPerformanceData[] = React.useMemo(() => {
+    if (!performanceData) return []
+
+    // Handle different response structures
+    const responseData = (performanceData as any)?.data || performanceData
+
+    // If it's already an array, use it directly
+    if (Array.isArray(responseData)) {
+      return responseData.map((item: any) => ({
+        period_key: item.period_key || item.period || item.month || '',
+        dashx_amount: item.dashx_amount || item.dashX || item.dashx || 0,
+        dashpass_amount: item.dashpass_amount || item.dashPass || item.dashpass || 0,
+      }))
+    }
+
+    // If it's an object with nested data
+    if (typeof responseData === 'object') {
+      // Try to find an array property
+      const dataArray = responseData.data || responseData.performance || responseData.metrics || []
+      if (Array.isArray(dataArray)) {
+        return dataArray.map((item: any) => ({
+          period_key: item.period_key || item.period || item.month || '',
+          dashx_amount: item.dashx_amount || item.dashX || item.dashx || 0,
+          dashpass_amount: item.dashpass_amount || item.dashPass || item.dashpass || 0,
+        }))
+      }
+    }
+
+    return []
+  }, [performanceData])
+
   const data = React.useMemo(() => {
-    // Use mock data - TODO: Replace with actual API call for vendor performance
-    return transformToChartData(MOCK_VENDOR_QARDS_PERFORMANCE, timeframe)
-  }, [timeframe])
+    return transformToChartData(apiData, timeframe)
+  }, [timeframe, apiData])
 
   return (
     <section className="flex flex-col gap-6 rounded-2xl border border-[#EEEEF1] bg-white p-6">

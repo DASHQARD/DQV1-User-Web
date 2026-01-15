@@ -199,6 +199,12 @@ export interface DashProRedemptionPayload {
   token: string
 }
 
+export interface DashProRedemptionForUserPayload {
+  vendor_phone_number: string
+  amount: number
+  user_phone_number: string
+}
+
 export interface InitiateRedemptionPayload {
   phone_number: string
 }
@@ -298,6 +304,14 @@ export const processDashProRedemption = async (
   data: DashProRedemptionPayload,
 ): Promise<RedemptionResponse> => {
   const response = await axiosClient.post(`${commonUrl}/dash-pro`, data)
+  return response as unknown as RedemptionResponse
+}
+
+// Process DashPro redemption for logged-in users (no OTP required)
+export const processDashProRedemptionForUser = async (
+  data: DashProRedemptionForUserPayload,
+): Promise<RedemptionResponse> => {
+  const response = await axiosClient.post(`${commonUrl}/users/dash-pro`, data)
   return response as unknown as RedemptionResponse
 }
 

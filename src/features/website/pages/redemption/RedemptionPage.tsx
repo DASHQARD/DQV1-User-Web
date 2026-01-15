@@ -110,11 +110,13 @@ export default function RedemptionPage() {
     useValidateVendorMobileMoneyService,
     useInitiateRedemptionService,
     useProcessDashProRedemptionService,
+    useProcessDashProRedemptionForUserService,
   } = useRedemptionMutation()
   const processRedemptionMutation = useProcessRedemptionCardsService()
   const validateVendorMobileMoneyMutation = useValidateVendorMobileMoneyService()
   const initiateRedemptionMutation = useInitiateRedemptionService()
   const processDashProRedemptionMutation = useProcessDashProRedemptionService()
+  const processDashProRedemptionForUserMutation = useProcessDashProRedemptionForUserService()
   const rateCardMutation = useRateCard()
 
   // Get phone number for balance queries
@@ -776,12 +778,29 @@ export default function RedemptionPage() {
   // Ref to store debounce timeout and prevent multiple calls
   const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastValidatedPhoneRef = useRef<string>('')
+  const currentPhoneNumberRef = useRef<string>('')
 
   const handleVendorMobileMoneyChange = (value: string) => {
+    // Always update the raw value first to allow typing
     setVendorMobileMoneyRaw(value)
-    // Format: "+233-551681617" -> extract all digits for phone number
-    const phoneNumber = value.replace(/[^0-9]/g, '')
-    setVendorMobileMoney(phoneNumber)
+
+    // Extract only the local phone number (9 digits), not the country code
+    // BasePhoneInput formats as "+233-559617908" or "+233559617908"
+    let localPhoneNumber = ''
+    if (value.includes('-')) {
+      // Format: "+233-559617908" -> extract part after hyphen
+      const parts = value.split('-')
+      localPhoneNumber = parts[1] || ''
+    } else {
+      // Format: "+233559617908" -> remove country code (+233)
+      // Remove country code prefix (typically +233 for Ghana)
+      localPhoneNumber = value.replace(/^\+233/, '').replace(/[^0-9]/g, '')
+    }
+
+    // Store the full phone number (with country code) for API calls
+    const fullPhoneNumber = value.replace(/[^0-9]/g, '')
+    setVendorMobileMoney(fullPhoneNumber)
+    currentPhoneNumberRef.current = localPhoneNumber
 
     // Clear any pending validation timeout
     if (validationTimeoutRef.current) {
@@ -789,45 +808,32 @@ export default function RedemptionPage() {
       validationTimeoutRef.current = null
     }
 
-    // If phone number is less than 9 digits, reset validation state and don't validate
-    if (phoneNumber.length < 9) {
+    // If local phone number is less than 9 digits, reset validation state and don't validate
+    if (localPhoneNumber.length < 9) {
       setVendorValidatedName('')
       setVendorName('')
       lastValidatedPhoneRef.current = ''
       return
     }
 
-    // Convert to international format for checking
-    const internationalPhoneNumber = convertToInternationalFormat(phoneNumber)
-
-    // If this phone number was already successfully validated, don't validate again
-    if (validatedPhoneNumbers.has(internationalPhoneNumber)) {
-      return
-    }
-
-    // If already validating or same number is being validated, don't trigger again
-    if (validatingVendor || lastValidatedPhoneRef.current === phoneNumber) {
-      return
-    }
-
-    // Check if we've exceeded the maximum attempts (3 tries)
-    if (validationAttempts >= 3) {
-      toast.error('Maximum validation attempts (3) reached. Please refresh the page to try again.')
-      return
-    }
-
+    // Only validate when exactly 9 digits are entered and user has stopped typing
     // Debounce validation: wait 500ms after user stops typing
     validationTimeoutRef.current = setTimeout(async () => {
-      // Double-check we have exactly 9 or more digits
-      if (phoneNumber.length < 9) {
+      // Get the current local phone number from ref (captures latest value)
+      const currentLocalPhoneNumber = currentPhoneNumberRef.current
+
+      // Only validate if we have exactly 9 digits
+      if (currentLocalPhoneNumber.length !== 9) {
         return
       }
 
-      // Convert to international format (233XXXXXXXXX without + prefix)
-      const internationalPhoneNumberForValidation = convertToInternationalFormat(phoneNumber)
+      // Convert local phone number to international format (233XXXXXXXXX without + prefix)
+      // The convertToInternationalFormat function expects the local number and adds country code
+      const internationalPhoneNumberForValidation =
+        convertToInternationalFormat(currentLocalPhoneNumber)
 
       // Check if already validating or if this number was already validated
-      if (validatingVendor || lastValidatedPhoneRef.current === phoneNumber) {
+      if (validatingVendor || lastValidatedPhoneRef.current === currentLocalPhoneNumber) {
         return
       }
 
@@ -844,10 +850,10 @@ export default function RedemptionPage() {
         return
       }
 
-      lastValidatedPhoneRef.current = phoneNumber
+      lastValidatedPhoneRef.current = currentLocalPhoneNumber
 
-      // Detect provider from phone number
-      const provider = detectMobileMoneyProvider(phoneNumber)
+      // Detect provider from local phone number
+      const provider = detectMobileMoneyProvider(currentLocalPhoneNumber)
 
       if (!provider) {
         toast.error('Unable to detect mobile money provider. Please check the phone number format.')
@@ -1136,8 +1142,7 @@ export default function RedemptionPage() {
         setIsProcessingRedemption(false)
       }
     } else {
-      // For vendor_mobile_money, handle DashPro redemption with OTP flow
-      // Step 1: Initiate redemption to get OTP token
+      // For vendor_mobile_money, handle DashPro redemption
       const userPhoneNumber = isAuthenticated
         ? (user as any)?.phonenumber || (user as any)?.phone || ''
         : phoneNumber
@@ -1155,27 +1160,52 @@ export default function RedemptionPage() {
       setIsProcessingRedemption(true)
       try {
         // Convert phone numbers to international format
+        const vendorInternationalPhone = convertToInternationalFormat(vendorMobileMoney)
         const userInternationalPhone = convertToInternationalFormat(userPhoneNumber)
 
-        // Step 1: Initiate redemption - this sends OTP to user's phone
-        const initiateResponse = await initiateRedemptionMutation.mutateAsync({
-          phone_number: userInternationalPhone,
-        })
+        if (isAuthenticated) {
+          // For logged-in users, use the direct endpoint without OTP
+          const response = await processDashProRedemptionForUserMutation.mutateAsync({
+            vendor_phone_number: vendorInternationalPhone,
+            amount: parseFloat(amount),
+            user_phone_number: userInternationalPhone,
+          })
 
-        console.log('initiateResponse', initiateResponse)
-
-        if (initiateResponse?.status === 'success') {
-          // OTP has been sent to user's phone, show OTP modal
-          setShowOTPModal(true)
-          setIsProcessingRedemption(false)
+          // Success toast is already handled by the mutation hook
+          // Check response and navigate to success step
+          if (
+            response?.status === 'success' ||
+            response?.statusCode === 200 ||
+            response?.statusCode === 201
+          ) {
+            setStep('success')
+          }
         } else {
-          toast.error(initiateResponse?.message || 'Failed to initiate redemption')
-          setIsProcessingRedemption(false)
+          // For non-logged-in users, use OTP flow
+          // Step 1: Initiate redemption - this sends OTP to user's phone
+          const initiateResponse = await initiateRedemptionMutation.mutateAsync({
+            phone_number: userInternationalPhone,
+          })
+
+          console.log('initiateResponse', initiateResponse)
+
+          if (initiateResponse?.status === 'success') {
+            // OTP has been sent to user's phone, show OTP modal
+            setShowOTPModal(true)
+            setIsProcessingRedemption(false)
+            return // Exit early since we're showing OTP modal
+          } else {
+            toast.error(initiateResponse?.message || 'Failed to initiate redemption')
+          }
         }
       } catch (error: any) {
-        console.error('Initiate redemption error:', error)
-        setIsProcessingRedemption(false)
+        console.error('Redemption error:', error)
         // Error toast is already handled by the mutation hook
+      } finally {
+        // Only set to false if not showing OTP modal (for logged-in users or failed initiation)
+        if (!showOTPModal) {
+          setIsProcessingRedemption(false)
+        }
       }
     }
   }
@@ -1446,7 +1476,7 @@ export default function RedemptionPage() {
                             maxLength={9}
                             handleChange={handleVendorMobileMoneyChange}
                             selectedVal={vendorMobileMoneyRaw}
-                            disabled={validatingVendor}
+                            disabled={false}
                           />
                         </div>
 
