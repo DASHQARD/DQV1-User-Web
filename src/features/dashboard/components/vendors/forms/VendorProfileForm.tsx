@@ -17,6 +17,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
   const firstName = form.watch('first_name')
   const lastName = form.watch('last_name')
   const dob = form.watch('dob')
+  const street_address = form.watch('street_address')
   const idType = form.watch('id_type')
   const idNumber = form.watch('id_number')
   const frontId = form.watch('front_id')
@@ -226,12 +227,14 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
             !firstName ||
             !lastName ||
             !dob ||
+            !street_address ||
             !idType ||
             !idNumber ||
             (!checkboxProfileSameAsCorporate && (!frontId || !backId)) ||
             !!form.formState.errors.first_name ||
             !!form.formState.errors.last_name ||
             !!form.formState.errors.dob ||
+            !!form.formState.errors.street_address ||
             !!form.formState.errors.id_type ||
             !!form.formState.errors.id_number ||
             (!checkboxProfileSameAsCorporate &&

@@ -18,6 +18,7 @@ import { AuditLogs } from '../pages/auditLogs'
 import { Admins } from '../pages/admins'
 import { Notifications } from '../pages/notifications'
 import { Recipients } from '../pages/recipients'
+import CorporateCardDetailsPage from '../pages/cards/CardDetailsPage'
 
 export const corporateRoutes: RouteObject[] = [
   {
@@ -59,6 +60,10 @@ export const corporateRoutes: RouteObject[] = [
   {
     path: 'settings',
     element: <Settings />,
+  },
+  {
+    path: 'gift-cards/:cardType',
+    element: <CorporateCardDetailsPage />,
   },
   {
     path: 'compliance',
