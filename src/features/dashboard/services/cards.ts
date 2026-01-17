@@ -122,6 +122,32 @@ export const getCardMetricsDetails = async (
   return response as unknown as CardMetricsDetailsResponse
 }
 
+export interface CardsPerformanceMetricsParams {
+  filter?: 'monthly' | 'quarterly' | 'yearly'
+}
+
+export interface CardsPerformanceMetricsData {
+  period_key: string
+  dashpro_amount: number
+  dashx_amount: number
+  dashpass_amount: number
+  dashgo_amount: number
+}
+
+export interface CardsPerformanceMetricsResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: CardsPerformanceMetricsData[]
+}
+
+export const getCardsPerformanceMetrics = async (
+  params?: CardsPerformanceMetricsParams,
+): Promise<CardsPerformanceMetricsResponse> => {
+  const response = await axiosClient.get('/cards/performance/metrics', { params })
+  return response as unknown as CardsPerformanceMetricsResponse
+}
+
 export interface RateCardPayload {
   card_id: number
   rating: number

@@ -5,6 +5,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Dropdown, Loader, Text } from '@/components'
 import { Icon } from '@/libs'
 import { formatCurrency } from '@/utils/format'
+import { useCardsPerformanceMetrics } from '@/features/dashboard/hooks/useCards'
 
 type ChartDatum = {
   month: string
@@ -217,52 +218,6 @@ function transformToChartData(
     }))
 }
 
-// Mock data for gift cards performance
-const MOCK_QARDS_PERFORMANCE: QardsPerformanceData[] = [
-  {
-    period_key: '2024-01',
-    dashpro_amount: 12500.5,
-    dashx_amount: 18900.25,
-    dashpass_amount: 8750.0,
-    dashgo_amount: 3200.75,
-  },
-  {
-    period_key: '2024-02',
-    dashpro_amount: 15200.75,
-    dashx_amount: 22100.5,
-    dashpass_amount: 10200.25,
-    dashgo_amount: 4100.0,
-  },
-  {
-    period_key: '2024-03',
-    dashpro_amount: 18900.0,
-    dashx_amount: 26500.75,
-    dashpass_amount: 11800.5,
-    dashgo_amount: 5200.25,
-  },
-  {
-    period_key: '2024-04',
-    dashpro_amount: 16800.25,
-    dashx_amount: 24300.5,
-    dashpass_amount: 9800.0,
-    dashgo_amount: 4800.75,
-  },
-  {
-    period_key: '2024-05',
-    dashpro_amount: 20100.5,
-    dashx_amount: 28900.25,
-    dashpass_amount: 13200.75,
-    dashgo_amount: 6100.0,
-  },
-  {
-    period_key: '2024-06',
-    dashpro_amount: 22500.75,
-    dashx_amount: 31200.5,
-    dashpass_amount: 14500.25,
-    dashgo_amount: 7200.75,
-  },
-]
-
 const LEGEND_ITEMS = [
   { key: 'dashPro' as const, label: 'DashPro', color: '#FAC203' },
   { key: 'dashX' as const, label: 'DashX', color: '#402D87' },
@@ -305,7 +260,21 @@ function QardsTooltip({ active, payload, label }: TooltipProps) {
 
 export default function QardsPerformance() {
   const [timeframe, setTimeframe] = React.useState<TimeframeOption>('Monthly')
-  const [isLoading] = React.useState(false)
+
+  // Convert timeframe to API filter format
+  const apiFilter = React.useMemo(() => {
+    const filterMap: Record<TimeframeOption, 'monthly' | 'quarterly' | 'yearly'> = {
+      Monthly: 'monthly',
+      Quarterly: 'quarterly',
+      Yearly: 'yearly',
+    }
+    return filterMap[timeframe]
+  }, [timeframe])
+
+  // Fetch performance data from API
+  const { data: performanceData, isLoading } = useCardsPerformanceMetrics({
+    filter: apiFilter,
+  })
 
   const dropdownActions = React.useMemo(
     () =>
@@ -316,10 +285,45 @@ export default function QardsPerformance() {
     [],
   )
 
+  // Transform API response data
+  const apiData: QardsPerformanceData[] = React.useMemo(() => {
+    if (!performanceData?.data) return []
+
+    // Handle different response structures
+    const responseData = (performanceData as any)?.data || performanceData
+
+    // If it's already an array, use it directly
+    if (Array.isArray(responseData)) {
+      return responseData.map((item: any) => ({
+        period_key: item.period_key || item.period || item.month || '',
+        dashpro_amount: item.dashpro_amount || item.dashPro || item.dashpro || 0,
+        dashx_amount: item.dashx_amount || item.dashX || item.dashx || 0,
+        dashpass_amount: item.dashpass_amount || item.dashPass || item.dashpass || 0,
+        dashgo_amount: item.dashgo_amount || item.dashGo || item.dashgo || 0,
+      }))
+    }
+
+    // If it's an object with nested data
+    if (typeof responseData === 'object') {
+      // Try to find an array property
+      const dataArray = responseData.data || responseData.performance || responseData.metrics || []
+      if (Array.isArray(dataArray)) {
+        return dataArray.map((item: any) => ({
+          period_key: item.period_key || item.period || item.month || '',
+          dashpro_amount: item.dashpro_amount || item.dashPro || item.dashpro || 0,
+          dashx_amount: item.dashx_amount || item.dashX || item.dashx || 0,
+          dashpass_amount: item.dashpass_amount || item.dashPass || item.dashpass || 0,
+          dashgo_amount: item.dashgo_amount || item.dashGo || item.dashgo || 0,
+        }))
+      }
+    }
+
+    return []
+  }, [performanceData])
+
   const data = React.useMemo(() => {
-    // Use mock data
-    return transformToChartData(MOCK_QARDS_PERFORMANCE, timeframe)
-  }, [timeframe])
+    return transformToChartData(apiData, timeframe)
+  }, [timeframe, apiData])
 
   return (
     <section className="flex flex-col gap-6 rounded-2xl border border-[#EEEEF1] bg-white p-6">

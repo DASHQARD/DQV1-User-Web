@@ -15,26 +15,23 @@ export default function VendorSummaryCards() {
   const { user } = useAuthStore()
   const userType = (user as any)?.user_type
   const isBranchManager = userType === 'branch'
-  const { useGetCardsMetricsService } = vendorQueries()
-  const { data: metricsResponse, isLoading } = useGetCardsMetricsService()
+  const { useGetVendorCardCountsService } = vendorQueries()
+  const { data: cardCountsData, isLoading } = useGetVendorCardCountsService()
 
-  // Extract metrics from response
+  // Extract card counts from API response
   const metrics = useMemo(() => {
-    if (!metricsResponse) {
+    if (!cardCountsData) {
       return {
         DashX: 0,
         DashPass: 0,
       }
     }
 
-    // Handle response structure: { data: { DashX: number, DashPass: number, ... } }
-    const data = (metricsResponse as any)?.data || metricsResponse
-
     return {
-      DashX: data?.DashX || data?.dashx || data?.dashX || 0,
-      DashPass: data?.DashPass || data?.dashpass || data?.dashPass || 0,
+      DashX: cardCountsData.DashX || 0,
+      DashPass: cardCountsData.DashPass || 0,
     }
-  }, [metricsResponse])
+  }, [cardCountsData])
 
   const CARD_INFO = useMemo(
     () => [
@@ -71,7 +68,7 @@ export default function VendorSummaryCards() {
         <Text variant="h6" weight="normal" className="text-gray-400">
           {isBranchManager ? 'Branch Gift Cards' : 'Vendor Gift Cards'}
         </Text>
-        <div className="flex items-center justify-center py-8">
+        <div className="flex items-center justify-center py-8 w-full">
           <Loader />
         </div>
       </div>

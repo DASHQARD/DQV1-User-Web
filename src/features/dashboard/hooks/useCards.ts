@@ -8,8 +8,10 @@ import {
   deleteCard,
   getGiftCardMetrics,
   getCardMetricsDetails,
+  getCardsPerformanceMetrics,
   rateCard,
   type GetCardMetricsDetailsParams,
+  type CardsPerformanceMetricsParams,
   type RateCardPayload,
 } from '../services/cards'
 import type { CreateCardData, UpdateCardData } from '@/types/responses'
@@ -92,6 +94,13 @@ export function useCardMetricsDetails(params?: GetCardMetricsDetailsParams) {
     queryKey: ['card-metrics-details', params],
     queryFn: () => getCardMetricsDetails(params),
     enabled: !!params?.card_type,
+  })
+}
+
+export function useCardsPerformanceMetrics(query?: CardsPerformanceMetricsParams) {
+  return useQuery({
+    queryKey: ['cards-performance-metrics', query],
+    queryFn: () => getCardsPerformanceMetrics(query),
   })
 }
 

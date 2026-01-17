@@ -118,7 +118,44 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
             label="Date of Birth"
             placeholder="Enter your date of birth"
             className="col-span-full"
-            {...form.register('dob')}
+            max={(() => {
+              // Maximum date: 18 years ago (must be at least 18)
+              const maxDate = new Date()
+              maxDate.setFullYear(maxDate.getFullYear() - 18)
+              return maxDate.toISOString().split('T')[0]
+            })()}
+            min={(() => {
+              // Minimum date: 85 years ago (must be 85 or younger)
+              const minDate = new Date()
+              minDate.setFullYear(minDate.getFullYear() - 85)
+              return minDate.toISOString().split('T')[0]
+            })()}
+            {...form.register('dob', {
+              validate: (value) => {
+                if (!value) {
+                  return 'Date of birth is required'
+                }
+                const birthDate = new Date(value)
+                const today = new Date()
+                const age = today.getFullYear() - birthDate.getFullYear()
+                const monthDiff = today.getMonth() - birthDate.getMonth()
+                const dayDiff = today.getDate() - birthDate.getDate()
+
+                // Calculate exact age
+                let exactAge = age
+                if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+                  exactAge--
+                }
+
+                if (exactAge < 18) {
+                  return 'You must be at least 18 years old'
+                }
+                if (exactAge > 85) {
+                  return 'You must be 85 years old or younger'
+                }
+                return true
+              },
+            })}
             error={form.formState.errors.dob?.message}
             disabled={checkboxProfileSameAsCorporate}
           />

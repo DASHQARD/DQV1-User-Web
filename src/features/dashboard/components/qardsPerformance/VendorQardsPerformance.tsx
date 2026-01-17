@@ -5,7 +5,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Dropdown, Loader, Text } from '@/components'
 import { Icon } from '@/libs'
 import { formatCurrency } from '@/utils/format'
-import { vendorQueries } from '@/features'
+import { useCardsPerformanceMetrics } from '@/features/dashboard/hooks/useCards'
 
 type ChartDatum = {
   month: string
@@ -225,8 +225,21 @@ function QardsTooltip({ active, payload, label }: TooltipProps) {
 
 export default function VendorQardsPerformance() {
   const [timeframe, setTimeframe] = React.useState<TimeframeOption>('Monthly')
-  const { useGetCardsPerformanceMetricsService } = vendorQueries()
-  const { data: performanceData, isLoading } = useGetCardsPerformanceMetricsService()
+
+  // Convert timeframe to API filter format
+  const apiFilter = React.useMemo(() => {
+    const filterMap: Record<TimeframeOption, 'monthly' | 'quarterly' | 'yearly'> = {
+      Monthly: 'monthly',
+      Quarterly: 'quarterly',
+      Yearly: 'yearly',
+    }
+    return filterMap[timeframe]
+  }, [timeframe])
+
+  // Fetch performance data from API
+  const { data: performanceData, isLoading } = useCardsPerformanceMetrics({
+    filter: apiFilter,
+  })
 
   const dropdownActions = React.useMemo(
     () =>
@@ -237,9 +250,9 @@ export default function VendorQardsPerformance() {
     [],
   )
 
-  // Extract performance data from API response
+  // Transform API response data to only include dashX and dashPass
   const apiData: QardsPerformanceData[] = React.useMemo(() => {
-    if (!performanceData) return []
+    if (!performanceData?.data) return []
 
     // Handle different response structures
     const responseData = (performanceData as any)?.data || performanceData
