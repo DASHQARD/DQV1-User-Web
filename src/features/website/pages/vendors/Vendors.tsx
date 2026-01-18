@@ -10,7 +10,14 @@ export default function Vendors() {
   const navigate = useNavigate()
   const { vendors, vendorsLoading, query, setQuery } = usePublicCatalog()
 
-  const vendorsWithCards = vendors?.filter((vendor) => vendor.branches_with_cards?.length > 0)
+  const vendorsWithCards = vendors?.filter((vendor) => {
+    // Filter out vendors without branches
+    if (!vendor.branches_with_cards || vendor.branches_with_cards.length === 0) {
+      return false
+    }
+    // Filter out vendors where branches don't have any cards
+    return vendor.branches_with_cards.some((branch: any) => branch.cards && branch.cards.length > 0)
+  })
 
   return (
     <div className="min-h-screen bg-gray-50">

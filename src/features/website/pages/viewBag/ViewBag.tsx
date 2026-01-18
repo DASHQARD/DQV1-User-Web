@@ -292,6 +292,10 @@ export default function ViewBag() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-2">
+          <Icon icon="bi:arrow-left" className="text-2xl" />
+          <span className="text-sm font-medium">Back</span>
+        </button>
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
@@ -362,8 +366,6 @@ export default function ViewBag() {
                             </h3>
                             <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
                               <span>{getCardTypeName(item.type)}</span>
-                              <span>•</span>
-                              <span>ID: {item.card_id}</span>
                             </div>
                             {hasRecipients && (
                               <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">

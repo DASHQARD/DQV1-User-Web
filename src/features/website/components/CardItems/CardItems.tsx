@@ -100,6 +100,12 @@ export const CardItems = ({
   const handleQuickAdd = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
 
+    // If onGetQard is provided, use that instead of adding to cart
+    if (onGetQard) {
+      onGetQard()
+      return
+    }
+
     if (!card_id) {
       console.error('Card ID is required to add item to cart')
       return
@@ -117,10 +123,11 @@ export const CardItems = ({
   }
 
   const handleCardClick = () => {
-    if (card_id) {
-      navigate(`/card/${card_id}`)
-    } else if (onGetQard) {
+    // If onGetQard is provided, use that callback (for bulk purchase flow)
+    if (onGetQard) {
       onGetQard()
+    } else if (card_id) {
+      navigate(`/card/${card_id}`)
     }
   }
 

@@ -28,7 +28,18 @@ export default function DashQards() {
   const vendors = useMemo(() => {
     if (!vendorsResponse) return []
     const vendorsData = Array.isArray(vendorsResponse) ? vendorsResponse : [vendorsResponse]
-    return vendorsData.map((vendor: any) => ({
+    // Filter out vendors without branches that have cards
+    const vendorsWithCards = vendorsData.filter((vendor: any) => {
+      // Filter out vendors without branches
+      if (!vendor.branches_with_cards || vendor.branches_with_cards.length === 0) {
+        return false
+      }
+      // Filter out vendors where branches don't have any cards
+      return vendor.branches_with_cards.some(
+        (branch: any) => branch.cards && branch.cards.length > 0,
+      )
+    })
+    return vendorsWithCards.map((vendor: any) => ({
       id: vendor.id || vendor.vendor_id,
       vendor_id: vendor.vendor_id,
       name: vendor.business_name || vendor.branch_name || vendor.vendor_name || 'Unknown Vendor',

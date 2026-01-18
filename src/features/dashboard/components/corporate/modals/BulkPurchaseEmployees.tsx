@@ -351,6 +351,8 @@ export function BulkPurchaseEmployeesModal({
     setDashGoAmount('')
   }
 
+  // Quick Assign handlers - These only select the card and show the recipients table
+  // Nothing is added to cart or saved until the user clicks "Save Assignment"
   const handleCardSelect = (cardId: number, cardType: string) => {
     setSelectedCardId(cardId)
     setSelectedCardType(cardType)
@@ -1027,7 +1029,10 @@ export function BulkPurchaseEmployeesModal({
 
                 {/* Recipients Table for DashPro - Show when DashPro is selected */}
                 {selectedCardType === 'dashpro' && (
-                  <div className="space-y-4 border-t border-gray-200 pt-4 mt-6">
+                  <div
+                    id="recipients-table-section"
+                    className="space-y-4 border-t border-gray-200 pt-4 mt-6"
+                  >
                     <div className="flex items-center justify-between">
                       <Text variant="span" weight="medium" className="text-gray-700 block">
                         Select Recipients for DashPro
@@ -1144,22 +1149,40 @@ export function BulkPurchaseEmployeesModal({
                     </Text>
                     <div className="space-y-2">
                       {Object.entries(cardRecipientAssignments).map(([key, assignment]) => {
+                        // Get recipient details from uploadedRecipients
+                        const assignedRecipients = assignment.recipientIds
+                          .map((id) => uploadedRecipients.find((r) => r.id === id))
+                          .filter(Boolean) as RecipientRow[]
+
                         return (
                           <div
                             key={key}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                            className="flex items-start justify-between p-3 bg-gray-50 rounded-lg"
                           >
-                            <div>
+                            <div className="flex-1">
                               <Text variant="span" weight="medium" className="text-gray-900">
                                 {assignment.cardName || 'Unknown Card'} ({assignment.cardType})
                               </Text>
-                              <Text variant="span" className="text-sm text-gray-600 block">
+                              <Text variant="span" className="text-sm text-gray-600 block mt-1">
                                 Assigned to {assignment.recipientIds.length} recipient(s) -{' '}
                                 {formatCurrency(
                                   (assignment.cardPrice || 0) * assignment.recipientIds.length,
                                   assignment.cardCurrency || 'GHS',
                                 )}
                               </Text>
+                              {/* Show recipient names and emails */}
+                              <div className="mt-2 space-y-1">
+                                {assignedRecipients.map((recipient) => (
+                                  <div key={recipient.id} className="text-sm text-gray-700">
+                                    <Text variant="span" className="font-medium">
+                                      {recipient.name}
+                                    </Text>
+                                    <Text variant="span" className="text-gray-500 ml-2">
+                                      ({recipient.email})
+                                    </Text>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                             <Button
                               variant="outline"
@@ -1207,35 +1230,22 @@ export function BulkPurchaseEmployeesModal({
                     Back
                   </Button>
                   {Object.keys(cardRecipientAssignments).length > 0 && (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={handleSaveToCart}
-                        disabled={
-                          Object.keys(cardRecipientAssignments).length === 0 ||
-                          addToCartMutation.isPending
-                        }
-                        loading={addToCartMutation.isPending}
-                      >
-                        Save to Cart
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={async () => {
-                          await handleSaveToCart()
-                          setTimeout(() => {
-                            handleCheckout()
-                          }, 500)
-                        }}
-                        disabled={
-                          Object.keys(cardRecipientAssignments).length === 0 ||
-                          addToCartMutation.isPending
-                        }
-                        loading={addToCartMutation.isPending}
-                      >
-                        Save & Checkout
-                      </Button>
-                    </>
+                    <Button
+                      variant="secondary"
+                      onClick={async () => {
+                        await handleSaveToCart()
+                        setTimeout(() => {
+                          handleCheckout()
+                        }, 500)
+                      }}
+                      disabled={
+                        Object.keys(cardRecipientAssignments).length === 0 ||
+                        addToCartMutation.isPending
+                      }
+                      loading={addToCartMutation.isPending}
+                    >
+                      Save & Checkout
+                    </Button>
                   )}
                   {Object.keys(cardRecipientAssignments).length === 0 && hasExistingCartItems && (
                     <Button variant="secondary" onClick={handleCheckout} disabled={!cartId}>
@@ -1544,22 +1554,40 @@ export function BulkPurchaseEmployeesModal({
                     </Text>
                     <div className="space-y-2">
                       {Object.entries(cardRecipientAssignments).map(([key, assignment]) => {
+                        // Get recipient details from uploadedRecipients
+                        const assignedRecipients = assignment.recipientIds
+                          .map((id) => uploadedRecipients.find((r) => r.id === id))
+                          .filter(Boolean) as RecipientRow[]
+
                         return (
                           <div
                             key={key}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                            className="flex items-start justify-between p-3 bg-gray-50 rounded-lg"
                           >
-                            <div>
+                            <div className="flex-1">
                               <Text variant="span" weight="medium" className="text-gray-900">
                                 {assignment.cardName || 'Unknown Card'} ({assignment.cardType})
                               </Text>
-                              <Text variant="span" className="text-sm text-gray-600 block">
+                              <Text variant="span" className="text-sm text-gray-600 block mt-1">
                                 Assigned to {assignment.recipientIds.length} recipient(s) -{' '}
                                 {formatCurrency(
                                   (assignment.cardPrice || 0) * assignment.recipientIds.length,
                                   assignment.cardCurrency || 'GHS',
                                 )}
                               </Text>
+                              {/* Show recipient names and emails */}
+                              <div className="mt-2 space-y-1">
+                                {assignedRecipients.map((recipient) => (
+                                  <div key={recipient.id} className="text-sm text-gray-700 flex">
+                                    <Text variant="span" className="font-medium">
+                                      {recipient.name}
+                                    </Text>
+                                    <Text variant="span" className="text-gray-500 ml-2">
+                                      ({recipient.email})
+                                    </Text>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                             <Button
                               variant="outline"
@@ -1607,35 +1635,22 @@ export function BulkPurchaseEmployeesModal({
                     Back
                   </Button>
                   {Object.keys(cardRecipientAssignments).length > 0 && (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={handleSaveToCart}
-                        disabled={
-                          Object.keys(cardRecipientAssignments).length === 0 ||
-                          addToCartMutation.isPending
-                        }
-                        loading={addToCartMutation.isPending}
-                      >
-                        Save to Cart
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={async () => {
-                          await handleSaveToCart()
-                          setTimeout(() => {
-                            handleCheckout()
-                          }, 500)
-                        }}
-                        disabled={
-                          Object.keys(cardRecipientAssignments).length === 0 ||
-                          addToCartMutation.isPending
-                        }
-                        loading={addToCartMutation.isPending}
-                      >
-                        Save & Checkout
-                      </Button>
-                    </>
+                    <Button
+                      variant="secondary"
+                      onClick={async () => {
+                        await handleSaveToCart()
+                        setTimeout(() => {
+                          handleCheckout()
+                        }, 500)
+                      }}
+                      disabled={
+                        Object.keys(cardRecipientAssignments).length === 0 ||
+                        addToCartMutation.isPending
+                      }
+                      loading={addToCartMutation.isPending}
+                    >
+                      Save & Checkout
+                    </Button>
                   )}
                   {Object.keys(cardRecipientAssignments).length === 0 && hasExistingCartItems && (
                     <Button variant="secondary" onClick={handleCheckout} disabled={!cartId}>
