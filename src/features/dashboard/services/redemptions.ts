@@ -344,6 +344,73 @@ export const getVendorRedemptions = async (params?: GetVendorRedemptionsParams):
   return await getList(`${commonUrl}/vendors`, params)
 }
 
+export interface GetRedemptionsSummaryParams {
+  dateFrom?: string // ISO date format
+  dateTo?: string // ISO date format
+}
+
+export interface RedemptionsSummaryResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: {
+    total_redemptions: number
+    total_dashx_redeemed: number
+    total_dashpass_redeemed: number
+    pending_payout: number
+    currency: string
+  }
+}
+
+// Get redemptions summary
+export const getRedemptionsSummary = async (
+  params?: GetRedemptionsSummaryParams,
+): Promise<RedemptionsSummaryResponse> => {
+  const response = await axiosClient.get(`${commonUrl}/summary`, { params })
+  return response as unknown as RedemptionsSummaryResponse
+}
+
+export interface RedemptionItem {
+  redemption_id: number
+  phone_number: string
+  vendor_name: string
+  vendor_id: number
+  branch_name: string
+  branch_location: string
+  card_type: string
+  amount: number
+  redemption_date: string
+  status: string
+  transfer_reference: string
+  transaction_reference: string
+}
+
+export interface VendorRedemptionsResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: RedemptionItem[]
+  pagination: {
+    hasMore: boolean
+    after: string
+  }
+}
+
+export interface GetVendorRedemptionsListParams {
+  limit?: number
+  after?: string
+  branch_id?: number
+  branch_name?: string
+}
+
+// Get vendor redemptions list (new endpoint /redemptions)
+export const getVendorRedemptionsList = async (
+  params?: GetVendorRedemptionsListParams,
+): Promise<VendorRedemptionsResponse> => {
+  const response = await axiosClient.get(`${commonUrl}`, { params })
+  return response as unknown as VendorRedemptionsResponse
+}
+
 // Update redemption status
 export const updateRedemptionStatus = async (
   data: UpdateRedemptionStatusPayload,

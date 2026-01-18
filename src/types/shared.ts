@@ -126,3 +126,8 @@ export type CsvHeader = {
   accessor: string
   transform?: (v: any) => string
 }
+
+export interface VendorCardCountsResponse {
+  DashX: number
+  DashPass: number
+}

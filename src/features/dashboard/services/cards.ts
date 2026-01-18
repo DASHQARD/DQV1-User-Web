@@ -1,5 +1,5 @@
 import { axiosClient } from '@/libs'
-import { patchMethod } from '@/services/requests'
+import { getList, patchMethod } from '@/services/requests'
 import type {
   CreateCardData,
   UpdateCardData,
@@ -120,6 +120,29 @@ export const getCardMetricsDetails = async (
 ): Promise<CardMetricsDetailsResponse> => {
   const response = await axiosClient.get('/cards/users/metrics/details', { params })
   return response as unknown as CardMetricsDetailsResponse
+}
+
+export interface CardsPerformanceMetricsParams {
+  filter?: 'monthly' | 'quarterly' | 'yearly'
+}
+
+export interface CardsPerformanceMetricsData {
+  period_key: string
+  dashpro_amount: number
+  dashx_amount: number
+  dashpass_amount: number
+  dashgo_amount: number
+}
+
+export interface CardsPerformanceMetricsResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: CardsPerformanceMetricsData[]
+}
+
+export const getCardsPerformanceMetrics = async (query?: Record<string, any>): Promise<any> => {
+  return await getList('/cards/performance/metrics', query)
 }
 
 export interface RateCardPayload {

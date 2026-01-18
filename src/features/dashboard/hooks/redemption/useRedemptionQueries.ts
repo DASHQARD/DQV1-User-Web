@@ -5,10 +5,14 @@ import {
   getRedemptions,
   getUserRedemptions,
   getVendorRedemptions,
+  getVendorRedemptionsList,
+  getRedemptionsSummary,
   type SearchVendorsParams,
   type GetRedemptionsParams,
   type GetUserRedemptionsParams,
   type GetVendorRedemptionsParams,
+  type GetVendorRedemptionsListParams,
+  type GetRedemptionsSummaryParams,
   getRedemptionsAmountDashGo,
   getRedemptionsAmountDashPro,
   type GetRedemptionsAmountDashGoParams,
@@ -106,11 +110,27 @@ export function useRedemptionQueries() {
     })
   }
 
+  function useGetRedemptionsSummaryService(params?: GetRedemptionsSummaryParams) {
+    return useQuery({
+      queryKey: ['redemptions-summary', params],
+      queryFn: () => getRedemptionsSummary(params),
+    })
+  }
+
+  function useGetVendorRedemptionsListService(params?: GetVendorRedemptionsListParams) {
+    return useQuery({
+      queryKey: ['vendor-redemptions-list', params],
+      queryFn: () => getVendorRedemptionsList(params),
+    })
+  }
+
   return {
     useSearchVendorsService,
     useGetRedemptionsService,
     useGetUserRedemptionsService,
     useGetVendorRedemptionsService,
+    useGetRedemptionsSummaryService,
+    useGetVendorRedemptionsListService,
     useGetRedemptionsAmountDashGoService,
     useGetRedemptionsAmountDashProService,
     useGetRedemptionsAmountDashXService,

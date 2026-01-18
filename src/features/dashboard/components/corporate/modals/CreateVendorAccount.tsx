@@ -218,8 +218,17 @@ function CreateVendorAccountContent({
 
     // Only validate front_id and back_id if checkbox is not checked
     const fieldsToValidate = checkboxProfileSameAsCorporate
-      ? (['first_name', 'last_name', 'dob', 'id_type', 'id_number'] as const)
-      : (['first_name', 'last_name', 'dob', 'id_type', 'id_number', 'front_id', 'back_id'] as const)
+      ? (['first_name', 'last_name', 'dob', 'street_address', 'id_type', 'id_number'] as const)
+      : ([
+          'first_name',
+          'last_name',
+          'dob',
+          'street_address',
+          'id_type',
+          'id_number',
+          'front_id',
+          'back_id',
+        ] as const)
 
     methods.trigger(fieldsToValidate).then((isValid) => {
       if (isValid) {
@@ -366,6 +375,7 @@ function CreateVendorAccountContent({
                 dob: corporateUser.dob || '',
                 id_type: corporateUser.id_type || '',
                 id_number: corporateUser.id_number || '',
+                street_address: corporateUser.street_address || '',
               }
             : {
                 first_name: data.first_name || '',
@@ -373,6 +383,7 @@ function CreateVendorAccountContent({
                 dob: data.dob || '',
                 id_type: data.id_type || '',
                 id_number: data.id_number || '',
+                street_address: data.street_address || '',
               }
 
         // Extract phone and country info
@@ -399,6 +410,7 @@ function CreateVendorAccountContent({
             dob: personalDetails.dob,
             id_type: personalDetails.id_type,
             id_number: personalDetails.id_number,
+            street_address: personalDetails.street_address,
             id_front_image_url: idImages.front || '',
             id_back_image_url: idImages.back || '',
           },

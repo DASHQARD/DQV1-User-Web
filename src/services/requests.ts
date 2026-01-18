@@ -7,7 +7,9 @@ export const postMethod = async (url: string, payload?: any) => {
 }
 
 export const getList = async <T = any>(url: string, query?: Record<string, any>): Promise<T> => {
-  const res = await axiosClient.get(`${url}?${getQueryString(query)}`)
+  const queryString = getQueryString(query)
+  const fullUrl = queryString ? `${url}?${queryString}` : url
+  const res = await axiosClient.get(fullUrl)
   return res.data
 }
 

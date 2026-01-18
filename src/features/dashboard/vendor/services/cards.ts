@@ -1,6 +1,6 @@
 import { deleteMethod, getList, postMethod, putMethod } from '@/services/requests'
 import { getMethod } from '@/services/requests'
-import type { CreateExperienceData } from '@/types'
+import type { CreateExperienceData, VendorCardCountsResponse } from '@/types'
 
 const commonManagerUrl = '/cards'
 
@@ -30,4 +30,8 @@ export const getCardsMetrics = async () => {
 
 export const getCardsPerformanceMetrics = async () => {
   return await getMethod(`${commonManagerUrl}/users/metrics/performance`)
+}
+
+export const getVendorCardCounts = async (): Promise<VendorCardCountsResponse> => {
+  return await getMethod<VendorCardCountsResponse>(`${commonManagerUrl}/vendor/gift-card/counts`)
 }

@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores'
 
 import { ROUTES } from '@/utils/constants'
 import { Text } from '@/components'
-import { AuditLogs, QardsPerformance, SummaryCards } from '../../../components'
+import { AuditLogs, SummaryCards, VendorQardsPerformance } from '../../../components'
 
 export default function Home() {
   const { user } = useAuthStore()
@@ -139,7 +139,7 @@ export default function Home() {
         {(userType === 'corporate_vendor' || userType === 'vendor') && (
           <>
             <SummaryCards />
-            <QardsPerformance />
+            <VendorQardsPerformance />
           </>
         )}
         <AuditLogs />

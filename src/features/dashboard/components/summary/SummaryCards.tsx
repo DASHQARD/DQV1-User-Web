@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams, useLocation } from 'react-router'
 
 import DashXIllustration from '@/assets/svgs/Dashx_bg.svg'
 import DashGoIllustration from '@/assets/svgs/dashgo_bg.svg'
@@ -10,11 +10,18 @@ import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
 import { cn } from '@/libs/clsx'
 import { MODALS, ROUTES } from '@/utils/constants'
+import { formatCurrency } from '@/utils/format'
 import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
 
 export default function SummaryCards() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const location = useLocation()
   const { data: metricsResponse, isLoading } = useGiftCardMetrics()
+
+  // Check if we're in corporate context
+  const isCorporate =
+    searchParams.get('account') === 'corporate' || location.pathname.includes('/corporate')
 
   const modal = usePersistedModalState<{
     id: string
@@ -41,7 +48,8 @@ export default function SummaryCards() {
         DashX: 0,
         DashGo: 0,
         DashPass: 0,
-        DashPro: 0,
+        DashPro: 1,
+        DashGo_balance: 0,
       }
     )
   }, [metricsResponse])
@@ -62,8 +70,9 @@ export default function SummaryCards() {
       {
         id: '2',
         title: 'DashGo Gift Cards',
-        value: metrics.DashGo,
+        value: (metrics as any).DashGo_balance ?? 0,
         totalGiftCards: metrics.DashGo,
+        balance: (metrics as any).DashGo_balance ?? 0,
         IconName: 'hugeicons:money-bag-01',
         active: false,
         savingsType: null,
@@ -73,8 +82,9 @@ export default function SummaryCards() {
       {
         id: '3',
         title: 'DashPro Gift Cards',
-        value: metrics.DashPro,
-        totalGiftCards: metrics.DashPro,
+        value: (metrics as any).DashPro_balance ?? metrics.DashPro ?? 0,
+        totalGiftCards: 1,
+        balance: (metrics as any).DashPro_balance ?? metrics.DashPro ?? 0,
         IconName: 'hugeicons:money-bag-01',
         active: false,
         savingsType: null,
@@ -117,126 +127,147 @@ export default function SummaryCards() {
         </Text>
 
         <section className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {CARD_INFO.map((card) => (
-            <div
-              key={card.id}
-              id={card.title}
-              className={cn(
-                'flex relative rounded-xl pt-[18px] pb-6 pl-6 pr-4 border border-gray-100 items-center justify-between group bg-white w-full overflow-hidden',
-              )}
-            >
-              <div className="flex items-start justify-between w-full">
-                <div className="flex-1 flex flex-col gap-3">
-                  <section className="flex items-center gap-2 justify-between">
-                    <div
-                      className={cn(
-                        'w-10 h-10 rounded-full flex items-center justify-center',
-                        card.IconBg,
-                      )}
-                    >
-                      <Icon icon={card.IconName} className="w-5 h-5 text-white" />
-                    </div>
-                    <Dropdown
-                      actions={[
-                        {
-                          label: 'View',
-                          onClickFn: () =>
-                            navigate(
-                              `${ROUTES.IN_APP.DASHBOARD.GIFT_CARDS.GIFT_CARD_DETAILS}/${card.id}`,
-                            ),
-                        },
-                        {
-                          label: 'Edit',
-                          onClickFn: () => {
-                            if (card.savingsType) {
-                              const isIndividualOrGroup =
-                                card.title.toLowerCase() === 'individual savings' ||
-                                card.title.toLowerCase() === 'group savings'
+          {CARD_INFO.map((card) => {
+            const cardTypeMap: Record<string, string> = {
+              '1': 'dashx',
+              '2': 'dashgo',
+              '3': 'dashpro',
+              '4': 'dashpass',
+            }
+            const cardType = cardTypeMap[card.id] || card.id
 
-                              const modalType = isIndividualOrGroup
-                                ? MODALS.SUMMARY_CARDS.VIEW
-                                : MODALS.SUMMARY_CARDS.VIEW
+            const handleCardClick = () => {
+              if (isCorporate) {
+                const path = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.GIFT_CARD_DETAILS}/${cardType}?account=corporate`
+                navigate(path)
+              } else {
+                const regularPath = `${ROUTES.IN_APP.DASHBOARD.GIFT_CARDS.GIFT_CARD_DETAILS}/${cardType}`
+                navigate(regularPath)
+              }
+            }
 
-                              modal.openModal(modalType, {
-                                id: card.id || '',
-                                name: card.title,
-                              })
-                            }
-                          },
-                        },
-                        ...(card.active
-                          ? [
-                              {
-                                label: 'Deactivate',
-                                onClickFn: () => {
-                                  if (card.savingsType) {
-                                    modal.openModal(MODALS.SUMMARY_CARDS.VIEW, {
-                                      id: card.id,
-                                    })
-                                  }
-                                },
-                              },
-                            ]
-                          : [
-                              {
-                                label: 'Activate',
-                                onClickFn: () => {
-                                  if (card.savingsType) {
-                                    modal.openModal(MODALS.SUMMARY_CARDS.VIEW, {
-                                      id: card.id,
-                                    })
-                                  }
-                                },
-                              },
-                            ]),
-                      ]}
-                    >
+            return (
+              <div
+                key={card.id}
+                id={card.title}
+                onClick={handleCardClick}
+                className={cn(
+                  'flex relative rounded-xl pt-[18px] pb-6 pl-6 pr-4 border border-gray-100 items-center justify-between group bg-white w-full overflow-hidden cursor-pointer hover:shadow-md transition-shadow',
+                )}
+              >
+                <div className="flex items-start justify-between w-full">
+                  <div className="flex-1 flex flex-col gap-3">
+                    <section className="flex items-center gap-2 justify-between">
                       <div
-                        className="btn rounded-lg no-print cursor-pointer"
-                        aria-label="View actions"
-                        role="button"
-                        tabIndex={0}
+                        className={cn(
+                          'w-10 h-10 rounded-full flex items-center justify-center',
+                          card.IconBg,
+                        )}
                       >
-                        <CustomIcon name="MoreVertical" width={24} height={24} />
+                        <Icon icon={card.IconName} className="w-5 h-5 text-white" />
                       </div>
-                    </Dropdown>
-                  </section>
+                      <Dropdown
+                        actions={[
+                          {
+                            label: 'View',
+                            onClickFn: (e?: React.MouseEvent) => {
+                              e?.stopPropagation() // Prevent card click when clicking dropdown
+                              handleCardClick()
+                            },
+                          },
+                          {
+                            label: 'Edit',
+                            onClickFn: () => {
+                              if (card.savingsType) {
+                                const isIndividualOrGroup =
+                                  card.title.toLowerCase() === 'individual savings' ||
+                                  card.title.toLowerCase() === 'group savings'
 
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <Text variant="span" weight="medium" className="text-gray-800">
-                        {card.title}
-                      </Text>
-                      {/* <Badge variant={card.active ? 'active' : 'inactive'}>
+                                const modalType = isIndividualOrGroup
+                                  ? MODALS.SUMMARY_CARDS.VIEW
+                                  : MODALS.SUMMARY_CARDS.VIEW
+
+                                modal.openModal(modalType, {
+                                  id: card.id || '',
+                                  name: card.title,
+                                })
+                              }
+                            },
+                          },
+                          ...(card.active
+                            ? [
+                                {
+                                  label: 'Deactivate',
+                                  onClickFn: () => {
+                                    if (card.savingsType) {
+                                      modal.openModal(MODALS.SUMMARY_CARDS.VIEW, {
+                                        id: card.id,
+                                      })
+                                    }
+                                  },
+                                },
+                              ]
+                            : [
+                                {
+                                  label: 'Activate',
+                                  onClickFn: () => {
+                                    if (card.savingsType) {
+                                      modal.openModal(MODALS.SUMMARY_CARDS.VIEW, {
+                                        id: card.id,
+                                      })
+                                    }
+                                  },
+                                },
+                              ]),
+                        ]}
+                      >
+                        <div
+                          className="btn rounded-lg no-print cursor-pointer"
+                          aria-label="View actions"
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <CustomIcon name="MoreVertical" width={24} height={24} />
+                        </div>
+                      </Dropdown>
+                    </section>
+
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <Text variant="span" weight="medium" className="text-gray-800">
+                          {card.title}
+                        </Text>
+                        {/* <Badge variant={card.active ? 'active' : 'inactive'}>
                         {card.active ? 'Active' : 'Inactive'}
                       </Badge> */}
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs text-gray-500">
-                        Total {card.totalGiftCards}{' '}
-                        {card.totalGiftCards === 1 ? 'Gift Card' : 'Gift Cards'}
-                      </p>
-                      <p className="text-gray-800 text-xs">{card.value}</p>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs text-gray-500">
+                          Total {card.totalGiftCards}{' '}
+                          {card.totalGiftCards === 1 ? 'Gift Card' : 'Gift Cards'}
+                        </p>
+                        <p className="text-gray-800 text-xs">
+                          {card.id === '2' || card.id === '3'
+                            ? formatCurrency(card.value as number, 'GHS')
+                            : card.value}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="pointer-events-none absolute -bottom-5 -right-5 h-[110px] w-[120px] overflow-hidden opacity-60 transition-opacity duration-300 group-hover:opacity-100">
-                  <img
-                    src={card.image}
-                    alt="wallet illustration"
-                    className="h-full w-full object-contain"
-                  />
+                  <div className="pointer-events-none absolute -bottom-5 -right-5 h-[110px] w-[120px] overflow-hidden opacity-60 transition-opacity duration-300 group-hover:opacity-100">
+                    <img
+                      src={card.image}
+                      alt="wallet illustration"
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </section>
       </div>
-      {/* {modal.modalState === MODALS.SAVINGS.CHILDREN.DEACTIVATE && <DeactivateSavings />}
-      {modal.modalState === MODALS.SAVINGS.CHILDREN.UPDATE && <UpdateAjoSavings />}
-      {modal.modalState === MODALS.SAVINGS.CHILDREN.UPDATE_GROUP && <UpdateGroupSavings />}
-      {modal.modalState === MODALS.SAVINGS.CHILDREN.ACTIVATE && <ActivateSavings />} */}
     </>
   )
 }

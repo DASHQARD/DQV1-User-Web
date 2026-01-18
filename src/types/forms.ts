@@ -21,6 +21,7 @@ export interface CreateVendorPayload {
     first_name: string
     last_name: string
     dob: string
+    street_address: string
     id_type: string
     id_number: string
     id_front_image_url: string

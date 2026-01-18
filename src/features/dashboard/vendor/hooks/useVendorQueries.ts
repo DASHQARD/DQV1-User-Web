@@ -12,6 +12,7 @@ import {
   getCardById,
   getCardsMetrics,
   getCardsPerformanceMetrics,
+  getVendorCardCounts,
   getAllVendorsDetails,
   getBranchPaymentDetails,
   getBranchManagerInvitations,
@@ -117,6 +118,13 @@ export function vendorQueries() {
     })
   }
 
+  function useGetVendorCardCountsService() {
+    return useQuery({
+      queryKey: ['vendor-card-counts'],
+      queryFn: getVendorCardCounts,
+    })
+  }
+
   function useGetAllVendorsDetailsForVendorService() {
     return useQuery({
       queryKey: ['all-vendors-details-for-vendor'],
@@ -159,6 +167,7 @@ export function vendorQueries() {
     useGetCardByIdService,
     useGetCardsMetricsService,
     useGetCardsPerformanceMetricsService,
+    useGetVendorCardCountsService,
     useGetAllVendorsDetailsForVendorService,
     useGetVendorPaymentsService,
     useGetBranchPaymentDetailsService,

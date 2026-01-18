@@ -114,7 +114,6 @@ export function useDashboardMetrics() {
       .slice(0, 10)
   }, [paymentsData])
 
-  // Get recent redemptions
   const recentRedemptions = useMemo((): Redemption[] => {
     if (!Array.isArray(paymentsData) || paymentsData.length === 0) return []
 

@@ -183,4 +183,14 @@ export const BRANCH_NAV_ITEMS = [
       },
     ],
   },
+  {
+    section: 'Payments',
+    items: [
+      {
+        path: ROUTES.IN_APP.DASHBOARD.VENDOR.PAYMENT_DETAILS,
+        label: 'Payment Details',
+        icon: 'bi:credit-card',
+      },
+    ],
+  },
 ]
