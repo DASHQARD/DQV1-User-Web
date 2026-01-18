@@ -51,6 +51,7 @@ export default function Checkout() {
   const { useCheckoutService } = usePayments()
   const { mutateAsync: checkoutMutation, isPending: isCheckingOut } = useCheckoutService()
   const [isBulkModalOpen, setIsBulkModalOpen] = React.useState(false)
+  const [isMissingRecipientsModalOpen, setIsMissingRecipientsModalOpen] = React.useState(false)
   const [bulkFile, setBulkFile] = React.useState<File | null>(null)
   const modal = usePersistedModalState({
     paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
@@ -192,11 +193,11 @@ export default function Checkout() {
       return
     }
 
-    // Validate recipients
-    // if (recipients.length === 0) {
-    //   toast.error('Please assign recipients to your gift cards before checkout')
-    //   return
-    // }
+    // Validate recipients - check if all items have recipients assigned
+    if (!allRecipientsAssigned) {
+      setIsMissingRecipientsModalOpen(true)
+      return
+    }
 
     // Use the first cart's ID (or you might want to handle multiple carts differently)
     const firstCart = pendingCartItems[0]
@@ -292,6 +293,26 @@ export default function Checkout() {
 
     return grouped
   }, [displayCartItems])
+
+  // Check if all cart items have recipients assigned
+  const itemsMissingRecipients = useMemo(() => {
+    const missing: FlattenedCartItem[] = []
+
+    displayCartItems.forEach((item: FlattenedCartItem) => {
+      if (!item.cart_item_id) return
+
+      const itemRecipients = recipientsByCartItem[item.cart_item_id] || []
+      const requiredQuantity = item.total_quantity || 1
+
+      if (itemRecipients.length < requiredQuantity) {
+        missing.push(item)
+      }
+    })
+
+    return missing
+  }, [displayCartItems, recipientsByCartItem])
+
+  const allRecipientsAssigned = itemsMissingRecipients.length === 0
 
   const handleBulkUpload = useCallback(() => {
     if (!bulkFile) {
@@ -641,6 +662,104 @@ export default function Checkout() {
               loading={bulkAssignMutation.isPending}
             >
               Upload & Assign
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Missing Recipients Modal */}
+      <Modal
+        isOpen={isMissingRecipientsModalOpen}
+        setIsOpen={setIsMissingRecipientsModalOpen}
+        title="Recipients Required"
+        panelClass="max-w-2xl"
+      >
+        <div className="p-6 space-y-6">
+          <div className="flex items-start gap-3">
+            <div className="shrink-0">
+              <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                <Icon icon="bi:exclamation-triangle" className="size-5 text-yellow-600" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Assign Recipients Before Checkout
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Please assign recipients to all gift cards before proceeding to checkout. The
+                following items still need recipients:
+              </p>
+            </div>
+          </div>
+
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="max-h-[300px] overflow-y-auto">
+              <div className="divide-y divide-gray-200">
+                {itemsMissingRecipients.map((item: FlattenedCartItem) => {
+                  const itemRecipients = item.cart_item_id
+                    ? recipientsByCartItem[item.cart_item_id] || []
+                    : []
+                  const requiredQuantity = item.total_quantity || 1
+
+                  return (
+                    <div key={item.cart_item_id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                            {item.product || `Card #${item.card_id}`}
+                          </h4>
+                          <p className="text-xs text-gray-500 mb-2">
+                            {getCardTypeName(item.type)} • Quantity: {requiredQuantity}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            {itemRecipients.length > 0 ? (
+                              <span className="text-xs text-green-600 font-medium">
+                                {itemRecipients.length} of {requiredQuantity} assigned
+                              </span>
+                            ) : (
+                              <span className="text-xs text-red-600 font-medium">
+                                No recipients assigned
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="small"
+                          onClick={() => {
+                            if (!item.cart_item_id) {
+                              toast.error('Cart item ID is required')
+                              return
+                            }
+                            setIsMissingRecipientsModalOpen(false)
+                            // Calculate per-recipient amount: total_amount / total_quantity
+                            const totalAmount = parseFloat(item.amount || '0')
+                            const totalQuantity = item.total_quantity || 1
+                            const perRecipientAmount = totalAmount / totalQuantity
+
+                            modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
+                              cart_item_id: item.cart_item_id,
+                              cardType: item.type,
+                              cardProduct: item.product,
+                              cardCurrency: item.currency || 'GHS',
+                              amount: perRecipientAmount,
+                            })
+                          }}
+                        >
+                          <Icon icon="bi:person-plus" className="mr-1.5" />
+                          {itemRecipients.length > 0 ? 'Add Recipients' : 'Assign Recipients'}
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
+            <Button variant="outline" onClick={() => setIsMissingRecipientsModalOpen(false)}>
+              Close
             </Button>
           </div>
         </div>
