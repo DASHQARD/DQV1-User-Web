@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { getBranchExperiences, getBranchRedemptions, getSingleBranchExperience } from '../services'
+import {
+  getBranchExperiences,
+  getBranchRedemptions,
+  getSingleBranchExperience,
+  getBranchInfo,
+} from '../services'
 import { useUserProfile } from '@/hooks'
 
 export function branchQueries() {
@@ -36,9 +41,21 @@ export function branchQueries() {
     })
   }
 
+  function useGetBranchInfoService() {
+    const { useGetUserProfileService } = useUserProfile()
+    const { data: userProfileData } = useGetUserProfileService()
+    const isBranch = userProfileData?.user_type === 'branch'
+    return useQuery({
+      queryKey: ['branch-info'],
+      queryFn: () => getBranchInfo(),
+      enabled: isBranch,
+    })
+  }
+
   return {
     useGetBranchExperiencesService,
     useGetSingleBranchExperienceService,
     useGetBranchRedemptionsService,
+    useGetBranchInfoService,
   }
 }

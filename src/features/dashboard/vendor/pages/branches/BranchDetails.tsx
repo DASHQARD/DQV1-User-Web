@@ -27,7 +27,7 @@ import { getStatusVariant } from '@/utils/helpers/common'
 import EmptyStateImage from '@/assets/images/empty-state.png'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { StatusCell } from '@/components'
-import { branchQueries } from '@/features/dashboard/branch/hooks'
+import { useRedemptionQueries } from '@/features/dashboard/hooks'
 
 type QueryType = typeof DEFAULT_QUERY
 
@@ -473,24 +473,62 @@ export function BranchDetails() {
     }))
   }, [vendorsDetailsResponse, vendorId, branchId])
 
-  // Fetch branch redemptions
-  const { useGetBranchRedemptionsService } = branchQueries()
-  const { data: branchRedemptionsResponse, isLoading: isLoadingRedemptions } =
-    useGetBranchRedemptionsService()
+  // Fetch branch redemptions using /redemptions endpoint
+  const redemptionQueries = useRedemptionQueries()
+  const branchIdForApi = branches?.id || branches?.branch_id
+  const branchNameForApi = branches?.branch_name
+  const { data: redemptionsResponse, isLoading: isLoadingRedemptions } =
+    redemptionQueries.useGetVendorRedemptionsListService({
+      limit: 100, // Fetch more to ensure we get all branch redemptions
+      branch_id: branchIdForApi ? Number(branchIdForApi) : undefined,
+      branch_name: branchNameForApi,
+    })
+
+  // Get all branch redemptions (filtered by current branch)
+  const branchRedemptions = React.useMemo(() => {
+    if (!redemptionsResponse?.data || !branches) return []
+    const redemptions = redemptionsResponse.data || []
+
+    // Additional client-side filtering to ensure we only show this branch's redemptions
+    const branchName = branches.branch_name
+    const branchLocation = branches.branch_location
+    const branchId = branches.id || branches.branch_id
+
+    return redemptions.filter((redemption: any) => {
+      // Match by branch_name (most reliable)
+      if (redemption.branch_name && branchName) {
+        return redemption.branch_name === branchName
+      }
+      // Fallback: match by branch_location
+      if (redemption.branch_location && branchLocation) {
+        return redemption.branch_location === branchLocation
+      }
+      // Fallback: match by branch_id if available in redemption
+      if (redemption.branch_id && branchId) {
+        return String(redemption.branch_id) === String(branchId)
+      }
+      return false
+    })
+  }, [redemptionsResponse, branches])
 
   // Get recent redemptions (first 5) - sorted by most recent first
   const recentRedemptions = React.useMemo(() => {
-    if (!branchRedemptionsResponse?.data) return []
-    const redemptions = branchRedemptionsResponse.data || []
+    if (branchRedemptions.length === 0) return []
+
     // Sort by date (most recent first) and limit to 5
-    return redemptions
+    return branchRedemptions
       .sort((a: any, b: any) => {
         const dateA = new Date(a.redemption_date || a.created_at || a.updated_at || 0).getTime()
         const dateB = new Date(b.redemption_date || b.created_at || b.updated_at || 0).getTime()
         return dateB - dateA
       })
       .slice(0, 5)
-  }, [branchRedemptionsResponse])
+  }, [branchRedemptions])
+
+  // Calculate total redemptions count for the branch
+  const totalRedemptions = React.useMemo(() => {
+    return branchRedemptions.length
+  }, [branchRedemptions])
 
   // Get audit logs for this branch
   const branchAuditLogs = React.useMemo(() => {
@@ -644,10 +682,16 @@ export function BranchDetails() {
               <Icon icon="bi:credit-card-2-front" />
             </div>
             <div className="flex-1">
-              {/* <div className="text-2xl font-bold mb-1 leading-none text-[#402D87]">
-                {metrics.totalRedemptions}
-              </div> */}
-              <div className="text-sm text-[#6c757d] mb-2 font-medium">Total Redemptions</div>
+              {isLoadingRedemptions ? (
+                <div className="text-sm text-[#6c757d] mb-2 font-medium">Loading...</div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold mb-1 leading-none text-[#402D87]">
+                    {totalRedemptions}
+                  </div>
+                  <div className="text-sm text-[#6c757d] mb-2 font-medium">Total Redemptions</div>
+                </>
+              )}
             </div>
           </div>
 

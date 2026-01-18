@@ -11,7 +11,6 @@ import {
   getCardsPerformanceMetrics,
   rateCard,
   type GetCardMetricsDetailsParams,
-  type CardsPerformanceMetricsParams,
   type RateCardPayload,
 } from '../services/cards'
 import type { CreateCardData, UpdateCardData } from '@/types/responses'
@@ -97,7 +96,7 @@ export function useCardMetricsDetails(params?: GetCardMetricsDetailsParams) {
   })
 }
 
-export function useCardsPerformanceMetrics(query?: CardsPerformanceMetricsParams) {
+export function useCardsPerformanceMetrics(query?: Record<string, any>) {
   return useQuery({
     queryKey: ['cards-performance-metrics', query],
     queryFn: () => getCardsPerformanceMetrics(query),

@@ -252,10 +252,10 @@ export default function VendorQardsPerformance() {
 
   // Transform API response data to only include dashX and dashPass
   const apiData: QardsPerformanceData[] = React.useMemo(() => {
-    if (!performanceData?.data) return []
+    if (!performanceData) return []
 
     // Handle different response structures
-    const responseData = (performanceData as any)?.data || performanceData
+    const responseData = performanceData
 
     // If it's already an array, use it directly
     if (Array.isArray(responseData)) {
@@ -269,7 +269,7 @@ export default function VendorQardsPerformance() {
     // If it's an object with nested data
     if (typeof responseData === 'object') {
       // Try to find an array property
-      const dataArray = responseData.data || responseData.performance || responseData.metrics || []
+      const dataArray = responseData || []
       if (Array.isArray(dataArray)) {
         return dataArray.map((item: any) => ({
           period_key: item.period_key || item.period || item.month || '',

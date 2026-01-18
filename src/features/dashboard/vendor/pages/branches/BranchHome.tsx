@@ -4,6 +4,7 @@ import { Icon } from '@/libs'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
 import { useUserProfile } from '@/hooks'
+import { vendorQueries } from '@/features'
 import { cn } from '@/libs'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
@@ -19,6 +20,8 @@ export default function BranchHome() {
   const { useGetBranchExperiencesService } = branchQueries()
   const { data: branchExperiences, isLoading: isLoadingBranchExperiences } =
     useGetBranchExperiencesService()
+  const { useGetVendorCardCountsService } = vendorQueries()
+  const { data: cardCountsData, isLoading: isLoadingCardCounts } = useGetVendorCardCountsService()
 
   // Fetch branch redemptions
   const { useGetBranchRedemptionsService } = branchQueries()
@@ -84,10 +87,25 @@ export default function BranchHome() {
     }
   }, [branchOnboardingProgress])
 
-  // Calculate metrics from redemptions
+  // Extract card counts from API response
+  const cardCounts = React.useMemo(() => {
+    if (!cardCountsData) {
+      return {
+        DashX: 0,
+        DashPass: 0,
+        total: 0,
+      }
+    }
+    return {
+      DashX: cardCountsData.DashX || 0,
+      DashPass: cardCountsData.DashPass || 0,
+      total: (cardCountsData.DashX || 0) + (cardCountsData.DashPass || 0),
+    }
+  }, [cardCountsData])
+
+  // Calculate metrics from redemptions for amounts
   const metrics = React.useMemo(() => {
     const redemptions = branchRedemptionsResponse?.data || []
-    const totalRedemptions = redemptions.length
     const totalDashXRedeemed = redemptions
       .filter((r: any) => r.card_type?.toLowerCase() === 'dashx')
       .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0)
@@ -99,16 +117,19 @@ export default function BranchHome() {
       .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0)
 
     return {
-      totalRedemptions,
+      totalRedemptions: cardCounts.total,
       totalDashXRedeemed,
       totalDashPassRedeemed,
       pendingPayout,
     }
-  }, [branchRedemptionsResponse])
+  }, [branchRedemptionsResponse, cardCounts])
 
   return (
     <>
-      {isLoadingUserProfile || isLoadingBranchExperiences || isLoadingRedemptions ? (
+      {isLoadingUserProfile ||
+      isLoadingBranchExperiences ||
+      isLoadingRedemptions ||
+      isLoadingCardCounts ? (
         <div className="flex items-center justify-center py-8">
           <Loader />
         </div>

@@ -40,6 +40,7 @@ export const ROUTES = {
         AUDIT_LOGS: '/dashboard/vendor/audit-logs',
         PAYMENT_METHODS: '/dashboard/vendor/payment-methods',
         PAYMENTS: '/dashboard/vendor/payments',
+        PAYMENT_DETAILS: '/dashboard/vendor/payment-details',
         INVITE_BRANCH_MANAGER: '/dashboard/vendor/invite-branch-manager',
         INVITE_ADMIN: '/dashboard/vendor/invite-admin',
         BRANCH_MANAGERS: '/dashboard/vendor/branch-managers',

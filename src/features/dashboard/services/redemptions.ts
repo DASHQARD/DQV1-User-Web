@@ -24,32 +24,6 @@ export interface RedemptionsListResponse {
   data: VendorRedemption[]
 }
 
-export interface RedemptionItem {
-  redemption_id: number
-  phone_number: string
-  vendor_name: string
-  vendor_id: number
-  branch_name: string
-  branch_location: string
-  card_type: string
-  amount: number
-  redemption_date: string
-  status: string
-  transfer_reference: string
-  transaction_reference: string
-}
-
-export interface VendorRedemptionsResponse {
-  status: string
-  statusCode: number
-  message: string
-  data: RedemptionItem[]
-  pagination: {
-    hasMore: boolean
-    after: string
-  }
-}
-
 /**
  * Helper function to detect mobile money provider from phone number in Ghana
  * @param phoneNumber - Phone number in any format (+233XXXXXXXXX, 233XXXXXXXXX, 0XXXXXXXXX)
@@ -396,9 +370,37 @@ export const getRedemptionsSummary = async (
   return response as unknown as RedemptionsSummaryResponse
 }
 
+export interface RedemptionItem {
+  redemption_id: number
+  phone_number: string
+  vendor_name: string
+  vendor_id: number
+  branch_name: string
+  branch_location: string
+  card_type: string
+  amount: number
+  redemption_date: string
+  status: string
+  transfer_reference: string
+  transaction_reference: string
+}
+
+export interface VendorRedemptionsResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: RedemptionItem[]
+  pagination: {
+    hasMore: boolean
+    after: string
+  }
+}
+
 export interface GetVendorRedemptionsListParams {
   limit?: number
   after?: string
+  branch_id?: number
+  branch_name?: string
 }
 
 // Get vendor redemptions list (new endpoint /redemptions)
