@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
-import { BasePhoneInput, Input, Text } from '@/components'
+import { useEffect, useState } from 'react'
+import { BasePhoneInput, Input, Text, Modal } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CreateAccountSchema } from '@/utils/schemas'
@@ -13,11 +13,14 @@ import { useAuth } from '../hooks'
 import { useCountriesData } from '@/hooks'
 
 export default function SignUpForm() {
+  const navigate = useNavigate()
   const { useSignUpMutation, useGetCountriesService } = useAuth()
   const { mutate, isPending } = useSignUpMutation()
   const { data: countries } = useGetCountriesService()
   const { countries: phoneCountries } = useCountriesData()
   const SPECIAL_CHARACTERS = '!@#$%^&*()'
+  const [isEmailSentModalOpen, setIsEmailSentModalOpen] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
 
   const form = useForm<z.infer<typeof CreateAccountSchema>>({
     resolver: zodResolver(CreateAccountSchema),
@@ -48,7 +51,12 @@ export default function SignUpForm() {
   const hasSpecialChar = /[!@#$%^&*()]/.test(password)
 
   const onSubmit = (data: z.infer<typeof CreateAccountSchema>) => {
-    mutate(data)
+    setUserEmail(data.email)
+    mutate(data, {
+      onSuccess: () => {
+        setIsEmailSentModalOpen(true)
+      },
+    })
   }
 
   return (
@@ -209,6 +217,46 @@ export default function SignUpForm() {
           </div>
         </section>
       </form>
+
+      {/* Email Sent Modal */}
+      <Modal
+        isOpen={isEmailSentModalOpen}
+        setIsOpen={setIsEmailSentModalOpen}
+        title="Email Sent"
+        panelClass="max-w-md"
+      >
+        <div className="p-6 space-y-6">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <Icon icon="bi:check-circle" className="size-6 text-green-600" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Registration Successful!</h3>
+              <p className="text-sm text-gray-600 mb-1">We've sent a verification email to:</p>
+              <p className="text-sm font-medium text-gray-900 mb-4">{userEmail}</p>
+              <p className="text-sm text-gray-600">
+                Please check your inbox and click the verification link to activate your account. If
+                you don't see the email, please check your spam folder.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setIsEmailSentModalOpen(false)
+                navigate(ROUTES.IN_APP.AUTH.LOGIN)
+              }}
+              className="w-full"
+            >
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </section>
   )
 }

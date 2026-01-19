@@ -89,8 +89,13 @@ export const UploadBusinessIDSchema = z.object({
     .instanceof(File, { message: 'Business License is required' })
     .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB'),
   articles_of_incorporation: z
-    .instanceof(File, { message: 'Articles of Incorporation is required' })
-    .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB')
+    .union([
+      z
+        .instanceof(File)
+        .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB'),
+      z.undefined(),
+      z.null(),
+    ])
     .optional(),
   utility_bill: z
     .instanceof(File, { message: 'Utility Bill is required' })

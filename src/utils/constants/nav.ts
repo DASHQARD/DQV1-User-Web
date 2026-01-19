@@ -67,10 +67,10 @@ export const USER_NAV_ITEMS = [
       // { path: ROUTES.IN_APP.DASHBOARD.TRANSACTIONS, label: 'Transactions', icon: 'bi:receipt' },
     ],
   },
-  {
-    section: 'Account',
-    items: [{ path: '/dashboard/notifications', label: 'Notifications', icon: 'bi:bell-fill' }],
-  },
+  // {
+  //   section: 'Account',
+  //   items: [{ path: '/dashboard/notifications', label: 'Notifications', icon: 'bi:bell-fill' }],
+  // },
   {
     section: 'Settings & Support',
     items: [{ path: '/dashboard/settings', label: 'Settings', icon: 'bi:gear-fill' }],

@@ -222,28 +222,16 @@ export default function CardDetailsPage() {
     if (!Array.isArray(cards) || cards.length === 0) {
       return []
     }
-    if (validCardType === 'dashpro') {
-      const totalAmount = cards.reduce((sum: number, c: any) => sum + parseFloat(c.price || '0'), 0)
-
-      return [
-        {
-          id: 'dashpro-wallet',
-          card_name: 'DashPro Wallet',
-          balance: totalAmount,
-          amount: totalAmount,
-          card_price: totalAmount,
-          status: 'active',
-          currency: 'GHS',
-          isAggregated: true,
-        },
-      ]
-    }
 
     // Map cards to the expected format based on API response structure
     return cards.map((card: any) => {
-      // Parse price from string to number
-      const price = parseFloat(card.price || card.base_price || '0')
-      const balance = price // For user cards, balance equals the card price
+      // For DashPro, use unredeemed_amount; for others, use price or base_price
+      let balance: number
+      if (validCardType === 'dashpro') {
+        balance = parseFloat(card.unredeemed_amount || '0')
+      } else {
+        balance = parseFloat(card.price || card.base_price || '0')
+      }
 
       return {
         id: card.id, // Card record ID

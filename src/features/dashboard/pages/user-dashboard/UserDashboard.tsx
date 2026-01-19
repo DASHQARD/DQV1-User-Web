@@ -28,6 +28,7 @@ export default function UserDashboard() {
         DashGo: 0,
         DashPass: 0,
         DashPro: 0,
+        DashGo_balance: 0,
       }
     )
   }, [metricsResponse])
@@ -135,7 +136,7 @@ export default function UserDashboard() {
             Total Cards
           </Text>
           <Text variant="h1" weight="bold" className="text-white text-4xl mb-2">
-            {metrics.DashX + metrics.DashGo + metrics.DashPro + metrics.DashPass}
+            {metrics.DashX + metrics.DashPass + metrics.DashGo}
           </Text>
           <Text variant="span" className="text-white/70 text-sm">
             Active gift cards
@@ -196,10 +197,17 @@ export default function UserDashboard() {
             </div>
           </section>
 
-          <div className="bg-white py-1 px-2 rounded-md w-fit border border-[#BB0613]">
-            <p className="text-[#BB0613] text-xs font-semibold">
-              {metrics.DashGo} {metrics.DashGo === 1 ? 'card' : 'cards'}
-            </p>
+          <div className="flex flex-col gap-2">
+            <div className="bg-white py-1 px-2 rounded-md w-fit border border-[#BB0613]">
+              <p className="text-[#BB0613] text-xs font-semibold">
+                {metrics.DashGo} {metrics.DashGo === 1 ? 'card' : 'cards'}
+              </p>
+            </div>
+            <div className="bg-white py-1 px-2 rounded-md w-fit border border-[#BB0613]">
+              <p className="text-[#BB0613] text-xs font-semibold">
+                Balance: {formatCurrency((metrics as any).DashGo_balance || 0, 'GHS')}
+              </p>
+            </div>
           </div>
         </section>
 
@@ -226,7 +234,7 @@ export default function UserDashboard() {
 
           <div className="bg-white py-1 px-2 rounded-md w-fit border border-[#F3CE04]">
             <p className="text-[#F3CE04] text-xs font-semibold">
-              {metrics.DashPro} {metrics.DashPro === 1 ? 'card' : 'cards'}
+              {formatCurrency(metrics.DashPro || 0, 'GHS')}
             </p>
           </div>
         </section>
