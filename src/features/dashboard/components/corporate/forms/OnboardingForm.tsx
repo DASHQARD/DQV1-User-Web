@@ -42,33 +42,20 @@ export default function OnboardingForm() {
     })
 
     return baseSchema.superRefine((data, ctx) => {
-      // For passport, back_id is optional (only front_id required)
-      if (data.id_type === 'passport') {
-        // Passport only needs front_id
+      // For passport and national_id, back_id is optional (only front_id required)
+      if (data.id_type === 'passport' || data.id_type === 'national_id') {
+        // Passport and National ID only need front_id
         if (!data.front_id) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Passport page is required',
+            message:
+              data.id_type === 'passport'
+                ? 'Passport page is required'
+                : 'Front ID photo is required',
             path: ['front_id'],
           })
         }
-        // back_id is optional for passport, so no validation needed
-      } else if (data.id_type) {
-        // For other ID types (National ID, Driver's License, Other), both are required
-        if (!data.front_id) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'Front ID photo is required',
-            path: ['front_id'],
-          })
-        }
-        if (!data.back_id) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'Back ID photo is required',
-            path: ['back_id'],
-          })
-        }
+        // back_id is optional for passport and national_id, so no validation needed
       }
     })
   }, [])
@@ -82,20 +69,21 @@ export default function OnboardingForm() {
   // Watch ID type to determine which uploaders to show
   const selectedIdType = form.watch('id_type')
   const isPassport = selectedIdType === 'passport'
-  const needsBothSides = !isPassport && selectedIdType // For National ID, Driver's License, Other
+  const isNationalId = selectedIdType === 'national_id'
+  const needsOnlyFront = isPassport || isNationalId // Both passport and national_id only need front
 
   const isPending = isSubmittingPersonalDetailsWithID || isUploading
 
-  // Reset back_id when ID type changes to passport
+  // Reset back_id when ID type changes to passport or national_id
   React.useEffect(() => {
-    if (isPassport) {
+    if (needsOnlyFront) {
       const currentBackId = form.getValues('back_id')
       if (currentBackId) {
         form.setValue('back_id', undefined as any)
         form.clearErrors('back_id')
       }
     }
-  }, [isPassport, form])
+  }, [needsOnlyFront, form])
 
   React.useEffect(() => {
     if (!userProfileData?.id_images?.length) {
@@ -156,9 +144,9 @@ export default function OnboardingForm() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      // First upload ID images - handle passport (one file) vs other IDs (two files)
+      // First upload ID images - handle passport and national_id (one file) vs other IDs (two files)
       const filesToUpload: File[] = [data.front_id]
-      if (data.back_id && !isPassport) {
+      if (data.back_id && !needsOnlyFront) {
         filesToUpload.push(data.back_id)
       }
 
@@ -259,8 +247,6 @@ export default function OnboardingForm() {
                 options={[
                   { label: 'National ID', value: 'national_id' },
                   { label: 'Passport', value: 'passport' },
-                  { label: "Driver's License", value: 'drivers_license' },
-                  { label: 'Other', value: 'other' },
                 ]}
               />
             )}
@@ -285,7 +271,9 @@ export default function OnboardingForm() {
           <Text variant="span" weight="normal" className="text-gray-500">
             {isPassport
               ? 'Upload a picture of your passport page'
-              : 'Upload pictures of your identification (front and back)'}
+              : isNationalId
+                ? 'Upload a picture of the front of your National ID'
+                : 'Upload pictures of your identification (front and back)'}
           </Text>
         </div>
 
@@ -297,12 +285,16 @@ export default function OnboardingForm() {
           <section
             className={cn(
               'grid gap-4 flex-1 max-w-[554px]',
-              isPassport ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
+              needsOnlyFront ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
             )}
           >
             <div className="min-w-0">
               <p className="text-sm font-medium text-gray-700 mb-2">
-                {isPassport ? 'Passport Page' : 'Front of Identification'}
+                {isPassport
+                  ? 'Passport Page'
+                  : isNationalId
+                    ? 'Front of National ID'
+                    : 'Front of Identification'}
               </p>
               <div
                 className={cn(
@@ -318,7 +310,7 @@ export default function OnboardingForm() {
                 ) : null}
               </div>
             </div>
-            {!isPassport && backOfIdentification && (
+            {!needsOnlyFront && backOfIdentification && (
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-700 mb-2">Back of Identification</p>
                 <div
@@ -341,7 +333,7 @@ export default function OnboardingForm() {
           <section
             className={cn(
               'grid gap-4 flex-1',
-              isPassport ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
+              needsOnlyFront ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
             )}
           >
             <Controller
@@ -352,7 +344,9 @@ export default function OnboardingForm() {
                   label={
                     isPassport
                       ? 'Upload Passport Page'
-                      : 'Upload Picture of Front of Identification'
+                      : isNationalId
+                        ? 'Upload Picture of Front of National ID'
+                        : 'Upload Picture of Front of Identification'
                   }
                   value={value}
                   onChange={onChange}
@@ -362,7 +356,7 @@ export default function OnboardingForm() {
               )}
             />
 
-            {needsBothSides && (
+            {!needsOnlyFront && (
               <Controller
                 control={form.control}
                 name="back_id"

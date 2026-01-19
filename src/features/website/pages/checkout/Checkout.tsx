@@ -92,6 +92,7 @@ export default function Checkout() {
     images?: Array<{ file_url: string; file_name: string }>
     cart_item_id?: number
     total_quantity?: number
+    quantity_index?: number // Track which quantity unit this is (0-indexed)
     recipients?: Array<{
       email: string
       phone: string
@@ -113,20 +114,33 @@ export default function Checkout() {
         const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
 
         itemsArray.forEach((item: any) => {
-          flattened.push({
-            cart_id: cart.cart_id,
-            card_id: item.card_id,
-            product: item.product,
-            vendor_name: undefined, // May not be in nested structure
-            type: item.type || 'dashx',
-            currency: 'GHS', // Default, adjust if available
-            price: item.total_amount?.toString() || '0',
-            amount: item.total_amount?.toString() || '0',
-            images: item.images || [],
-            cart_item_id: item.cart_item_id,
-            total_quantity: item.total_quantity || 1,
-            recipients: item.recipients || [], // Recipients are now included in cart items
-          })
+          const totalQuantity = item.total_quantity || 1
+          const totalAmount = parseFloat(item.total_amount?.toString() || '0')
+          const perItemAmount = totalAmount / totalQuantity
+          const recipients = item.recipients || []
+
+          // Create separate entries for each quantity unit
+          for (let i = 0; i < totalQuantity; i++) {
+            // For now, show all recipients on each entry
+            // In the future, we can distribute recipients based on quantity_index
+            const itemRecipients = recipients
+
+            flattened.push({
+              cart_id: cart.cart_id,
+              card_id: item.card_id,
+              product: item.product,
+              vendor_name: undefined, // May not be in nested structure
+              type: item.type || 'dashx',
+              currency: 'GHS', // Default, adjust if available
+              price: perItemAmount.toString(),
+              amount: perItemAmount.toString(),
+              images: item.images || [],
+              cart_item_id: item.cart_item_id,
+              total_quantity: 1, // Each entry represents 1 unit
+              quantity_index: i, // Track which quantity unit this is (0-indexed)
+              recipients: itemRecipients, // Recipients for this specific unit
+            })
+          }
         })
       }
     })
@@ -267,19 +281,19 @@ export default function Checkout() {
     return `${baseUrl}/uploads/${fileUrl}`
   }, [])
 
-  // Group recipients by cart_item_id from cart items (recipients are now included in cart response)
+  // Group recipients by cart_item_id and quantity_index
   const recipientsByCartItem = useMemo(() => {
-    const grouped: Record<number, any[]> = {}
+    const grouped: Record<string, any[]> = {}
 
     displayCartItems.forEach((item: FlattenedCartItem) => {
       if (item.cart_item_id && item.recipients && item.recipients.length > 0) {
-        // Calculate per-recipient amount: total_amount / total_quantity
-        const totalAmount = parseFloat(item.amount || '0')
-        const totalQuantity = item.total_quantity || 1
-        const perRecipientAmount = totalAmount / totalQuantity
+        // Create unique key using cart_item_id and quantity_index
+        const key = `${item.cart_item_id}-${item.quantity_index ?? 0}`
+        // Calculate per-recipient amount: amount is already per-item since we divided it
+        const perRecipientAmount = parseFloat(item.amount || '0')
 
-        grouped[item.cart_item_id] = item.recipients.map((recipient, index) => ({
-          id: `${item.cart_item_id}-${index}`, // Generate unique ID
+        grouped[key] = item.recipients.map((recipient, index) => ({
+          id: `${key}-${index}`, // Generate unique ID
           name: recipient.name || recipient.email?.split('@')[0] || 'Recipient',
           email: recipient.email,
           phone: recipient.phone,
@@ -301,7 +315,8 @@ export default function Checkout() {
     displayCartItems.forEach((item: FlattenedCartItem) => {
       if (!item.cart_item_id) return
 
-      const itemRecipients = recipientsByCartItem[item.cart_item_id] || []
+      const key = `${item.cart_item_id}-${item.quantity_index ?? 0}`
+      const itemRecipients = recipientsByCartItem[key] || []
       const requiredQuantity = item.total_quantity || 1
 
       if (itemRecipients.length < requiredQuantity) {
@@ -448,10 +463,11 @@ export default function Checkout() {
                     const displayPrice = parseFloat(item.amount || '0')
 
                     // Get recipients from cart item (recipients are now included in cart response)
+                    const key = item.cart_item_id
+                      ? `${item.cart_item_id}-${item.quantity_index ?? 0}`
+                      : ''
                     const itemRecipients =
-                      item.cart_item_id && recipientsByCartItem[item.cart_item_id]
-                        ? recipientsByCartItem[item.cart_item_id]
-                        : []
+                      key && recipientsByCartItem[key] ? recipientsByCartItem[key] : []
 
                     const hasRecipients = itemRecipients.length > 0
                     const cardImageUrl = item.images?.[0]?.file_url
@@ -460,7 +476,7 @@ export default function Checkout() {
 
                     return (
                       <div
-                        key={`${item.cart_id}-${item.cart_item_id || item.card_id}`}
+                        key={`${item.cart_id}-${item.cart_item_id || item.card_id}-${item.quantity_index ?? 0}`}
                         className="p-6"
                       >
                         <div className="flex gap-4">
@@ -493,8 +509,6 @@ export default function Checkout() {
                                 </h3>
                                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
                                   <span>{getCardTypeName(item.type)}</span>
-                                  <span>•</span>
-                                  <span>ID: {item.card_id}</span>
                                 </div>
                                 {hasRecipients && (
                                   <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
@@ -696,9 +710,10 @@ export default function Checkout() {
             <div className="max-h-[300px] overflow-y-auto">
               <div className="divide-y divide-gray-200">
                 {itemsMissingRecipients.map((item: FlattenedCartItem) => {
-                  const itemRecipients = item.cart_item_id
-                    ? recipientsByCartItem[item.cart_item_id] || []
-                    : []
+                  const key = item.cart_item_id
+                    ? `${item.cart_item_id}-${item.quantity_index ?? 0}`
+                    : ''
+                  const itemRecipients = key ? recipientsByCartItem[key] || [] : []
                   const requiredQuantity = item.total_quantity || 1
 
                   return (

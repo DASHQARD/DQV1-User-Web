@@ -202,41 +202,43 @@ export default function BranchSidebar() {
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-gray-200 my-1" />
+              {/* Divider - Only show if discovery score is not complete */}
+              {discoveryScore !== 100 && <div className="border-t border-gray-200 my-1" />}
 
-              {/* Bottom Section - Discovery Score */}
-              <div className="flex items-center gap-3">
-                {/* Circular Score Indicator */}
-                <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                  <svg
-                    className="absolute inset-0 -rotate-90"
-                    width="48"
-                    height="48"
-                    viewBox="0 0 48 48"
-                  >
-                    {/* Background circle */}
-                    <circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-                    {/* Progress ring */}
-                    <circle
-                      cx="24"
-                      cy="24"
-                      r="20"
-                      fill="none"
-                      stroke="#402D87"
-                      strokeWidth="3"
-                      strokeDasharray={`${2 * Math.PI * 20 * (discoveryScore / 100)} ${2 * Math.PI * 20}`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span className="text-xs font-semibold text-gray-700 relative z-10 leading-none">
-                    {discoveryScore}%
-                  </span>
+              {/* Bottom Section - Discovery Score - Only show if not 100% */}
+              {discoveryScore !== 100 && (
+                <div className="flex items-center gap-3">
+                  {/* Circular Score Indicator */}
+                  <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                    <svg
+                      className="absolute inset-0 -rotate-90"
+                      width="48"
+                      height="48"
+                      viewBox="0 0 48 48"
+                    >
+                      {/* Background circle */}
+                      <circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                      {/* Progress ring */}
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r="20"
+                        fill="none"
+                        stroke="#402D87"
+                        strokeWidth="3"
+                        strokeDasharray={`${2 * Math.PI * 20 * (discoveryScore / 100)} ${2 * Math.PI * 20}`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span className="text-xs font-semibold text-gray-700 relative z-10 leading-none">
+                      {discoveryScore}%
+                    </span>
+                  </div>
+                  <Text variant="span" className="text-sm text-gray-600">
+                    Discovery score
+                  </Text>
                 </div>
-                <Text variant="span" className="text-sm text-gray-600">
-                  Discovery score
-                </Text>
-              </div>
+              )}
             </div>
           </div>
         )}

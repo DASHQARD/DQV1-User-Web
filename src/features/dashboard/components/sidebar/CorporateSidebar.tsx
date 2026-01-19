@@ -365,41 +365,43 @@ export default function CorporateSidebar() {
                 )}
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-gray-200 my-1" />
+              {/* Divider - Only show if onboarding is not complete */}
+              {onboardingProgress !== 100 && <div className="border-t border-gray-200 my-1" />}
 
-              {/* Bottom Section - Onboarding Progress */}
-              <div className="flex items-center gap-3">
-                {/* Circular Progress Indicator */}
-                <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                  <svg
-                    className="absolute inset-0 -rotate-90"
-                    width="48"
-                    height="48"
-                    viewBox="0 0 48 48"
-                  >
-                    {/* Background circle */}
-                    <circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-                    {/* Progress ring */}
-                    <circle
-                      cx="24"
-                      cy="24"
-                      r="20"
-                      fill="none"
-                      stroke="#402D87"
-                      strokeWidth="3"
-                      strokeDasharray={`${2 * Math.PI * 20 * (onboardingProgress / 100)} ${2 * Math.PI * 20}`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span className="text-xs font-semibold text-gray-700 relative z-10 leading-none">
-                    {onboardingProgress}%
-                  </span>
+              {/* Bottom Section - Onboarding Progress - Only show if not 100% */}
+              {onboardingProgress !== 100 && (
+                <div className="flex items-center gap-3">
+                  {/* Circular Progress Indicator */}
+                  <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                    <svg
+                      className="absolute inset-0 -rotate-90"
+                      width="48"
+                      height="48"
+                      viewBox="0 0 48 48"
+                    >
+                      {/* Background circle */}
+                      <circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                      {/* Progress ring */}
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r="20"
+                        fill="none"
+                        stroke="#402D87"
+                        strokeWidth="3"
+                        strokeDasharray={`${2 * Math.PI * 20 * (onboardingProgress / 100)} ${2 * Math.PI * 20}`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span className="text-xs font-semibold text-gray-700 relative z-10 leading-none">
+                      {onboardingProgress}%
+                    </span>
+                  </div>
+                  <Text variant="span" className="text-sm text-gray-600">
+                    Onboarding
+                  </Text>
                 </div>
-                <Text variant="span" className="text-sm text-gray-600">
-                  Onboarding
-                </Text>
-              </div>
+              )}
             </div>
           </div>
         )}

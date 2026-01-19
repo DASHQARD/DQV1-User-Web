@@ -276,11 +276,11 @@ export default function Navbar() {
             icon: 'bi:people-fill',
             path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS}?account=corporate`,
           },
-          {
-            label: 'Notifications',
-            icon: 'bi:bell-fill',
-            path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS}?account=corporate`,
-          },
+          // {
+          //   label: 'Notifications',
+          //   icon: 'bi:bell-fill',
+          //   path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS}?account=corporate`,
+          // },
         )
       }
 
@@ -315,11 +315,11 @@ export default function Navbar() {
         icon: 'bi:arrow-left-right',
         path: ROUTES.IN_APP.DASHBOARD.REDEMPTIONS,
       },
-      {
-        label: 'Notifications',
-        icon: 'bi:bell-fill',
-        path: '/dashboard/notifications',
-      },
+      // {
+      //   label: 'Notifications',
+      //   icon: 'bi:bell-fill',
+      //   path: '/dashboard/notifications',
+      // },
     ]
   }, [
     isCorporateAdmin,
