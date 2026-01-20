@@ -2,7 +2,6 @@ import React from 'react'
 import { Text } from '@/components'
 import { PaginatedTable } from '@/components/Table'
 import { requestListCsvHeaders, requestsListColumns } from '@/features/dashboard/components'
-import { OPTIONS } from '@/utils/constants/filter'
 import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
@@ -16,8 +15,20 @@ import {
 export default function Requests() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
   const { useGetRequestsVendorService } = vendorQueries()
+
+  // Build query parameters for the API
+  const queryParams = React.useMemo(() => {
+    const params: Record<string, any> = {}
+    if (query.search) params.search = query.search
+    if (query.status) params.status = query.status
+    // Map camelCase to snake_case for backend
+    if (query.dateFrom) params.date_from = query.dateFrom
+    if (query.dateTo) params.date_to = query.dateTo
+    return params
+  }, [query])
+
   const { data: requestsResponse, isLoading: isLoadingRequestsVendorList } =
-    useGetRequestsVendorService()
+    useGetRequestsVendorService(queryParams)
 
   // Extract data array from response
   const requestsVendorList = React.useMemo(() => {
@@ -54,9 +65,9 @@ export default function Requests() {
               setQuery={setQuery}
               csvHeaders={requestListCsvHeaders}
               filterBy={{
-                simpleSelects: [{ label: 'status', options: OPTIONS.REQUEST_STATUS }],
+                date: [{ queryKey: 'dateFrom', label: 'Date range' }],
               }}
-              noSearch
+              searchPlaceholder="Search by name, description, module, or status"
               printTitle="Requests"
             />
           </div>

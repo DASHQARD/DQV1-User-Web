@@ -64,6 +64,7 @@ export default function OnboardingForm() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(dynamicSchema),
+    mode: 'onChange',
   })
 
   // Watch ID type to determine which uploaders to show
@@ -185,6 +186,8 @@ export default function OnboardingForm() {
     }
   }
 
+  console.log('form.formState.errors', form.formState.errors)
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
       <section className="flex flex-col gap-10 pb-16">
@@ -240,7 +243,7 @@ export default function OnboardingForm() {
             render={({ field }) => (
               <Combobox
                 label="ID Type"
-                className="col-span-full"
+                className="col-span-full sm:col-span-1"
                 placeholder="Enter your ID type"
                 {...field}
                 error={form.formState.errors.id_type?.message}
@@ -255,127 +258,125 @@ export default function OnboardingForm() {
           <Input
             label="ID Number"
             placeholder="Enter your ID number"
-            className="col-span-full"
+            className="col-span-full sm:col-span-1"
             {...form.register('id_number')}
             error={form.formState.errors.id_number?.message}
           />
         </section>
-      </section>
-
-      {/* ID Upload Section */}
-      <section className="flex flex-col gap-10 pb-16">
-        <div className="flex flex-col gap-2 w-full">
-          <Text variant="h2" weight="semibold">
-            Identity Documents
-          </Text>
-          <Text variant="span" weight="normal" className="text-gray-500">
-            {isPassport
-              ? 'Upload a picture of your passport page'
-              : isNationalId
-                ? 'Upload a picture of the front of your National ID'
-                : 'Upload pictures of your identification (front and back)'}
-          </Text>
-        </div>
-
-        {isLoading || isFetchingPresignedURL ? (
-          <div className="flex justify-center items-center h-full bg-white">
-            <Loader />
+        <section className="flex flex-col gap-10 pb-16">
+          <div className="flex flex-col gap-2 w-full">
+            <Text variant="h2" weight="semibold">
+              Identity Documents
+            </Text>
+            <Text variant="span" weight="normal" className="text-gray-500">
+              {isPassport
+                ? 'Upload a picture of your passport page'
+                : isNationalId
+                  ? 'Upload a picture of the front of your National ID'
+                  : 'Upload pictures of your identification (front and back)'}
+            </Text>
           </div>
-        ) : userProfileData?.id_images?.length && userProfileData?.id_images?.length > 0 ? (
-          <section
-            className={cn(
-              'grid gap-4 flex-1 max-w-[554px]',
-              needsOnlyFront ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
-            )}
-          >
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-700 mb-2">
-                {isPassport
-                  ? 'Passport Page'
-                  : isNationalId
-                    ? 'Front of National ID'
-                    : 'Front of Identification'}
-              </p>
-              <div
-                className={cn(
-                  'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
-                )}
-              >
-                {frontOfIdentification ? (
-                  <img
-                    src={frontOfIdentification}
-                    alt={isPassport ? 'Passport Page' : 'Front of Identification'}
-                    className="max-h-48 w-full object-contain"
-                  />
-                ) : null}
-              </div>
+
+          {isLoading || isFetchingPresignedURL ? (
+            <div className="flex justify-center items-center h-full bg-white">
+              <Loader />
             </div>
-            {!needsOnlyFront && backOfIdentification && (
+          ) : userProfileData?.id_images?.length && userProfileData?.id_images?.length > 0 ? (
+            <section
+              className={cn(
+                'grid gap-4 flex-1 max-w-[554px]',
+                needsOnlyFront ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
+              )}
+            >
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-700 mb-2">Back of Identification</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  {isPassport
+                    ? 'Passport Page'
+                    : isNationalId
+                      ? 'Front of National ID'
+                      : 'Front of Identification'}
+                </p>
                 <div
                   className={cn(
                     'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
                   )}
                 >
-                  {backOfIdentification ? (
+                  {frontOfIdentification ? (
                     <img
-                      src={backOfIdentification}
-                      alt="Back of Identification"
+                      src={frontOfIdentification}
+                      alt={isPassport ? 'Passport Page' : 'Front of Identification'}
                       className="max-h-48 w-full object-contain"
                     />
                   ) : null}
                 </div>
               </div>
-            )}
-          </section>
-        ) : (
-          <section
-            className={cn(
-              'grid gap-4 flex-1',
-              needsOnlyFront ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
-            )}
-          >
-            <Controller
-              control={form.control}
-              name="front_id"
-              render={({ field: { onChange, value }, fieldState: { error } }) => (
-                <FileUploader
-                  label={
-                    isPassport
-                      ? 'Upload Passport Page'
-                      : isNationalId
-                        ? 'Upload Picture of Front of National ID'
-                        : 'Upload Picture of Front of Identification'
-                  }
-                  value={value}
-                  onChange={onChange}
-                  error={error?.message}
-                  id="front_id"
-                />
+              {!needsOnlyFront && backOfIdentification && (
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Back of Identification</p>
+                  <div
+                    className={cn(
+                      'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
+                    )}
+                  >
+                    {backOfIdentification ? (
+                      <img
+                        src={backOfIdentification}
+                        alt="Back of Identification"
+                        className="max-h-48 w-full object-contain"
+                      />
+                    ) : null}
+                  </div>
+                </div>
               )}
-            />
-
-            {!needsOnlyFront && (
+            </section>
+          ) : (
+            <section
+              className={cn(
+                'grid gap-4 flex-1',
+                needsOnlyFront ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
+              )}
+            >
               <Controller
                 control={form.control}
-                name="back_id"
+                name="front_id"
                 render={({ field: { onChange, value }, fieldState: { error } }) => (
                   <FileUploader
-                    label="Upload Picture of Back of Identification"
+                    label={
+                      isPassport
+                        ? 'Upload Passport Page'
+                        : isNationalId
+                          ? 'Upload Picture of Front of National ID'
+                          : 'Upload Picture of Front of Identification'
+                    }
                     value={value}
                     onChange={onChange}
                     error={error?.message}
-                    id="back_id"
+                    id="front_id"
                   />
                 )}
               />
-            )}
-          </section>
-        )}
+
+              {!needsOnlyFront && (
+                <Controller
+                  control={form.control}
+                  name="back_id"
+                  render={({ field: { onChange, value }, fieldState: { error } }) => (
+                    <FileUploader
+                      label="Upload Picture of Back of Identification"
+                      value={value}
+                      onChange={onChange}
+                      error={error?.message}
+                      id="back_id"
+                    />
+                  )}
+                />
+              )}
+            </section>
+          )}
+        </section>
       </section>
 
-      <div className="flex gap-4">
+      <div className="flex justify-end gap-4">
         <Button type="button" variant="outline" className="w-fit" onClick={() => navigate(-1)}>
           Discard
         </Button>

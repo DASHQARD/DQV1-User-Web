@@ -25,7 +25,6 @@ export function useCart(query?: Record<string, any>) {
     mutationFn: (data: AddToCartPayload) => addToCart(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-      success('Item added to cart')
     },
     onError: (error: { status: number; message: string }) => {
       console.log(error)
@@ -50,7 +49,6 @@ export function useCart(query?: Record<string, any>) {
     mutationFn: (cart_item_id: number) => deleteCartItemRecipient(cart_item_id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-      success('Item removed from cart')
     },
     onError: (error: { status: number; message: string }) => {
       toastError(error.message || 'Failed to remove item')

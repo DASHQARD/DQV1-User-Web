@@ -7,30 +7,7 @@ import { formatFullDate } from '@/utils/format'
 import { VendorRejectAction } from './VendorRejectAction'
 import { VendorApproveAction } from './VendorApproveAction'
 import { vendorQueries } from '@/features/dashboard/vendor/hooks'
-
-// --- Skeleton Loader ---
-function RequestDetailsSkeleton() {
-  return (
-    <div className="h-full px-6 flex flex-col justify-between animate-pulse">
-      <div className="grow">
-        {Array.from({ length: 8 }).map((_, idx) => (
-          <div
-            key={idx}
-            className="flex flex-col gap-1 py-3 border-t border-t-gray-200 first:border-0"
-          >
-            <div className="h-3 w-24 bg-gray-200 rounded" />
-            <div className="h-4 w-40 bg-gray-200 rounded" />
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-between items-center gap-3">
-        <div className="h-10 w-1/2 bg-gray-200 rounded" />
-        <div className="h-10 w-1/2 bg-gray-200 rounded" />
-      </div>
-    </div>
-  )
-}
-// --- End Skeleton Loader ---
+import { RequestDetailsSkeleton } from './skeletons'
 
 export function VendorRequestDetails() {
   const modal = usePersistedModalState<{ id: number | string; request_id?: string }>({
@@ -130,6 +107,8 @@ export function VendorRequestDetails() {
             {data?.status?.toLowerCase() === 'pending' && (
               <div className="flex gap-3 justify-end pt-4 border-t border-t-gray-200">
                 <Button
+                  variant="secondary"
+                  loading={isPending}
                   onClick={() =>
                     modal.openModal(MODALS.REQUEST.CHILDREN.APPROVE, {
                       id: data.id,

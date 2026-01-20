@@ -222,39 +222,59 @@ export default function SignUpForm() {
       <Modal
         isOpen={isEmailSentModalOpen}
         setIsOpen={setIsEmailSentModalOpen}
-        title="Email Sent"
         panelClass="max-w-md"
       >
-        <div className="p-6 space-y-6">
-          <div className="flex items-start gap-4">
-            <div className="shrink-0">
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <Icon icon="bi:check-circle" className="size-6 text-green-600" />
-              </div>
+        <div className="p-8">
+          {/* Success Icon */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-20 h-20 bg-linear-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+              <Icon icon="bi:check-circle-fill" className="text-4xl text-white" />
             </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Registration Successful!</h3>
-              <p className="text-sm text-gray-600 mb-1">We've sent a verification email to:</p>
-              <p className="text-sm font-medium text-gray-900 mb-4">{userEmail}</p>
-              <p className="text-sm text-gray-600">
-                Please check your inbox and click the verification link to activate your account. If
-                you don't see the email, please check your spam folder.
-              </p>
+            <Text as="h2" className="text-2xl font-bold text-gray-900 mb-2 text-center">
+              Registration Successful!
+            </Text>
+            <Text className="text-sm text-gray-600 text-center">
+              We've sent a verification link to your email
+            </Text>
+          </div>
+
+          {/* Email Display Card */}
+          <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
+            <div className="flex items-start gap-3">
+              <Icon icon="bi:envelope-fill" className="size-5 text-primary-500 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <Text className="text-xs text-gray-500 mb-1">Verification email sent to:</Text>
+                <Text className="text-sm font-semibold text-gray-900 break-all">{userEmail}</Text>
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setIsEmailSentModalOpen(false)
-                navigate(ROUTES.IN_APP.AUTH.LOGIN)
-              }}
-              className="w-full"
-            >
-              Go to Login
-            </Button>
+          {/* Instructions */}
+          <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-100">
+            <div className="flex items-start gap-3">
+              <Icon icon="bi:info-circle-fill" className="size-5 text-blue-600 mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <Text className="text-sm text-blue-900 font-medium mb-1">Next Steps:</Text>
+                <ul className="text-sm text-blue-800 space-y-1.5 list-disc list-inside">
+                  <li>Check your inbox and click the verification link</li>
+                  <li>If you don't see the email, check your spam folder</li>
+                  <li>Once verified, you can log in to your account</li>
+                </ul>
+              </div>
+            </div>
           </div>
+
+          {/* Action Button */}
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setIsEmailSentModalOpen(false)
+              navigate(ROUTES.IN_APP.AUTH.LOGIN)
+            }}
+            className="w-full"
+          >
+            Go to Login
+          </Button>
         </div>
       </Modal>
     </section>

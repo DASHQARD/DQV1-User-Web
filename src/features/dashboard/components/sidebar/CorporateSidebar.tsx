@@ -49,11 +49,11 @@ export default function CorporateSidebar() {
     const isCorporateAdmin = user?.user_type === 'corporate admin'
     const hasProfileAndID = Boolean(
       user?.onboarding_progress?.personal_details_completed &&
-        user?.onboarding_progress?.upload_id_completed,
+      user?.onboarding_progress?.upload_id_completed,
     )
     const hasBusinessDetailsAndDocs = Boolean(
       user?.onboarding_progress?.business_details_completed &&
-        user?.onboarding_progress?.business_documents_completed,
+      user?.onboarding_progress?.business_documents_completed,
     )
     // For corporate admins, only count Profile & ID step
     // For regular corporate users, count both steps
@@ -418,9 +418,15 @@ export default function CorporateSidebar() {
             // Filter out Admins, Requests, Purchase, and Notifications items if user status is not approved or verified
             // Also hide Admins and Notifications tabs for corporate admin users
             // Keep all items but mark Transactions, Audit Logs, and Recipients as disabled if onboarding incomplete or not approved
+            // Remove Requests completely from corporate sidebar (moved to vendor sidebar)
             const processedItems = section.items
               .filter((item) => {
                 const isCorporateAdmin = user?.user_type === 'corporate admin'
+
+                // Remove Requests from corporate sidebar (moved to vendor sidebar)
+                if (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS) {
+                  return false
+                }
 
                 // Hide Admins and Notifications for corporate admin users
                 if (
@@ -433,7 +439,6 @@ export default function CorporateSidebar() {
 
                 if (
                   item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||
-                  item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS ||
                   item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE ||
                   item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS
                 ) {

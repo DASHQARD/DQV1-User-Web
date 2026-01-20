@@ -27,6 +27,7 @@ export default function VendorSidebar() {
 
   const userType = (user as any)?.user_type || userProfileData?.user_type
   const isVendor = userType === 'vendor'
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
 
   // Get display name - always show "Vendor" when on vendor dashboard
   const displayName = React.useMemo(() => {
@@ -526,233 +527,248 @@ export default function VendorSidebar() {
           <div className="flex items-center justify-center w-full p-4">{accountMenuContent}</div>
         )}
         <ul className="py-2 px-3">
-          {VENDOR_NAV_ITEMS.map((section) => (
-            <React.Fragment key={section.section}>
-              {!isCollapsed && (
-                <li className="py-5 px-5 mt-5 first:mt-3">
-                  <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-[#6c757d]/90 relative flex items-center after:content-[''] after:absolute after:bottom-[-6px] after:left-0 after:w-5 after:h-0.5 after:bg-linear-to-r after:from-[#402D87] after:to-[rgba(64,45,135,0.4)] after:rounded-sm after:shadow-[0_1px_2px_rgba(64,45,135,0.2)] before:content-[''] before:absolute before:-top-2 before:-left-5 before:-right-5 before:h-px before:bg-linear-to-r before:from-transparent before:via-black/6 before:to-transparent">
-                    {section.section}
-                  </span>
-                </li>
-              )}
-              {section.items.map((item) => {
-                // Special handling for Branches - make it expandable
-                if (item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES && !isCollapsed) {
-                  return (
-                    <React.Fragment key={item.path}>
-                      <li
-                        className={cn(
-                          'flex flex-col mb-2 rounded-[10px] transition-all duration-200 relative overflow-hidden',
-                          (isActive(item.path) || isBranchesExpanded) &&
-                            'bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
-                          !isActive(item.path) &&
-                            !isBranchesExpanded &&
-                            'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-px',
-                        )}
-                      >
-                        {(isActive(item.path) || isBranchesExpanded) && (
-                          <>
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-white/30 via-[#402D87] to-[#2d1a72] rounded-r-sm shadow-[2px_0_8px_rgba(64,45,135,0.4),2px_0_16px_rgba(64,45,135,0.2)]" />
-                            <div className="absolute inset-0 rounded-r-2xl bg-linear-to-br from-white/8 via-transparent to-[rgba(45,26,114,0.03)] pointer-events-none" />
-                          </>
-                        )}
-                        <button
-                          onClick={() => setIsBranchesExpanded(!isBranchesExpanded)}
+          {VENDOR_NAV_ITEMS.map((section) => {
+            // Filter items based on user type - only show Requests for corporate super admin
+            const filteredItems = section.items.filter((item) => {
+              if (item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS) {
+                return isCorporateSuperAdmin
+              }
+              return true
+            })
+
+            // Skip section if no items after filtering
+            if (filteredItems.length === 0) {
+              return null
+            }
+
+            return (
+              <React.Fragment key={section.section}>
+                {!isCollapsed && (
+                  <li className="py-5 px-5 mt-5 first:mt-3">
+                    <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-[#6c757d]/90 relative flex items-center after:content-[''] after:absolute after:bottom-[-6px] after:left-0 after:w-5 after:h-0.5 after:bg-linear-to-r after:from-[#402D87] after:to-[rgba(64,45,135,0.4)] after:rounded-sm after:shadow-[0_1px_2px_rgba(64,45,135,0.2)] before:content-[''] before:absolute before:-top-2 before:-left-5 before:-right-5 before:h-px before:bg-linear-to-r before:from-transparent before:via-black/6 before:to-transparent">
+                      {section.section}
+                    </span>
+                  </li>
+                )}
+                {filteredItems.map((item) => {
+                  // Special handling for Branches - make it expandable
+                  if (item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES && !isCollapsed) {
+                    return (
+                      <React.Fragment key={item.path}>
+                        <li
                           className={cn(
-                            'flex items-center gap-3.5 w-full text-left no-underline text-[#495057] font-medium text-sm py-3 px-4 transition-all duration-200 rounded-[10px] relative z-2',
+                            'flex flex-col mb-2 rounded-[10px] transition-all duration-200 relative overflow-hidden',
                             (isActive(item.path) || isBranchesExpanded) &&
-                              'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
-                            !isActive(item.path) && !isBranchesExpanded && 'hover:text-[#402D87]',
+                              'bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
+                            !isActive(item.path) &&
+                              !isBranchesExpanded &&
+                              'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-px',
                           )}
                         >
-                          <Icon
-                            icon={item.icon}
-                            className={cn(
-                              'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-                              (isActive(item.path) || isBranchesExpanded) && 'text-[#402D87]',
-                              !isActive(item.path) &&
-                                !isBranchesExpanded &&
-                                'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
-                            )}
-                          />
-                          <span className="flex-1">{item.label}</span>
-                          <Icon
-                            icon={isBranchesExpanded ? 'bi:chevron-up' : 'bi:chevron-down'}
-                            className={cn(
-                              'w-4 h-4 transition-transform text-[#6c757d]',
-                              (isActive(item.path) || isBranchesExpanded) && 'text-[#402D87]',
-                            )}
-                          />
-                        </button>
-                        {isBranchesExpanded && (
-                          <div className="pl-4 pb-2">
-                            {branchesArray.length === 0 ? (
-                              <div className="px-4 py-2 text-xs text-gray-500">
-                                No branches available
-                              </div>
-                            ) : (
-                              branchesArray.map((branch: any) => {
-                                const branchId = branch.id || branch.branch_id
-                                const vendorId = currentVendorId || userProfileData?.vendor_id
-                                const branchPath = `${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}/${branchId}`
-                                // Build query params
-                                const queryParams = new URLSearchParams()
-                                if (vendorId) queryParams.set('vendor_id', String(vendorId))
-                                if (branchId) queryParams.set('branch_id', String(branchId))
-                                const queryString = queryParams.toString()
-                                const branchUrl = addAccountParam(
-                                  queryString ? `${branchPath}?${queryString}` : branchPath,
-                                )
-                                return (
-                                  <Link
-                                    key={branchId}
-                                    to={branchUrl}
-                                    className={cn(
-                                      'flex items-center gap-2 py-2 px-4 rounded-md text-sm transition-colors relative z-2',
-                                      isBranchActive(branchId)
-                                        ? 'text-[#402D87] font-semibold bg-[rgba(64,45,135,0.12)]'
-                                        : 'text-gray-600 hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.06)]',
-                                    )}
-                                  >
-                                    <div className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />
-                                    <span className="truncate">{branch.branch_name}</span>
-                                  </Link>
-                                )
-                              })
-                            )}
-                          </div>
-                        )}
-                      </li>
-                    </React.Fragment>
-                  )
-                }
-
-                // Special handling for Log Out
-                if (item.path === 'logout') {
-                  return (
-                    <li
-                      key={item.path}
-                      className={cn(
-                        'flex items-center mb-2 rounded-[10px] transition-all duration-200 relative overflow-hidden',
-                        'hover:bg-red-50 hover:translate-x-px',
-                        isCollapsed && 'justify-center mb-3',
-                      )}
-                    >
-                      {isCollapsed ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => {
-                                logout()
-                                navigate(ROUTES.IN_APP.AUTH.LOGIN)
-                              }}
-                              className={cn(
-                                'flex items-center gap-3.5 text-red-600 font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 justify-center hover:text-red-700',
-                              )}
-                            >
-                              <Icon
-                                icon={item.icon}
-                                className="w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0"
-                              />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="right">{item.label}</TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            logout()
-                            navigate(ROUTES.IN_APP.AUTH.LOGIN)
-                          }}
-                          className={cn(
-                            'flex items-center gap-3.5 text-red-600 font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 hover:text-red-700',
+                          {(isActive(item.path) || isBranchesExpanded) && (
+                            <>
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-white/30 via-[#402D87] to-[#2d1a72] rounded-r-sm shadow-[2px_0_8px_rgba(64,45,135,0.4),2px_0_16px_rgba(64,45,135,0.2)]" />
+                              <div className="absolute inset-0 rounded-r-2xl bg-linear-to-br from-white/8 via-transparent to-[rgba(45,26,114,0.03)] pointer-events-none" />
+                            </>
                           )}
-                        >
-                          <Icon
-                            icon={item.icon}
-                            className="w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0"
-                          />
-                          <span>{item.label}</span>
-                        </button>
-                      )}
-                    </li>
-                  )
-                }
-
-                // Regular items
-                return (
-                  <li
-                    key={item.path}
-                    className={cn(
-                      'flex items-center mb-2 rounded-[10px] transition-all duration-200 relative overflow-hidden',
-                      isActive(item.path) &&
-                        'bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
-                      !isActive(item.path) &&
-                        'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-px',
-                      isCollapsed && 'justify-center mb-3',
-                    )}
-                  >
-                    {isActive(item.path) && (
-                      <>
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-white/30 via-[#402D87] to-[#2d1a72] rounded-r-sm shadow-[2px_0_8px_rgba(64,45,135,0.4),2px_0_16px_rgba(64,45,135,0.2)]" />
-                        <div className="absolute inset-0 rounded-r-2xl bg-linear-to-br from-white/8 via-transparent to-[rgba(45,26,114,0.03)] pointer-events-none" />
-                      </>
-                    )}
-                    {isCollapsed ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Link
-                            to={addAccountParam(item.path)}
+                          <button
+                            onClick={() => setIsBranchesExpanded(!isBranchesExpanded)}
                             className={cn(
-                              'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 justify-center',
-                              isActive(item.path) &&
+                              'flex items-center gap-3.5 w-full text-left no-underline text-[#495057] font-medium text-sm py-3 px-4 transition-all duration-200 rounded-[10px] relative z-2',
+                              (isActive(item.path) || isBranchesExpanded) &&
                                 'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
-                              !isActive(item.path) && 'hover:text-[#402D87]',
+                              !isActive(item.path) && !isBranchesExpanded && 'hover:text-[#402D87]',
                             )}
                           >
                             <Icon
                               icon={item.icon}
                               className={cn(
                                 'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-                                isActive(item.path) && 'text-[#402D87]',
+                                (isActive(item.path) || isBranchesExpanded) && 'text-[#402D87]',
                                 !isActive(item.path) &&
+                                  !isBranchesExpanded &&
                                   'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
                               )}
                             />
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">{item.label}</TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <Link
-                        to={addAccountParam(item.path)}
+                            <span className="flex-1">{item.label}</span>
+                            <Icon
+                              icon={isBranchesExpanded ? 'bi:chevron-up' : 'bi:chevron-down'}
+                              className={cn(
+                                'w-4 h-4 transition-transform text-[#6c757d]',
+                                (isActive(item.path) || isBranchesExpanded) && 'text-[#402D87]',
+                              )}
+                            />
+                          </button>
+                          {isBranchesExpanded && (
+                            <div className="pl-4 pb-2">
+                              {branchesArray.length === 0 ? (
+                                <div className="px-4 py-2 text-xs text-gray-500">
+                                  No branches available
+                                </div>
+                              ) : (
+                                branchesArray.map((branch: any) => {
+                                  const branchId = branch.id || branch.branch_id
+                                  const vendorId = currentVendorId || userProfileData?.vendor_id
+                                  const branchPath = `${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}/${branchId}`
+                                  // Build query params
+                                  const queryParams = new URLSearchParams()
+                                  if (vendorId) queryParams.set('vendor_id', String(vendorId))
+                                  if (branchId) queryParams.set('branch_id', String(branchId))
+                                  const queryString = queryParams.toString()
+                                  const branchUrl = addAccountParam(
+                                    queryString ? `${branchPath}?${queryString}` : branchPath,
+                                  )
+                                  return (
+                                    <Link
+                                      key={branchId}
+                                      to={branchUrl}
+                                      className={cn(
+                                        'flex items-center gap-2 py-2 px-4 rounded-md text-sm transition-colors relative z-2',
+                                        isBranchActive(branchId)
+                                          ? 'text-[#402D87] font-semibold bg-[rgba(64,45,135,0.12)]'
+                                          : 'text-gray-600 hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.06)]',
+                                      )}
+                                    >
+                                      <div className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />
+                                      <span className="truncate">{branch.branch_name}</span>
+                                    </Link>
+                                  )
+                                })
+                              )}
+                            </div>
+                          )}
+                        </li>
+                      </React.Fragment>
+                    )
+                  }
+
+                  // Special handling for Log Out
+                  if (item.path === 'logout') {
+                    return (
+                      <li
+                        key={item.path}
                         className={cn(
-                          'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
-                          isActive(item.path) &&
-                            'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
-                          !isActive(item.path) && 'hover:text-[#402D87]',
+                          'flex items-center mb-2 rounded-[10px] transition-all duration-200 relative overflow-hidden',
+                          'hover:bg-red-50 hover:translate-x-px',
+                          isCollapsed && 'justify-center mb-3',
                         )}
                       >
-                        <Icon
-                          icon={item.icon}
+                        {isCollapsed ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => {
+                                  logout()
+                                  navigate(ROUTES.IN_APP.AUTH.LOGIN)
+                                }}
+                                className={cn(
+                                  'flex items-center gap-3.5 text-red-600 font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 justify-center hover:text-red-700',
+                                )}
+                              >
+                                <Icon
+                                  icon={item.icon}
+                                  className="w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0"
+                                />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">{item.label}</TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              logout()
+                              navigate(ROUTES.IN_APP.AUTH.LOGIN)
+                            }}
+                            className={cn(
+                              'flex items-center gap-3.5 text-red-600 font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 hover:text-red-700',
+                            )}
+                          >
+                            <Icon
+                              icon={item.icon}
+                              className="w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0"
+                            />
+                            <span>{item.label}</span>
+                          </button>
+                        )}
+                      </li>
+                    )
+                  }
+
+                  // Regular items
+                  return (
+                    <li
+                      key={item.path}
+                      className={cn(
+                        'flex items-center mb-2 rounded-[10px] transition-all duration-200 relative overflow-hidden',
+                        isActive(item.path) &&
+                          'bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
+                        !isActive(item.path) &&
+                          'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-px',
+                        isCollapsed && 'justify-center mb-3',
+                      )}
+                    >
+                      {isActive(item.path) && (
+                        <>
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-white/30 via-[#402D87] to-[#2d1a72] rounded-r-sm shadow-[2px_0_8px_rgba(64,45,135,0.4),2px_0_16px_rgba(64,45,135,0.2)]" />
+                          <div className="absolute inset-0 rounded-r-2xl bg-linear-to-br from-white/8 via-transparent to-[rgba(45,26,114,0.03)] pointer-events-none" />
+                        </>
+                      )}
+                      {isCollapsed ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Link
+                              to={addAccountParam(item.path)}
+                              className={cn(
+                                'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 justify-center',
+                                isActive(item.path) &&
+                                  'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
+                                !isActive(item.path) && 'hover:text-[#402D87]',
+                              )}
+                            >
+                              <Icon
+                                icon={item.icon}
+                                className={cn(
+                                  'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                                  isActive(item.path) && 'text-[#402D87]',
+                                  !isActive(item.path) &&
+                                    'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                                )}
+                              />
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">{item.label}</TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <Link
+                          to={addAccountParam(item.path)}
                           className={cn(
-                            'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-                            isActive(item.path) && 'text-[#402D87]',
-                            !isActive(item.path) &&
-                              'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                            'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
+                            isActive(item.path) &&
+                              'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
+                            !isActive(item.path) && 'hover:text-[#402D87]',
                           )}
-                        />
-                        <span>{item.label}</span>
-                      </Link>
-                    )}
-                    {isCollapsed && isActive(item.path) && (
-                      <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-1 h-6 bg-linear-to-b from-[#402D87] to-[#2d1a72] rounded-l-sm" />
-                    )}
-                  </li>
-                )
-              })}
-            </React.Fragment>
-          ))}
+                        >
+                          <Icon
+                            icon={item.icon}
+                            className={cn(
+                              'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                              isActive(item.path) && 'text-[#402D87]',
+                              !isActive(item.path) &&
+                                'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                            )}
+                          />
+                          <span>{item.label}</span>
+                        </Link>
+                      )}
+                      {isCollapsed && isActive(item.path) && (
+                        <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-1 h-6 bg-linear-to-b from-[#402D87] to-[#2d1a72] rounded-l-sm" />
+                      )}
+                    </li>
+                  )
+                })}
+              </React.Fragment>
+            )
+          })}
         </ul>
       </nav>
 

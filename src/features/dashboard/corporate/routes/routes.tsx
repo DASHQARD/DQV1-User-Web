@@ -11,7 +11,7 @@ import {
   Settings,
   UploadID,
 } from '../../pages'
-import { CorporateHome, Transactions } from '../pages'
+import { CorporateHome } from '../pages'
 import { Purchase } from '../pages/purchase'
 import { Requests } from '../pages/requests'
 import { AuditLogs } from '../pages/auditLogs'
@@ -24,10 +24,6 @@ export const corporateRoutes: RouteObject[] = [
   {
     path: '',
     element: <CorporateHome />,
-  },
-  {
-    path: 'transactions',
-    element: <Transactions />,
   },
   {
     path: 'redeem/dashpro',

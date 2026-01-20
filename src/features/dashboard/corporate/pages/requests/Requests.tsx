@@ -3,9 +3,9 @@ import { PaginatedTable } from '@/components/Table'
 import {
   ApproveAction,
   RejectAction,
-  RequestDetails,
   requestListCsvHeaders,
   requestsListColumns,
+  VendorRequestDetails,
 } from '@/features/dashboard/components'
 import { useCorporateRequests } from '@/features/dashboard/hooks'
 import { OPTIONS } from '@/utils/constants/filter'
@@ -45,15 +45,16 @@ export default function Requests() {
               csvHeaders={requestListCsvHeaders}
               filterBy={{
                 simpleSelects: [{ label: 'status', options: OPTIONS.REQUEST_STATUS }],
+                date: [{ queryKey: 'dateFrom', label: 'Date range' }],
               }}
-              noSearch
+              searchPlaceholder="Search by request ID, email, phone, name, or status"
               printTitle="Requests"
             />
           </div>
         </div>
       </div>
 
-      <RequestDetails />
+      <VendorRequestDetails />
       <ApproveAction />
       <RejectAction />
     </>

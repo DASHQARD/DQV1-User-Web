@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores'
 
 import { ROUTES } from '@/utils/constants'
 import { Text } from '@/components'
-import { AuditLogs, SummaryCards, VendorQardsPerformance } from '../../../components'
+import { AuditLogs, SummaryCards } from '../../../components'
 
 export default function Home() {
   const { user } = useAuthStore()
@@ -135,11 +135,10 @@ export default function Home() {
             </div>
           </div>
         </section>
-        {/* Show SummaryCards and QardsPerformance only if corporate has vendor account or user is vendor */}
+        {/* Show SummaryCards only if corporate has vendor account or user is vendor */}
         {(userType === 'corporate_vendor' || userType === 'vendor') && (
           <>
             <SummaryCards />
-            <VendorQardsPerformance />
           </>
         )}
         <AuditLogs />

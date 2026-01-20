@@ -4,10 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { cn } from '@/libs'
 import {
   RecentAuditLogs,
-  RecentRequests,
   RecentTransactions,
   CompleteCorporateWidget,
-  SummaryCards,
 } from '@/features/dashboard/components'
 import { useDashboardMetrics } from '../../../hooks/useDashboardMetrics'
 import { useUserProfile } from '@/hooks'
@@ -33,13 +31,13 @@ export default function CorporateHome() {
     hasID: Boolean(userProfileData?.onboarding_progress?.upload_id_completed),
     hasProfileAndID: Boolean(
       userProfileData?.onboarding_progress?.personal_details_completed &&
-        userProfileData?.onboarding_progress?.upload_id_completed,
+      userProfileData?.onboarding_progress?.upload_id_completed,
     ),
     hasBusinessDetails: Boolean(userProfileData?.onboarding_progress?.business_details_completed),
     hasBusinessDocs: Boolean(userProfileData?.onboarding_progress?.business_documents_completed),
     hasBusinessDetailsAndDocs: Boolean(
       userProfileData?.onboarding_progress?.business_details_completed &&
-        userProfileData?.onboarding_progress?.business_documents_completed,
+      userProfileData?.onboarding_progress?.business_documents_completed,
     ),
   }
 
@@ -94,13 +92,17 @@ export default function CorporateHome() {
 
   return (
     <div className="bg-[#f8f9fa] rounded-xl overflow-hidden min-h-[600px]">
-      <section className="py-8 flex flex-col gap-8">
-        <div className="pb-6 border-b border-[#e9ecef]">
-          <div className="flex flex-col gap-2">
-            <Text variant="span" weight="semibold" className="text-[#95aac9]">
+      <section className="py-8 px-6 flex flex-col gap-8">
+        <div className="flex items-center justify-between pb-4">
+          <div className="flex flex-col gap-1">
+            <Text
+              variant="span"
+              weight="semibold"
+              className="text-[#95aac9] text-xs uppercase tracking-wider"
+            >
               Dashboard
             </Text>
-            <Text variant="h2" weight="semibold">
+            <Text variant="h2" weight="bold" className="text-gray-900 text-3xl">
               Dashboard Overview
             </Text>
           </div>
@@ -334,34 +336,38 @@ export default function CorporateHome() {
         {!isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Total Purchased */}
-            <div className="bg-white rounded-xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] flex items-center gap-5">
-              <div className="w-16 h-16 rounded-xl bg-linear-to-br from-[#402D87] to-[#2d1a72] flex items-center justify-center text-white text-3xl shrink-0">
-                <Icon icon="bi:cart-plus-fill" />
-              </div>
-              <div className="flex-1">
-                <div className="text-2xl font-bold mb-1 leading-none text-[#402D87]">
-                  {formatCurrency(metrics.totalPurchased)}
+            <div className="group relative bg-gradient-to-br from-[#402D87] to-[#5B4397] rounded-2xl p-6 shadow-lg shadow-[#402D87]/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#402D87]/30 overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full blur-2xl" />
+              <div className="relative flex items-center gap-5">
+                <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl shrink-0 shadow-lg">
+                  <Icon icon="bi:cart-plus-fill" />
                 </div>
-                <div className="text-sm text-[#6c757d] mb-2 font-medium">Total Purchased</div>
+                <div className="flex-1">
+                  <div className="text-3xl font-bold mb-1 leading-tight text-white">
+                    {formatCurrency(metrics.totalPurchased)}
+                  </div>
+                  <div className="text-sm text-white/80 font-medium">Total Purchased</div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Activity Sections */}
+        <div className="grid grid-cols-1 gap-6">
           <div
             className={cn(
               'relative',
               !canAccessRestrictedFeatures && 'opacity-50 pointer-events-none',
             )}
           >
-            <RecentRequests />
+            <RecentTransactions />
             {!canAccessRestrictedFeatures && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-2xl z-10">
+              <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-2xl z-10">
                 <div className="text-center p-4">
                   <Icon icon="bi:lock-fill" className="text-3xl text-gray-400 mb-2 mx-auto" />
                   <Text variant="span" className="text-sm text-gray-600 block">
-                    Complete onboarding and get approved to access Requests
+                    Complete onboarding and get approved to access Transactions
                   </Text>
                 </div>
               </div>
@@ -375,7 +381,7 @@ export default function CorporateHome() {
           >
             <RecentAuditLogs />
             {!canAccessRestrictedFeatures && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-2xl z-10">
+              <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-2xl z-10">
                 <div className="text-center p-4">
                   <Icon icon="bi:lock-fill" className="text-3xl text-gray-400 mb-2 mx-auto" />
                   <Text variant="span" className="text-sm text-gray-600 block">
@@ -385,28 +391,7 @@ export default function CorporateHome() {
               </div>
             )}
           </div>
-        </section>
-
-        <div
-          className={cn(
-            'relative',
-            !canAccessRestrictedFeatures && 'opacity-50 pointer-events-none',
-          )}
-        >
-          <RecentTransactions />
-          {!canAccessRestrictedFeatures && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-2xl z-10">
-              <div className="text-center p-4">
-                <Icon icon="bi:lock-fill" className="text-3xl text-gray-400 mb-2 mx-auto" />
-                <Text variant="span" className="text-sm text-gray-600 block">
-                  Complete onboarding and get approved to access Transactions
-                </Text>
-              </div>
-            </div>
-          )}
         </div>
-
-        <SummaryCards />
 
         {!isComplete && (
           <div className="fixed bottom-6 right-6 z-50 w-[598px] max-w-[calc(100vw-3rem)]">

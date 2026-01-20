@@ -121,12 +121,11 @@ export function corporateMutations() {
   }
 
   function useUploadBulkRecipientsService() {
-    const { success, error } = useToast()
+    const { error } = useToast()
     const queryClient = useQueryClient()
     return useMutation({
       mutationFn: (file: File) => uploadBulkRecipients(file),
-      onSuccess: (response: any) => {
-        success(response?.message || 'Recipients uploaded successfully')
+      onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['all-corporate-recipients'] })
       },
       onError: (err: any) => {

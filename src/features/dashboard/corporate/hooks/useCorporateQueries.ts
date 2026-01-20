@@ -48,7 +48,7 @@ export function corporateQueries() {
     })
   }
 
-  function useGetRequestsCorporateService() {
+  function useGetRequestsCorporateService(query?: Record<string, any>) {
     const { user } = useAuthStore()
     const userType = (user as any)?.user_type
     const userStatus = (user as any)?.status
@@ -56,8 +56,8 @@ export function corporateQueries() {
       (userType === 'corporate super admin' || userType === 'corporate admin') &&
       userStatus !== 'pending'
     return useQuery({
-      queryKey: ['requests-corporate'],
-      queryFn: getRequestsCorporate,
+      queryKey: ['requests-corporate', query],
+      queryFn: () => getRequestsCorporate(query),
       enabled: isCorporateAdmin,
     })
   }
