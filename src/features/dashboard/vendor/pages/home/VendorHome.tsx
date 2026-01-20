@@ -5,8 +5,8 @@ import { Link } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
 import {
   VendorSummaryCards,
-  VendorQardsPerformance,
   CompleteVendorWidget,
+  RecentRequests,
 } from '@/features/dashboard/components'
 import { useUserProfile } from '@/hooks'
 import { vendorQueries } from '@/features'
@@ -24,6 +24,8 @@ export default function VendorHome() {
 
   // Check if user is a branch manager
   const isBranchManager = userProfileData?.user_type === 'branch'
+  // Check if user is corporate super admin
+  const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
 
   // Get vendor_id from user profile
   const vendorId = userProfileData?.vendor_id ? Number(userProfileData.vendor_id) : null
@@ -414,6 +416,13 @@ export default function VendorHome() {
           </div>
         </section>
 
+        {/* Recent Requests - Only show for corporate super admin */}
+        {isCorporateSuperAdmin && (
+          <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
+            <RecentRequests />
+          </div>
+        )}
+
         {/* Branches Overview */}
         <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
           <div className="p-6 pb-0 flex justify-between items-center mb-5">
@@ -503,7 +512,6 @@ export default function VendorHome() {
 
         {/* Vendor Widgets */}
         <VendorSummaryCards />
-        <VendorQardsPerformance />
 
         {/* Complete Vendor Onboarding Widget */}
         <div className="fixed bottom-6 right-6 z-50 w-[598px] max-w-[calc(100vw-3rem)]">

@@ -3,7 +3,7 @@ export const OPTIONS = {
   DATE_RANGE: ['daily', 'weekly', 'monthly', 'all time'],
   SAVINGS_STATUS: ['pending', 'ongoing', 'completed'],
   USER_TYPE: ['individual', 'agent', 'merchant'],
-  TRANSACTION_TYPE: ['purchase', 'redemption'],
+  TRANSACTION_TYPE: ['paid', 'pending'],
   REQUEST_TYPE: ['experience_approval', 'branch_creation'],
   REQUEST_STATUS: ['pending', 'approved', 'rejected'],
   CUSTOMER_TIER: ['1', '2', '3'],

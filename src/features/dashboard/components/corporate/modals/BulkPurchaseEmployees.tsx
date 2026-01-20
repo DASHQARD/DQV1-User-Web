@@ -3,7 +3,7 @@ import { Button, FileUploader, Modal, Text, Input, Checkbox, Tabs, Combobox } fr
 import { CardItems } from '@/features/website/components/CardItems/CardItems'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import DashProBg from '@/assets/svgs/dashpro_bg.svg'
-import BulkUploadTemplate from '@/assets/Bulk Upload Structure.xlsx?url'
+import RecipientTemplate from '@/assets/recipient_template.xlsx?url'
 import { usePersistedModalState, useToast, useUserProfile, useDebouncedState } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
@@ -280,7 +280,7 @@ export function BulkPurchaseEmployeesModal({
   const downloadTemplate = () => {
     // Use the Excel template file from assets
     const a = document.createElement('a')
-    a.href = BulkUploadTemplate
+    a.href = RecipientTemplate
     a.download = 'bulk-recipients-template.xlsx'
     document.body.appendChild(a)
     a.click()
@@ -301,7 +301,7 @@ export function BulkPurchaseEmployeesModal({
       const recipientsData = await refetchRecipients()
 
       setUploadedRecipients(recipientsData?.data || [])
-      toast.success(`Successfully loaded ${recipientsData?.data?.length || 0} recipient(s)`)
+
       setStep(2)
     } catch (error: any) {
       toast.error(error?.message || 'Failed to upload recipients')
@@ -746,9 +746,9 @@ export function BulkPurchaseEmployeesModal({
       setIsOpen={handleClose}
       title="Bulk Purchase Gift Cards for Employees"
       position="side"
-      panelClass="!w-[864px] p-8"
+      panelClass="!w-[964px] p-8"
     >
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 flex flex-col min-h-full">
         {/* Step Indicator */}
         <div className="flex items-center justify-between mb-6">
           {[1, 2].map((s) => (
@@ -826,20 +826,6 @@ export function BulkPurchaseEmployeesModal({
               value={file}
               onChange={setFile}
             />
-
-            <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
-              <Button variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={handleUpload}
-                disabled={!file || uploadMutation.isPending}
-                loading={uploadMutation.isPending}
-              >
-                Upload & Continue
-              </Button>
-            </div>
           </div>
         )}
 
@@ -1660,6 +1646,23 @@ export function BulkPurchaseEmployeesModal({
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* Action Buttons - Bottom of Modal */}
+        {step === 1 && (
+          <div className="flex gap-4 justify-end pt-4 border-t border-gray-200 mt-auto">
+            <Button variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleUpload}
+              disabled={!file || uploadMutation.isPending}
+              loading={uploadMutation.isPending}
+            >
+              Upload & Continue
+            </Button>
           </div>
         )}
       </div>

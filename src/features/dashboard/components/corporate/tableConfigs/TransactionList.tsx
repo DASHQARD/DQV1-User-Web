@@ -9,10 +9,6 @@ export const transactionsListColumns = [
     accessorKey: 'receipt_number',
   },
   {
-    header: 'Type',
-    accessorKey: 'type',
-  },
-  {
     header: 'Amount',
     accessorKey: 'amount',
     cell: CurrencyCell,
@@ -39,10 +35,6 @@ export const transactionListCsvHeaders: Array<CsvHeader> = [
   {
     name: 'Receipt ID',
     accessor: 'receipt_number',
-  },
-  {
-    name: 'Type',
-    accessor: 'type',
   },
   {
     name: 'Amount',

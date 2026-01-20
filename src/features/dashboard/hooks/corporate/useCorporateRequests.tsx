@@ -23,8 +23,18 @@ export function useCorporateRequests() {
   //   }, [setQuery, state?.searchQuery])
 
   const { useGetRequestsCorporateService } = corporateQueries()
+  // Build query parameters for the API
+  const queryParams = React.useMemo(() => {
+    const params: Record<string, any> = {}
+    if (query.status) params.status = query.status
+    // Map camelCase to snake_case for backend
+    if (query.dateFrom) params.date_from = query.dateFrom
+    if (query.dateTo) params.date_to = query.dateTo
+    return params
+  }, [query])
+
   const { data: requestsResponse, isLoading: isLoadingRequestCorporatesList } =
-    useGetRequestsCorporateService()
+    useGetRequestsCorporateService(queryParams)
 
   // Extract data array from response
   const requestCorporatesList = React.useMemo(() => {

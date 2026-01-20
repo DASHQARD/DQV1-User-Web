@@ -5,55 +5,24 @@ import { getStatusVariant } from '@/utils/helpers'
 import { formatCurrency, formatFullDate } from '@/utils/format'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks'
 import { Icon } from '@/libs'
-
-// --- Skeleton Loader ---
-function TransactionDetailsSkeleton() {
-  return (
-    <div className="h-full px-6 flex flex-col justify-between animate-pulse">
-      <div className="grow">
-        {Array.from({ length: 12 }).map((_, idx) => (
-          <div
-            key={idx}
-            className="flex flex-col gap-1 py-3 border-t border-t-gray-200 first:border-0"
-          >
-            <div className="h-3 w-24 bg-gray-200 rounded" />
-            <div className="h-4 w-40 bg-gray-200 rounded" />
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-between items-center gap-3">
-        <div className="h-10 w-1/2 bg-gray-200 rounded" />
-        <div className="h-10 w-1/2 bg-gray-200 rounded" />
-      </div>
-    </div>
-  )
-}
-// --- End Skeleton Loader ---
+import { TransactionDetailsSkeleton } from './skeletons'
 
 export function TransactionDetails() {
-  const modal = usePersistedModalState<{ id: string | number; trans_id?: string }>({
+  const modal = usePersistedModalState<{ id: string | number }>({
     paramName: MODALS.TRANSACTION.PARAM_NAME,
   })
 
-  // Get payment ID from modal data (could be id or trans_id)
   const paymentIdFromModal = modal.modalData
-  const paymentId =
-    paymentIdFromModal?.id?.toString() ||
-    paymentIdFromModal?.trans_id ||
-    paymentIdFromModal?.id ||
-    null
+  const paymentId = paymentIdFromModal?.id?.toString() || null
 
-  // Fetch payment details by ID
   const { useGetPaymentByIdService } = corporateQueries()
   const { data: paymentDetailsResponse, isLoading } = useGetPaymentByIdService(paymentId)
 
-  // Extract payment data from response
-  const paymentData = paymentDetailsResponse?.data || paymentDetailsResponse
+  const paymentData = paymentDetailsResponse || null
   const isPending = isLoading
-  const cartDetails = paymentData?.cart_details
+  const cartDetails = paymentData?.cart_details || null
   const cartItems = cartDetails?.items || []
 
-  // Map payment data to display format
   const transactionInfo = [
     {
       label: 'Status',
@@ -66,7 +35,7 @@ export function TransactionDetails() {
     },
     {
       label: 'Transaction ID',
-      value: paymentData?.trans_id || paymentData?.id?.toString() || '-',
+      value: paymentData?.id?.toString() || '-',
     },
     {
       label: 'Receipt Number',
@@ -103,8 +72,8 @@ export function TransactionDetails() {
         : '-',
     },
     {
-      label: 'Card Type',
-      value: paymentData?.card_type || 'N/A',
+      label: 'User ID',
+      value: paymentData?.user_id?.toString() || '-',
     },
     {
       label: 'Cart ID',
@@ -126,7 +95,7 @@ export function TransactionDetails() {
       position="side"
       isOpen={modal.isModalOpen(MODALS.TRANSACTION.CHILDREN.VIEW)}
       setIsOpen={modal.closeModal}
-      panelClass="!w-2/3"
+      panelClass="!w-[600px]"
     >
       <PrintView>
         {isPending ? (

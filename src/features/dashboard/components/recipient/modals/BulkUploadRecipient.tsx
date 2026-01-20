@@ -1,9 +1,8 @@
 import React from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { Button, FileUploader, Modal, Text } from '@/components'
-import { bulkAssignRecipients } from '@/features/dashboard/services/recipients'
-import { usePersistedModalState, useToast } from '@/hooks'
+import { useBulkUploadRecipient } from '@/features/dashboard/hooks/useBulkUploadRecipient'
+import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODAL_NAMES } from '@/utils/constants'
 
@@ -12,48 +11,20 @@ export function BulkUploadRecipient() {
     paramName: MODAL_NAMES.RECIPIENT.BULK_UPLOAD,
   })
   const [bulkFile, setBulkFile] = React.useState<File | null>(null)
-  const queryClient = useQueryClient()
-  const toast = useToast()
-
-  const bulkUploadMutation = useMutation({
-    mutationFn: bulkAssignRecipients,
-    onSuccess: () => {
-      toast.success('Recipients uploaded successfully')
-      queryClient.invalidateQueries({ queryKey: ['user-recipients'] })
-
-      setBulkFile(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to upload recipients. Please try again.')
-    },
-  })
+  const { bulkUploadMutation, downloadExample } = useBulkUploadRecipient()
 
   const handleBulkUpload = () => {
     if (!bulkFile) return
-    bulkUploadMutation.mutate(bulkFile)
+    bulkUploadMutation.mutate(bulkFile, {
+      onSuccess: () => {
+        setBulkFile(null)
+      },
+    })
   }
 
   const handleClose = () => {
     setBulkFile(null)
     modal.closeModal()
-  }
-
-  // Example CSV content
-  const exampleCSV = `name,email,phone,message
-John Doe,john.doe@example.com,+1234567890,Happy Birthday!
-Jane Smith,jane.smith@example.com,+0987654321,Thank you for your service
-Bob Johnson,bob.johnson@example.com,+1122334455,`
-
-  const downloadExample = () => {
-    const blob = new Blob([exampleCSV], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'recipients-example.csv'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
   }
 
   return (

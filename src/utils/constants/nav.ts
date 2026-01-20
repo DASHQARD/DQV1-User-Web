@@ -9,11 +9,10 @@ export const CORPORATE_NAV_ITEMS = [
     section: 'Transactions',
     items: [
       {
-        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.TRANSACTIONS,
-        label: 'Transactions',
-        icon: 'bi:receipt',
+        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE,
+        label: 'Purchases',
+        icon: 'bi:gift',
       },
-      { path: ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE, label: 'Purchase', icon: 'bi:gift' },
       {
         path: ROUTES.IN_APP.DASHBOARD.CORPORATE.RECIPIENTS,
         label: 'Recipients',
@@ -39,11 +38,11 @@ export const CORPORATE_NAV_ITEMS = [
         label: 'Admins',
         icon: 'bi:people-fill',
       },
-      {
-        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS,
-        label: 'Notifications',
-        icon: 'bi:bell-fill',
-      },
+      // {
+      //   path: ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS,
+      //   label: 'Notifications',
+      //   icon: 'bi:bell-fill',
+      // },
     ],
   },
 ]

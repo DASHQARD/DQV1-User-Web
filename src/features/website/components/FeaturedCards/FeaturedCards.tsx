@@ -86,13 +86,7 @@ export const FeaturedCards = () => {
               {filteredCards.map((card: any, index: number) => {
                 // Create unique key by combining card_id with branch info or index
                 const uniqueKey = `${card.card_id || card.id}-${card.branch_name || card.branch_id || index}`
-                return (
-                  <CardItems
-                    key={uniqueKey}
-                    {...card}
-                    onGetQard={() => navigate(`/card/${card.card_id}`)}
-                  />
-                )
+                return <CardItems key={uniqueKey} {...card} />
               })}
             </div>
           )}

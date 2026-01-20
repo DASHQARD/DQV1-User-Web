@@ -9,32 +9,7 @@ import { useCart } from '../../hooks/useCart'
 import { useCartStore } from '@/stores/cart'
 import { formatCurrency } from '@/utils/format'
 import { Text } from '@/components'
-
-type FeaturedCardProps = {
-  card_id: number
-  product: string
-  branch_name: string
-  branch_location: string
-  description: string
-  price: string
-  base_price: string
-  markup_price: number | null
-  service_fee: string
-  currency: string
-  expiry_date: string
-  status: string
-  rating: number
-  created_at: string
-  recipient_count: string
-  images: []
-  terms_and_conditions: []
-  type: string
-  updated_at: string
-  vendor_id: number
-  vendor_name: string
-  buttonText?: string
-  onGetQard?: () => void
-}
+import type { FeaturedCardProps } from '@/types'
 
 export const CardItems = ({
   card_id,

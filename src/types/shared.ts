@@ -131,3 +131,104 @@ export interface VendorCardCountsResponse {
   DashX: number
   DashPass: number
 }
+
+export type FeaturedCardProps = {
+  card_id: number
+  product: string
+  branch_name: string
+  branch_location: string
+  description: string
+  price: string
+  base_price: string
+  markup_price: number | null
+  service_fee: string
+  currency: string
+  expiry_date: string
+  status: string
+  rating: number
+  created_at: string
+  recipient_count: string
+  images: []
+  terms_and_conditions: []
+  type: string
+  updated_at: string
+  vendor_id: number
+  vendor_name: string
+  buttonText?: string
+  onGetQard?: () => void
+}
+
+export type FlattenedCartItem = {
+  cart_id: number
+  card_id: number
+  product: string
+  vendor_name?: string
+  type: string
+  currency: string
+  price: string
+  amount: string
+  images?: Array<{ file_url: string; file_name: string }>
+  cart_item_id?: number
+  total_quantity?: number
+  recipients?: Array<{
+    id?: number
+    email: string
+    phone: string
+    message: string
+    name?: string
+    amount?: string
+    quantity?: number
+  }>
+}
+
+export interface GetCardMetricsDetailsParams {
+  limit?: number
+  after?: string
+  card_type?: string
+  vendor_ids?: number | number[]
+  min_price?: number
+}
+
+export interface CardMetricsDetail {
+  id: number
+  card_id: string
+  product: string
+  description?: string
+  price: string
+  base_price?: string
+  markup_amount?: string
+  service_fee?: string
+  currency: string
+  type: string
+  status: string
+  expiry_date?: string
+  issue_date?: string
+  vendor_id: number
+  created_at?: string
+  updated_at?: string
+  created_by?: number
+  last_modified_by?: number | null
+  is_activated?: boolean
+  rating?: number
+  // Optional fields that may be present in some responses
+  recipient_id?: string
+  branch_id?: number
+  branch_name?: string
+  branch_location?: string
+  vendor_name?: string
+  images?: Array<{ file_url: string }>
+}
+
+export interface CardMetricsDetailsResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: {
+    data: CardMetricsDetail[] // Array of cards
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+    limit: number
+    next: string | null
+    previous: string | null
+  }
+}

@@ -357,7 +357,7 @@ export default function Navbar() {
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200/60 shadow-sm">
-        <div className="wrapper flex justify-between items-center py-3 px-4 lg:px-6">
+        <div className="wrapper flex justify-between items-center py-3">
           {/* Logo */}
           <Link to={ROUTES.IN_APP.HOME} className="shrink-0">
             <img src={Logo} alt="Logo" className="h-8 w-auto object-contain" />

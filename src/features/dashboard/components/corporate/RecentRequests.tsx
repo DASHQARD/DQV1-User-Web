@@ -26,7 +26,7 @@ export default function RecentRequests() {
         </h5>
 
         <Link
-          to={`${ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS}?account=corporate`}
+          to={`${ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS}?account=vendor`}
           className="text-[#402D87] no-underline text-sm font-medium flex items-center transition-colors duration-200 hover:text-[#2d1a72]"
         >
           View all <Icon icon="bi:arrow-right" className="ml-1" />

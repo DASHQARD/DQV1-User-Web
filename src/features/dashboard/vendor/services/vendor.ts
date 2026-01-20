@@ -45,8 +45,8 @@ export const getAuditLogsVendor = async (): Promise<any> => {
   return await getList<any>(`/audit-logs/vendors`)
 }
 
-export const getRequestsVendor = async (): Promise<any> => {
-  return await getList<any>(`/requests/vendors`)
+export const getRequestsVendor = async (params?: Record<string, any>): Promise<any> => {
+  return await getList<any>(`/requests/vendors`, params)
 }
 
 export const updateRequestStatus = async (data: { id: number; status: string }): Promise<any> => {

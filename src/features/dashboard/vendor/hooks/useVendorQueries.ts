@@ -18,6 +18,7 @@ import {
   getBranchManagerInvitations,
   getVendorPayments,
 } from '../services'
+import { getRequestsCorporate } from '@/features/dashboard/corporate/services'
 import type { QueryType, GetBranchManagerInvitationsQuery } from '@/types'
 import { useUserProfile } from '@/hooks'
 
@@ -77,10 +78,15 @@ export function vendorQueries() {
     })
   }
 
-  function useGetRequestsVendorService() {
+  function useGetRequestsVendorService(query?: Record<string, any>) {
+    const { useGetUserProfileService } = useUserProfile()
+    const { data: userProfileData } = useGetUserProfileService()
+    const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
+
     return useQuery({
-      queryKey: ['requests-vendor'],
-      queryFn: getRequestsVendor,
+      queryKey: isCorporateSuperAdmin ? ['requests-corporate', query] : ['requests-vendor', query],
+      queryFn: () =>
+        isCorporateSuperAdmin ? getRequestsCorporate(query) : getRequestsVendor(query),
     })
   }
 

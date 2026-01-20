@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { type ColumnDef } from '@tanstack/react-table'
+import dayjs from 'dayjs'
 
 import EmptyStateImage from '@/assets/images/empty-state.png'
 import { cn } from '@/libs'
@@ -8,6 +9,7 @@ import type { CsvHeader, DropdownOption, QueryType } from '@/types'
 import { generateAndDownloadCsv, getQueryString } from '@/utils/helpers'
 
 import { Button } from '../Button'
+import { DateRangeFilter } from '../DateInput'
 import { Dropdown } from '../Dropdown'
 import { EmptyState } from '../EmptyState'
 import { Loader } from '../Loader'
@@ -84,6 +86,60 @@ export function PaginatedTable({
 }: Props) {
   const memoisedColumns = React.useMemo(() => columns, [columns])
   const memoisedData = React.useMemo(() => data ?? [], [data])
+
+  // Get date filter config to determine query keys
+  const dateFilterConfig = React.useMemo(() => {
+    if (!filterBy?.date || filterBy.date.length === 0) return null
+
+    const config = filterBy.date.find((dateFilter) => {
+      const dateConfig = typeof dateFilter === 'string' ? { queryKey: dateFilter } : dateFilter
+      const key = dateConfig.queryKey as string
+      return (
+        key === 'date' ||
+        key === 'date_from' ||
+        key === 'date_to' ||
+        key === 'dateFrom' ||
+        key === 'dateTo' ||
+        key === 'startDate' ||
+        key === 'endDate' ||
+        key.toLowerCase().includes('date')
+      )
+    })
+
+    if (!config) return null
+
+    return typeof config === 'string' ? { queryKey: config, label: 'Date range' } : config
+  }, [filterBy])
+
+  // Parse dateFrom and dateTo from query
+  const startDate = React.useMemo(() => {
+    const start = query.dateFrom
+    if (!start) return null
+    const parsed = dayjs(start)
+    return parsed.isValid() ? parsed.toDate() : null
+  }, [query.dateFrom])
+
+  const endDate = React.useMemo(() => {
+    const end = query.dateTo
+    if (!end) return null
+    const parsed = dayjs(end)
+    return parsed.isValid() ? parsed.toDate() : null
+  }, [query.dateTo])
+
+  // Handle date range change - use dateFrom and dateTo to match QueryType
+  const handleDateRangeChange = React.useCallback(
+    (dates: [Date | null, Date | null]) => {
+      const [start, end] = dates
+      const queryWithoutPage = removePageFromQuery(query)
+      setQuery({
+        ...queryWithoutPage,
+        page: 1,
+        dateFrom: start ? dayjs(start).format('YYYY-MM-DD') : '',
+        dateTo: end ? dayjs(end).format('YYYY-MM-DD') : '',
+      } as QueryType)
+    },
+    [query, setQuery],
+  )
 
   const actions = [
     ...(csvHeaders
@@ -204,6 +260,18 @@ export function PaginatedTable({
             </Dropdown>
           )
         })}
+
+        {/* Date range filters */}
+        {dateFilterConfig && (
+          <DateRangeFilter
+            key="date-range-filter"
+            startDate={startDate}
+            endDate={endDate}
+            onChange={handleDateRangeChange}
+            placeholder={dateFilterConfig.label || 'Date range'}
+            format="DD-MM-YYYY"
+          />
+        )}
 
         {/* other filters here */}
         {buttonGroup}
