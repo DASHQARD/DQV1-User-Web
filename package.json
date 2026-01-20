@@ -11,7 +11,7 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "preview": "vite preview",
-    "update-icons": "node scripts/update-icon-names && yarn lint"
+    "update-icons": "node scripts/update-icon-names && npm run lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
