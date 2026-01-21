@@ -168,12 +168,11 @@ export function corporateMutations() {
   }
 
   function useCreateDashGoAndAssignService() {
-    const { success, error } = useToast()
+    const { error } = useToast()
     const queryClient = useQueryClient()
     return useMutation({
       mutationFn: createDashGoAndAssign,
-      onSuccess: (response: any) => {
-        success(response?.message || 'DashGo card created and assigned successfully')
+      onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
         queryClient.invalidateQueries({ queryKey: ['all-corporate-recipients'] })
       },

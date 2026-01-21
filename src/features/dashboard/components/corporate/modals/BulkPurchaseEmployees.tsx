@@ -1,10 +1,11 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button, FileUploader, Modal, Text, Input, Checkbox, Tabs, Combobox } from '@/components'
 import { CardItems } from '@/features/website/components/CardItems/CardItems'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import DashProBg from '@/assets/svgs/dashpro_bg.svg'
 import RecipientTemplate from '@/assets/recipient_template.xlsx?url'
-import { usePersistedModalState, useToast, useUserProfile, useDebouncedState } from '@/hooks'
+import { usePersistedModalState, useToast, useDebouncedState } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
 import { corporateQueries, corporateMutations } from '@/features/dashboard/corporate/hooks'
@@ -77,8 +78,7 @@ export function BulkPurchaseEmployeesModal({
   const [cartId, setCartId] = React.useState<number | null>(null)
   const toast = useToast()
   const queryClient = useQueryClient()
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
+  const navigate = useNavigate()
 
   const {
     useUploadBulkRecipientsService,
@@ -86,7 +86,6 @@ export function BulkPurchaseEmployeesModal({
     useCreateDashGoAndAssignService,
     useCreateDashProAndAssignService,
     useAddToCartService,
-    useCheckoutService,
   } = corporateMutations()
   const { useGetCartsService, useGetAllRecipientsService } = corporateQueries()
 
@@ -95,7 +94,6 @@ export function BulkPurchaseEmployeesModal({
   const createDashGoMutation = useCreateDashGoAndAssignService()
   const createDashProMutation = useCreateDashProAndAssignService()
   const addToCartMutation = useAddToCartService()
-  const checkoutMutation = useCheckoutService()
 
   // Debounce vendor search like redemption page
   const { value: debouncedVendorSearch } = useDebouncedState({
@@ -263,8 +261,9 @@ export function BulkPurchaseEmployeesModal({
     // Load existing recipients when modal opens with saved cart items
     if (step === 2 && hasExistingCartItems && uploadedRecipients.length === 0) {
       refetchRecipients().then((recipientsData) => {
-        if (recipientsData?.data) {
-          setUploadedRecipients(recipientsData.data || [])
+        // Extract the data array from the response structure { data: { data: [...], pagination: {...} } }
+        if (recipientsData?.data?.data) {
+          setUploadedRecipients(recipientsData.data.data || [])
         }
       })
     }
@@ -297,10 +296,10 @@ export function BulkPurchaseEmployeesModal({
       await uploadMutation.mutateAsync(file)
 
       // Fetch recipients from the API after upload
-
       const recipientsData = await refetchRecipients()
 
-      setUploadedRecipients(recipientsData?.data || [])
+      // Extract the data array from the response structure { data: { data: [...], pagination: {...} } }
+      setUploadedRecipients(recipientsData?.data?.data || [])
 
       setStep(2)
     } catch (error: any) {
@@ -626,102 +625,6 @@ export function BulkPurchaseEmployeesModal({
       setSelectedRecipients(new Set())
     } catch (error: any) {
       toast.error(error?.message || 'Failed to save cards to cart')
-    }
-  }
-
-  const handleCheckout = async () => {
-    if (!userProfileData) {
-      toast.error('Missing user information')
-      return
-    }
-
-    // Check if there are any current assignments
-    const regularCardAssignments = Object.entries(cardRecipientAssignments).filter(
-      ([, assignment]) => assignment.cardType === 'card',
-    )
-
-    const dashGoDashProAssignments = Object.entries(cardRecipientAssignments).filter(
-      ([, assignment]) => assignment.cardType === 'dashgo' || assignment.cardType === 'dashpro',
-    )
-
-    // If there are current assignments, save them first
-    if (regularCardAssignments.length > 0 || dashGoDashProAssignments.length > 0) {
-      await handleSaveToCart()
-      // Wait a bit for the save to complete
-      await new Promise((resolve) => setTimeout(resolve, 500))
-    }
-
-    // Get the current cart ID (use local variable to avoid async state update issues)
-    let currentCartId = cartId
-
-    // Try to get cartId if not set - use local variable instead of relying on state
-    if (!currentCartId) {
-      // Refetch carts to get the latest cart
-      await queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
-      const updatedCartsResponse = await queryClient.fetchQuery({
-        queryKey: ['corporate-carts'],
-        queryFn: getCarts,
-      })
-      const cartsData = (updatedCartsResponse as any)?.data || updatedCartsResponse || []
-      if (Array.isArray(cartsData) && cartsData.length > 0) {
-        currentCartId = cartsData[0].cart_id
-        setCartId(currentCartId) // Update state for future use
-      }
-    }
-
-    // Ensure we have a cart_id before proceeding (required for checkout)
-    if (!currentCartId) {
-      toast.error('Missing cart information. Please add items to cart first.')
-      return
-    }
-
-    // Calculate total amount from existing cart items
-    let totalAmount = 0
-    if (existingCartItems.length > 0) {
-      existingCartItems.forEach((cart: any) => {
-        if (cart.items && Array.isArray(cart.items)) {
-          cart.items.forEach((item: any) => {
-            const itemPrice = parseFloat(item.price || item.card_price || '0')
-            const quantity = item.quantity || 1
-            totalAmount += itemPrice * quantity
-          })
-        }
-      })
-    }
-
-    // Also add current assignments if any
-    totalAmount += Object.entries(cardRecipientAssignments).reduce((sum, [, assignment]) => {
-      if (assignment.cardPrice) {
-        return sum + assignment.cardPrice * assignment.recipientIds.length
-      }
-      const card = allCards.find((c: any) => c.card_id === assignment.cardId)
-      if (card) {
-        return sum + parseFloat(card.price) * assignment.recipientIds.length
-      }
-      return sum
-    }, 0)
-
-    try {
-      const response = await checkoutMutation.mutateAsync({
-        cart_id: currentCartId,
-        full_name: userProfileData.fullname || userProfileData.email || '',
-        email: userProfileData.email || '',
-        phone_number: userProfileData.phonenumber || '',
-        amount_due: totalAmount,
-        user_id: userProfileData.id || 0,
-      })
-
-      // If payment URL is returned, open it
-      if (response?.data) {
-        window.open(response.data, '_blank', 'noopener,noreferrer')
-      }
-
-      // Close modal after successful checkout
-      setTimeout(() => {
-        handleClose()
-      }, 2000)
-    } catch (error: any) {
-      toast.error(error?.message || 'Checkout failed')
     }
   }
 
@@ -1220,9 +1123,9 @@ export function BulkPurchaseEmployeesModal({
                       variant="secondary"
                       onClick={async () => {
                         await handleSaveToCart()
-                        setTimeout(() => {
-                          handleCheckout()
-                        }, 500)
+                        // Close modal and navigate to checkout page
+                        handleClose()
+                        navigate('/checkout')
                       }}
                       disabled={
                         Object.keys(cardRecipientAssignments).length === 0 ||
@@ -1234,7 +1137,14 @@ export function BulkPurchaseEmployeesModal({
                     </Button>
                   )}
                   {Object.keys(cardRecipientAssignments).length === 0 && hasExistingCartItems && (
-                    <Button variant="secondary" onClick={handleCheckout} disabled={!cartId}>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        handleClose()
+                        navigate('/checkout')
+                      }}
+                      disabled={!cartId}
+                    >
                       Proceed to Checkout
                     </Button>
                   )}
@@ -1625,9 +1535,9 @@ export function BulkPurchaseEmployeesModal({
                       variant="secondary"
                       onClick={async () => {
                         await handleSaveToCart()
-                        setTimeout(() => {
-                          handleCheckout()
-                        }, 500)
+                        // Close modal and navigate to checkout page
+                        handleClose()
+                        navigate('/checkout')
                       }}
                       disabled={
                         Object.keys(cardRecipientAssignments).length === 0 ||
@@ -1639,7 +1549,14 @@ export function BulkPurchaseEmployeesModal({
                     </Button>
                   )}
                   {Object.keys(cardRecipientAssignments).length === 0 && hasExistingCartItems && (
-                    <Button variant="secondary" onClick={handleCheckout} disabled={!cartId}>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        handleClose()
+                        navigate('/checkout')
+                      }}
+                      disabled={!cartId}
+                    >
                       Proceed to Checkout
                     </Button>
                   )}

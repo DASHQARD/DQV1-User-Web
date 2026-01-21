@@ -69,7 +69,8 @@ export default function RecentAuditLogs() {
   const { data: auditLogsResponse, isLoading } = useGetAuditLogsCorporateService()
 
   const recentActivities = React.useMemo(() => {
-    const auditLogs = auditLogsResponse || []
+    // Extract data array from response (response now has { data: [...], pagination: {...} })
+    const auditLogs = auditLogsResponse?.data || []
     return auditLogs.slice(0, 4).map((activity: any) => ({
       id: activity.id.toString(),
       actor: activity.name || activity.user_email || 'System',

@@ -26,10 +26,10 @@ export function corporateQueries() {
     })
   }
 
-  function useGetAuditLogsCorporateService() {
+  function useGetAuditLogsCorporateService(query?: Record<string, any>) {
     return useQuery({
-      queryKey: ['audit-logs-corporate'],
-      queryFn: getAuditLogsCorporate,
+      queryKey: ['audit-logs-corporate', query],
+      queryFn: () => getAuditLogsCorporate(query),
     })
   }
 
@@ -62,10 +62,10 @@ export function corporateQueries() {
     })
   }
 
-  function useGetCorporateAdminsService() {
+  function useGetCorporateAdminsService(query?: Record<string, any>) {
     return useQuery({
-      queryKey: ['corporate-admins'],
-      queryFn: () => getCorporateAdmins(),
+      queryKey: ['corporate-admins', query],
+      queryFn: () => getCorporateAdmins(query),
     })
   }
 
@@ -98,10 +98,10 @@ export function corporateQueries() {
     })
   }
 
-  function useGetAllRecipientsService() {
+  function useGetAllRecipientsService(query?: Record<string, any>) {
     return useQuery({
-      queryKey: ['all-corporate-recipients'],
-      queryFn: getAllRecipients,
+      queryKey: ['all-corporate-recipients', query],
+      queryFn: () => getAllRecipients(query),
     })
   }
 

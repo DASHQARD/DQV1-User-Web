@@ -1,36 +1,42 @@
 import { useReducerSpread } from '@/hooks'
-
+import { useMemo } from 'react'
 import { corporateQueries } from '../../corporate/hooks'
 import { useAuthStore } from '@/stores'
-// import React from 'react'
 import { usePersistedModalState } from '@/hooks'
-// import { useSearch } from '@/hooks/useSearch'
 import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
 import AllAdmins from '../../components/corporate/admins/AllAdmins'
 import InvitedAdmins from '../../components/corporate/admins/InvitedAdmins'
 
 export function useCorporateAdmins() {
-  //   const { state } = useSearch()
   const modal = usePersistedModalState({
     paramName: MODALS.CORPORATE_ADMIN.PARAM_NAME,
   })
   const [query, setQuery] = useReducerSpread(DEFAULT_QUERY)
-  //   const { userPermissions = [] } = useContentGuard()
-
   const user = useAuthStore().user
-
-  //   React.useEffect(() => {
-  //     if (state?.searchQuery) {
-  //       setQuery({ ...query, page: 1, search: state.searchQuery.trim() })
-  //     }
-  //     // eslint-disable-next-line react-hooks/exhaustive-deps
-  //   }, [setQuery, state?.searchQuery])
-
   const { useGetCorporateAdminsService, useGetInvitedCorporateAdminsService } = corporateQueries()
-  const { data: corporateAdminsList, isLoading: isLoadingCorporateAdminsList } =
-    useGetCorporateAdminsService()
+
+  // Build params for the API call
+  const params = useMemo(() => {
+    const apiParams: any = {
+      limit: query.limit || 10,
+    }
+    if (query.after) {
+      apiParams.after = query.after
+    }
+    if (query.search) {
+      apiParams.search = query.search
+    }
+    return apiParams
+  }, [query])
+
+  const { data: corporateAdminsResponse, isLoading: isLoadingCorporateAdminsList } =
+    useGetCorporateAdminsService(params)
   const { data: invitedCorporateAdminsList, isLoading: isLoadingInvitedCorporateAdminsList } =
     useGetInvitedCorporateAdminsService()
+
+  // Extract data and pagination from response
+  const corporateAdminsList = corporateAdminsResponse?.data || []
+  const pagination = corporateAdminsResponse?.pagination
 
   const corporateAdminTabConfigs = [
     {
@@ -137,6 +143,7 @@ export function useCorporateAdmins() {
   return {
     query,
     corporateAdminsList,
+    pagination,
     getCorporateAdminOptions,
     isLoadingCorporateAdminsList,
     setQuery,

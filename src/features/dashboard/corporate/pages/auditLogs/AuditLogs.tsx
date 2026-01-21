@@ -2,26 +2,10 @@ import { DateCell, StatusCell, Text } from '@/components'
 import { PaginatedTable } from '@/components/Table'
 import { cn } from '@/libs'
 import { DEFAULT_QUERY } from '@/utils/constants'
-import type { QueryType } from '@/types'
+import type { ActivityData, QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
 import { corporateQueries } from '../../hooks'
-
-type ActivityData = {
-  id: number
-  action: string
-  module: string
-  user_id: string | null
-  name: string | null
-  user_email: string | null
-  user_type: string
-  ip_address: string
-  country: string | null
-  location: string | null
-  description: string
-  status: string
-  error_message: string | null
-  created_at: string
-}
+import { useMemo, useCallback } from 'react'
 
 const actionStyles: Record<'Create' | 'Modify', string> = {
   Create: 'text-success-600',
@@ -132,7 +116,44 @@ const auditLogsCsvHeaders = [
 export default function AuditLogs() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
   const { useGetAuditLogsCorporateService } = corporateQueries()
-  const { data: auditLogsResponse, isLoading } = useGetAuditLogsCorporateService()
+
+  const params = useMemo(() => {
+    const apiParams: any = {
+      limit: query.limit || 10,
+    }
+    if (query.after) {
+      apiParams.after = query.after
+    }
+    if (query.search) {
+      apiParams.search = query.search
+    }
+    return apiParams
+  }, [query])
+
+  const { data: auditLogsResponse, isLoading } = useGetAuditLogsCorporateService(params)
+
+  // Extract data and pagination from response
+  const auditLogsData = auditLogsResponse?.data || []
+  const pagination = auditLogsResponse?.pagination
+
+  // Handle cursor-based pagination
+  const handleNextPage = useCallback(() => {
+    if (pagination?.hasNextPage && pagination?.next) {
+      setQuery({ ...query, after: pagination.next })
+    }
+  }, [pagination?.hasNextPage, pagination?.next, query, setQuery])
+
+  const handleSetAfter = useCallback(
+    (after: string) => {
+      setQuery({ ...query, after })
+    },
+    [query, setQuery],
+  )
+
+  // Calculate estimated total for display
+  const estimatedTotal = pagination?.hasNextPage
+    ? auditLogsData.length + (query.limit || 10)
+    : auditLogsData.length
 
   return (
     <div className="py-10">
@@ -151,13 +172,20 @@ export default function AuditLogs() {
           <PaginatedTable
             filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
             columns={auditLogsColumns}
-            data={auditLogsResponse}
-            total={auditLogsResponse?.length || 0}
+            data={auditLogsData}
+            total={estimatedTotal}
             loading={isLoading}
             query={query}
             setQuery={setQuery}
             csvHeaders={auditLogsCsvHeaders}
             printTitle="Audit Logs"
+            onNextPage={handleNextPage}
+            hasNextPage={pagination?.hasNextPage}
+            hasPreviousPage={pagination?.hasPreviousPage}
+            currentAfter={query.after}
+            previousCursor={pagination?.previous}
+            onSetAfter={handleSetAfter}
+            searchPlaceholder="Search by description"
           />
         </div>
       </div>

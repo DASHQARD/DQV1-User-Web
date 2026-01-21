@@ -226,6 +226,13 @@ export type RecipientsListResponse = {
   statusCode: number
   message: string
   data: RecipientResponse[]
+  pagination: {
+    limit: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+    next: string | null
+    previous: string | null
+  }
 }
 
 export type CreateRecipientPayload = {

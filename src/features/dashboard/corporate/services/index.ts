@@ -1,4 +1,6 @@
+import { axiosClient } from '@/libs'
 import { deleteMethod, getList, patchMethod, postMethod, putMethod } from '@/services/requests'
+import { getQueryString } from '@/utils/helpers'
 import type {
   InviteAdminPayload,
   AcceptCorporateAdminInvitationPayload,
@@ -6,7 +8,6 @@ import type {
 } from '@/types/forms'
 import type {
   CreateRecipientPayload,
-  RecipientsListResponse,
   AssignRecipientPayload,
   AddToCartPayload,
 } from '@/types/responses'
@@ -21,8 +22,13 @@ export const getCorporateById = async (id: string): Promise<any> => {
   return await getList<any>(`${CORPORATE_API_URL}/admin/${id}`)
 }
 
-export const getAuditLogsCorporate = async (): Promise<any> => {
-  return await getList<any>(`/audit-logs/corporates`)
+export const getAuditLogsCorporate = async (params?: Record<string, any>): Promise<any> => {
+  const queryString = getQueryString(params)
+  const fullUrl = queryString ? `/audit-logs/corporates?${queryString}` : `/audit-logs/corporates`
+  const response = await axiosClient.get(fullUrl)
+  // Axios interceptor already returns response.data, so response here is the API response body
+  // which has { data: [...], pagination: {...}, status: ..., etc }
+  return response
 }
 
 export const getRequestsCorporate = async (params?: Record<string, any>): Promise<any> => {
@@ -33,8 +39,15 @@ export const updateRequestStatus = async (data: { id: number; status: string }):
   return await patchMethod(`/requests/corporate/update-status`, data)
 }
 
-export const getCorporateAdmins = async (): Promise<any> => {
-  return await getList<any>(`${CORPORATE_API_URL}/admins`)
+export const getCorporateAdmins = async (params?: Record<string, any>): Promise<any> => {
+  const queryString = getQueryString(params)
+  const fullUrl = queryString
+    ? `${CORPORATE_API_URL}/admins?${queryString}`
+    : `${CORPORATE_API_URL}/admins`
+  const response = await axiosClient.get(fullUrl)
+  // Axios interceptor already returns response.data, so response here is the API response body
+  // which has { data: [...], pagination: {...}, status: ..., etc }
+  return response
 }
 
 export const inviteAdmin = async (data: InviteAdminPayload): Promise<any> => {
@@ -84,8 +97,13 @@ export const getCorporatePaymentDetails = async () => {
   return await getList(`/payment-details`)
 }
 
-export const getAllCorporatePayments = async (query?: Record<string, any>) => {
-  return await getList(`/payments/users`, query)
+export const getAllCorporatePayments = async (params?: Record<string, any>): Promise<any> => {
+  const queryString = getQueryString(params)
+  const fullUrl = queryString ? `/payments/users?${queryString}` : `/payments/users`
+  const response = await axiosClient.get(fullUrl)
+  // Axios interceptor already returns response.data, so response here is the API response body
+  // which has { data: [...], pagination: {...}, status: ..., etc }
+  return response
 }
 
 export const getPaymentById = async (id: string | number): Promise<any> => {
@@ -96,8 +114,13 @@ export const addRecipient = async (data: CreateRecipientPayload): Promise<any> =
   return await postMethod(`/carts/add/recipients`, data)
 }
 
-export const getAllRecipients = async (): Promise<any> => {
-  return await getList<RecipientsListResponse>(`/carts/users/recipients`)
+export const getAllRecipients = async (params?: Record<string, any>): Promise<any> => {
+  const queryString = getQueryString(params)
+  const fullUrl = queryString ? `/carts/users/recipients?${queryString}` : `/carts/users/recipients`
+  const response = await axiosClient.get(fullUrl)
+  // Axios interceptor already returns response.data, so response here is the API response body
+  // which has { data: [...], pagination: {...}, status: ..., etc }
+  return response
 }
 
 export const deleteRecipient = async (id: string | number): Promise<any> => {

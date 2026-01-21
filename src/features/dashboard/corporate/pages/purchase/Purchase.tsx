@@ -12,7 +12,7 @@ import { Icon } from '@/libs'
 import { usePersistedModalState, useReducerSpread } from '@/hooks'
 import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
 import { usePurchaseManagement } from '@/features/dashboard/hooks'
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { corporateQueries } from '../../hooks'
 import type { QueryType } from '@/types'
 import { OPTIONS } from '@/utils/constants/filter'
@@ -36,8 +36,12 @@ export default function Purchase() {
 
   // Build query parameters for the API
   const queryParams = useMemo(() => {
-    const params: Record<string, any> = {}
-    if (query.limit) params.limit = query.limit
+    const params: Record<string, any> = {
+      limit: query.limit || 10,
+    }
+    if (query.after) {
+      params.after = query.after
+    }
     if (query.status) params.status = query.status
     if ((query as any).type) params.type = (query as any).type
     // Map camelCase to snake_case for backend
@@ -46,7 +50,30 @@ export default function Purchase() {
     return params
   }, [query])
 
-  const { data: allCorporatePayments, isLoading } = useGetAllCorporatePaymentsService(queryParams)
+  const { data: paymentsResponse, isLoading } = useGetAllCorporatePaymentsService(queryParams)
+
+  // Extract data and pagination from response
+  const allCorporatePayments = paymentsResponse?.data || []
+  const pagination = paymentsResponse?.pagination
+
+  // Handle cursor-based pagination
+  const handleNextPage = useCallback(() => {
+    if (pagination?.hasNextPage && pagination?.next) {
+      setQuery({ ...query, after: pagination.next })
+    }
+  }, [pagination?.hasNextPage, pagination?.next, query, setQuery])
+
+  const handleSetAfter = useCallback(
+    (after: string) => {
+      setQuery({ ...query, after })
+    },
+    [query, setQuery],
+  )
+
+  // Calculate estimated total for display
+  const estimatedTotal = pagination?.hasNextPage
+    ? allCorporatePayments.length + (query.limit || 10)
+    : allCorporatePayments.length
 
   return (
     <>
@@ -98,14 +125,14 @@ export default function Purchase() {
               <div className="relative space-y-[37px]">
                 <div className="text-[#0c4b77] py-2 border-b-2 border-[#0c4b77] w-fit">
                   <Text variant="h6" weight="medium">
-                    All Purchases ({allCorporatePayments?.length})
+                    All Purchases
                   </Text>
                 </div>
                 <PaginatedTable
                   filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
                   columns={transactionsListColumns}
                   data={allCorporatePayments}
-                  total={allCorporatePayments?.length}
+                  total={estimatedTotal}
                   loading={isLoading}
                   query={query}
                   setQuery={setQuery}
@@ -121,6 +148,12 @@ export default function Purchase() {
                   }}
                   noSearch
                   printTitle="Purchases"
+                  onNextPage={handleNextPage}
+                  hasNextPage={pagination?.hasNextPage}
+                  hasPreviousPage={pagination?.hasPreviousPage}
+                  currentAfter={query.after}
+                  previousCursor={pagination?.previous}
+                  onSetAfter={handleSetAfter}
                 />
               </div>
             </div>
