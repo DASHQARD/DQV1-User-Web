@@ -94,11 +94,14 @@ export default function Checkout() {
     total_quantity?: number
     quantity_index?: number // Track which quantity unit this is (0-indexed)
     recipients?: Array<{
+      recipient_id?: number
       email: string
       phone: string
       message: string
       name?: string
-      amount?: string
+      amount?: string | number
+      quantity?: number
+      assigned_at?: string
     }>
   }
 
@@ -108,12 +111,9 @@ export default function Checkout() {
     const flattened: FlattenedCartItem[] = []
 
     pendingCartItems.forEach((cart: CartListResponse) => {
-      // Each cart has an items object (not array in the new structure)
-      if (cart.items) {
-        // Handle both array and single object cases
-        const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
-
-        itemsArray.forEach((item: any) => {
+      // Each cart has an items array
+      if (cart.items && Array.isArray(cart.items)) {
+        cart.items.forEach((item: any) => {
           const totalQuantity = item.total_quantity || 1
           const totalAmount = parseFloat(item.total_amount?.toString() || '0')
           const perItemAmount = totalAmount / totalQuantity
@@ -123,7 +123,16 @@ export default function Checkout() {
           for (let i = 0; i < totalQuantity; i++) {
             // For now, show all recipients on each entry
             // In the future, we can distribute recipients based on quantity_index
-            const itemRecipients = recipients
+            const itemRecipients = recipients.map((recipient: any) => ({
+              recipient_id: recipient.recipient_id,
+              email: recipient.email,
+              phone: recipient.phone,
+              message: recipient.message || '',
+              name: recipient.name,
+              amount: recipient.amount,
+              quantity: recipient.quantity,
+              assigned_at: recipient.assigned_at,
+            }))
 
             flattened.push({
               cart_id: cart.cart_id,
@@ -293,14 +302,17 @@ export default function Checkout() {
         const perRecipientAmount = parseFloat(item.amount || '0')
 
         grouped[key] = item.recipients.map((recipient, index) => ({
-          id: `${key}-${index}`, // Generate unique ID
+          id: recipient.recipient_id || `${key}-${index}`, // Use recipient_id if available, otherwise generate unique ID
+          recipient_id: recipient.recipient_id,
           name: recipient.name || recipient.email?.split('@')[0] || 'Recipient',
           email: recipient.email,
           phone: recipient.phone,
           message: recipient.message || '',
-          amount: parseFloat(recipient.amount || perRecipientAmount.toString() || '0'),
+          amount: parseFloat(recipient.amount?.toString() || perRecipientAmount.toString() || '0'),
+          quantity: recipient.quantity || 1,
           cart_id: item.cart_id,
           cart_item_id: item.cart_item_id,
+          assigned_at: recipient.assigned_at,
         }))
       }
     })

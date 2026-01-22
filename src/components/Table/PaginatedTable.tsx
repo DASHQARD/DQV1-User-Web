@@ -53,6 +53,14 @@ type Props = Readonly<{
   onRowSelectionChange?: (
     updater: Record<string, boolean> | ((old: Record<string, boolean>) => Record<string, boolean>),
   ) => void
+  onNextPage?: () => void
+  onPreviousPage?: () => void
+  hasNextPage?: boolean
+  hasPreviousPage?: boolean
+  // For cursor-based pagination
+  currentAfter?: string
+  previousCursor?: string | null
+  onSetAfter?: (after: string) => void
 }>
 
 // Helper to remove page from query object
@@ -83,6 +91,13 @@ export function PaginatedTable({
   getRowId,
   rowSelection,
   onRowSelectionChange,
+  onNextPage,
+  onPreviousPage,
+  hasNextPage,
+  hasPreviousPage,
+  currentAfter,
+  previousCursor,
+  onSetAfter,
 }: Props) {
   const memoisedColumns = React.useMemo(() => columns, [columns])
   const memoisedData = React.useMemo(() => data ?? [], [data])
@@ -324,7 +339,17 @@ export function PaginatedTable({
             )}
 
             <div className="no-print mt-5">
-              <Pagination total={Number(total)} limit={Number(query.limit)} />
+              <Pagination
+                total={Number(total)}
+                limit={Number(query.limit)}
+                onNextPage={onNextPage}
+                onPreviousPage={onPreviousPage}
+                hasNextPage={hasNextPage}
+                hasPreviousPage={hasPreviousPage}
+                currentAfter={currentAfter}
+                previousCursor={previousCursor}
+                onSetAfter={onSetAfter}
+              />
             </div>
           </div>
         </PrintView>

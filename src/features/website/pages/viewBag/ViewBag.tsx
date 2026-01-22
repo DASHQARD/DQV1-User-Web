@@ -113,7 +113,7 @@ export default function ViewBag() {
   // Group recipients by cart_item_id from cart items (recipients are now included in cart response)
   const recipientsByCartItem = useMemo(() => {
     const grouped: Record<number, any[]> = {}
-    // Create a map of recipients by cart_item_id and email/phone for ID lookup
+    // Create a map of recipients by cart_item_id and email/phone for ID lookup (fallback)
     const recipientIdMap = new Map<string, number>()
     if (allRecipientsData?.data && Array.isArray(allRecipientsData.data)) {
       allRecipientsData.data.forEach((recipient: any) => {
@@ -132,9 +132,11 @@ export default function ViewBag() {
         const perRecipientAmount = totalAmount / totalQuantity
 
         grouped[item.cart_item_id] = item.recipients.map((recipient, index) => {
-          // Try to find recipient ID from allRecipientsData
+          // Use recipient_id directly from cart response, with fallback to lookup map
           const lookupKey = `${item.cart_item_id}-${recipient.email}-${recipient.phone || ''}`
-          const recipientId = recipient.id || recipientIdMap.get(lookupKey) || null
+          const recipientId =
+            recipient.recipient_id || recipient.id || recipientIdMap.get(lookupKey) || null
+
           return {
             id: recipientId || `${item.cart_item_id}-${index}`, // Use API ID if available, otherwise generate unique ID
             recipientId: recipientId, // Store the actual recipient ID for deletion
@@ -173,19 +175,19 @@ export default function ViewBag() {
     })
   }
 
-  const handleEditRecipient = (item: FlattenedCartItem, recipient: any) => {
-    if (!item.cart_item_id) {
-      toast.error('Cart item ID is required')
-      return
-    }
-    modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
-      cart_item_id: item.cart_item_id,
-      cardType: item.type,
-      cardProduct: item.product,
-      cardCurrency: item.currency || 'GHS',
-      amount: recipient.amount,
-    })
-  }
+  // const handleEditRecipient = (item: FlattenedCartItem, recipient: any) => {
+  //   if (!item.cart_item_id) {
+  //     toast.error('Cart item ID is required')
+  //     return
+  //   }
+  //   modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
+  //     cart_item_id: item.cart_item_id,
+  //     cardType: item.type,
+  //     cardProduct: item.product,
+  //     cardCurrency: item.currency || 'GHS',
+  //     amount: recipient.amount,
+  //   })
+  // }
 
   const handleDeleteRecipient = (recipient: any) => {
     if (!recipient) {
@@ -482,14 +484,6 @@ export default function ViewBag() {
                                       </span>
                                     )}
                                   </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleEditRecipient(item, recipient)}
-                                    className="text-blue-600 hover:text-blue-700 p-1"
-                                    aria-label="Edit recipient"
-                                  >
-                                    <Icon icon="bi:pencil" className="text-sm" />
-                                  </button>
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteRecipient(recipient)}

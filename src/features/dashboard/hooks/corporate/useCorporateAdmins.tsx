@@ -1,36 +1,56 @@
 import { useReducerSpread } from '@/hooks'
-
+import { useMemo } from 'react'
 import { corporateQueries } from '../../corporate/hooks'
 import { useAuthStore } from '@/stores'
-// import React from 'react'
 import { usePersistedModalState } from '@/hooks'
-// import { useSearch } from '@/hooks/useSearch'
 import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
 import AllAdmins from '../../components/corporate/admins/AllAdmins'
 import InvitedAdmins from '../../components/corporate/admins/InvitedAdmins'
 
 export function useCorporateAdmins() {
-  //   const { state } = useSearch()
   const modal = usePersistedModalState({
     paramName: MODALS.CORPORATE_ADMIN.PARAM_NAME,
   })
   const [query, setQuery] = useReducerSpread(DEFAULT_QUERY)
-  //   const { userPermissions = [] } = useContentGuard()
-
+  const [invitedQuery, setInvitedQuery] = useReducerSpread(DEFAULT_QUERY)
   const user = useAuthStore().user
-
-  //   React.useEffect(() => {
-  //     if (state?.searchQuery) {
-  //       setQuery({ ...query, page: 1, search: state.searchQuery.trim() })
-  //     }
-  //     // eslint-disable-next-line react-hooks/exhaustive-deps
-  //   }, [setQuery, state?.searchQuery])
-
   const { useGetCorporateAdminsService, useGetInvitedCorporateAdminsService } = corporateQueries()
-  const { data: corporateAdminsList, isLoading: isLoadingCorporateAdminsList } =
-    useGetCorporateAdminsService()
-  const { data: invitedCorporateAdminsList, isLoading: isLoadingInvitedCorporateAdminsList } =
-    useGetInvitedCorporateAdminsService()
+
+  // Build params for the API calls
+  const params = useMemo(() => {
+    const apiParams: Record<string, unknown> = {
+      limit: query.limit || 10,
+    }
+    if (query.after) apiParams.after = query.after
+    if (query.search) apiParams.search = query.search
+    if ((query as any).status) apiParams.status = (query as any).status
+    if (query.dateFrom) apiParams.date_from = query.dateFrom
+    if (query.dateTo) apiParams.date_to = query.dateTo
+    return apiParams
+  }, [query])
+
+  const invitedParams = useMemo(() => {
+    const apiParams: Record<string, unknown> = {
+      limit: invitedQuery.limit || 10,
+    }
+    if (invitedQuery.after) apiParams.after = invitedQuery.after
+    if (invitedQuery.search) apiParams.search = invitedQuery.search
+    if ((invitedQuery as any).status) apiParams.status = (invitedQuery as any).status
+    if (invitedQuery.dateFrom) apiParams.date_from = invitedQuery.dateFrom
+    if (invitedQuery.dateTo) apiParams.date_to = invitedQuery.dateTo
+    return apiParams
+  }, [invitedQuery])
+
+  const { data: corporateAdminsResponse, isLoading: isLoadingCorporateAdminsList } =
+    useGetCorporateAdminsService(params)
+  const { data: invitedAdminsResponse, isLoading: isLoadingInvitedCorporateAdminsList } =
+    useGetInvitedCorporateAdminsService(invitedParams)
+
+  // Extract data and pagination from responses
+  const corporateAdminsList = corporateAdminsResponse?.data || []
+  const pagination = corporateAdminsResponse?.pagination
+  const invitedCorporateAdminsList = invitedAdminsResponse?.data || []
+  const invitedPagination = invitedAdminsResponse?.pagination
 
   const corporateAdminTabConfigs = [
     {
@@ -137,12 +157,16 @@ export function useCorporateAdmins() {
   return {
     query,
     corporateAdminsList,
+    pagination,
     getCorporateAdminOptions,
     isLoadingCorporateAdminsList,
     setQuery,
     corporateAdminTabConfigs,
     modal,
+    invitedQuery,
+    setInvitedQuery,
     invitedCorporateAdminsList,
+    invitedPagination,
     isLoadingInvitedCorporateAdminsList,
   }
 }

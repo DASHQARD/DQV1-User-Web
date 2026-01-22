@@ -1,5 +1,6 @@
+import { axiosClient } from '@/libs'
 import { getList, patchMethod, postMethod, putMethod, deleteMethod } from '@/services/requests'
-
+import { getQueryString } from '@/utils/helpers'
 import type {
   VendorsListResponse,
   UpdateVendorStatusPayload,
@@ -114,10 +115,12 @@ export const addBranchPaymentDetails = async (
 export const getBranchManagerInvitations = async (
   query?: GetBranchManagerInvitationsQuery,
 ): Promise<BranchManagerInvitationsResponse> => {
-  return await getList<BranchManagerInvitationsResponse>(
-    `/vendors/branch-manager-invitations`,
-    query,
-  )
+  const queryString = getQueryString(query)
+  const fullUrl = queryString
+    ? `${commonUrl}/branch-manager-invitations?${queryString}`
+    : `${commonUrl}/branch-manager-invitations`
+  const response = await axiosClient.get(fullUrl)
+  return response
 }
 
 export const cancelBranchManagerInvitation = async (invitationId: number): Promise<any> => {

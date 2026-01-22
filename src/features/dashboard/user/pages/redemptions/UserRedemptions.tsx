@@ -1,18 +1,18 @@
-import React from 'react'
+import { useMemo, useCallback } from 'react'
 import { PaginatedTable, Text } from '@/components'
 import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
-import { userRedemptionsColumns, userRedemptionsCsvHeaders } from '../../components'
 import { OPTIONS } from '@/utils/constants/filter'
-import { useRedemptionQueries } from '../../hooks'
+import { useRedemptionQueries } from '@/features/dashboard/hooks'
+import { userRedemptionsColumns, userRedemptionsCsvHeaders } from '@/features/dashboard/components'
 
 export default function UserRedemptions() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
 
   // Build params for the API call
-  const params = React.useMemo(() => {
-    const apiParams: any = {
+  const params = useMemo(() => {
+    const apiParams: Record<string, any> = {
       limit: query.limit || 10,
     }
 
@@ -20,18 +20,12 @@ export default function UserRedemptions() {
       apiParams.after = query.after
     }
 
-    // Map card_type filter
     if (query.card_type) {
       apiParams.card_type = query.card_type
     }
 
-    // Map other filters
-    if (query.phone_number) {
-      apiParams.phone_number = query.phone_number
-    }
-
-    if (query.vendor_id) {
-      apiParams.vendor_id = Number(query.vendor_id)
+    if (query.status) {
+      apiParams.status = query.status
     }
 
     if (query.dateFrom) {
@@ -40,18 +34,6 @@ export default function UserRedemptions() {
 
     if (query.dateTo) {
       apiParams.dateTo = query.dateTo
-    }
-
-    if (query.status) {
-      apiParams.status = query.status
-    }
-
-    if (query.location) {
-      apiParams.location = query.location
-    }
-
-    if (query.branch) {
-      apiParams.branch = query.branch
     }
 
     return apiParams
@@ -64,10 +46,24 @@ export default function UserRedemptions() {
   const redemptions = userRedemptionsResponse?.data || []
   const pagination = userRedemptionsResponse?.pagination
 
-  const total =
-    redemptions.length > 0 && pagination?.hasNextPage
-      ? redemptions.length + (pagination?.limit || 10)
-      : redemptions.length
+  // Handle cursor-based pagination
+  const handleNextPage = useCallback(() => {
+    if (pagination?.hasNextPage && pagination?.next) {
+      setQuery({ ...query, after: pagination.next })
+    }
+  }, [pagination?.hasNextPage, pagination?.next, query, setQuery])
+
+  const handleSetAfter = useCallback(
+    (after: string) => {
+      setQuery({ ...query, after })
+    },
+    [query, setQuery],
+  )
+
+  // Calculate estimated total for display
+  const estimatedTotal = pagination?.hasNextPage
+    ? redemptions.length + (query.limit || 10)
+    : redemptions.length
 
   return (
     <>
@@ -88,7 +84,7 @@ export default function UserRedemptions() {
               filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
               columns={userRedemptionsColumns}
               data={redemptions}
-              total={total}
+              total={estimatedTotal}
               loading={isLoadingUserRedemptions}
               query={query}
               setQuery={setQuery}
@@ -101,7 +97,14 @@ export default function UserRedemptions() {
                   { label: 'card_type', options: OPTIONS.CARD_TYPE },
                   { label: 'status', options: OPTIONS.TRANSACTION_STATUS },
                 ],
+                date: [{ queryKey: 'dateFrom', label: 'Date range' }],
               }}
+              onNextPage={handleNextPage}
+              hasNextPage={pagination?.hasNextPage}
+              hasPreviousPage={pagination?.hasPreviousPage}
+              currentAfter={query.after}
+              previousCursor={pagination?.previous}
+              onSetAfter={handleSetAfter}
             />
           </div>
         </div>

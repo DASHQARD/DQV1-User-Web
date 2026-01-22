@@ -172,6 +172,7 @@ export type FlattenedCartItem = {
   total_quantity?: number
   recipients?: Array<{
     id?: number
+    recipient_id?: number
     email: string
     phone: string
     message: string
@@ -231,4 +232,44 @@ export interface CardMetricsDetailsResponse {
     next: string | null
     previous: string | null
   }
+}
+
+export type ActivityData = {
+  id: number
+  action: string
+  module: string
+  user_id: string | null
+  name: string | null
+  user_email: string | null
+  user_type: string
+  ip_address: string
+  country: string | null
+  location: string | null
+  description: string
+  status: string
+  error_message: string | null
+  created_at: string
+}
+
+export interface VendorRedemption {
+  id: string
+  amount: number
+  giftCardType: string
+  updated_at: string
+  transactionId?: string
+  status?: string
+}
+
+export interface RedemptionsListResponse {
+  status: string
+  statusCode: number
+  message: string
+  pagination: {
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+    limit: number
+    next: string | null
+    previous: string | null
+  }
+  data: VendorRedemption[]
 }

@@ -6,26 +6,50 @@ export const recipientsColumns = [
   {
     header: 'Name',
     accessorKey: 'name',
+    cell: ({ getValue }: any) => {
+      const value = getValue()
+      return value != null && value !== '' ? value : 'N/A'
+    },
   },
   {
     header: 'Email',
     accessorKey: 'email',
+    cell: ({ getValue }: any) => {
+      const value = getValue()
+      return value != null && value !== '' ? value : 'N/A'
+    },
   },
   {
     header: 'Phone',
     accessorKey: 'phone',
+    cell: ({ getValue }: any) => {
+      const value = getValue()
+      return value != null && value !== '' ? value : 'N/A'
+    },
   },
   {
     header: 'Message',
     accessorKey: 'message',
+    cell: ({ getValue }: any) => {
+      const value = getValue()
+      return value != null && value !== '' ? value : 'N/A'
+    },
   },
   {
     header: 'Quantity',
     accessorKey: 'quantity',
+    cell: ({ getValue }: any) => {
+      const value = getValue()
+      return value != null && value !== '' ? value : 'N/A'
+    },
   },
   {
     header: 'Amount',
     accessorKey: 'amount',
+    cell: ({ getValue }: any) => {
+      const value = getValue()
+      return value != null && value !== '' ? value : 'N/A'
+    },
   },
   {
     header: 'Created At',

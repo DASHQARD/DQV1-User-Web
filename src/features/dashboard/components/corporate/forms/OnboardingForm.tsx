@@ -17,6 +17,7 @@ export default function OnboardingForm() {
   const { user } = useAuthStore()
   const userType = (user as any)?.user_type
   const isBranchManager = userType === 'branch'
+  const isCorporateAdmin = userType === 'corporate admin'
   const isVendor = userType === 'vendor'
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData, isLoading } = useGetUserProfileService()
@@ -173,7 +174,7 @@ export default function OnboardingForm() {
 
       await submitPersonalDetailsWithID(onboardingPayload, {
         onSuccess: () => {
-          if (isBranchManager || isVendor) {
+          if (isBranchManager || isVendor || isCorporateAdmin) {
             navigate(-1)
           } else {
             const businessDetailsUrl = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS}?account=corporate`
@@ -387,7 +388,7 @@ export default function OnboardingForm() {
           variant="secondary"
           className="w-fit"
         >
-          {isBranchManager ? 'Submit' : 'Submit & Continue'}
+          {isBranchManager || isCorporateAdmin ? 'Submit' : 'Submit & Continue'}
         </Button>
       </div>
     </form>

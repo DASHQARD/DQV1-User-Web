@@ -378,18 +378,18 @@ export default function CreateExperienceForm() {
       {branchesArray.length > 0 && !isBranchManager && (
         <div className="border-t border-gray-200 pt-4">
           <Combobox
-            label="Select Branches"
+            label="Select Redemption Branches"
             options={branchOptions}
             value={selectedBranchOptions}
             onChange={handleBranchOptionChange}
-            placeholder="Select branches (e.g., All Branches or Accra Main Branch - Airport Road)"
+            placeholder="Select redemption branches"
             isMulti
             isSearchable
           />
           {selectedBranchOptions.length > 0 && (
             <Text as="p" className="text-sm text-gray-600 mt-2">
               {selectedBranchOptions.some((opt) => opt.value === 'all')
-                ? `All ${branchesArray.length} branches selected`
+                ? `All ${branchesArray.length} redemption branches selected`
                 : `${selectedBranchOptions.length} branch${selectedBranchOptions.length !== 1 ? 'es' : ''} selected`}
             </Text>
           )}

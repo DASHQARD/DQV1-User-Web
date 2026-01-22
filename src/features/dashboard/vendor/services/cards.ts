@@ -1,5 +1,7 @@
+import { axiosClient } from '@/libs'
 import { deleteMethod, getList, postMethod, putMethod } from '@/services/requests'
 import { getMethod } from '@/services/requests'
+import { getQueryString } from '@/utils/helpers'
 import type { CreateExperienceData, VendorCardCountsResponse } from '@/types'
 
 const commonManagerUrl = '/cards'
@@ -8,8 +10,19 @@ export const createExperience = async (data: CreateExperienceData) => {
   return await postMethod(`${commonManagerUrl}`, data)
 }
 
-export const getCardsByVendorId = async ({ vendor_id }: { vendor_id: number }) => {
-  return await getList(`${commonManagerUrl}/vendor/${vendor_id}`)
+export const getCardsByVendorId = async (opts: {
+  vendor_id: number
+  limit?: number
+  after?: string
+  search?: string
+  status?: string
+}): Promise<any> => {
+  const { vendor_id, ...queryParams } = opts
+  const queryString = getQueryString(queryParams)
+  const base = `${commonManagerUrl}/vendor/${vendor_id}`
+  const fullUrl = queryString ? `${base}?${queryString}` : base
+  const response = await axiosClient.get(fullUrl)
+  return response
 }
 
 export const getCardById = async (id: string | number) => {

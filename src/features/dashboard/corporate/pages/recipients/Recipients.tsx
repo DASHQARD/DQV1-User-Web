@@ -1,3 +1,4 @@
+import { useMemo, useCallback } from 'react'
 import { Text, Button } from '@/components'
 import { PaginatedTable } from '@/components/Table'
 import { DEFAULT_QUERY } from '@/utils/constants'
@@ -19,7 +20,44 @@ export default function Recipients() {
     paramName: MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_RECIPIENT,
   })
   const { useGetAllRecipientsService } = corporateQueries()
-  const { data: recipientsResponse, isLoading } = useGetAllRecipientsService()
+
+  const params = useMemo(() => {
+    const apiParams: any = {
+      limit: query.limit || 10,
+    }
+    if (query.after) {
+      apiParams.after = query.after
+    }
+    if (query.search) {
+      apiParams.search = query.search
+    }
+    return apiParams
+  }, [query])
+
+  const { data: recipientsResponse, isLoading } = useGetAllRecipientsService(params)
+
+  // Extract data and pagination from response
+  const recipientsData = recipientsResponse?.data || []
+  const pagination = recipientsResponse?.pagination
+
+  // Handle cursor-based pagination
+  const handleNextPage = useCallback(() => {
+    if (pagination?.hasNextPage && pagination?.next) {
+      setQuery({ ...query, after: pagination.next })
+    }
+  }, [pagination?.hasNextPage, pagination?.next, query, setQuery])
+
+  const handleSetAfter = useCallback(
+    (after: string) => {
+      setQuery({ ...query, after })
+    },
+    [query, setQuery],
+  )
+
+  // Calculate estimated total for display
+  const estimatedTotal = pagination?.hasNextPage
+    ? recipientsData.length + (query.limit || 10)
+    : recipientsData.length
 
   return (
     <>
@@ -47,13 +85,20 @@ export default function Recipients() {
             <PaginatedTable
               filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
               columns={recipientsColumns}
-              data={recipientsResponse}
-              total={recipientsResponse?.length}
+              data={recipientsData}
+              total={estimatedTotal}
               loading={isLoading}
               query={query}
               setQuery={setQuery}
               csvHeaders={recipientsCsvHeaders}
               printTitle="Recipients"
+              onNextPage={handleNextPage}
+              hasNextPage={pagination?.hasNextPage}
+              hasPreviousPage={pagination?.hasPreviousPage}
+              currentAfter={query.after}
+              previousCursor={pagination?.previous}
+              onSetAfter={handleSetAfter}
+              noSearch
             />
           </div>
         </div>

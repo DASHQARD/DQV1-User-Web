@@ -3,7 +3,7 @@ import { Icon } from '@/libs'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/libs'
 import {
-  RecentAuditLogs,
+  // RecentAuditLogs,
   RecentTransactions,
   CompleteCorporateWidget,
 } from '@/features/dashboard/components'
@@ -92,21 +92,10 @@ export default function CorporateHome() {
 
   return (
     <div className="bg-[#f8f9fa] rounded-xl overflow-hidden min-h-[600px]">
-      <section className="py-8 px-6 flex flex-col gap-8">
-        <div className="flex items-center justify-between pb-4">
-          <div className="flex flex-col gap-1">
-            <Text
-              variant="span"
-              weight="semibold"
-              className="text-[#95aac9] text-xs uppercase tracking-wider"
-            >
-              Dashboard
-            </Text>
-            <Text variant="h2" weight="bold" className="text-gray-900 text-3xl">
-              Dashboard Overview
-            </Text>
-          </div>
-        </div>
+      <section className="py-8 px-6 flex flex-col gap-6">
+        <Text variant="h2" weight="bold" className="text-gray-900 text-3xl">
+          Dashboard Overview
+        </Text>
 
         {/* Onboarding Steps Section - Only show if not complete */}
         {!isComplete && (
@@ -334,20 +323,17 @@ export default function CorporateHome() {
 
         {/* Metrics Cards */}
         {!isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Total Purchased */}
-            <div className="group relative bg-gradient-to-br from-[#402D87] to-[#5B4397] rounded-2xl p-6 shadow-lg shadow-[#402D87]/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#402D87]/30 overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full blur-2xl" />
-              <div className="relative flex items-center gap-5">
-                <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl shrink-0 shadow-lg">
-                  <Icon icon="bi:cart-plus-fill" />
+          <div className="group relative bg-gradient-to-br from-[#402D87] to-[#5B4397] rounded-2xl p-6 shadow-lg shadow-[#402D87]/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#402D87]/30 overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full blur-2xl" />
+            <div className="relative flex items-center gap-5">
+              <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl shrink-0 shadow-lg">
+                <Icon icon="bi:cart-plus-fill" />
+              </div>
+              <div className="flex-1">
+                <div className="text-3xl font-bold mb-1 leading-tight text-white">
+                  {formatCurrency(metrics.totalPurchased)}
                 </div>
-                <div className="flex-1">
-                  <div className="text-3xl font-bold mb-1 leading-tight text-white">
-                    {formatCurrency(metrics.totalPurchased)}
-                  </div>
-                  <div className="text-sm text-white/80 font-medium">Total Purchased</div>
-                </div>
+                <div className="text-sm text-white/80 font-medium">Total Purchased</div>
               </div>
             </div>
           </div>
@@ -373,7 +359,7 @@ export default function CorporateHome() {
               </div>
             )}
           </div>
-          <div
+          {/* <div
             className={cn(
               'relative',
               !canAccessRestrictedFeatures && 'opacity-50 pointer-events-none',
@@ -390,7 +376,7 @@ export default function CorporateHome() {
                 </div>
               </div>
             )}
-          </div>
+          </div> */}
         </div>
 
         {!isComplete && (

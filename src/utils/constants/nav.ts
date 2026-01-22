@@ -28,11 +28,11 @@ export const CORPORATE_NAV_ITEMS = [
         label: 'Requests',
         icon: 'bi:clipboard-check',
       },
-      {
-        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.AUDIT_LOGS,
-        label: 'Audit Logs',
-        icon: 'bi:journal-text',
-      },
+      // {
+      //   path: ROUTES.IN_APP.DASHBOARD.CORPORATE.AUDIT_LOGS,
+      //   label: 'Audit Logs',
+      //   icon: 'bi:journal-text',
+      // },
       {
         path: ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS,
         label: 'Admins',

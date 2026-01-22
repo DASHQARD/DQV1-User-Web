@@ -11,9 +11,16 @@ export default function BranchPaymentDetails() {
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
 
-  // Fetch branch logo
+  // Support both wrapped ({ data: {...} }) and flat ({ branch, ... }) response shapes
+  const branchInfo = (branchInfoData as any)?.data ?? branchInfoData
+  const branch = branchInfo?.branch
+  const branchManager = branchInfo?.branch_manager
+  const paymentDetails = branchInfo?.payment_details
+  const businessDetails = branchInfo?.business_details
+
+  // Fetch branch logo (from business_details when available)
   React.useEffect(() => {
-    const logo = branchInfoData?.data?.business_details?.logo
+    const logo = businessDetails?.logo
     if (!logo) {
       setLogoUrl(null)
       return
@@ -37,13 +44,7 @@ export default function BranchPaymentDetails() {
     return () => {
       cancelled = true
     }
-  }, [branchInfoData?.data?.business_details?.logo, fetchPresignedURL])
-
-  const branchInfo = branchInfoData?.data
-  const branch = branchInfo?.branch
-  const branchManager = branchInfo?.branch_manager
-  const paymentDetails = branchInfo?.payment_details
-  const businessDetails = branchInfo?.business_details
+  }, [businessDetails?.logo, fetchPresignedURL])
 
   if (isLoading) {
     return (
