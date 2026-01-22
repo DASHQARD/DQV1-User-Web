@@ -23,11 +23,14 @@ export function useCorporateRequests() {
   //   }, [setQuery, state?.searchQuery])
 
   const { useGetRequestsCorporateService } = corporateQueries()
-  // Build query parameters for the API
+
   const queryParams = React.useMemo(() => {
-    const params: Record<string, any> = {}
+    const params: Record<string, any> = {
+      limit: query.limit || 10,
+    }
+    if (query.after) params.after = query.after
+    if (query.search) params.search = query.search
     if (query.status) params.status = query.status
-    // Map camelCase to snake_case for backend
     if (query.dateFrom) params.date_from = query.dateFrom
     if (query.dateTo) params.date_to = query.dateTo
     return params
@@ -36,15 +39,12 @@ export function useCorporateRequests() {
   const { data: requestsResponse, isLoading: isLoadingRequestCorporatesList } =
     useGetRequestsCorporateService(queryParams)
 
-  // Extract data array from response
   const requestCorporatesList = React.useMemo(() => {
     if (!requestsResponse) return []
-    return Array.isArray(requestsResponse)
-      ? requestsResponse
-      : Array.isArray(requestsResponse?.data)
-        ? requestsResponse.data
-        : []
+    return Array.isArray(requestsResponse?.data) ? requestsResponse.data : []
   }, [requestsResponse])
+
+  const pagination = requestsResponse?.pagination
 
   function getRequestCorporateOptions({
     modal: modalInstance,
@@ -138,6 +138,7 @@ export function useCorporateRequests() {
   return {
     query,
     requestCorporatesList,
+    pagination,
     getRequestCorporateOptions,
     isLoadingRequestCorporatesList,
     setQuery,

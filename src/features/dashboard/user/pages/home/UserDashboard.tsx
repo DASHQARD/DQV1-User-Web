@@ -1,20 +1,101 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Text, Loader } from '@/components'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Text, Loader, Button, Input, Combobox } from '@/components'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
 import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
 import { usePaymentInfoService } from '@/features/dashboard/hooks'
 import { useUserProfile } from '@/hooks'
+import { useAuth } from '@/features/auth/hooks/auth'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { BackgroundCardImage } from '@/assets/images'
 import type { PaymentInfoData } from '@/types/user'
+import type { OnboardingData } from '@/types/auth/auth'
+
+// Schema for personal information form
+const PersonalInformationSchema = z.object({
+  full_name: z.string().min(1, 'Full name is required'),
+  street_address: z.string().min(1, 'Street address is required'),
+  dob: z.string().min(1, 'Date of birth is required'),
+  id_type: z.string().min(1, 'ID type is required'),
+  id_number: z.string().min(1, 'ID number is required'),
+})
+
+type PersonalInformationFormData = z.infer<typeof PersonalInformationSchema>
+
+const ID_TYPE_OPTIONS = [
+  { value: 'passport', label: 'Passport' },
+  { value: 'national_id', label: 'National ID' },
+  { value: 'drivers_license', label: "Driver's License" },
+  { value: 'voters_id', label: "Voter's ID" },
+  { value: 'ghana_card', label: 'Ghana Card' },
+]
 
 export default function UserDashboard() {
   const navigate = useNavigate()
   const { data: metricsResponse, isLoading } = useGiftCardMetrics()
   const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
+  const { usePersonalDetailsService } = useAuth()
+  const { mutate: updatePersonalDetails, isPending: isSubmittingOnboarding } =
+    usePersonalDetailsService()
+
+  // Check if user has completed onboarding
+  const hasCompletedOnboarding = useMemo(() => {
+    return !!(
+      user?.fullname &&
+      user?.street_address &&
+      user?.dob &&
+      user?.id_type &&
+      user?.id_number
+    )
+  }, [user])
+
+  // Form for onboarding
+  const onboardingForm = useForm<PersonalInformationFormData>({
+    resolver: zodResolver(PersonalInformationSchema),
+    defaultValues: {
+      full_name: user?.fullname || '',
+      street_address: user?.street_address || '',
+      dob: user?.dob || '',
+      id_type: user?.id_type || '',
+      id_number: user?.id_number || '',
+    },
+  })
+
+  // Update form when userProfileData changes
+  useEffect(() => {
+    if (user) {
+      onboardingForm.reset({
+        full_name: user?.fullname || '',
+        street_address: user?.street_address || '',
+        dob: user?.dob || '',
+        id_type: user?.id_type || '',
+        id_number: user?.id_number || '',
+      })
+    }
+  }, [user, onboardingForm])
+
+  const handleOnboardingSubmit = (data: PersonalInformationFormData) => {
+    const payload: OnboardingData = {
+      full_name: data.full_name,
+      street_address: data.street_address,
+      dob: data.dob,
+      id_type: data.id_type,
+      id_number: data.id_number,
+    }
+
+    updatePersonalDetails(payload, {
+      onSuccess: () => {
+        onboardingForm.reset(data)
+        // Refetch user profile to update the onboarding status
+        window.location.reload()
+      },
+    })
+  }
 
   // Fetch payments/transactions using the same endpoint as Orders page
   const { useGetPaymentByIdService } = usePaymentInfoService()
@@ -121,6 +202,126 @@ export default function UserDashboard() {
         </div>
       </div>
 
+      {/* Onboarding Section - Show if user hasn't completed onboarding */}
+      {!hasCompletedOnboarding && (
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+          <div className="bg-linear-to-br from-primary-500 to-primary-600 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                <Icon icon="bi:person-check" className="text-white text-xl" />
+              </div>
+              <div>
+                <Text variant="h4" weight="bold" className="text-white mb-0.5">
+                  Let's get to know you! 👋
+                </Text>
+                <Text variant="span" className="text-white/90 text-sm">
+                  Complete your profile to unlock all features
+                </Text>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <form
+              onSubmit={onboardingForm.handleSubmit(handleOnboardingSubmit)}
+              className="space-y-5"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                    <Icon icon="bi:person-fill" className="size-4 mr-2 text-primary-600" />
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Enter your full name"
+                    {...onboardingForm.register('full_name')}
+                    error={onboardingForm.formState.errors.full_name?.message}
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                    <Icon icon="bi:geo-alt-fill" className="size-4 mr-2 text-primary-600" />
+                    Street Address <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Enter your street address"
+                    {...onboardingForm.register('street_address')}
+                    error={onboardingForm.formState.errors.street_address?.message}
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                    <Icon icon="bi:calendar-event" className="size-4 mr-2 text-primary-600" />
+                    Date of Birth <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="date"
+                    placeholder="Select your date of birth"
+                    {...onboardingForm.register('dob')}
+                    error={onboardingForm.formState.errors.dob?.message}
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                    <Icon icon="bi:card-text" className="size-4 mr-2 text-primary-600" />
+                    ID Type <span className="text-red-500">*</span>
+                  </label>
+                  <Controller
+                    name="id_type"
+                    control={onboardingForm.control}
+                    render={({ field, fieldState: { error } }) => (
+                      <Combobox
+                        placeholder="Select ID type"
+                        options={ID_TYPE_OPTIONS}
+                        value={field.value}
+                        onChange={(e: { target: { value: string } }) => {
+                          field.onChange(e.target.value)
+                        }}
+                        error={error?.message}
+                      />
+                    )}
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                    <Icon icon="bi:hash" className="size-4 mr-2 text-primary-600" />
+                    ID Number <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Enter your ID number"
+                    {...onboardingForm.register('id_number')}
+                    error={onboardingForm.formState.errors.id_number?.message}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-gray-200">
+                <Text variant="span" className="text-xs text-gray-500">
+                  This information is used for account verification and compliance purposes.
+                </Text>
+                <Button
+                  type="submit"
+                  disabled={isSubmittingOnboarding}
+                  loading={isSubmittingOnboarding}
+                  variant="secondary"
+                  className="min-w-[160px]"
+                >
+                  <Icon icon="bi:check-circle" className="size-4 mr-2" />
+                  Complete Profile
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="relative rounded-xl shadow-lg p-6 text-white overflow-hidden bg-linear-to-br from-[#402D87] to-[#5B47D4]">
         {/* Background Image */}
         <div
@@ -133,7 +334,7 @@ export default function UserDashboard() {
         {/* Content */}
         <div className="relative z-10">
           <Text variant="h6" weight="semibold" className="text-white/90 mb-4">
-            Total Cards
+            My Created Gift Cards
           </Text>
           <Text variant="h1" weight="bold" className="text-white text-4xl mb-2">
             {metrics.DashX + metrics.DashPass + metrics.DashGo}

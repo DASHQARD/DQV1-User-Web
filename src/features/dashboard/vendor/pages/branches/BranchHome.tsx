@@ -18,10 +18,17 @@ export default function BranchHome() {
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData, isLoading: isLoadingUserProfile } = useGetUserProfileService()
   const { useGetBranchExperiencesService } = branchQueries()
-  const { data: branchExperiences, isLoading: isLoadingBranchExperiences } =
+  const { data: branchExperiencesResponse, isLoading: isLoadingBranchExperiences } =
     useGetBranchExperiencesService()
+
+  const branchExperiences = React.useMemo(() => {
+    if (!branchExperiencesResponse) return []
+    return Array.isArray(branchExperiencesResponse?.data) ? branchExperiencesResponse.data : []
+  }, [branchExperiencesResponse])
   const { useGetVendorCardCountsService } = vendorQueries()
   const { data: cardCountsData, isLoading: isLoadingCardCounts } = useGetVendorCardCountsService()
+
+  console.log('cardCountsData', cardCountsData)
 
   // Fetch branch redemptions
   const { useGetBranchRedemptionsService } = branchQueries()
@@ -102,6 +109,8 @@ export default function BranchHome() {
       total: (cardCountsData.DashX || 0) + (cardCountsData.DashPass || 0),
     }
   }, [cardCountsData])
+
+  console.log('branchRedemptionsResponse', branchRedemptionsResponse)
 
   // Calculate metrics from redemptions for amounts
   const metrics = React.useMemo(() => {
@@ -286,12 +295,12 @@ export default function BranchHome() {
 
               {/* Metrics Cards - Only show if onboarding is complete */}
               {branchOnboardingComplete && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <MetricsCard
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* <MetricsCard
                     icon="bi:credit-card-2-front"
                     value={metrics.totalRedemptions}
                     label="Total Redemptions"
-                  />
+                  /> */}
                   <MetricsCard
                     icon="bi:wallet2"
                     value={formatCurrency(metrics.totalDashXRedeemed, 'GHS')}

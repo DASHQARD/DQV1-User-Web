@@ -1,9 +1,10 @@
 import { useMemo, useCallback } from 'react'
-import { PaginatedTable, Text } from '@/components'
+import { PaginatedTable } from '@/components'
 import { adminsListColumns, adminsListCsvHeaders } from '../tableConfigs'
 import { useCorporateAdmins } from '@/features/dashboard/hooks'
 import { MODALS } from '@/utils/constants'
 import { ViewAdminDetails } from '../modals'
+import { OPTIONS } from '@/utils/constants/filter'
 
 export default function AllAdmins() {
   const { query, corporateAdminsList, pagination, modal, isLoadingCorporateAdminsList, setQuery } =
@@ -32,12 +33,7 @@ export default function AllAdmins() {
 
   return (
     <>
-      <div className="relative space-y-[37px]">
-        <div className="text-[#0c4b77] py-2 border-b-2 border-[#0c4b77] w-fit">
-          <Text variant="h6" weight="medium">
-            All admins
-          </Text>
-        </div>
+      <div className="relative pt-14">
         <PaginatedTable
           filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
           columns={adminsListColumns}
@@ -47,13 +43,17 @@ export default function AllAdmins() {
           query={query}
           setQuery={setQuery}
           csvHeaders={adminsListCsvHeaders}
-          printTitle="Admins"
+          printTitle="All Admins"
           onNextPage={handleNextPage}
           hasNextPage={pagination?.hasNextPage}
           hasPreviousPage={pagination?.hasPreviousPage}
           currentAfter={query.after}
           previousCursor={pagination?.previous}
           onSetAfter={handleSetAfter}
+          filterBy={{
+            simpleSelects: [{ label: 'status', options: OPTIONS.CORPORATE_ADMIN_STATUS }],
+            // date: [{ queryKey: 'dateFrom', label: 'Date range' }],
+          }}
         />
       </div>
 

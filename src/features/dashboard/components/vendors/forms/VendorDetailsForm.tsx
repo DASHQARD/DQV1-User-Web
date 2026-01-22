@@ -207,23 +207,22 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
           error={form.formState.errors.digital_address?.message}
           disabled={checkboxVendorDetailsSameAsCorporate}
         />
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Vendor Registration Number"
-            placeholder="Enter your vendor registration number"
-            {...form.register('registration_number')}
-            error={form.formState.errors.registration_number?.message}
-            maxLength={10}
-            disabled={checkboxVendorDetailsSameAsCorporate}
-          />
-          <Input
-            label="Taxpayer Identification Number (TIN)"
-            placeholder="Enter your Taxpayer Identification Number (TIN)"
-            {...form.register('employer_identification_number')}
-            error={form.formState.errors.employer_identification_number?.message}
-            disabled={checkboxVendorDetailsSameAsCorporate}
-          />
-        </div>
+
+        <Input
+          label="Vendor Registration Number"
+          placeholder="Enter your vendor registration number"
+          {...form.register('registration_number')}
+          error={form.formState.errors.registration_number?.message}
+          maxLength={10}
+          disabled={checkboxVendorDetailsSameAsCorporate}
+        />
+        <Input
+          label="Taxpayer Identification Number (TIN)"
+          placeholder="Enter your Taxpayer Identification Number (TIN)"
+          {...form.register('employer_identification_number')}
+          error={form.formState.errors.employer_identification_number?.message}
+          disabled={checkboxVendorDetailsSameAsCorporate}
+        />
 
         <Controller
           control={form.control}

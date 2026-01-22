@@ -22,22 +22,30 @@ export default function DashQards() {
   const { publicCards, query, setQuery, cardTabs, priceRanges } = usePublicCatalog()
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { data: vendorsResponse } = usePublicVendorsService({ limit: 100 })
-  console.log('vendorsResponse', vendorsResponse)
 
-  // Extract vendors from response - VendorDetailsResponse is already an array
+  // Extract vendors from response - API returns { data: [...], pagination }
   const vendors = useMemo(() => {
     if (!vendorsResponse) return []
-    const vendorsData = Array.isArray(vendorsResponse) ? vendorsResponse : [vendorsResponse]
-    return vendorsData.map((vendor: any) => ({
-      id: vendor.id || vendor.vendor_id,
-      vendor_id: vendor.vendor_id,
-      name: vendor.business_name || vendor.branch_name || vendor.vendor_name || 'Unknown Vendor',
-    }))
+    const raw = Array.isArray(vendorsResponse)
+      ? vendorsResponse
+      : (vendorsResponse as any)?.data || []
+    const list = Array.isArray(raw) ? raw : []
+    return list
+      .filter(
+        (v: any) =>
+          v.branches_with_cards?.length > 0 &&
+          v.branches_with_cards.some((b: any) => b.cards?.length > 0),
+      )
+      .map((vendor: any) => ({
+        id: vendor.vendor_id ?? vendor.id,
+        vendor_id: vendor.vendor_id,
+        name:
+          vendor.business_name || vendor.vendor_name || vendor.branch_name || 'Unknown Vendor',
+      }))
   }, [vendorsResponse])
 
   // Use query.sort_by for sorting, default to 'popular'
   const sortBy = query.sort_by || 'popular'
-  console.log('publicCards', publicCards)
 
   // Get all cards from response
   const allCards = useMemo(() => {
@@ -369,13 +377,16 @@ export default function DashQards() {
                           </p>
                         ) : (
                           vendors.map((vendor: any) => {
-                            const isSelected = query.vendor_ids
-                              ?.split(',')
-                              .map((id) => id.trim())
-                              .includes(vendor.vendor_id?.toString() || '')
+                            const vendorIdStr = vendor.vendor_id?.toString() || ''
+                            const currentIds =
+                              query.vendor_ids
+                                ?.split(',')
+                                ?.map((id: string) => id.trim())
+                                ?.filter(Boolean) || []
+                            const isSelected = currentIds.includes(vendorIdStr)
                             return (
                               <label
-                                key={vendor.id}
+                                key={vendor.id ?? vendor.vendor_id}
                                 className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${
                                   isSelected
                                     ? 'bg-primary-500/10 border-2 border-primary-500'
@@ -384,21 +395,14 @@ export default function DashQards() {
                               >
                                 <input
                                   type="checkbox"
-                                  checked={isSelected || false}
+                                  checked={isSelected}
                                   onChange={(e) => {
-                                    const currentIds =
-                                      query.vendor_ids
-                                        ?.split(',')
-                                        .map((id) => id.trim())
-                                        .filter(Boolean) || []
-                                    const vendorIdStr = vendor.vendor_id?.toString() || ''
-
                                     if (e.target.checked) {
-                                      // Add vendor ID
-                                      const newIds = [...currentIds, vendorIdStr]
-                                      setQuery({ ...query, vendor_ids: newIds.join(',') })
+                                      setQuery({
+                                        ...query,
+                                        vendor_ids: [...currentIds, vendorIdStr].join(','),
+                                      })
                                     } else {
-                                      // Remove vendor ID
                                       const newIds = currentIds.filter((id) => id !== vendorIdStr)
                                       setQuery({
                                         ...query,
@@ -409,7 +413,7 @@ export default function DashQards() {
                                   }}
                                   className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500 cursor-pointer"
                                 />
-                                <span className="text-sm font-medium text-[#212529] flex-1">
+                                <span className="text-sm font-medium text-[#212529] flex-1 truncate">
                                   {vendor.name}
                                 </span>
                               </label>

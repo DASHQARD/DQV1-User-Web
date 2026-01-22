@@ -81,7 +81,7 @@ export const ROUTES = {
     HOME: '/',
     ABOUT: '/about',
     GIFT_CARDS: '/gift-cards',
-    SEARCH_CARDS: 'dashqards',
+    SEARCH_CARDS: '/dashqards',
     CONTACT: '/contact',
     FAQ: '/faq',
     PURCHASE: '/purchase',

@@ -9,8 +9,11 @@ export const OPTIONS = {
   CUSTOMER_TIER: ['1', '2', '3'],
   MERCHANT_TIER: ['M1', 'M2', 'M3'],
   ACCOUNT_TIER: ['1', '2', '3', 'A1', 'A2', 'A3', 'M1', 'M2', 'M3'],
-  EXPERIENCE_STATUS: ['initiated', 'authorized', 'approved', 'rejected'],
+  EXPERIENCE_STATUS: ['active', 'redeemed', 'partially_redeemed', 'expired', 'cancelled', 'frozen'],
   BRANCH_MANAGEMENT_STATUS: ['active', 'inactive'],
   PURCHASE_STATUS: ['pending', 'processing', 'failed', 'successful', 'cancelled', 'rejected'],
   CARD_TYPE: ['DashPro', 'DashGo', 'DashX', 'DashPass'],
+  CORPORATE_ADMIN_STATUS: ['active', 'inactive', 'suspended'],
+  CORPORATE_ADMIN_INVITATION_STATUS: ['pending', 'accepted', 'expired', 'cancelled'],
+  BRANCH_AND_CORPORATE_EXPERIENCE_CARD_TYPE: ['DashX', 'DashPass'],
 }

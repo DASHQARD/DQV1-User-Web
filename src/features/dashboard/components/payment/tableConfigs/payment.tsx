@@ -13,12 +13,6 @@ export const paymentListColumns = [
     cell: CurrencyCell,
   },
   {
-    header: 'Currency',
-    accessorKey: 'currency',
-    cell: CurrencyCell,
-  },
-
-  {
     header: 'Type',
     accessorKey: 'type',
     cell: DescriptionCell,
@@ -49,10 +43,6 @@ export const paymentListCsvHeaders: Array<CsvHeader> = [
   {
     name: 'Amount',
     accessor: 'amount',
-  },
-  {
-    name: 'Currency',
-    accessor: 'currency',
   },
   {
     name: 'Type',

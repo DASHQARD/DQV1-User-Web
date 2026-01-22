@@ -90,14 +90,15 @@ export function vendorQueries() {
     })
   }
 
-  function useGetCardsByVendorIdService() {
+  function useGetCardsByVendorIdService(params?: Record<string, any>) {
     const { useGetUserProfileService } = useUserProfile()
     const { data: userProfileData } = useGetUserProfileService()
     const vendor_id = userProfileData?.vendor_id
 
     return useQuery({
-      queryKey: ['cards-by-vendor-id', vendor_id],
-      queryFn: () => getCardsByVendorId({ vendor_id: Number(vendor_id) || 0 }),
+      queryKey: ['cards-by-vendor-id', vendor_id, params],
+      queryFn: () =>
+        getCardsByVendorId({ vendor_id: Number(vendor_id) || 0, ...params }),
       enabled: !!vendor_id && userProfileData?.user_type !== 'branch',
     })
   }

@@ -1,6 +1,5 @@
-import React from 'react'
-import { Text } from '@/components'
-import { PaginatedTable } from '@/components/Table'
+import { useMemo, useCallback } from 'react'
+import { Text, PaginatedTable } from '@/components'
 import {
   branchManagerInvitationsListCsvHeaders,
   branchManagerInvitationsListColumns,
@@ -13,59 +12,47 @@ import { vendorQueries } from '../../hooks'
 export default function BranchManagers() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
 
-  // Build the query params for the API
-  const apiQuery: GetBranchManagerInvitationsQuery = React.useMemo(() => {
-    const queryParams: GetBranchManagerInvitationsQuery = {}
-
-    if (query.limit) {
-      queryParams.limit = Number(query.limit)
+  const apiQuery = useMemo((): GetBranchManagerInvitationsQuery => {
+    const params: GetBranchManagerInvitationsQuery = {
+      limit: Number(query.limit) || 10,
     }
-
-    if (query.after) {
-      queryParams.after = query.after
-    }
-
-    if (query.search) {
-      queryParams.search = query.search
-    }
-
-    if (query.status) {
-      queryParams.status = query.status
-    }
-
-    if (query.dateFrom) {
-      queryParams.dateFrom = query.dateFrom
-    }
-
-    if (query.dateTo) {
-      queryParams.dateTo = query.dateTo
-    }
-
-    return queryParams
+    if (query.after) params.after = query.after
+    if (query.search) params.search = query.search
+    if ((query as any).status) params.status = (query as any).status
+    if (query.dateFrom) params.dateFrom = query.dateFrom
+    if (query.dateTo) params.dateTo = query.dateTo
+    return params
   }, [query])
 
   const { useGetBranchManagerInvitationsService } = vendorQueries()
   const { data: invitationsResponse, isLoading: isLoadingInvitations } =
     useGetBranchManagerInvitationsService(apiQuery)
 
-  // Extract data array from response
-  const invitations = React.useMemo(() => {
+  const invitations = useMemo(() => {
     if (!invitationsResponse) return []
-    return Array.isArray(invitationsResponse)
-      ? invitationsResponse
-      : Array.isArray(invitationsResponse?.data)
-        ? invitationsResponse.data
-        : []
+    return Array.isArray(invitationsResponse?.data) ? invitationsResponse.data : []
   }, [invitationsResponse])
 
-  // Calculate total for pagination
-  const total = React.useMemo(() => {
-    if (invitationsResponse?.pagination) {
-      // If pagination info is available, use it
-      return invitations.length
+  const pagination = invitationsResponse?.pagination
+
+  const handleNextPage = useCallback(() => {
+    if (pagination?.hasNextPage && pagination?.next) {
+      setQuery({ ...query, after: pagination.next })
     }
-    return invitations.length
-  }, [invitationsResponse, invitations])
+  }, [pagination, query, setQuery])
+
+  const handleSetAfter = useCallback(
+    (after: string) => {
+      setQuery({ ...query, after })
+    },
+    [query, setQuery],
+  )
+
+  const estimatedTotal = useMemo(() => {
+    return pagination?.hasNextPage
+      ? invitations.length + (Number(query.limit) || 10)
+      : invitations.length
+  }, [pagination, invitations.length, query.limit])
 
   return (
     <div className="py-10">
@@ -75,36 +62,27 @@ export default function BranchManagers() {
             Branch Managers
           </Text>
         </div>
-        <div className="relative space-y-[37px]">
-          <div className="text-[#0c4b77] py-2 border-b-2 border-[#0c4b77] w-fit">
-            <Text variant="h6" weight="medium">
-              Branch Manager Invitations ({total})
-            </Text>
-          </div>
+        <div className="relative pt-14">
           <PaginatedTable
             filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
             columns={branchManagerInvitationsListColumns}
             data={invitations}
-            total={total}
+            total={estimatedTotal}
             loading={isLoadingInvitations}
             query={query}
             setQuery={setQuery}
             searchPlaceholder="Search by email or name..."
             csvHeaders={branchManagerInvitationsListCsvHeaders}
-            filterBy={{
-              simpleSelects: [
-                {
-                  label: 'status',
-                  options: [
-                    { label: 'Pending', value: 'pending' },
-                    { label: 'Accepted', value: 'accepted' },
-                    { label: 'Rejected', value: 'rejected' },
-                    { label: 'Cancelled', value: 'cancelled' },
-                  ],
-                },
-              ],
-            }}
             printTitle="Branch Manager Invitations"
+            onNextPage={handleNextPage}
+            hasNextPage={pagination?.hasNextPage}
+            hasPreviousPage={pagination?.hasPreviousPage}
+            currentAfter={query.after}
+            previousCursor={pagination?.previous}
+            onSetAfter={handleSetAfter}
+            filterBy={{
+              date: [{ queryKey: 'dateFrom', label: 'Date range' }],
+            }}
           />
         </div>
       </div>

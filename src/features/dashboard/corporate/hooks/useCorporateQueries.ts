@@ -69,10 +69,10 @@ export function corporateQueries() {
     })
   }
 
-  function useGetInvitedCorporateAdminsService() {
+  function useGetInvitedCorporateAdminsService(query?: Record<string, any>) {
     return useQuery({
-      queryKey: ['invited-corporate-admins'],
-      queryFn: () => getInvitedCorporateAdmins(),
+      queryKey: ['invited-corporate-admins', query],
+      queryFn: () => getInvitedCorporateAdmins(query),
     })
   }
 

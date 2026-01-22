@@ -1,15 +1,19 @@
+import { axiosClient } from '@/libs'
 import { deleteMethod, getList, getMethod, postMethod, putMethod } from '@/services/requests'
-import type {
-  GetBranchRedemptionsParams,
-  RedemptionsListResponse,
-} from '../../services/redemptions'
-import type { CreateExperienceData } from '@/types'
+import { getQueryString } from '@/utils/helpers'
+import type { GetBranchRedemptionsParams } from '../../services/redemptions'
+import type { CreateExperienceData, RedemptionsListResponse } from '@/types'
 
 const commonManagerUrl = '/cards'
 const commonUrl = '/redemptions'
 
 export const getBranchExperiences = async (params?: Record<string, any>): Promise<any> => {
-  return await getList(`${commonManagerUrl}/branch`, { params })
+  const queryString = getQueryString(params)
+  const fullUrl = queryString
+    ? `${commonManagerUrl}/branch?${queryString}`
+    : `${commonManagerUrl}/branch`
+  const response = await axiosClient.get(fullUrl)
+  return response
 }
 
 export const updateBranchExperience = async (

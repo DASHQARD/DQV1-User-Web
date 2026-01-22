@@ -32,7 +32,12 @@ export const getAuditLogsCorporate = async (params?: Record<string, any>): Promi
 }
 
 export const getRequestsCorporate = async (params?: Record<string, any>): Promise<any> => {
-  return await getList<any>(`/requests/corporate`, params)
+  const queryString = getQueryString(params)
+  const fullUrl = queryString
+    ? `/requests/corporate?${queryString}`
+    : `/requests/corporate`
+  const response = await axiosClient.get(fullUrl)
+  return response
 }
 
 export const updateRequestStatus = async (data: { id: number; status: string }): Promise<any> => {
@@ -54,8 +59,13 @@ export const inviteAdmin = async (data: InviteAdminPayload): Promise<any> => {
   return await postMethod(`${CORPORATE_API_URL}/invite`, data)
 }
 
-export const getInvitedCorporateAdmins = async (): Promise<any> => {
-  return await getList<any>(`${CORPORATE_API_URL}/invitations`)
+export const getInvitedCorporateAdmins = async (params?: Record<string, any>): Promise<any> => {
+  const queryString = getQueryString(params)
+  const fullUrl = queryString
+    ? `${CORPORATE_API_URL}/invitations?${queryString}`
+    : `${CORPORATE_API_URL}/invitations`
+  const response = await axiosClient.get(fullUrl)
+  return response
 }
 export const acceptCorporateAdminInvitation = async (
   data: AcceptCorporateAdminInvitationPayload,

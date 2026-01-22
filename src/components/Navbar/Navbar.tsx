@@ -339,7 +339,7 @@ export default function Navbar() {
     },
     {
       label: 'Gift Cards',
-      path: ROUTES.IN_APP.SEARCH_CARDS,
+      path: ROUTES.IN_APP.DASHQARDS,
     },
     {
       label: 'Vendors',

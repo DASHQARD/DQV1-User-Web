@@ -7,7 +7,7 @@ import {
   Modal,
   Text,
   Tag,
-  Avatar,
+  // Avatar,
   Input,
   Combobox,
   RadioGroup,
@@ -341,7 +341,7 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                 Branch Details
               </Text>
             </div>
-            {!isEditing && !isEditingPayment && (
+            {/* {!isEditing && !isEditingPayment && (
               <Button
                 variant="secondary"
                 size="small"
@@ -350,18 +350,18 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
               >
                 Edit
               </Button>
-            )}
+            )} */}
           </div>
 
           {/* Branch Profile Section */}
           <div className="bg-white rounded-xl py-5 border border-gray-200">
             <div className="px-6 flex items-center justify-center gap-6">
               <section className="flex items-center gap-3 flex-col">
-                <Avatar
+                {/* <Avatar
                   name={branch.branch_name}
                   size="lg"
                   className="rounded-xl flex justify-center items-center"
-                />
+                /> */}
                 <div className="py-2.5 px-2 flex flex-col gap-1 text-center capitalize">
                   <Text variant="h4" weight="medium" className="text-gray-800">
                     {branch.branch_name}

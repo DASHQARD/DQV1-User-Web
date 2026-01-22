@@ -3,7 +3,6 @@ import { Button, Text, TabbedView, PaginatedTable } from '@/components'
 import {
   BulkPurchaseEmployeesModal,
   IndividualPurchaseModal,
-  SummaryCards,
   transactionsListColumns,
   TransactionDetails,
   transactionListCsvHeaders,
@@ -104,7 +103,7 @@ export default function Purchase() {
               </Button>
             </div>
           </div>
-          <SummaryCards />
+          {/* <SummaryCards /> */}
 
           <TabbedView
             tabs={purchaseTabConfig}
@@ -117,11 +116,6 @@ export default function Purchase() {
 
           <div className="py-10">
             <div className="flex flex-col gap-8 ">
-              <div className="flex items-center justify-between">
-                <Text variant="h2" weight="semibold" className="text-primary-900">
-                  Purchases
-                </Text>
-              </div>
               <div className="relative space-y-[37px]">
                 <div className="text-[#0c4b77] py-2 border-b-2 border-[#0c4b77] w-fit">
                   <Text variant="h6" weight="medium">

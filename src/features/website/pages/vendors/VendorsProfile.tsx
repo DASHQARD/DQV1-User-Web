@@ -14,7 +14,10 @@ export default function VendorsProfile() {
   const [searchParams] = useSearchParams()
   const vendor_id = searchParams.get('vendor_id') || ''
   const { usePublicVendorsService, useVendorQrCodeService } = usePublicCatalogQueries()
-  const { data: vendorDetailsResponse, isLoading: isLoadingVendor } = usePublicVendorsService()
+  const { data: vendorDetailsResponse, isLoading: isLoadingVendor } = usePublicVendorsService(
+    vendor_id ? { vendor_id, limit: 500 } : undefined,
+    !!vendor_id,
+  )
   const { data: qrCodeData, isLoading: isLoadingQrCode } = useVendorQrCodeService(vendor_id || null)
 
   const vendorDetails = React.useMemo(() => {
@@ -30,8 +33,6 @@ export default function VendorsProfile() {
 
     return vendor || null
   }, [vendorDetailsResponse, vendor_id])
-
-  console.log('vendorDetails', vendorDetails)
 
   const form = useForm<{ amount: string }>({
     defaultValues: {
@@ -135,6 +136,13 @@ export default function VendorsProfile() {
       {/* Header Section */}
       <section className="bg-linear-to-br from-[#402d87] to-[#2d1a72] text-white pt-20 pb-12">
         <div className="wrapper">
+          <Link
+            to={ROUTES.IN_APP.VENDORS}
+            className="inline-flex items-center gap-2 text-white/90 hover:text-white text-sm font-medium mb-6 transition-colors"
+          >
+            <Icon icon="bi:arrow-left" className="size-5" />
+            Back to vendors
+          </Link>
           <div className="text-center">
             <h1 className="text-[clamp(32px,5vw,48px)] font-extrabold mb-4 leading-tight">
               {branchName} (Vendor)

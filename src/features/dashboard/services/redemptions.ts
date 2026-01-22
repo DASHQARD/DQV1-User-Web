@@ -1,28 +1,7 @@
 import { axiosClient } from '@/libs'
 import { getList, postMethod } from '@/services/requests'
-
-export interface VendorRedemption {
-  id: string
-  amount: number
-  giftCardType: string
-  updated_at: string
-  transactionId?: string
-  status?: string
-}
-
-export interface RedemptionsListResponse {
-  status: string
-  statusCode: number
-  message: string
-  pagination: {
-    hasNextPage: boolean
-    hasPreviousPage: boolean
-    limit: number
-    next: string | null
-    previous: string | null
-  }
-  data: VendorRedemption[]
-}
+import type { RedemptionsListResponse } from '@/types'
+import { getQueryString } from '@/utils/helpers'
 
 /**
  * Helper function to detect mobile money provider from phone number in Ghana
@@ -215,6 +194,8 @@ export interface CardsRedemptionPayload {
   amount: number
   card_id: number
   phone_number: string
+  /** OTP token for guest redemptions; required when using /redemptions/cards after /redemptions/initiate */
+  token?: string
 }
 
 export interface RedemptionResponse {
@@ -341,7 +322,10 @@ export const getUserRedemptions = async (
 
 // Get authenticated vendor's redeemed cards
 export const getVendorRedemptions = async (params?: GetVendorRedemptionsParams): Promise<any> => {
-  return await getList(`${commonUrl}/vendors`, params)
+  const queryString = getQueryString(params)
+  const fullUrl = queryString ? `${commonUrl}/vendors?${queryString}` : `${commonUrl}/vendors`
+  const response = await axiosClient.get(fullUrl)
+  return response
 }
 
 export interface GetRedemptionsSummaryParams {

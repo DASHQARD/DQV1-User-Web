@@ -250,3 +250,26 @@ export type ActivityData = {
   error_message: string | null
   created_at: string
 }
+
+export interface VendorRedemption {
+  id: string
+  amount: number
+  giftCardType: string
+  updated_at: string
+  transactionId?: string
+  status?: string
+}
+
+export interface RedemptionsListResponse {
+  status: string
+  statusCode: number
+  message: string
+  pagination: {
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+    limit: number
+    next: string | null
+    previous: string | null
+  }
+  data: VendorRedemption[]
+}

@@ -12,31 +12,45 @@ export function useCorporateAdmins() {
     paramName: MODALS.CORPORATE_ADMIN.PARAM_NAME,
   })
   const [query, setQuery] = useReducerSpread(DEFAULT_QUERY)
+  const [invitedQuery, setInvitedQuery] = useReducerSpread(DEFAULT_QUERY)
   const user = useAuthStore().user
   const { useGetCorporateAdminsService, useGetInvitedCorporateAdminsService } = corporateQueries()
 
-  // Build params for the API call
+  // Build params for the API calls
   const params = useMemo(() => {
-    const apiParams: any = {
+    const apiParams: Record<string, unknown> = {
       limit: query.limit || 10,
     }
-    if (query.after) {
-      apiParams.after = query.after
-    }
-    if (query.search) {
-      apiParams.search = query.search
-    }
+    if (query.after) apiParams.after = query.after
+    if (query.search) apiParams.search = query.search
+    if ((query as any).status) apiParams.status = (query as any).status
+    if (query.dateFrom) apiParams.date_from = query.dateFrom
+    if (query.dateTo) apiParams.date_to = query.dateTo
     return apiParams
   }, [query])
 
+  const invitedParams = useMemo(() => {
+    const apiParams: Record<string, unknown> = {
+      limit: invitedQuery.limit || 10,
+    }
+    if (invitedQuery.after) apiParams.after = invitedQuery.after
+    if (invitedQuery.search) apiParams.search = invitedQuery.search
+    if ((invitedQuery as any).status) apiParams.status = (invitedQuery as any).status
+    if (invitedQuery.dateFrom) apiParams.date_from = invitedQuery.dateFrom
+    if (invitedQuery.dateTo) apiParams.date_to = invitedQuery.dateTo
+    return apiParams
+  }, [invitedQuery])
+
   const { data: corporateAdminsResponse, isLoading: isLoadingCorporateAdminsList } =
     useGetCorporateAdminsService(params)
-  const { data: invitedCorporateAdminsList, isLoading: isLoadingInvitedCorporateAdminsList } =
-    useGetInvitedCorporateAdminsService()
+  const { data: invitedAdminsResponse, isLoading: isLoadingInvitedCorporateAdminsList } =
+    useGetInvitedCorporateAdminsService(invitedParams)
 
-  // Extract data and pagination from response
+  // Extract data and pagination from responses
   const corporateAdminsList = corporateAdminsResponse?.data || []
   const pagination = corporateAdminsResponse?.pagination
+  const invitedCorporateAdminsList = invitedAdminsResponse?.data || []
+  const invitedPagination = invitedAdminsResponse?.pagination
 
   const corporateAdminTabConfigs = [
     {
@@ -149,7 +163,10 @@ export function useCorporateAdmins() {
     setQuery,
     corporateAdminTabConfigs,
     modal,
+    invitedQuery,
+    setInvitedQuery,
     invitedCorporateAdminsList,
+    invitedPagination,
     isLoadingInvitedCorporateAdminsList,
   }
 }

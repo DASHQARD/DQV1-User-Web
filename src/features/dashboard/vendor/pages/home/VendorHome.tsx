@@ -10,9 +10,9 @@ import {
 } from '@/features/dashboard/components'
 import { useUserProfile } from '@/hooks'
 import { vendorQueries } from '@/features'
-import { useRedemptionQueries } from '@/features/dashboard/hooks'
+// import { useRedemptionQueries } from '@/features/dashboard/hooks'
 import { cn } from '@/libs'
-import { formatCurrency, formatDate } from '@/utils/format'
+import { formatCurrency } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
 import BranchHome from '../branches/BranchHome'
 
@@ -20,7 +20,7 @@ export default function VendorHome() {
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useGetBranchesByVendorIdService, useGetCardsByVendorIdService } = vendorQueries()
-  const { useGetRedemptionsSummaryService } = useRedemptionQueries()
+  // const { useGetRedemptionsSummaryService } = useRedemptionQueries()
 
   // Check if user is a branch manager
   const isBranchManager = userProfileData?.user_type === 'branch'
@@ -35,11 +35,11 @@ export default function VendorHome() {
     false,
   )
   const { data: experiencesData, isLoading: isLoadingExperiences } = useGetCardsByVendorIdService()
-  const { data: redemptionSummaryData, isLoading: isLoadingRedemptionSummary } =
-    useGetRedemptionsSummaryService()
-  const { useGetVendorRedemptionsListService } = useRedemptionQueries()
-  const { data: redemptionsData, isLoading: isLoadingRedemptions } =
-    useGetVendorRedemptionsListService({ limit: 5 })
+  // const { data: redemptionSummaryData, isLoading: isLoadingRedemptionSummary } =
+  //   useGetRedemptionsSummaryService()
+  // const { useGetVendorRedemptionsListService } = useRedemptionQueries()
+  // const { data: redemptionsData, isLoading: isLoadingRedemptions } =
+  //   useGetVendorRedemptionsListService({ limit: 5 })
 
   const branches = React.useMemo(() => {
     if (!branchesResponse) return []
@@ -53,7 +53,11 @@ export default function VendorHome() {
 
   const experiences = React.useMemo(() => {
     if (!experiencesData) return []
-    return Array.isArray(experiencesData) ? experiencesData : []
+    return Array.isArray(experiencesData?.data)
+      ? experiencesData.data
+      : Array.isArray(experiencesData)
+        ? experiencesData
+        : []
   }, [experiencesData])
 
   // Get recent experiences (first 5)
@@ -62,30 +66,30 @@ export default function VendorHome() {
   }, [experiences])
 
   // Extract redemptions from API response
-  const redemptions = React.useMemo(() => {
-    if (!redemptionsData?.data) return []
-    return Array.isArray(redemptionsData.data) ? redemptionsData.data : []
-  }, [redemptionsData])
+  // const redemptions = React.useMemo(() => {
+  //   if (!redemptionsData?.data) return []
+  //   return Array.isArray(redemptionsData.data) ? redemptionsData.data : []
+  // }, [redemptionsData])
 
   // Extract redemption summary from API response
-  const redemptionSummary = React.useMemo(() => {
-    if (!redemptionSummaryData?.data) {
-      return {
-        total_redemptions: 0,
-        total_dashx_redeemed: 0,
-        total_dashpass_redeemed: 0,
-        pending_payout: 0,
-        currency: 'GHS',
-      }
-    }
-    return {
-      total_redemptions: redemptionSummaryData.data.total_redemptions || 0,
-      total_dashx_redeemed: redemptionSummaryData.data.total_dashx_redeemed || 0,
-      total_dashpass_redeemed: redemptionSummaryData.data.total_dashpass_redeemed || 0,
-      pending_payout: redemptionSummaryData.data.pending_payout || 0,
-      currency: redemptionSummaryData.data.currency || 'GHS',
-    }
-  }, [redemptionSummaryData])
+  // const redemptionSummary = React.useMemo(() => {
+  //   if (!redemptionSummaryData?.data) {
+  //     return {
+  //       total_redemptions: 0,
+  //       total_dashx_redeemed: 0,
+  //       total_dashpass_redeemed: 0,
+  //       pending_payout: 0,
+  //       currency: 'GHS',
+  //     }
+  //   }
+  //   return {
+  //     total_redemptions: redemptionSummaryData.data.total_redemptions || 0,
+  //     total_dashx_redeemed: redemptionSummaryData.data.total_dashx_redeemed || 0,
+  //     total_dashpass_redeemed: redemptionSummaryData.data.total_dashpass_redeemed || 0,
+  //     pending_payout: redemptionSummaryData.data.pending_payout || 0,
+  //     currency: redemptionSummaryData.data.currency || 'GHS',
+  //   }
+  // }, [redemptionSummaryData])
 
   const addAccountParam = (path: string): string => {
     const separator = path?.includes('?') ? '&' : '?'
@@ -99,20 +103,12 @@ export default function VendorHome() {
 
   return (
     <div className="bg-[#f8f9fa] rounded-xl overflow-hidden min-h-[600px]">
-      <section className="py-8 flex flex-col gap-8">
-        <div className="pb-6 border-b border-[#e9ecef]">
-          <div className="flex flex-col gap-2">
-            <Text variant="span" weight="semibold" className="text-[#95aac9]">
-              Dashboard
-            </Text>
-            <Text variant="h2" weight="semibold">
-              Vendor Dashboard
-            </Text>
-          </div>
-        </div>
+      <section className="py-8 flex flex-col gap-6">
+        <Text variant="h2" weight="semibold">
+          Vendor Dashboard
+        </Text>
 
-        {/* Metrics Cards */}
-        <div className="group relative bg-linear-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10 overflow-hidden">
+        {/* <div className="group relative bg-linear-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10 overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-blue-400/20 to-transparent rounded-bl-full" />
           <div className="relative flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -135,9 +131,6 @@ export default function VendorHome() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Total Redemptions */}
-
-          {/* Total DashX Redeemed */}
           <div className="group relative bg-linear-to-br from-purple-50 to-violet-50 rounded-2xl p-6 border border-purple-100/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/10 overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-purple-400/20 to-transparent rounded-bl-full" />
             <div className="relative flex flex-col gap-4">
@@ -164,7 +157,6 @@ export default function VendorHome() {
             </div>
           </div>
 
-          {/* Total DashPass Redeemed */}
           <div className="group relative bg-linear-to-br from-pink-50 to-rose-50 rounded-2xl p-6 border border-pink-100/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-pink-500/10 overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-pink-400/20 to-transparent rounded-bl-full" />
             <div className="relative flex flex-col gap-4">
@@ -191,7 +183,6 @@ export default function VendorHome() {
             </div>
           </div>
 
-          {/* Pending Payout */}
           <div className="group relative bg-linear-to-br from-amber-50 to-yellow-50 rounded-2xl p-6 border border-amber-100/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/10 overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-amber-400/20 to-transparent rounded-bl-full" />
             <div className="relative flex flex-col gap-4">
@@ -214,11 +205,13 @@ export default function VendorHome() {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
+
+        <VendorSummaryCards />
 
         {/* Quick Actions */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
+          {/* <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
             <div className="p-6 pb-0 flex justify-between items-center mb-5">
               <h5 className="text-lg font-semibold text-[#495057] m-0 flex items-center">
                 <Icon icon="bi:arrow-left-right" className="text-[#402D87] mr-2" /> Recent
@@ -313,7 +306,7 @@ export default function VendorHome() {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
 
           {/* Recent Experiences */}
           <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
@@ -509,9 +502,6 @@ export default function VendorHome() {
             )}
           </div>
         </div>
-
-        {/* Vendor Widgets */}
-        <VendorSummaryCards />
 
         {/* Complete Vendor Onboarding Widget */}
         <div className="fixed bottom-6 right-6 z-50 w-[598px] max-w-[calc(100vw-3rem)]">

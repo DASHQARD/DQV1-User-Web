@@ -4,10 +4,9 @@ import { Icon } from '@/libs'
 import { BRANCH_NAV_ITEMS, ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
 import { Text, Tooltip, TooltipTrigger, TooltipContent, Avatar, Tag } from '@/components'
-import { PaymentChangeNotifications } from '../corporate/notifications/PaymentChangeNotifications'
-import { ExperienceApprovalNotifications } from '../corporate/notifications/ExperienceApprovalNotifications'
 import { useUserProfile, usePresignedURL } from '@/hooks'
 import { useAuthStore } from '@/stores'
+import { branchQueries } from '@/features/dashboard/branch'
 
 export default function BranchSidebar() {
   const location = useLocation()
@@ -19,6 +18,10 @@ export default function BranchSidebar() {
   const { data: userProfileData } = useGetUserProfileService()
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
+
+  const { useGetBranchInfoService } = branchQueries()
+  const { data: branchInfoData } = useGetBranchInfoService()
+  console.log('branchInfoData', branchInfoData)
 
   // Get branch name and branch manager name
   const branchName = React.useMemo(() => {
@@ -196,10 +199,6 @@ export default function BranchSidebar() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <PaymentChangeNotifications />
-                  <ExperienceApprovalNotifications />
-                </div>
               </div>
 
               {/* Divider - Only show if discovery score is not complete */}
@@ -239,14 +238,6 @@ export default function BranchSidebar() {
                   </Text>
                 </div>
               )}
-            </div>
-          </div>
-        )}
-        {isCollapsed && (
-          <div className="flex items-center justify-center w-full p-4">
-            <div className="flex items-center gap-2">
-              <PaymentChangeNotifications />
-              <ExperienceApprovalNotifications />
             </div>
           </div>
         )}

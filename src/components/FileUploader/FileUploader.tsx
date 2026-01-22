@@ -1,7 +1,50 @@
 import React from 'react'
 import { cn } from '@/libs'
 import { ErrorText } from '../Text'
-import { ExcelImage } from '@/assets/images'
+import { ExcelImage, PDFImage, DocImage, DocXImage } from '@/assets/images'
+
+type DocumentFileType = 'excel' | 'pdf' | 'doc' | 'docx'
+
+const DOCUMENT_ICONS: Record<DocumentFileType, string> = {
+  excel: ExcelImage,
+  pdf: PDFImage,
+  doc: DocImage,
+  docx: DocXImage,
+}
+
+function getDocumentFileType(file: File, accept?: string): DocumentFileType | null {
+  const name = file.name.toLowerCase()
+  const type = file.type
+
+  if (
+    type === 'application/vnd.ms-excel' ||
+    type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    type === 'application/vnd.ms-excel.sheet.macroEnabled.12' ||
+    name.endsWith('.xlsx') ||
+    name.endsWith('.xls') ||
+    (accept && (accept.includes('.xlsx') || accept.includes('.xls')))
+  ) {
+    return 'excel'
+  }
+  if (type === 'application/pdf' || name.endsWith('.pdf') || (accept && accept.includes('.pdf'))) {
+    return 'pdf'
+  }
+  if (
+    type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    name.endsWith('.docx') ||
+    (accept && accept.includes('.docx'))
+  ) {
+    return 'docx'
+  }
+  if (
+    type === 'application/msword' ||
+    name.endsWith('.doc') ||
+    (accept && accept.includes('.doc'))
+  ) {
+    return 'doc'
+  }
+  return null
+}
 
 interface FileUploaderProps {
   label?: string
@@ -23,32 +66,22 @@ export default function FileUploader({
   const [preview, setPreview] = React.useState<string | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Check if the file is an Excel file
-  const isExcelFile = React.useMemo(() => {
-    if (!value) return false
-    const excelTypes = [
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel.sheet.macroEnabled.12',
-    ]
-    const fileName = value.name.toLowerCase()
-    return (
-      excelTypes.includes(value.type) ||
-      fileName.endsWith('.xlsx') ||
-      fileName.endsWith('.xls') ||
-      (accept && (accept.includes('.xlsx') || accept.includes('.xls')))
-    )
-  }, [value, accept])
+  const documentFileType = React.useMemo(
+    () => (value ? getDocumentFileType(value, accept) : null),
+    [value, accept],
+  )
+  const hasDocumentIcon = !!documentFileType
+  const documentIconSrc = documentFileType ? DOCUMENT_ICONS[documentFileType] : null
 
   React.useEffect(() => {
-    if (value && !isExcelFile) {
+    if (value && !hasDocumentIcon) {
       const objectUrl = URL.createObjectURL(value)
       setPreview(objectUrl)
       return () => URL.revokeObjectURL(objectUrl)
     } else {
       setPreview(null)
     }
-  }, [value, isExcelFile])
+  }, [value, hasDocumentIcon])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null
@@ -73,9 +106,9 @@ export default function FileUploader({
         className={cn(
           'border-2 border-dashed rounded-lg transition-colors flex items-center justify-center',
           error ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400',
-          value && !isExcelFile && 'border-primary-500 bg-primary-50/30 min-h-48 p-4',
+          value && !hasDocumentIcon && 'border-primary-500 bg-primary-50/30 min-h-48 p-4',
           !value && 'min-h-48 p-4',
-          value && isExcelFile && 'border-0 p-0 min-h-0',
+          value && hasDocumentIcon && 'border-0 p-0 min-h-0',
         )}
       >
         <input
@@ -99,11 +132,11 @@ export default function FileUploader({
           </div>
         ) : (
           <div className="w-full">
-            {isExcelFile ? (
+            {hasDocumentIcon && documentIconSrc ? (
               <div className="flex items-center gap-4 w-full pt-4">
                 <img
-                  src={ExcelImage}
-                  alt="Excel file"
+                  src={documentIconSrc}
+                  alt={`${documentFileType} file`}
                   className="h-12 w-12 object-contain shrink-0"
                 />
                 <div className="flex-1 min-w-0">

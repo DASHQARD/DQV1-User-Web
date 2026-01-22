@@ -22,10 +22,11 @@ export function usePublicCatalogQueries() {
     })
   }
 
-  function usePublicVendorsService(query?: Record<string, any>) {
+  function usePublicVendorsService(query?: Record<string, any>, enabled = true) {
     return useQuery<VendorDetailsResponse, Error, VendorDetailsResponse>({
       queryKey: ['public-vendors', query],
       queryFn: () => getPublicVendors(query),
+      enabled,
     })
   }
 

@@ -3,7 +3,7 @@ import { Icon } from '@/libs'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/libs'
 import {
-  RecentAuditLogs,
+  // RecentAuditLogs,
   RecentTransactions,
   CompleteCorporateWidget,
 } from '@/features/dashboard/components'
@@ -92,21 +92,10 @@ export default function CorporateHome() {
 
   return (
     <div className="bg-[#f8f9fa] rounded-xl overflow-hidden min-h-[600px]">
-      <section className="py-8 px-6 flex flex-col gap-8">
-        <div className="flex items-center justify-between pb-4">
-          <div className="flex flex-col gap-1">
-            <Text
-              variant="span"
-              weight="semibold"
-              className="text-[#95aac9] text-xs uppercase tracking-wider"
-            >
-              Dashboard
-            </Text>
-            <Text variant="h2" weight="bold" className="text-gray-900 text-3xl">
-              Dashboard Overview
-            </Text>
-          </div>
-        </div>
+      <section className="py-8 px-6 flex flex-col gap-6">
+        <Text variant="h2" weight="bold" className="text-gray-900 text-3xl">
+          Dashboard Overview
+        </Text>
 
         {/* Onboarding Steps Section - Only show if not complete */}
         {!isComplete && (
@@ -370,7 +359,7 @@ export default function CorporateHome() {
               </div>
             )}
           </div>
-          <div
+          {/* <div
             className={cn(
               'relative',
               !canAccessRestrictedFeatures && 'opacity-50 pointer-events-none',
@@ -387,7 +376,7 @@ export default function CorporateHome() {
                 </div>
               </div>
             )}
-          </div>
+          </div> */}
         </div>
 
         {!isComplete && (
