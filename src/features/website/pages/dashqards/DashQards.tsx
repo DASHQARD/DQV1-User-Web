@@ -39,8 +39,7 @@ export default function DashQards() {
       .map((vendor: any) => ({
         id: vendor.vendor_id ?? vendor.id,
         vendor_id: vendor.vendor_id,
-        name:
-          vendor.business_name || vendor.vendor_name || vendor.branch_name || 'Unknown Vendor',
+        name: vendor.business_name || vendor.vendor_name || vendor.branch_name || 'Unknown Vendor',
       }))
   }, [vendorsResponse])
 

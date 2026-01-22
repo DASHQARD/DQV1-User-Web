@@ -97,8 +97,7 @@ export function vendorQueries() {
 
     return useQuery({
       queryKey: ['cards-by-vendor-id', vendor_id, params],
-      queryFn: () =>
-        getCardsByVendorId({ vendor_id: Number(vendor_id) || 0, ...params }),
+      queryFn: () => getCardsByVendorId({ vendor_id: Number(vendor_id) || 0, ...params }),
       enabled: !!vendor_id && userProfileData?.user_type !== 'branch',
     })
   }
