@@ -3,11 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 
 import { corporateRoutes } from '../corporate/routes/routes'
 import { vendorRoutes } from '../vendor/routes/routes'
-import {
-  UserSettings,
-  MyCards,
-  CardDetailsPage,
-} from '../pages'
+import { UserSettings, MyCards, CardDetailsPage } from '../pages'
 import { UserDashboard, UserRedemptions, Orders } from '../user/pages'
 
 export const dashboardRoutes: RouteObject[] = [

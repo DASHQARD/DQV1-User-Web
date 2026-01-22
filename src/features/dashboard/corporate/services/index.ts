@@ -33,9 +33,7 @@ export const getAuditLogsCorporate = async (params?: Record<string, any>): Promi
 
 export const getRequestsCorporate = async (params?: Record<string, any>): Promise<any> => {
   const queryString = getQueryString(params)
-  const fullUrl = queryString
-    ? `/requests/corporate?${queryString}`
-    : `/requests/corporate`
+  const fullUrl = queryString ? `/requests/corporate?${queryString}` : `/requests/corporate`
   const response = await axiosClient.get(fullUrl)
   return response
 }

@@ -3,7 +3,7 @@ import { BasePhoneInput, Input, Text, Modal } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CreateAccountSchema } from '@/utils/schemas'
@@ -13,7 +13,6 @@ import { useAuth } from '../hooks'
 import { useCountriesData } from '@/hooks'
 
 export default function SignUpForm() {
-  const navigate = useNavigate()
   const { useSignUpMutation, useGetCountriesService } = useAuth()
   const { mutate, isPending } = useSignUpMutation()
   const { data: countries } = useGetCountriesService()
@@ -263,18 +262,6 @@ export default function SignUpForm() {
               </div>
             </div>
           </div>
-
-          {/* Action Button */}
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setIsEmailSentModalOpen(false)
-              navigate(ROUTES.IN_APP.AUTH.LOGIN)
-            }}
-            className="w-full"
-          >
-            Go to Login
-          </Button>
         </div>
       </Modal>
     </section>
