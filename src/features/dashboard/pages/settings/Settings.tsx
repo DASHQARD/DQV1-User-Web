@@ -92,27 +92,14 @@ export default function Settings() {
       </div>
 
       <div className="bg-white flex flex-col flex-1 overflow-y-auto">
-        <div className="p-6 sm:p-8">
-          <div className="mb-6">
-            <Text variant="h2" weight="semibold" className="text-primary-900">
-              Settings
-            </Text>
-            <Text variant="span" className="text-gray-600 text-sm">
-              Manage your business information and payment methods
-            </Text>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <TabbedView
-              tabs={settingsTabs}
-              defaultTab="business-details"
-              urlParam="tab"
-              containerClassName="p-6"
-              btnClassName="pb-3"
-              tabsClassName="gap-6 border-b border-gray-200"
-            />
-          </div>
-        </div>
+        <TabbedView
+          tabs={settingsTabs}
+          defaultTab="business-details"
+          urlParam="tab"
+          containerClassName="p-6"
+          btnClassName="pb-3"
+          tabsClassName="gap-6 border-b border-gray-200"
+        />
       </div>
     </div>
   )

@@ -18,15 +18,33 @@ type Props = {
   className?: string
   isDropdown?: boolean
   iconBefore?: string
+  isRequired?: boolean
 } & React.ComponentProps<typeof CreatableReactSelect>
 
 export function CreatableCombobox(props: Props) {
-  const { options, onChange, value, extraOnChange, error, label, isDropdown, iconBefore, ...rest } =
-    props
+  const {
+    options,
+    onChange,
+    value,
+    extraOnChange,
+    error,
+    label,
+    isDropdown,
+    iconBefore,
+    isRequired,
+    ...rest
+  } = props
 
   return (
     <div className={cn(props.className)}>
-      {label && <InputLabel htmlFor={props?.id ?? props.name}>{label}</InputLabel>}
+      {label && (
+        <InputLabel
+          htmlFor={props?.id ?? props.name}
+          className="flex gap-1 items-center text-[#151819] text-sm"
+        >
+          {label} {isRequired && <span className="text-error">*</span>}
+        </InputLabel>
+      )}
       <div
         className={cn(
           'border focus-within:border-primary-400 hover:border-primary-400 border-gray-300 rounded-lg flex justify-between flex-1 items-center overflow-hidden',

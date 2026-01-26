@@ -1,7 +1,8 @@
 import React from 'react'
 import { Controller, useFormContext } from 'react-hook-form'
-import { Button, Text, Input, Checkbox, FileUploader, Combobox } from '@/components'
+import { Button, Text, Input, Checkbox, FileUploader, Combobox, BasePhoneInput } from '@/components'
 import { Icon } from '@/libs'
+import { useCountriesData } from '@/hooks'
 import type { UserProfileResponse } from '@/types/user'
 
 interface VendorProfileFormProps {
@@ -12,6 +13,7 @@ interface VendorProfileFormProps {
 
 export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorProfileFormProps) {
   const form = useFormContext()
+  const { countries } = useCountriesData()
 
   const checkboxProfileSameAsCorporate = form.watch('checkbox_profile_same_as_corporate')
   const firstName = form.watch('first_name')
@@ -21,33 +23,32 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
   const idType = form.watch('id_type')
   const idNumber = form.watch('id_number')
   const frontId = form.watch('front_id')
-  const backId = form.watch('back_id')
+  const phone = form.watch('phone')
+  const email = form.watch('email')
 
-  // Update profile fields when checkbox is toggled
+  // Update profile fields when checkbox is toggled. Exclude `form` and `business` from deps
+  // to avoid "Maximum update depth exceeded" (setValue triggers re-renders; form/business
+  // references can change each render and retrigger this effect).
   React.useEffect(() => {
+    const business = corporateUser?.business_details?.[0]
     if (checkboxProfileSameAsCorporate && corporateUser) {
-      // Split fullname into first and last name
       const nameParts = corporateUser.fullname?.split(' ') || []
       const firstNameValue = nameParts[0] || ''
       const lastNameValue = nameParts.slice(1).join(' ') || ''
 
-      form.setValue('first_name', firstNameValue, { shouldValidate: true })
-      form.setValue('last_name', lastNameValue, { shouldValidate: true })
-      form.setValue('dob', corporateUser.dob || '', { shouldValidate: true })
+      form.setValue('first_name', firstNameValue, { shouldValidate: false })
+      form.setValue('last_name', lastNameValue, { shouldValidate: false })
+      form.setValue('dob', corporateUser.dob || '', { shouldValidate: false })
       form.setValue('street_address', corporateUser.street_address || '', {
-        shouldValidate: true,
+        shouldValidate: false,
       })
-      form.setValue('id_type', corporateUser.id_type || '', { shouldValidate: true })
-      form.setValue('id_number', corporateUser.id_number || '', { shouldValidate: true })
-
-      // Set ID images if available
-      if (corporateUser.id_images?.[0]?.file_url) {
-        // Note: We can't directly set File objects from URLs, but we can set the URL
-        // The backend might need to handle this differently
-        // For now, we'll leave these empty as they need to be File objects
-      }
+      form.setValue('id_type', corporateUser.id_type || '', { shouldValidate: false })
+      form.setValue('id_number', corporateUser.id_number || '', { shouldValidate: false })
+      form.setValue('phone', corporateUser.phonenumber || business?.phone || '', {
+        shouldValidate: false,
+      })
+      form.setValue('email', business?.email || '', { shouldValidate: false })
     } else if (!checkboxProfileSameAsCorporate) {
-      // Clear fields when unchecked
       form.setValue('first_name', '', { shouldValidate: false })
       form.setValue('last_name', '', { shouldValidate: false })
       form.setValue('dob', '', { shouldValidate: false })
@@ -56,7 +57,10 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
       form.setValue('id_number', '', { shouldValidate: false })
       form.setValue('front_id', undefined, { shouldValidate: false })
       form.setValue('back_id', undefined, { shouldValidate: false })
+      form.setValue('phone', '', { shouldValidate: false })
+      form.setValue('email', '', { shouldValidate: false })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form stable; business derived from corporateUser
   }, [checkboxProfileSameAsCorporate, corporateUser])
 
   return (
@@ -87,20 +91,21 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
         )}
       />
 
-      {/* Key Person Details Section */}
+      {/* Key Person Details & Contact (single section) */}
       <section className="flex flex-col gap-4">
         <div>
           <Text variant="h2" weight="semibold" className="text-gray-900">
             Key Person Details
           </Text>
           <Text variant="span" weight="normal" className="text-gray-500 text-sm">
-            This would be the superuser of the vendor account
+            This would be the superuser of the vendor account. Include contact details below.
           </Text>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="First Name"
+            isRequired
             placeholder="Enter your first name"
             {...form.register('first_name')}
             error={form.formState.errors.first_name?.message}
@@ -108,6 +113,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
           />
           <Input
             label="Last Name"
+            isRequired
             placeholder="Enter your last name"
             {...form.register('last_name')}
             error={form.formState.errors.last_name?.message}
@@ -116,51 +122,16 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
           <Input
             type="date"
             label="Date of Birth"
+            isRequired
             placeholder="Enter your date of birth"
             className="col-span-full"
-            max={(() => {
-              // Maximum date: 18 years ago (must be at least 18)
-              const maxDate = new Date()
-              maxDate.setFullYear(maxDate.getFullYear() - 18)
-              return maxDate.toISOString().split('T')[0]
-            })()}
-            min={(() => {
-              // Minimum date: 85 years ago (must be 85 or younger)
-              const minDate = new Date()
-              minDate.setFullYear(minDate.getFullYear() - 85)
-              return minDate.toISOString().split('T')[0]
-            })()}
-            {...form.register('dob', {
-              validate: (value) => {
-                if (!value) {
-                  return 'Date of birth is required'
-                }
-                const birthDate = new Date(value)
-                const today = new Date()
-                const age = today.getFullYear() - birthDate.getFullYear()
-                const monthDiff = today.getMonth() - birthDate.getMonth()
-                const dayDiff = today.getDate() - birthDate.getDate()
-
-                // Calculate exact age
-                let exactAge = age
-                if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-                  exactAge--
-                }
-
-                if (exactAge < 18) {
-                  return 'You must be at least 18 years old'
-                }
-                if (exactAge > 85) {
-                  return 'You must be 85 years old or younger'
-                }
-                return true
-              },
-            })}
+            {...form.register('dob')}
             error={form.formState.errors.dob?.message}
             disabled={checkboxProfileSameAsCorporate}
           />
           <Input
             label="Street Address"
+            isRequired
             placeholder="Enter your street address"
             className="col-span-full"
             {...form.register('street_address')}
@@ -174,14 +145,13 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
               <Combobox
                 label="ID Type"
                 className="col-span-full"
+                isRequired
                 placeholder="Select your ID type"
                 {...field}
                 error={error?.message}
                 options={[
                   { label: 'National ID', value: 'national_id' },
                   { label: 'Passport', value: 'passport' },
-                  { label: "Driver's License", value: 'drivers_license' },
-                  { label: 'Other', value: 'other' },
                 ]}
                 isDisabled={checkboxProfileSameAsCorporate}
               />
@@ -189,10 +159,41 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
           />
           <Input
             label="ID Number"
+            isRequired
             placeholder="Enter your ID number"
             className="col-span-full"
             {...form.register('id_number')}
             error={form.formState.errors.id_number?.message}
+            disabled={checkboxProfileSameAsCorporate}
+          />
+          <Controller
+            control={form.control}
+            name="phone"
+            render={({ field: { value, onChange } }) => (
+              <div
+                className={`col-span-full ${checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}`}
+              >
+                <BasePhoneInput
+                  label="Vendor phone number"
+                  isRequired
+                  placeholder="Enter number e.g. 5512345678"
+                  options={countries}
+                  selectedVal={value ?? ''}
+                  maxLength={14}
+                  handleChange={onChange}
+                  error={form.formState.errors.phone?.message}
+                />
+              </div>
+            )}
+          />
+          <Input
+            label="Email"
+            isRequired
+            placeholder="Enter vendor email"
+            type="email"
+            className="col-span-full"
+            {...form.register('email')}
+            error={form.formState.errors.email?.message}
             disabled={checkboxProfileSameAsCorporate}
           />
         </div>
@@ -205,49 +206,28 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
               Identity Documents
             </Text>
             <Text variant="span" weight="normal" className="text-gray-500 text-sm">
-              Upload pictures of your identification (front and back)
+              National ID and Passport require the front of your identification only.
             </Text>
           </div>
 
-          <div className="space-y-4">
-            <Controller
-              control={form.control}
-              name="front_id"
-              render={({ field: { onChange, value }, fieldState: { error } }) => (
-                <div
-                  className={checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}
-                >
-                  <FileUploader
-                    label="Front of Identification"
-                    value={value || null}
-                    onChange={onChange}
-                    error={error?.message}
-                    id="front_id"
-                    accept="image/*"
-                  />
-                </div>
-              )}
-            />
-
-            <Controller
-              control={form.control}
-              name="back_id"
-              render={({ field: { onChange, value }, fieldState: { error } }) => (
-                <div
-                  className={checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}
-                >
-                  <FileUploader
-                    label="Back of Identification"
-                    value={value || null}
-                    onChange={onChange}
-                    error={error?.message}
-                    id="back_id"
-                    accept="image/*"
-                  />
-                </div>
-              )}
-            />
-          </div>
+          <Controller
+            control={form.control}
+            name="front_id"
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
+              <div
+                className={checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}
+              >
+                <FileUploader
+                  label="Front of Identification"
+                  value={value || null}
+                  onChange={onChange}
+                  error={error?.message}
+                  id="front_id"
+                  accept="image/*"
+                />
+              </div>
+            )}
+          />
         </section>
       )}
 
@@ -267,15 +247,18 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
             !street_address ||
             !idType ||
             !idNumber ||
-            (!checkboxProfileSameAsCorporate && (!frontId || !backId)) ||
+            !phone ||
+            !email ||
+            (!checkboxProfileSameAsCorporate && !frontId) ||
             !!form.formState.errors.first_name ||
             !!form.formState.errors.last_name ||
             !!form.formState.errors.dob ||
             !!form.formState.errors.street_address ||
             !!form.formState.errors.id_type ||
             !!form.formState.errors.id_number ||
-            (!checkboxProfileSameAsCorporate &&
-              (!!form.formState.errors.front_id || !!form.formState.errors.back_id))
+            !!form.formState.errors.phone ||
+            !!form.formState.errors.email ||
+            (!checkboxProfileSameAsCorporate && !!form.formState.errors.front_id)
           }
           type="button"
           onClick={onSubmit}

@@ -38,6 +38,7 @@ export function VendorNameForm({ onSubmit, corporateUser }: VendorNameFormProps)
 
       <Input
         label="Vendor Name"
+        isRequired
         placeholder="Enter vendor name"
         className="w-full"
         {...form.register('vendor_name')}

@@ -102,8 +102,7 @@ export const UploadBusinessIDSchema = z.object({
     .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB'),
   logo: z
     .instanceof(File, { message: 'Logo is required' })
-    .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB')
-    .optional(),
+    .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB'),
 })
 
 const BranchManagerSchema = z.object({

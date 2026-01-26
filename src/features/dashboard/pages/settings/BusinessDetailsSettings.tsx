@@ -1,79 +1,43 @@
 import React from 'react'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Button, Input, CreatableCombobox, Text, FileUploader, Avatar } from '@/components'
-import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
-import {
-  useUserProfile,
-  useUploadFiles,
-  usePresignedURL,
-  useToast,
-  useCountriesData,
-} from '@/hooks'
-import { BasePhoneInput } from '@/components'
+import { Button, Text } from '@/components'
+import { Icon } from '@/libs'
+import { useUserProfile, usePresignedURL } from '@/hooks'
+import { cn } from '@/libs'
+import { RequestBusinessUpdateModal } from '@/features/dashboard/components/corporate/modals'
 
-const UpdateBusinessDetailsSchema = z.object({
-  id: z.number(),
-  name: z.string().min(1, 'Business name is required'),
-  type: z.string().min(1, 'Business type is required'),
-  phone: z.string().min(1, 'Phone number is required'),
-  email: z.string().email('Invalid email address'),
-  street_address: z.string().min(1, 'Street address is required'),
-  digital_address: z.string().optional().default(''),
-  registration_number: z.string().min(1, 'Registration number is required'),
-})
+const BUSINESS_TYPE_LABELS: Record<string, string> = {
+  llc: 'Limited Liability Company',
+  sole_proprietor: 'Sole Proprietorship',
+  partnership: 'Partnership',
+  corporation: 'Corporation',
+}
+
+function DetailRow({
+  label,
+  value,
+  className,
+}: {
+  label: string
+  value: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div className={cn('flex flex-col gap-1', className)}>
+      <span className="text-xs font-medium uppercase tracking-wider text-gray-500">{label}</span>
+      <span className="text-sm font-medium text-gray-900">{value || '—'}</span>
+    </div>
+  )
+}
 
 export function BusinessDetailsSettings() {
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { useUpdateBusinessDetailsService, useUpdateBusinessLogoService } = corporateMutations()
-  const { mutateAsync: updateBusinessDetails, isPending } = useUpdateBusinessDetailsService()
-  const { mutateAsync: updateBusinessLogo, isPending: isUpdatingLogo } =
-    useUpdateBusinessLogoService()
-  const { mutateAsync: uploadFiles } = useUploadFiles()
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const { countries: phoneCountries } = useCountriesData()
-  const toast = useToast()
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
-  const [logoFile, setLogoFile] = React.useState<File | null>(null)
+  const [isRequestModalOpen, setIsRequestModalOpen] = React.useState(false)
 
-  const isApproved = userProfileData?.status === 'approved'
+  const business = userProfileData?.business_details?.[0]
 
-  console.log('userProfileData checking', userProfileData)
-
-  type FormData = z.input<typeof UpdateBusinessDetailsSchema>
-  const form = useForm<FormData>({
-    resolver: zodResolver(UpdateBusinessDetailsSchema),
-    defaultValues: {
-      id: 0,
-      name: '',
-      type: '',
-      phone: '',
-      email: '',
-      street_address: '',
-      digital_address: '',
-      registration_number: '',
-    },
-  })
-
-  React.useEffect(() => {
-    if (userProfileData?.business_details?.[0]) {
-      const business = userProfileData.business_details[0]
-      form.reset({
-        id: business.id,
-        name: business.name || '',
-        type: business.type || '',
-        phone: business.phone || '',
-        email: business.email || '',
-        street_address: business.street_address || '',
-        digital_address: business.digital_address || '',
-        registration_number: business.registration_number || '',
-      })
-    }
-  }, [userProfileData, form])
-
-  // Fetch logo
   React.useEffect(() => {
     const logoDocument = userProfileData?.business_documents?.find((doc) => doc.type === 'logo')
     if (!logoDocument?.file_url) {
@@ -85,217 +49,108 @@ export function BusinessDetailsSettings() {
     const loadLogo = async () => {
       try {
         const url = await fetchPresignedURL(logoDocument.file_url)
-        if (!cancelled) {
-          setLogoUrl(url)
-        }
-      } catch (error) {
-        console.error('Failed to fetch logo presigned URL', error)
-        if (!cancelled) {
-          setLogoUrl(null)
-        }
+        if (!cancelled) setLogoUrl(url)
+      } catch {
+        if (!cancelled) setLogoUrl(null)
       }
     }
-
     loadLogo()
-
     return () => {
       cancelled = true
     }
   }, [userProfileData?.business_documents, fetchPresignedURL])
 
-  const handleLogoFileChange = (file: File | null) => {
-    setLogoFile(file)
-  }
+  const businessTypeLabel =
+    business?.type && BUSINESS_TYPE_LABELS[business.type]
+      ? BUSINESS_TYPE_LABELS[business.type]
+      : business?.type || '—'
 
-  const handleLogoUpload = async () => {
-    if (!logoFile) return
-
-    try {
-      const uploadedFiles = await uploadFiles([logoFile])
-      if (uploadedFiles && uploadedFiles.length > 0) {
-        const fileKey = uploadedFiles[0].file_key
-        await updateBusinessLogo({ file_url: fileKey })
-        // Fetch the presigned URL for the newly uploaded logo
-        try {
-          const url = await fetchPresignedURL(fileKey)
-          setLogoUrl(url)
-          setLogoFile(null)
-          toast.success('Logo uploaded successfully')
-        } catch (error) {
-          console.error('Failed to fetch presigned URL for new logo', error)
-          // Still set the file_key as fallback
-          setLogoUrl(fileKey)
-          setLogoFile(null)
-        }
-      }
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to upload logo')
-    }
-  }
-
-  const onSubmit = async (data: FormData) => {
-    try {
-      const payload = {
-        ...data,
-        digital_address: data.digital_address || '',
-      } as z.output<typeof UpdateBusinessDetailsSchema>
-      await updateBusinessDetails(payload)
-    } catch (error: any) {
-      throw new Error(error?.message || 'Failed to update business details')
-    }
+  if (!business) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center">
+        <Text variant="p" className="text-gray-500">
+          No business details available.
+        </Text>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-8">
-      {/* Logo Section */}
-      <div className="border-b border-gray-200 pb-6">
-        <div className="flex items-center gap-6">
-          <div>
-            <Text variant="h6" weight="medium" className="mb-2">
-              Business Logo
-            </Text>
-            <Text variant="span" className="text-sm text-gray-600">
-              Upload your business logo. Recommended size: 200x200px
-            </Text>
-          </div>
-          <div className="flex items-center gap-4">
-            <Avatar
-              size="lg"
-              src={logoUrl}
-              name={userProfileData?.business_details?.[0]?.name || 'Business'}
-              className="w-24 h-24"
-            />
-            {!isApproved && (
-              <div className="flex flex-col gap-2">
-                <FileUploader
-                  onChange={handleLogoFileChange}
-                  value={logoFile}
-                  accept="image/*"
-                  id="logo-upload"
-                />
-                {logoFile && (
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    onClick={handleLogoUpload}
-                    loading={isUpdatingLogo}
-                  >
-                    Upload Logo
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
+    <div className="space-y-0 mt-6">
+      {/* Info callout */}
+      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3">
+        <Icon icon="bi:info-circle" className="text-amber-600 text-xl shrink-0 mt-0.5" />
+        <div>
+          <Text variant="span" weight="semibold" className="text-amber-900 block mb-1">
+            Request to update business information
+          </Text>
+          <Text variant="p" className="text-amber-800/90 text-sm">
+            Corporates can&apos;t change or update business information on their own. You can
+            request an update here; an admin will manually review and process it.
+          </Text>
         </div>
       </div>
 
-      {/* Business Details Form */}
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Input
-            label="Business Name"
-            className="col-span-2"
-            placeholder="Enter business name"
-            {...form.register('name')}
-            error={form.formState.errors.name?.message}
-            disabled={isApproved}
-          />
-
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Controller
-              control={form.control}
-              name="type"
-              render={({ field, fieldState: { error } }) => (
-                <CreatableCombobox
-                  className="col-span-2"
-                  label="Business Type"
-                  options={[
-                    { label: 'LLC', value: 'llc' },
-                    { label: 'Sole Proprietor', value: 'sole_proprietor' },
-                    { label: 'Partnership', value: 'partnership' },
-                    { label: 'Corporation', value: 'corporation' },
-                  ]}
-                  value={field.value}
-                  onChange={(e: any) => {
-                    const value = e?.target?.value || e?.value || ''
-                    field.onChange(value)
-                  }}
-                  error={error?.message}
-                  placeholder="Select business type"
-                  isDisabled={isApproved}
-                />
-              )}
-            />
-
-            <div className="flex flex-col gap-1 md:col-span-full col-span-1">
-              <Controller
-                control={form.control}
-                name="phone"
-                render={({ field: { onChange, value } }) => {
-                  // Ensure value is always a string
-                  const phoneValue = value || ''
-                  return (
-                    <BasePhoneInput
-                      placeholder="Enter number eg. 5512345678"
-                      options={phoneCountries}
-                      maxLength={9}
-                      handleChange={onChange}
-                      selectedVal={phoneValue}
-                      label="Phone Number"
-                      error={form.formState.errors.phone?.message}
-                      disabled={isApproved}
-                    />
-                  )
-                }}
-              />
-              <p className="text-xs text-gray-500">
-                Please enter your number in the format:{' '}
-                <span className="font-medium">5512345678</span>
-              </p>
-            </div>
-          </section>
-
-          <Input
-            label="Email"
-            type="email"
-            placeholder="Enter email address"
-            {...form.register('email')}
-            error={form.formState.errors.email?.message}
-            disabled={isApproved}
-          />
-
-          <Input
-            label="Street Address"
-            placeholder="Enter street address"
-            {...form.register('street_address')}
-            error={form.formState.errors.street_address?.message}
-            disabled={isApproved}
-          />
-
-          <Input
-            label="Digital Address"
-            placeholder="Enter digital address (optional)"
-            {...form.register('digital_address')}
-            error={form.formState.errors.digital_address?.message}
-            disabled={isApproved}
-          />
-
-          <Input
-            label="Registration Number"
-            className="col-span-2"
-            placeholder="Enter registration number"
-            {...form.register('registration_number')}
-            error={form.formState.errors.registration_number?.message}
-            disabled={isApproved}
-          />
+      {/* Business info card */}
+      <div className="rounded-2xl overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-gray-100">
+          <Text variant="h4" weight="semibold" className="text-gray-900">
+            Business details
+          </Text>
+          <Text variant="span" className="text-gray-500 text-sm mt-0.5 block">
+            View-only. Use &quot;Request update&quot; to request changes.
+          </Text>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-          <Button type="submit" variant="secondary" loading={isPending} disabled={isApproved}>
-            Update
+        <div className="p-5 sm:p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-start">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                Business logo
+              </span>
+              <div className="w-20 h-20 rounded-xl border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={business.name || 'Business logo'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Icon icon="bi:building" className="text-gray-400 text-2xl" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <DetailRow label="Business name" value={business.name} />
+            <DetailRow label="Business type" value={businessTypeLabel} />
+            <DetailRow label="Phone" value={business.phone} />
+            <DetailRow label="Email" value={business.email} />
+            <DetailRow
+              label="Street address"
+              value={business.street_address}
+              className="sm:col-span-2"
+            />
+            <DetailRow label="Digital address" value={business.digital_address || '—'} />
+            <DetailRow label="Registration number" value={business.registration_number} />
+          </div>
+        </div>
+
+        <div className="px-5 sm:px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+          <Text variant="span" className="text-gray-600 text-sm">
+            Need to change something? Request an update.
+          </Text>
+          <Button type="button" variant="secondary" onClick={() => setIsRequestModalOpen(true)}>
+            Request update
           </Button>
         </div>
-      </form>
+      </div>
+
+      <RequestBusinessUpdateModal
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
+      />
     </div>
   )
 }

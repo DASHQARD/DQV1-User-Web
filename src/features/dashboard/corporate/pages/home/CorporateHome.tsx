@@ -1,6 +1,7 @@
 import { Text, Button } from '@/components'
 import { Icon } from '@/libs'
 import { useNavigate } from 'react-router-dom'
+import { StarImage } from '@/assets/images'
 import { cn } from '@/libs'
 import {
   // RecentAuditLogs,
@@ -31,13 +32,13 @@ export default function CorporateHome() {
     hasID: Boolean(userProfileData?.onboarding_progress?.upload_id_completed),
     hasProfileAndID: Boolean(
       userProfileData?.onboarding_progress?.personal_details_completed &&
-      userProfileData?.onboarding_progress?.upload_id_completed,
+        userProfileData?.onboarding_progress?.upload_id_completed,
     ),
     hasBusinessDetails: Boolean(userProfileData?.onboarding_progress?.business_details_completed),
     hasBusinessDocs: Boolean(userProfileData?.onboarding_progress?.business_documents_completed),
     hasBusinessDetailsAndDocs: Boolean(
       userProfileData?.onboarding_progress?.business_details_completed &&
-      userProfileData?.onboarding_progress?.business_documents_completed,
+        userProfileData?.onboarding_progress?.business_documents_completed,
     ),
   }
 
@@ -323,8 +324,41 @@ export default function CorporateHome() {
 
         {/* Metrics Cards */}
         {!isLoading && (
-          <div className="group relative bg-gradient-to-br from-[#402D87] to-[#5B4397] rounded-2xl p-6 shadow-lg shadow-[#402D87]/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#402D87]/30 overflow-hidden">
+          <div className="group relative bg-[#702DFF] rounded-2xl p-6 shadow-lg shadow-[#402D87]/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#402D87]/30 overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full blur-2xl" />
+            {/* Decorative stars on the right */}
+            <div className="absolute inset-0 pointer-events-none">
+              <img
+                src={StarImage}
+                alt=""
+                className="absolute top-2 right-4 w-12 h-12 object-contain opacity-35"
+              />
+              <img
+                src={StarImage}
+                alt=""
+                className="absolute top-4 right-14 w-10 h-10 object-contain opacity-30"
+              />
+              <img
+                src={StarImage}
+                alt=""
+                className="absolute top-0 right-24 w-14 h-14 object-contain opacity-40"
+              />
+              <img
+                src={StarImage}
+                alt=""
+                className="absolute bottom-2 right-6 w-12 h-12 object-contain opacity-32"
+              />
+              <img
+                src={StarImage}
+                alt=""
+                className="absolute bottom-4 right-20 w-10 h-10 object-contain opacity-28"
+              />
+              <img
+                src={StarImage}
+                alt=""
+                className="absolute top-1/2 -translate-y-1/2 right-0 w-16 h-16 object-contain opacity-25"
+              />
+            </div>
             <div className="relative flex items-center gap-5">
               <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl shrink-0 shadow-lg">
                 <Icon icon="bi:cart-plus-fill" />

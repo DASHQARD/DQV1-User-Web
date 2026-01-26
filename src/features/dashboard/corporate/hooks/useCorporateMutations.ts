@@ -19,6 +19,7 @@ import {
   deletePaymentDetails,
   checkout,
   updateRequestStatus,
+  requestBusinessUpdate,
 } from '../services'
 import { useToast } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
@@ -359,6 +360,25 @@ export function corporateMutations() {
     })
   }
 
+  function useRequestBusinessUpdateService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: {
+        fields_to_update: Record<string, boolean>
+        proposed_values: Record<string, string>
+        reason_for_change?: string
+      }) => requestBusinessUpdate(data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Update request submitted successfully')
+        queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to submit update request. Please try again.')
+      },
+    })
+  }
+
   return {
     useInviteAdminForCorporateService,
     useAcceptCorporateAdminInvitationService,
@@ -379,5 +399,6 @@ export function corporateMutations() {
     useDeletePaymentDetailsService,
     useCheckoutService,
     useUpdateRequestStatusService,
+    useRequestBusinessUpdateService,
   }
 }

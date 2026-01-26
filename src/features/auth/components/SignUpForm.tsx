@@ -51,7 +51,12 @@ export default function SignUpForm() {
 
   const onSubmit = (data: z.infer<typeof CreateAccountSchema>) => {
     setUserEmail(data.email)
-    mutate(data, {
+    // Transform phone number from "+233-559617908" to "+233559617908" (remove hyphen)
+    const transformedData = {
+      ...data,
+      phone_number: data.phone_number?.replace(/-/g, '') || data.phone_number,
+    }
+    mutate(transformedData, {
       onSuccess: () => {
         setIsEmailSentModalOpen(true)
       },
@@ -103,35 +108,36 @@ export default function SignUpForm() {
           <Input
             label="Email"
             placeholder="Enter your email"
+            isRequired
             {...form.register('email')}
             error={form.formState.errors.email?.message}
           />
 
-          <div className="flex flex-col gap-1">
-            <Controller
-              control={form.control}
-              name="phone_number"
-              render={({ field: { onChange } }) => {
-                return (
-                  <BasePhoneInput
-                    placeholder="Enter number eg. 5512345678"
-                    options={phoneCountries}
-                    maxLength={9}
-                    handleChange={onChange}
-                    label="Phone Number"
-                    error={form.formState.errors.phone_number?.message}
-                  />
-                )
-              }}
-            />
-            <p className="text-xs text-gray-500">
-              Please enter your number in the format:{' '}
-              <span className="font-medium">5512345678</span>
-            </p>
-          </div>
+          <Controller
+            control={form.control}
+            name="phone_number"
+            render={({ field: { onChange } }) => (
+              <BasePhoneInput
+                placeholder="Enter number eg. 5512345678"
+                options={phoneCountries}
+                isRequired
+                maxLength={14}
+                handleChange={onChange}
+                label="Phone Number"
+                error={form.formState.errors.phone_number?.message}
+                hint={
+                  <>
+                    Please enter your number in the format:{' '}
+                    <span className="font-medium">5512345678</span>
+                  </>
+                }
+              />
+            )}
+          />
 
           <div className="flex flex-col gap-2">
             <Input
+              isRequired
               label="Password"
               placeholder="Enter your password"
               {...form.register('password')}

@@ -16,14 +16,25 @@ type Props = Readonly<
     error?: string | { message: string } | boolean
     label?: string
     className?: string
+    isRequired?: boolean
     isDropdown?: boolean
     iconBefore?: string
   } & React.ComponentProps<typeof ReactSelect>
 >
 
 export function Combobox(props: Props) {
-  const { options, onChange, value, extraOnChange, error, label, isDropdown, iconBefore, ...rest } =
-    props
+  const {
+    options,
+    onChange,
+    value,
+    extraOnChange,
+    error,
+    label,
+    isDropdown,
+    iconBefore,
+    isRequired,
+    ...rest
+  } = props
 
   return (
     <div className={cn(props.className)}>
@@ -33,6 +44,7 @@ export function Combobox(props: Props) {
           className="flex gap-1 items-center text-[#151819] text-sm"
         >
           {label}
+          {isRequired && <span className="text-error">*</span>}
         </InputLabel>
       )}
       <div

@@ -2,7 +2,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
-import { Combobox, Input, Text, FileUploader, Loader } from '@/components'
+import { Combobox, Input, Text, FileUploader, Loader, Modal } from '@/components'
 import { Button } from '@/components/Button'
 import { ProfileAndIdentitySchema } from '@/utils/schemas'
 import { useAuth } from '../../../../auth/hooks'
@@ -11,6 +11,7 @@ import { ROUTES } from '@/utils/constants'
 import React from 'react'
 import { cn } from '@/libs'
 import { useAuthStore } from '@/stores'
+import { SuccessImage } from '@/assets/images'
 
 export default function OnboardingForm() {
   const navigate = useNavigate()
@@ -31,6 +32,7 @@ export default function OnboardingForm() {
 
   const [frontOfIdentification, setFrontOfIdentification] = React.useState<string | null>(null)
   const [backOfIdentification, setBackOfIdentification] = React.useState<string | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = React.useState(false)
 
   // Create schema with conditional validation for back_id
   const dynamicSchema = React.useMemo(() => {
@@ -174,12 +176,7 @@ export default function OnboardingForm() {
 
       await submitPersonalDetailsWithID(onboardingPayload, {
         onSuccess: () => {
-          if (isBranchManager || isVendor || isCorporateAdmin) {
-            navigate(-1)
-          } else {
-            const businessDetailsUrl = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS}?account=corporate`
-            navigate(businessDetailsUrl)
-          }
+          setShowSuccessModal(true)
         },
       })
     } catch (error: any) {
@@ -187,23 +184,34 @@ export default function OnboardingForm() {
     }
   }
 
-  console.log('form.formState.errors', form.formState.errors)
+  function handleSuccessContinue() {
+    setShowSuccessModal(false)
+    if (isBranchManager || isVendor || isCorporateAdmin) {
+      navigate(-1)
+    } else {
+      const businessDetailsUrl = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS}?account=corporate`
+      navigate(businessDetailsUrl)
+    }
+  }
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
-      <section className="flex flex-col gap-10 pb-16">
-        <div className="flex flex-col gap-2 w-full">
-          <Text variant="h2" weight="semibold">
+      <section className="flex flex-col gap-8">
+        <div className="flex flex-col gap-1">
+          <Text variant="h3" weight="semibold">
             Key Person Details
           </Text>
-          <Text variant="span" weight="normal" className="text-gray-500">
+          <Text variant="span" className="text-[#A0AEC0]">
             Update your personal details and contact information
           </Text>
         </div>
 
+        <hr className="border-[#F1F2F4]" />
+
         <section className="grid grid-cols-2 gap-4 flex-1">
           <Input
             label="First Name"
+            isRequired
             placeholder="Enter your first name"
             className="col-span-full sm:col-span-1"
             {...form.register('first_name')}
@@ -211,6 +219,7 @@ export default function OnboardingForm() {
           />
           <Input
             label="Last Name"
+            isRequired
             placeholder="Enter your last name"
             className="col-span-full sm:col-span-1"
             {...form.register('last_name')}
@@ -219,6 +228,7 @@ export default function OnboardingForm() {
           <Input
             type="date"
             label="Date of Birth"
+            isRequired
             placeholder="Enter your date of birth"
             className="col-span-full"
             max={(() => {
@@ -232,6 +242,7 @@ export default function OnboardingForm() {
 
           <Input
             label="Street Address"
+            isRequired
             placeholder="Enter your street address"
             className="col-span-full"
             {...form.register('street_address')}
@@ -244,6 +255,7 @@ export default function OnboardingForm() {
             render={({ field }) => (
               <Combobox
                 label="ID Type"
+                isRequired
                 className="col-span-full sm:col-span-1"
                 placeholder="Enter your ID type"
                 {...field}
@@ -258,6 +270,7 @@ export default function OnboardingForm() {
 
           <Input
             label="ID Number"
+            isRequired
             placeholder="Enter your ID number"
             className="col-span-full sm:col-span-1"
             {...form.register('id_number')}
@@ -265,11 +278,11 @@ export default function OnboardingForm() {
           />
         </section>
         <section className="flex flex-col gap-10 pb-16">
-          <div className="flex flex-col gap-2 w-full">
-            <Text variant="h2" weight="semibold">
+          <div className="flex flex-col gap-1 w-full">
+            <Text variant="h3" weight="semibold">
               Identity Documents
             </Text>
-            <Text variant="span" weight="normal" className="text-gray-500">
+            <Text variant="span" className="text-[#A0AEC0]">
               {isPassport
                 ? 'Upload a picture of your passport page'
                 : isNationalId
@@ -277,6 +290,8 @@ export default function OnboardingForm() {
                   : 'Upload pictures of your identification (front and back)'}
             </Text>
           </div>
+
+          <hr className="border-[#F1F2F4]" />
 
           {isLoading || isFetchingPresignedURL ? (
             <div className="flex justify-center items-center h-full bg-white">
@@ -391,6 +406,42 @@ export default function OnboardingForm() {
           {isBranchManager || isCorporateAdmin ? 'Submit' : 'Submit & Continue'}
         </Button>
       </div>
+
+      {/* Loading Modal */}
+      <Modal
+        isOpen={form.formState.isSubmitting}
+        setIsOpen={() => {}}
+        panelClass="max-w-sm p-8"
+        showClose={false}
+      >
+        <div className="flex flex-col items-center justify-center gap-4 py-4">
+          <Loader />
+          <Text as="p" className="text-base font-medium text-gray-700">
+            Submitting...
+          </Text>
+        </div>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal isOpen={showSuccessModal} setIsOpen={setShowSuccessModal} panelClass="max-w-md p-8">
+        <div className="flex flex-col items-center text-center">
+          <img src={SuccessImage} alt="Success" className="w-24 h-24 object-contain mb-4" />
+          <Text as="h2" className="text-xl font-bold text-gray-900 mb-2">
+            Profile updated successfully!
+          </Text>
+          <Text className="text-sm text-gray-600 mb-6">
+            Your identification details have been saved.
+          </Text>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full"
+            onClick={handleSuccessContinue}
+          >
+            Continue
+          </Button>
+        </div>
+      </Modal>
     </form>
   )
 }

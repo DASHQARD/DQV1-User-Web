@@ -1,5 +1,6 @@
 import React from 'react'
 import { cn } from '@/libs'
+import { Icon } from '@/libs'
 import { ErrorText } from '../Text'
 import { ExcelImage, PDFImage, DocImage, DocXImage } from '@/assets/images'
 
@@ -53,6 +54,8 @@ interface FileUploaderProps {
   error?: string
   accept?: string
   id?: string
+  formatHint?: string
+  maxFileSizeMb?: number
 }
 
 export default function FileUploader({
@@ -62,8 +65,11 @@ export default function FileUploader({
   error,
   accept = 'image/*',
   id,
+  formatHint = 'Format: .jpeg, .png',
+  maxFileSizeMb = 25,
 }: FileUploaderProps) {
   const [preview, setPreview] = React.useState<string | null>(null)
+  const [isDragging, setIsDragging] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const documentFileType = React.useMemo(
@@ -88,12 +94,32 @@ export default function FileUploader({
     onChange?.(file)
   }
 
-  function handleRemove() {
+  function handleRemove(e: React.MouseEvent) {
+    e.stopPropagation()
     onChange?.(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0] || null
+    if (file) onChange?.(file)
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const formatSizeText = `Format: ${formatHint} & Max file size: ${maxFileSizeMb} MB`
 
   return (
     <div className="space-y-2">
@@ -105,11 +131,16 @@ export default function FileUploader({
       <div
         className={cn(
           'border-2 border-dashed rounded-lg transition-colors flex items-center justify-center',
-          error ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400',
-          value && !hasDocumentIcon && 'border-primary-500 bg-primary-50/30 min-h-48 p-4',
-          !value && 'min-h-48 p-4',
-          value && hasDocumentIcon && 'border-0 p-0 min-h-0',
+          'border-primary-500 bg-primary-50/20',
+          error && 'border-red-300 bg-red-50',
+          isDragging && !value && 'border-primary-600 bg-primary-50/40',
+          !value && 'min-h-48 p-6',
+          value && hasDocumentIcon && 'border-2 border-solid border-gray-200 bg-white p-0 min-h-0',
+          value && !hasDocumentIcon && 'border-primary-500 bg-primary-50/20 min-h-48 p-4',
         )}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
       >
         <input
           ref={fileInputRef}
@@ -120,20 +151,28 @@ export default function FileUploader({
           className="hidden"
         />
         {!value ? (
-          <div className="text-center">
+          <div
+            className="flex flex-col items-center justify-center gap-3 w-full cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Icon icon="bi:cloud-arrow-up" className="size-12 text-primary-500" />
+            <p className="text-base font-medium text-gray-900">Drop file or browse</p>
+            <p className="text-xs text-gray-500 text-center">{formatSizeText}</p>
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="text-sm text-primary-500 hover:text-primary-600 font-medium"
+              onClick={(e) => {
+                e.stopPropagation()
+                fileInputRef.current?.click()
+              }}
+              className="mt-1 px-4 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-colors"
             >
-              Click to upload
+              Browse Files
             </button>
-            <p className="text-xs text-gray-500 mt-1">or drag and drop</p>
           </div>
         ) : (
-          <div className="w-full">
+          <div className="w-full relative">
             {hasDocumentIcon && documentIconSrc ? (
-              <div className="flex items-center gap-4 w-full pt-4">
+              <div className="flex items-center gap-4 w-full p-4">
                 <img
                   src={documentIconSrc}
                   alt={`${documentFileType} file`}
@@ -146,37 +185,27 @@ export default function FileUploader({
                 <button
                   type="button"
                   onClick={handleRemove}
-                  className="text-sm text-red-600 hover:text-red-700 font-medium shrink-0"
+                  className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 shrink-0 transition-colors"
+                  aria-label="Delete file"
                 >
-                  Remove
+                  <Icon icon="bi:trash" className="size-5" />
                 </button>
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{value.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {(value.size / 1024).toFixed(2)} KB • {value.type}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleRemove}
-                    className="ml-2 text-sm text-red-600 hover:text-red-700 font-medium"
-                  >
-                    Remove
-                  </button>
-                </div>
+              <div className="relative w-full">
                 {preview && (
-                  <div className="mt-2">
-                    <img
-                      src={preview}
-                      alt={value.name}
-                      className="max-h-48 w-full object-contain rounded border border-gray-200"
-                    />
+                  <div className="rounded-lg overflow-hidden border border-gray-200 bg-white aspect-4/3 w-full min-h-48">
+                    <img src={preview} alt={value.name} className="w-full h-full object-cover" />
                   </div>
                 )}
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className="absolute top-3 right-3 flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 shadow-sm transition-colors"
+                  aria-label="Delete file"
+                >
+                  <Icon icon="bi:trash" className="size-5" />
+                </button>
               </div>
             )}
           </div>

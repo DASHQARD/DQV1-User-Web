@@ -38,6 +38,8 @@ export default function VendorSidebar() {
   const { data: branches } = useBranchesService()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
 
+  console.log('switch workspace', allVendorsDetails)
+
   // Handle branches data structure (array or wrapped response)
   const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
 

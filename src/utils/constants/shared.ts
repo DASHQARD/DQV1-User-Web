@@ -124,7 +124,9 @@ export const ROUTES = {
       DAILY_LIMIT: '/admin/transactions/pending-limits',
     },
   },
-  EXTERNAL: {},
+  EXTERNAL: {
+    YOUTUBE: 'https://www.youtube.com/@dashqard',
+  },
 }
 
 export const ENVIRONMENT = import.meta.env.VITE_NODE_ENV as string

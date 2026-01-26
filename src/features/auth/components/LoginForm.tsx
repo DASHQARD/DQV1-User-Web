@@ -72,12 +72,14 @@ export default function LoginForm() {
           </div>
           <section className="flex flex-col gap-4">
             <Input
+              isRequired
               label="Email"
               placeholder="Enter your email"
               {...form.register('email')}
               error={form.formState.errors.email?.message}
             />
             <Input
+              isRequired
               label="Password"
               placeholder="Enter your password"
               {...form.register('password')}
