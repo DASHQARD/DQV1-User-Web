@@ -23,6 +23,8 @@ export default function CorporateSidebar() {
   const { useGetAllVendorsDetailsService } = vendorQueries()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
 
+  console.log('allVendorsDetails', allVendorsDetails)
+
   const allVendorsCreatedByCorporate = React.useMemo(() => {
     const vendorsData = Array.isArray(allVendorsDetails)
       ? allVendorsDetails
@@ -49,11 +51,11 @@ export default function CorporateSidebar() {
     const isCorporateAdmin = user?.user_type === 'corporate admin'
     const hasProfileAndID = Boolean(
       user?.onboarding_progress?.personal_details_completed &&
-      user?.onboarding_progress?.upload_id_completed,
+        user?.onboarding_progress?.upload_id_completed,
     )
     const hasBusinessDetailsAndDocs = Boolean(
       user?.onboarding_progress?.business_details_completed &&
-      user?.onboarding_progress?.business_documents_completed,
+        user?.onboarding_progress?.business_documents_completed,
     )
     // For corporate admins, only count Profile & ID step
     // For regular corporate users, count both steps

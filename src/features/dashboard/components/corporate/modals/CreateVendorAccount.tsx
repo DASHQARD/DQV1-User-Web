@@ -29,19 +29,19 @@ const fileSchema = z
   .instanceof(File)
   .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB')
 
+const optionalFileSchema = z.union([fileSchema, z.undefined(), z.null(), z.literal('')]).optional()
+
 // Conditional schemas that make fields optional based on checkboxes
 const conditionalProfileSchema = z
   .object({
     checkbox_profile_same_as_corporate: z.boolean().optional(),
-    front_id: z.union([fileSchema, z.undefined()]).optional(),
-    back_id: z.union([fileSchema, z.undefined()]).optional(),
+    front_id: optionalFileSchema,
+    back_id: optionalFileSchema,
   })
   .superRefine((data, ctx) => {
-    // If checkbox is checked, files are not required
     if (data.checkbox_profile_same_as_corporate) {
       return
     }
-    // Otherwise, both files are required
     if (!data.front_id) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -49,28 +49,28 @@ const conditionalProfileSchema = z
         path: ['front_id'],
       })
     }
-    if (!data.back_id) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Back ID photo is required',
-        path: ['back_id'],
-      })
-    }
+    // Back ID not required for National ID or Passport
   })
 
 const conditionalBusinessDocsSchema = z
   .object({
     checkbox_vendor_details_same_as_corporate: z.boolean().optional(),
-    certificate_of_incorporation: z.union([fileSchema, z.undefined()]).optional(),
-    business_license: z.union([fileSchema, z.undefined()]).optional(),
-    utility_bill: z.union([fileSchema, z.undefined()]).optional(),
+    logo: optionalFileSchema,
+    certificate_of_incorporation: optionalFileSchema,
+    business_license: optionalFileSchema,
+    utility_bill: optionalFileSchema,
   })
   .superRefine((data, ctx) => {
-    // If checkbox is checked, files are not required
     if (data.checkbox_vendor_details_same_as_corporate) {
       return
     }
-    // Otherwise, files are required
+    if (!data.logo) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Business logo is required',
+        path: ['logo'],
+      })
+    }
     if (!data.certificate_of_incorporation) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -150,8 +150,6 @@ function CreateVendorAccountContent({
 }) {
   const [step, setStep] = React.useState<1 | 2 | 3>(1)
 
-  console.log('corporateUser', corporateUser)
-
   const methods = useForm<CreateVendorFormData>({
     resolver: zodResolver(createVendorFormSchema),
     mode: 'onTouched',
@@ -216,9 +214,18 @@ function CreateVendorAccountContent({
   const handleProfileSubmit = React.useCallback(() => {
     const checkboxProfileSameAsCorporate = methods.getValues('checkbox_profile_same_as_corporate')
 
-    // Only validate front_id and back_id if checkbox is not checked
+    // Only validate front_id if checkbox is not checked (National ID / Passport: front only)
     const fieldsToValidate = checkboxProfileSameAsCorporate
-      ? (['first_name', 'last_name', 'dob', 'street_address', 'id_type', 'id_number'] as const)
+      ? ([
+          'first_name',
+          'last_name',
+          'dob',
+          'street_address',
+          'id_type',
+          'id_number',
+          'phone',
+          'email',
+        ] as const)
       : ([
           'first_name',
           'last_name',
@@ -227,7 +234,8 @@ function CreateVendorAccountContent({
           'id_type',
           'id_number',
           'front_id',
-          'back_id',
+          'phone',
+          'email',
         ] as const)
 
     methods.trigger(fieldsToValidate).then((isValid) => {
@@ -263,8 +271,6 @@ function CreateVendorAccountContent({
               use_corporate_info: true,
             },
           } as CreateVendorPayload
-
-          console.log('payload', minimalPayload)
 
           // Call the API
           await createVendor(minimalPayload)
@@ -304,6 +310,7 @@ function CreateVendorAccountContent({
             const frontResponse = await uploadFiles([data.front_id])
             idImages.front = frontResponse[0]?.file_key || ''
           }
+          // National ID / Passport: front only; back not uploaded
           if (data.back_id) {
             const backResponse = await uploadFiles([data.back_id])
             idImages.back = backResponse[0]?.file_key || ''

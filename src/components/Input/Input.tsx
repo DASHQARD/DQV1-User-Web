@@ -16,6 +16,7 @@ type Props = Readonly<{
   type?: React.InputHTMLAttributes<HTMLInputElement>['type'] | 'textarea'
   name?: string
   id?: string
+  isRequired?: boolean
 
   prefix?: React.ReactNode
   suffix?: React.ReactNode
@@ -40,6 +41,7 @@ export const Input = React.forwardRef(
       prefix,
       suffix,
       id,
+      isRequired,
       ...otherProps
     } = props
 
@@ -102,7 +104,7 @@ export const Input = React.forwardRef(
             onClick={handleLabelClick}
             className="flex gap-1 items-center text-[#151819] text-sm"
           >
-            {label} {labelChild}
+            {label} {isRequired && <span className="text-error">*</span>} {labelChild || null}
           </InputLabel>
         ) : null}
 
@@ -130,6 +132,7 @@ export const Input = React.forwardRef(
               ref={ref}
               className={computedInputClassName}
               id={id ?? otherProps.name}
+              required={isRequired}
               {...otherProps}
             />
           ) : null}
@@ -142,6 +145,7 @@ export const Input = React.forwardRef(
               className={computedInputClassName}
               ref={ref}
               id={id ?? otherProps.name}
+              required={isRequired}
               {...otherProps}
             ></textarea>
           ) : null}

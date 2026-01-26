@@ -22,7 +22,6 @@ import { Icon } from '@/libs'
 export default function PaymentInfoForm() {
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
   const { useUpdatePaymentInfoService } = usePaymentInfoService()
   const { mutate, isPending } = useUpdatePaymentInfoService()
   const { countries } = useCountriesData()

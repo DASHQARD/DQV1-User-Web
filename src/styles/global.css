@@ -32,6 +32,8 @@
   --color-warning-800: var(--color-warning-800);
   --color-warning-900: var(--color-warning-900);
   --color-warning-950: var(--color-warning-950);
+
+  --color-error: var(--color-error);
 }
 
 :root {
@@ -45,6 +47,7 @@
 
   --color-grey-500: #666;
 
+  --color-error: #e03137;
   --color-error-100: #dd4a40;
   --color-error-50: #fef3f2;
   --color-error-500: #f04438;

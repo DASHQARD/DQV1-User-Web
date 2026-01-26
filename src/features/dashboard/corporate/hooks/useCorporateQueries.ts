@@ -13,6 +13,7 @@ import {
   getCarts,
   getPaymentDetails,
   getPaymentDetailsByUserId,
+  getCorporateCards,
 } from '../services'
 import { getCards } from '@/features/dashboard/services/cards'
 import { useAuthStore } from '@/stores'
@@ -134,6 +135,13 @@ export function corporateQueries() {
     })
   }
 
+  function useGetCorporateCardsService(query?: Record<string, any>) {
+    return useQuery({
+      queryKey: ['corporate-cards-experience', query],
+      queryFn: () => getCorporateCards(query),
+    })
+  }
+
   return {
     useGetCorporateService,
     useGetCorporateByIdService,
@@ -149,5 +157,6 @@ export function corporateQueries() {
     useGetPaymentDetailsService,
     useGetPaymentDetailsByUserIdService,
     useGetCardsService,
+    useGetCorporateCardsService,
   }
 }

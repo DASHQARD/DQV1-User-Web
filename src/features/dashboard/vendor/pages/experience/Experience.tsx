@@ -15,6 +15,7 @@ import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType } from '@/types'
 import { vendorQueries } from '../../hooks'
 import { branchQueries } from '@/features/dashboard/branch'
+import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 
 export default function Experience() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
@@ -32,19 +33,24 @@ export default function Experience() {
     return apiParams
   }, [query])
 
-  const { useGetCardsByVendorIdService } = vendorQueries()
-  const { data: cardsResponse, isLoading } = useGetCardsByVendorIdService(params)
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const userType = (userProfileData as any)?.user_type
   const isCorporate = userType === 'corporate' || userType === 'corporate super admin'
 
+  const { useGetCardsByVendorIdService } = vendorQueries()
+  const { data: cardsResponse, isLoading } = useGetCardsByVendorIdService(params)
+
   const { useGetBranchExperiencesService } = branchQueries()
   const { data: branchCardsResponse, isLoading: isLoadingBranchCards } =
     useGetBranchExperiencesService(params)
 
-  const response = cardsResponse || branchCardsResponse
-  const isLoadingAny = isLoading || isLoadingBranchCards
+  const { useGetCorporateCardsService } = corporateQueries()
+  const { data: corporateCardsResponse, isLoading: isLoadingCorporateCards } =
+    useGetCorporateCardsService(params)
+
+  const response = isCorporate ? corporateCardsResponse : cardsResponse || branchCardsResponse
+  const isLoadingAny = isCorporate ? isLoadingCorporateCards : isLoading || isLoadingBranchCards
 
   const experiencesData = useMemo(() => {
     if (!response) return []
@@ -84,39 +90,36 @@ export default function Experience() {
           </div>
 
           <VendorSummaryCards />
-          {/* dont show this table if the user is a corporate or corporate super admin */}
-          {!isCorporate && (
-            <div className="relative pt-14">
-              <PaginatedTable
-                filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
-                columns={experienceListColumns}
-                data={experiencesData}
-                total={estimatedTotal}
-                loading={isLoadingAny}
-                query={query}
-                setQuery={setQuery}
-                searchPlaceholder="Search by product name or type..."
-                csvHeaders={experienceListCsvHeaders}
-                printTitle="Experiences"
-                onNextPage={handleNextPage}
-                hasNextPage={pagination?.hasNextPage}
-                hasPreviousPage={pagination?.hasPreviousPage}
-                currentAfter={query.after}
-                previousCursor={pagination?.previous}
-                onSetAfter={handleSetAfter}
-                filterBy={{
-                  simpleSelects: [
-                    { label: 'status', options: OPTIONS.EXPERIENCE_STATUS },
-                    {
-                      label: 'card_type',
-                      options: OPTIONS.BRANCH_AND_CORPORATE_EXPERIENCE_CARD_TYPE,
-                    },
-                  ],
-                  date: [{ queryKey: 'dateFrom', label: 'Date range' }],
-                }}
-              />
-            </div>
-          )}
+          <div className="relative pt-14">
+            <PaginatedTable
+              filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
+              columns={experienceListColumns}
+              data={experiencesData}
+              total={estimatedTotal}
+              loading={isLoadingAny}
+              query={query}
+              setQuery={setQuery}
+              searchPlaceholder="Search by product name or type..."
+              csvHeaders={experienceListCsvHeaders}
+              printTitle="Experiences"
+              onNextPage={handleNextPage}
+              hasNextPage={pagination?.hasNextPage}
+              hasPreviousPage={pagination?.hasPreviousPage}
+              currentAfter={query.after}
+              previousCursor={pagination?.previous}
+              onSetAfter={handleSetAfter}
+              filterBy={{
+                simpleSelects: [
+                  { label: 'status', options: OPTIONS.EXPERIENCE_STATUS },
+                  {
+                    label: 'card_type',
+                    options: OPTIONS.BRANCH_AND_CORPORATE_EXPERIENCE_CARD_TYPE,
+                  },
+                ],
+                date: [{ queryKey: 'dateFrom', label: 'Date range' }],
+              }}
+            />
+          </div>
         </div>
       </div>
       <ViewExperience />

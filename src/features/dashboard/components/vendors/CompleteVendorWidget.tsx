@@ -30,13 +30,13 @@ export default function CompleteVendorWidget() {
     hasID: Boolean(userProfileData?.onboarding_progress?.upload_id_completed),
     hasProfileAndID: Boolean(
       userProfileData?.onboarding_progress?.personal_details_completed &&
-      userProfileData?.onboarding_progress?.upload_id_completed,
+        userProfileData?.onboarding_progress?.upload_id_completed,
     ),
     hasBusinessDetails: Boolean(userProfileData?.onboarding_progress?.business_details_completed),
     hasBusinessDocs: Boolean(userProfileData?.onboarding_progress?.business_documents_completed),
     hasBusinessDetailsAndDocs: Boolean(
       userProfileData?.onboarding_progress?.business_details_completed &&
-      userProfileData?.onboarding_progress?.business_documents_completed,
+        userProfileData?.onboarding_progress?.business_documents_completed,
     ),
   }
 

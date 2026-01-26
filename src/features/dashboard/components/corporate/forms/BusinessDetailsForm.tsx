@@ -1,5 +1,5 @@
 import { Button } from '@/components/Button'
-import { Input, FileUploader, CreatableCombobox, Text, Modal } from '@/components'
+import { Input, FileUploader, CreatableCombobox, Text, Modal, ImageUpload } from '@/components'
 import { BUSINESS_INDUSTRY_OPTIONS, ROUTES } from '@/utils/constants'
 import { BusinessDetailsSchema, UploadBusinessIDSchema } from '@/utils/schemas'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -16,11 +16,31 @@ import {
   useToast,
 } from '@/hooks'
 import React from 'react'
+import { cn } from '@/libs'
 import LoaderGif from '@/assets/gifs/loader.gif'
 
 const CombinedBusinessSchema = BusinessDetailsSchema.merge(UploadBusinessIDSchema)
 
 const DRAFT_STORAGE_KEY = 'business_details_form_draft'
+
+const BUSINESS_TYPE_OPTIONS = [
+  {
+    value: 'llc' as const,
+    title: 'Limited Liability Company',
+    description:
+      "A flexible structure that protects owners' personal assets from business liabilities.",
+  },
+  {
+    value: 'sole_proprietor' as const,
+    title: 'Sole Proprietorship',
+    description: 'A business owned and run by one person with no legal distinction from the owner.',
+  },
+  {
+    value: 'partnership' as const,
+    title: 'Partnership',
+    description: 'Two or more parties agree to share ownership, profits, and liability.',
+  },
+]
 
 export default function BusinessDetailsForm() {
   const { useBusinessDetailsWithDocumentsService } = useAuth()
@@ -33,8 +53,6 @@ export default function BusinessDetailsForm() {
   const toast = useToast()
   const [documentUrls, setDocumentUrls] = React.useState<Record<string, string | null>>({})
   const [isSavingProgress, setIsSavingProgress] = React.useState(false)
-  const isInitializingPhoneRef = React.useRef(false)
-  const lastPhoneValueRef = React.useRef<string>('')
 
   const { countries: phoneCountries } = useCountriesData()
   const navigate = useNavigate()
@@ -251,7 +269,6 @@ export default function BusinessDetailsForm() {
     if (!hasExistingData) {
       const savedProgress = loadProgress()
       if (savedProgress) {
-        isInitializingPhoneRef.current = true
         form.reset({
           name: savedProgress.name || '',
           type: savedProgress.type,
@@ -271,7 +288,6 @@ export default function BusinessDetailsForm() {
         })
         // Trigger validation after a brief delay to ensure File objects are recognized
         setTimeout(async () => {
-          isInitializingPhoneRef.current = false
           // Manually trigger validation to update formState.isValid
           await form.trigger()
         }, 200)
@@ -290,7 +306,6 @@ export default function BusinessDetailsForm() {
     ) {
       const businessDetail = userProfileData.business_details[0]
       const firstDoc = userProfileData.business_documents?.[0]
-      isInitializingPhoneRef.current = true
       form.reset({
         name: businessDetail?.name || '',
         type: businessDetail?.type,
@@ -302,10 +317,6 @@ export default function BusinessDetailsForm() {
         employer_identification_number: firstDoc?.employer_identification_number || '',
         business_industry: firstDoc?.business_industry || '',
       })
-      // Allow phone updates after a brief delay
-      setTimeout(() => {
-        isInitializingPhoneRef.current = false
-      }, 100)
     }
   }, [userProfileData, form])
 
@@ -320,13 +331,13 @@ export default function BusinessDetailsForm() {
         | 'logo'
 
       const documentTypes: Array<{ file: File; type: DocumentType }> = [
+        { file: data.logo, type: 'logo' },
         { file: data.certificate_of_incorporation, type: 'certificate_of_incorporation' },
         { file: data.business_license, type: 'business_license' },
+        { file: data.utility_bill, type: 'utility_bill' },
         ...(data.articles_of_incorporation
           ? [{ file: data.articles_of_incorporation, type: 'articles_of_incorporation' as const }]
           : []),
-        { file: data.utility_bill, type: 'utility_bill' },
-        ...(data.logo ? [{ file: data.logo, type: 'logo' as const }] : []),
       ]
 
       const uploadPromises = documentTypes.map((doc) => uploadFiles([doc.file]))
@@ -372,42 +383,84 @@ export default function BusinessDetailsForm() {
   }
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
-      <section className="flex flex-col gap-10 border-b border-[#CDD3D3] pb-16">
-        <div className="flex flex-col gap-2 w-full">
-          <Text variant="h6" weight="normal" className="text-[#151819]">
+      <section className="flex flex-col gap-8">
+        <div className="flex flex-col gap-1">
+          <Text variant="h3" weight="semibold">
             Business Details
           </Text>
-          <p className="text-sm text-gray-500">Complete your business information</p>
+          <Text variant="span" className="text-[#A0AEC0]">
+            Complete your business information
+          </Text>
         </div>
+
+        <hr className="border-[#F1F2F4]" />
 
         <section className="flex flex-col gap-4 flex-1">
           <Controller
             control={form.control}
+            name="logo"
+            render={({ field: { onChange, value }, fieldState: { error } }) => {
+              const existingUrl = documentUrls['logo']
+              return (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-1">
+                    <Text as="label" className="text-[#151819] text-sm font-medium">
+                      Business Logo
+                    </Text>
+                    <span className="text-error">*</span>
+                  </div>
+                  <ImageUpload
+                    file={value ?? null}
+                    onFileChange={(f) => onChange(f ?? null)}
+                    onUpload={() => {}}
+                    isUploading={isPending}
+                    currentImageUrl={existingUrl && !value ? existingUrl : undefined}
+                    className="h-[120px]! w-[120px]!"
+                  />
+                  {error && <p className="text-sm text-red-500">{error.message}</p>}
+                </div>
+              )
+            }}
+          />
+          <Controller
+            control={form.control}
             name="type"
             render={({ field: { value, onChange }, fieldState: { error } }) => (
-              <div className="flex flex-col gap-1">
-                <Text as="h2" className="text-2xl font-bold">
+              <div className="flex flex-col gap-2">
+                <Text variant="h3" weight="semibold">
                   Business Type
                 </Text>
-                <RadioGroup value={value} onValueChange={onChange}>
-                  <div className="flex items-center gap-3">
-                    <RadioGroupItem value="llc" id="r1" />
-                    <Text as="label" htmlFor="r1" className="cursor-pointer">
-                      Limited Liability Company
-                    </Text>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <RadioGroupItem value="sole_proprietor" id="r2" />
-                    <Text as="label" htmlFor="r2" className="cursor-pointer">
-                      Sole Proprietorship
-                    </Text>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <RadioGroupItem value="partnership" id="r3" />
-                    <Text as="label" htmlFor="r3" className="cursor-pointer">
-                      Partnership
-                    </Text>
-                  </div>
+                <RadioGroup value={value} onValueChange={onChange} className="flex flex-col gap-3">
+                  {BUSINESS_TYPE_OPTIONS.map((opt) => {
+                    const isSelected = value === opt.value
+                    const id = `business-type-${opt.value}`
+                    return (
+                      <label
+                        key={opt.value}
+                        htmlFor={id}
+                        className={cn(
+                          'flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors',
+                          'bg-gray-50 hover:bg-gray-100',
+                          isSelected ? 'border-primary-500 bg-primary-50/30' : 'border-gray-200',
+                        )}
+                      >
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="font-semibold text-gray-900">{opt.title}</p>
+                          <p className="text-sm text-gray-500 mt-0.5">{opt.description}</p>
+                        </div>
+                        <RadioGroupItem
+                          value={opt.value}
+                          id={id}
+                          className={cn(
+                            'shrink-0 size-5',
+                            isSelected
+                              ? 'border-primary-500 data-[state=checked]:border-primary-500'
+                              : '',
+                          )}
+                        />
+                      </label>
+                    )
+                  })}
                 </RadioGroup>
                 {error && <p className="text-sm text-red-500">{error.message}</p>}
               </div>
@@ -416,85 +469,93 @@ export default function BusinessDetailsForm() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Business Name"
+              isRequired
               placeholder="Provide your business name"
               {...form.register('name')}
               error={form.formState.errors.name?.message}
             />
-            <div className="flex flex-col gap-1">
-              <Controller
-                control={form.control}
-                name="phone"
-                render={({ field: { onChange, value } }) => {
-                  // Ensure value is always a string
-                  const phoneValue = value || ''
-
-                  // Update ref when value changes from form
-                  if (phoneValue !== lastPhoneValueRef.current) {
-                    lastPhoneValueRef.current = phoneValue
+            <Controller
+              control={form.control}
+              name="phone"
+              render={({ field: { onChange } }) => (
+                <BasePhoneInput
+                  placeholder="Enter number eg. 5512345678"
+                  options={phoneCountries}
+                  isRequired
+                  maxLength={14}
+                  handleChange={onChange}
+                  label="Phone Number"
+                  error={form.formState.errors.phone?.message}
+                  hint={
+                    <>
+                      Please enter your number in the format:{' '}
+                      <span className="font-medium">5512345678</span>
+                    </>
                   }
-
-                  const handlePhoneChange = (newValue: string) => {
-                    // Prevent updates during initialization
-                    if (isInitializingPhoneRef.current) {
-                      return
-                    }
-                    // Only update if value actually changed and it's different from what we just set
-                    if (newValue !== lastPhoneValueRef.current) {
-                      lastPhoneValueRef.current = newValue
-                      onChange(newValue)
-                    }
-                  }
-
-                  return (
-                    <BasePhoneInput
-                      placeholder="Enter number eg. 5512345678"
-                      options={phoneCountries}
-                      maxLength={9}
-                      handleChange={handlePhoneChange}
-                      selectedVal={phoneValue}
-                      label="Business Phone Number"
-                      error={form.formState.errors.phone?.message}
-                    />
-                  )
-                }}
-              />
-              <p className="text-xs text-gray-500">
-                Please enter your number in the format:{' '}
-                <span className="font-medium">5512345678</span>
-              </p>
-            </div>
+                />
+              )}
+            />
           </div>
 
           <Input
             label="Business Email"
+            isRequired
             placeholder="Enter your email"
             {...form.register('email')}
             type="email"
             error={form.formState.errors.email?.message}
           />
 
+          <Input
+            label="Business Registration Number (VAT)"
+            isRequired
+            placeholder="Enter your business registration number (VAT)"
+            {...form.register('registration_number')}
+            error={form.formState.errors.registration_number?.message}
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Taxpayer Identification Number (TIN)"
+              isRequired
+              placeholder="Enter your Taxpayer Identification Number (TIN)"
+              {...form.register('employer_identification_number')}
+              error={form.formState.errors.employer_identification_number?.message}
+            />
+            <Controller
+              control={form.control}
+              name="business_industry"
+              render={({ field: { onChange, value, name }, fieldState: { error } }) => (
+                <CreatableCombobox
+                  label="Business Industry"
+                  isRequired
+                  placeholder="Select or create your business industry"
+                  options={BUSINESS_INDUSTRY_OPTIONS}
+                  name={name}
+                  value={value}
+                  onChange={onChange}
+                  error={error?.message}
+                />
+              )}
+            />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Business Street Address"
+              isRequired
               placeholder="Enter your business street address"
               {...form.register('street_address')}
               error={form.formState.errors.street_address?.message}
             />
-
             <Input
               label="Business Ghana Post Digital Address"
+              isRequired
               placeholder="Enter your Ghana Post Digital Address"
               {...form.register('digital_address')}
               error={form.formState.errors.digital_address?.message}
             />
           </div>
-
-          <Input
-            label="Business Registration Number (VAT)"
-            placeholder="Enter your business registration number (VAT)"
-            {...form.register('registration_number')}
-            error={form.formState.errors.registration_number?.message}
-          />
         </section>
       </section>
 
@@ -514,35 +575,9 @@ export default function BusinessDetailsForm() {
             <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
               <li>Certificate of Incorporation (Required)</li>
               <li>Business License (Required)</li>
-              <li>Articles of Incorporation (Optional)</li>
               <li>Utility Bill (Required)</li>
-              <li>Business Logo (Optional)</li>
+              <li>Articles of Incorporation (Optional)</li>
             </ul>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Taxpayer Identification Number (TIN)"
-              placeholder="Enter your Taxpayer Identification Number (TIN)"
-              {...form.register('employer_identification_number')}
-              error={form.formState.errors.employer_identification_number?.message}
-            />
-
-            <Controller
-              control={form.control}
-              name="business_industry"
-              render={({ field: { onChange, value, name }, fieldState: { error } }) => (
-                <CreatableCombobox
-                  label="Business Industry"
-                  placeholder="Select or create your business industry"
-                  options={BUSINESS_INDUSTRY_OPTIONS}
-                  name={name}
-                  value={value}
-                  onChange={onChange}
-                  error={error?.message}
-                />
-              )}
-            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -624,6 +659,40 @@ export default function BusinessDetailsForm() {
 
             <Controller
               control={form.control}
+              name="utility_bill"
+              render={({ field: { onChange, value }, fieldState: { error } }) => {
+                const existingUrl = documentUrls['utility_bill']
+                const existingDoc = userProfileData?.business_documents?.find(
+                  (doc) => doc.type === 'utility_bill',
+                )
+                return (
+                  <div className="space-y-2">
+                    {existingUrl && !value && (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-48">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-medium text-gray-700">Current Document</p>
+                        </div>
+                        <img
+                          src={existingUrl}
+                          alt={existingDoc?.file_name || 'Utility Bill'}
+                          className="max-h-48 w-full object-contain rounded border border-gray-200"
+                        />
+                      </div>
+                    )}
+                    <FileUploader
+                      label={existingUrl && !value ? 'Replace Utility Bill' : 'Upload Utility Bill'}
+                      value={value}
+                      onChange={onChange}
+                      error={error?.message}
+                      id="utility_bill"
+                    />
+                  </div>
+                )
+              }}
+            />
+
+            <Controller
+              control={form.control}
               name="articles_of_incorporation"
               render={({ field: { onChange, value }, fieldState: { error } }) => {
                 const existingUrl = documentUrls['articles_of_incorporation']
@@ -659,78 +728,6 @@ export default function BusinessDetailsForm() {
                 )
               }}
             />
-
-            <Controller
-              control={form.control}
-              name="utility_bill"
-              render={({ field: { onChange, value }, fieldState: { error } }) => {
-                const existingUrl = documentUrls['utility_bill']
-                const existingDoc = userProfileData?.business_documents?.find(
-                  (doc) => doc.type === 'utility_bill',
-                )
-                return (
-                  <div className="space-y-2">
-                    {existingUrl && !value && (
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-48">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-medium text-gray-700">Current Document</p>
-                        </div>
-                        <img
-                          src={existingUrl}
-                          alt={existingDoc?.file_name || 'Utility Bill'}
-                          className="max-h-48 w-full object-contain rounded border border-gray-200"
-                        />
-                      </div>
-                    )}
-                    <FileUploader
-                      label={existingUrl && !value ? 'Replace Utility Bill' : 'Upload Utility Bill'}
-                      value={value}
-                      onChange={onChange}
-                      error={error?.message}
-                      id="utility_bill"
-                    />
-                  </div>
-                )
-              }}
-            />
-
-            <Controller
-              control={form.control}
-              name="logo"
-              render={({ field: { onChange, value }, fieldState: { error } }) => {
-                const existingUrl = documentUrls['logo']
-                const existingDoc = userProfileData?.business_documents?.find(
-                  (doc) => doc.type === 'logo',
-                )
-                return (
-                  <div className="space-y-2">
-                    {existingUrl && !value && (
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-48">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-medium text-gray-700">Current Document</p>
-                        </div>
-                        <img
-                          src={existingUrl}
-                          alt={existingDoc?.file_name || 'Business Logo'}
-                          className="max-h-48 w-full object-contain rounded border border-gray-200"
-                        />
-                      </div>
-                    )}
-                    <FileUploader
-                      label={
-                        existingUrl && !value
-                          ? 'Replace Business Logo (Optional)'
-                          : 'Upload Business Logo (Optional)'
-                      }
-                      value={value || null}
-                      onChange={onChange}
-                      error={error?.message}
-                      id="logo"
-                    />
-                  </div>
-                )
-              }}
-            />
           </div>
         </section>
       </section>
@@ -761,7 +758,7 @@ export default function BusinessDetailsForm() {
       {/* Submission Modal with Loader */}
       <Modal
         isOpen={isPending}
-        setIsOpen={() => {}} // Prevent closing during submission
+        setIsOpen={() => {}}
         title="Saving Business Details"
         showClose={false}
         position="center"

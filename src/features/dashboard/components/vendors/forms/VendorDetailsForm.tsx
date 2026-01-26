@@ -6,15 +6,33 @@ import {
   Input,
   Checkbox,
   FileUploader,
+  ImageUpload,
   RadioGroup,
   RadioGroupItem,
-  BasePhoneInput,
   CreatableCombobox,
 } from '@/components'
-import { Icon } from '@/libs'
-import { useCountriesData } from '@/hooks'
+import { cn, Icon } from '@/libs'
 import type { DropdownOption } from '@/types'
 import type { UserProfileResponse } from '@/types/user'
+
+const VENDOR_TYPE_OPTIONS = [
+  {
+    value: 'llc' as const,
+    title: 'Limited Liability Company',
+    description:
+      "A flexible structure that protects owners' personal assets from business liabilities.",
+  },
+  {
+    value: 'sole_proprietor' as const,
+    title: 'Sole Proprietorship',
+    description: 'A business owned and run by one person with no legal distinction from the owner.',
+  },
+  {
+    value: 'partnership' as const,
+    title: 'Partnership',
+    description: 'Two or more parties agree to share ownership, profits, and liability.',
+  },
+]
 
 const businessIndustryOptions: DropdownOption[] = [
   { value: 'retail', label: 'Retail' },
@@ -41,20 +59,19 @@ interface VendorDetailsFormProps {
 }
 
 export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorDetailsFormProps) {
-  const { countries } = useCountriesData()
   const form = useFormContext()
 
   const checkboxVendorDetailsSameAsCorporate = form.watch(
     'checkbox_vendor_details_same_as_corporate',
   )
   const type = form.watch('type')
-  const phone = form.watch('phone')
-  const email = form.watch('email')
   const streetAddress = form.watch('street_address')
   const digitalAddress = form.watch('digital_address')
   const registrationNumber = form.watch('registration_number')
   const employerIdentificationNumber = form.watch('employer_identification_number')
   const businessIndustry = form.watch('business_industry')
+  const phone = form.watch('phone')
+  const email = form.watch('email')
 
   // Update vendor details fields when checkbox is toggled
   React.useEffect(() => {
@@ -82,15 +99,14 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
         shouldValidate: true,
       })
     } else if (!checkboxVendorDetailsSameAsCorporate) {
-      // Clear fields when unchecked
+      // Clear fields when unchecked; leave phone and email (filled in Step 2)
       form.setValue('type', 'llc', { shouldValidate: false })
-      form.setValue('phone', '', { shouldValidate: false })
-      form.setValue('email', '', { shouldValidate: false })
       form.setValue('street_address', '', { shouldValidate: false })
       form.setValue('digital_address', '', { shouldValidate: false })
       form.setValue('registration_number', '', { shouldValidate: false })
       form.setValue('employer_identification_number', '', { shouldValidate: false })
       form.setValue('business_industry', '', { shouldValidate: false })
+      form.setValue('logo', null, { shouldValidate: false })
     }
   }, [checkboxVendorDetailsSameAsCorporate, corporateUser])
 
@@ -122,6 +138,29 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
         )}
       />
 
+      {/* Business logo (required, at top) — only when not same as corporate */}
+      {!checkboxVendorDetailsSameAsCorporate && (
+        <Controller
+          control={form.control}
+          name="logo"
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-1">
+                <span className="text-[#151819] text-sm font-medium">Business logo</span>
+                <span className="text-error">*</span>
+              </div>
+              <ImageUpload
+                file={value ?? null}
+                onFileChange={(f) => onChange(f ?? null)}
+                onUpload={() => {}}
+                className="h-[120px]! w-[120px]!"
+              />
+              {error?.message && <p className="text-sm text-red-500">{error.message}</p>}
+            </div>
+          )}
+        />
+      )}
+
       {/* Vendor Details Section */}
       <section className="flex flex-col gap-4">
         <Controller
@@ -129,67 +168,48 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
           name="type"
           render={({ field: { value, onChange }, fieldState: { error } }) => (
             <div
-              className={`flex flex-col gap-1 ${checkboxVendorDetailsSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}`}
+              className={cn(
+                'flex flex-col gap-2',
+                checkboxVendorDetailsSameAsCorporate && 'opacity-50 pointer-events-none',
+              )}
             >
               <Text as="label" className="text-sm font-medium text-gray-700">
                 Vendor Type
               </Text>
-              <RadioGroup value={value} onValueChange={onChange}>
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value="llc" id="vendor-type-llc" />
-                  <Text as="label" htmlFor="vendor-type-llc" className="cursor-pointer">
-                    Limited Liability Company
-                  </Text>
-                </div>
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value="sole_proprietor" id="vendor-type-sole" />
-                  <Text as="label" htmlFor="vendor-type-sole" className="cursor-pointer">
-                    Sole Proprietorship
-                  </Text>
-                </div>
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value="partnership" id="vendor-type-partnership" />
-                  <Text as="label" htmlFor="vendor-type-partnership" className="cursor-pointer">
-                    Partnership
-                  </Text>
-                </div>
+              <RadioGroup value={value} onValueChange={onChange} className="flex flex-col gap-3">
+                {VENDOR_TYPE_OPTIONS.map((opt) => {
+                  const isSelected = value === opt.value
+                  const id = `vendor-type-${opt.value}`
+                  return (
+                    <label
+                      key={opt.value}
+                      htmlFor={id}
+                      className={cn(
+                        'flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors',
+                        'bg-gray-50 hover:bg-gray-100',
+                        isSelected ? 'border-primary-500 bg-primary-50/30' : 'border-gray-200',
+                      )}
+                    >
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="font-semibold text-gray-900">{opt.title}</p>
+                        <p className="text-sm text-gray-500 mt-0.5">{opt.description}</p>
+                      </div>
+                      <RadioGroupItem
+                        value={opt.value}
+                        id={id}
+                        className={cn(
+                          'shrink-0 size-5',
+                          isSelected &&
+                            'border-primary-500 data-[state=checked]:border-primary-500',
+                        )}
+                      />
+                    </label>
+                  )
+                })}
               </RadioGroup>
               {error && <p className="text-sm text-red-500">{error.message}</p>}
             </div>
           )}
-        />
-
-        <Controller
-          control={form.control}
-          name="phone"
-          render={({ field: { value, onChange } }) => {
-            return (
-              <div
-                className={
-                  checkboxVendorDetailsSameAsCorporate ? 'opacity-50 pointer-events-none' : ''
-                }
-              >
-                <BasePhoneInput
-                  placeholder="Enter number eg. 5512345678"
-                  options={countries}
-                  selectedVal={value}
-                  maxLength={10}
-                  handleChange={onChange}
-                  label="Vendor Phone Number"
-                  error={form.formState.errors.phone?.message}
-                />
-              </div>
-            )
-          }}
-        />
-
-        <Input
-          label="Email"
-          placeholder="Enter your email"
-          {...form.register('email')}
-          type="email"
-          error={form.formState.errors.email?.message}
-          disabled={checkboxVendorDetailsSameAsCorporate}
         />
 
         <Input
@@ -209,8 +229,8 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
         />
 
         <Input
-          label="Vendor Registration Number"
-          placeholder="Enter your vendor registration number"
+          label="Vendor Incorporation Registration Number"
+          placeholder="Enter your vendor incorporation registration number"
           {...form.register('registration_number')}
           error={form.formState.errors.registration_number?.message}
           maxLength={10}
@@ -337,27 +357,6 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
                 </div>
               )}
             />
-
-            <Controller
-              control={form.control}
-              name="logo"
-              render={({ field: { onChange, value }, fieldState: { error } }) => (
-                <div
-                  className={
-                    checkboxVendorDetailsSameAsCorporate ? 'opacity-50 pointer-events-none' : ''
-                  }
-                >
-                  <FileUploader
-                    label="Logo (Optional)"
-                    value={value || null}
-                    onChange={onChange}
-                    error={error?.message}
-                    id="logo"
-                    accept="image/*"
-                  />
-                </div>
-              )}
-            />
           </div>
         </section>
       )}
@@ -382,7 +381,8 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
             !employerIdentificationNumber ||
             !businessIndustry ||
             (!checkboxVendorDetailsSameAsCorporate &&
-              (!form.watch('certificate_of_incorporation') ||
+              (!form.watch('logo') ||
+                !form.watch('certificate_of_incorporation') ||
                 !form.watch('business_license') ||
                 !form.watch('utility_bill'))) ||
             !!form.formState.errors.type ||
@@ -394,7 +394,8 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
             !!form.formState.errors.employer_identification_number ||
             !!form.formState.errors.business_industry ||
             (!checkboxVendorDetailsSameAsCorporate &&
-              (!!form.formState.errors.certificate_of_incorporation ||
+              (!!form.formState.errors.logo ||
+                !!form.formState.errors.certificate_of_incorporation ||
                 !!form.formState.errors.business_license ||
                 !!form.formState.errors.utility_bill))
           }

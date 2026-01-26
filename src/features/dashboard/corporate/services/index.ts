@@ -255,3 +255,18 @@ export const updatePaymentDetails = async (data: {
 export const deletePaymentDetails = async (): Promise<any> => {
   return await deleteMethod(`/payment-details`)
 }
+
+export const getCorporateCards = async (params?: Record<string, any>): Promise<any> => {
+  const queryString = getQueryString(params)
+  const fullUrl = queryString ? `/cards/corporate-super-admin?${queryString}` : `/cards/corporate`
+  const response = await axiosClient.get(fullUrl)
+  return response
+}
+
+export const requestBusinessUpdate = async (data: {
+  fields_to_update: Record<string, boolean>
+  proposed_values: Record<string, string>
+  reason_for_change?: string
+}): Promise<any> => {
+  return await postMethod(`/business-details/request-update`, data)
+}
