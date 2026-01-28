@@ -59,6 +59,8 @@ export const MODALS = {
     CREATE: 'create-branch',
     BULK_UPLOAD: 'bulk-upload-branches',
     VIEW: 'view-branch',
+    UPDATE_STATUS: 'update-branch-status',
+    DELETE: 'delete-branch',
   },
   VENDOR_ACCOUNT: {
     ROOT: 'vendor-account-modal',

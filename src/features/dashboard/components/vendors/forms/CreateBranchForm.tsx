@@ -17,20 +17,31 @@ import { useCountriesData, useUserProfile } from '@/hooks'
 import { GHANA_BANKS } from '@/assets/data/banks'
 import { CreateBranchFormSchema } from '@/utils/schemas'
 import { useVendorMutations } from '@/features/dashboard/vendor/hooks'
+import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
 import { Icon } from '@/libs'
 import { useAuth } from '@/features/auth/hooks'
 import { ROUTES } from '@/utils/constants'
+import { useAuthStore } from '@/stores'
 
 export default function CreateBranchForm() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   const { useGetCountriesService } = useAuth()
   const { data: countries } = useGetCountriesService()
   const { countries: phoneCountries } = useCountriesData()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
 
+  const userType = (user as any)?.user_type || userProfileData?.user_type
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
+
   const { useAddBranchService } = useVendorMutations()
-  const { mutateAsync: createBranch } = useAddBranchService()
+  const { useAddCorporateBranchService } = corporateMutations()
+  const { mutateAsync: createVendorBranch } = useAddBranchService()
+  const { mutateAsync: createCorporateBranch } = useAddCorporateBranchService()
+
+  // Use corporate branch service if user is corporate super admin, otherwise use vendor branch service
+  const createBranch = isCorporateSuperAdmin ? createCorporateBranch : createVendorBranch
 
   const isUserActive =
     userProfileData?.status === 'active' ||
@@ -266,27 +277,28 @@ export default function CreateBranchForm() {
           disabled={isFormDisabled}
         />
 
-        <div className="flex flex-col gap-1">
-          <Controller
-            control={form.control}
-            name="branch_manager_phone"
-            render={({ field: { onChange } }) => {
-              return (
-                <BasePhoneInput
-                  placeholder="Enter number eg. 5512345678"
-                  options={phoneCountries}
-                  maxLength={9}
-                  handleChange={onChange}
-                  label="Phone Number"
-                  error={form.formState.errors.branch_manager_phone?.message}
-                />
-              )
-            }}
-          />
-          <p className="text-xs text-gray-500">
-            Please enter your number in the format: <span className="font-medium">5512345678</span>
-          </p>
-        </div>
+        <Controller
+          control={form.control}
+          name="branch_manager_phone"
+          render={({ field: { onChange } }) => {
+            return (
+              <BasePhoneInput
+                placeholder="Enter number eg. 5512345678"
+                options={phoneCountries}
+                maxLength={14}
+                handleChange={onChange}
+                label="Phone Number"
+                error={form.formState.errors.branch_manager_phone?.message}
+                hint={
+                  <>
+                    Please enter your number in the format:{' '}
+                    <span className="font-medium">5512345678</span>
+                  </>
+                }
+              />
+            )
+          }}
+        />
       </section>
 
       {/* Payment Method */}
@@ -337,28 +349,28 @@ export default function CreateBranchForm() {
                 )}
               />
 
-              <div className="flex flex-col gap-1">
-                <Controller
-                  control={form.control}
-                  name="mobile_money_number"
-                  render={({ field: { onChange } }) => {
-                    return (
-                      <BasePhoneInput
-                        placeholder="Enter number eg. 5512345678"
-                        options={phoneCountries}
-                        maxLength={9}
-                        handleChange={onChange}
-                        label="Phone Number"
-                        error={form.formState.errors.mobile_money_number?.message}
-                      />
-                    )
-                  }}
-                />
-                <p className="text-xs text-gray-500">
-                  Please enter your number in the format:{' '}
-                  <span className="font-medium">5512345678</span>
-                </p>
-              </div>
+              <Controller
+                control={form.control}
+                name="mobile_money_number"
+                render={({ field: { onChange } }) => {
+                  return (
+                    <BasePhoneInput
+                      placeholder="Enter number eg. 5512345678"
+                      options={phoneCountries}
+                      maxLength={14}
+                      handleChange={onChange}
+                      label="Phone Number"
+                      error={form.formState.errors.mobile_money_number?.message}
+                      hint={
+                        <>
+                          Please enter your number in the format:{' '}
+                          <span className="font-medium">5512345678</span>
+                        </>
+                      }
+                    />
+                  )
+                }}
+              />
             </div>
           )}
 

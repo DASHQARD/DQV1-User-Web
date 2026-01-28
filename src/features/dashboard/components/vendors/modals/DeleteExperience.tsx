@@ -4,6 +4,7 @@ import { MODALS } from '@/utils/constants'
 import { useVendorMutations } from '@/features'
 import { Icon } from '@/libs'
 import { useBranchMutations } from '@/features/dashboard/branch'
+import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
 
 export function DeleteExperience() {
   const modal = usePersistedModalState({
@@ -15,15 +16,25 @@ export function DeleteExperience() {
   const deleteCardMutation = useDeleteCardService()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const isBranch = userProfileData?.user_type === 'branch'
+  const userType = userProfileData?.user_type
+  const isBranch = userType === 'branch'
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
   const { useDeleteBranchExperienceService } = useBranchMutations()
   const { mutateAsync: deleteBranchExperience, isPending: isDeletingBranchExperience } =
     useDeleteBranchExperienceService()
+  const { useDeleteCorporateSuperAdminCardService } = corporateMutations()
+  const deleteCorporateCardMutation = useDeleteCorporateSuperAdminCardService()
 
   const handleDelete = () => {
     if (!card?.id) return
 
-    if (isBranch) {
+    if (isCorporateSuperAdmin) {
+      deleteCorporateCardMutation.mutate(card.id, {
+        onSuccess: () => {
+          modal.closeModal()
+        },
+      })
+    } else if (isBranch) {
       deleteBranchExperience(card.id, {
         onSuccess: () => {
           modal.closeModal()
@@ -73,7 +84,7 @@ export function DeleteExperience() {
               variant="outline"
               onClick={modal.closeModal}
               className="flex-1"
-              disabled={deleteCardMutation.isPending}
+              disabled={deleteCardMutation.isPending || deleteCorporateCardMutation.isPending}
             >
               Cancel
             </Button>
@@ -81,8 +92,12 @@ export function DeleteExperience() {
               type="submit"
               variant="danger"
               className="flex-1"
-              disabled={deleteCardMutation.isPending}
-              loading={deleteCardMutation.isPending || isDeletingBranchExperience}
+              disabled={deleteCardMutation.isPending || deleteCorporateCardMutation.isPending}
+              loading={
+                deleteCardMutation.isPending ||
+                isDeletingBranchExperience ||
+                deleteCorporateCardMutation.isPending
+              }
             >
               Delete
             </Button>

@@ -8,30 +8,72 @@ import { Icon } from '@/libs'
 import { cn } from '@/libs/clsx'
 import { ROUTES } from '@/utils/constants'
 import { vendorQueries } from '@/features'
+import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 import { useAuthStore } from '@/stores'
+import { useUserProfile } from '@/hooks'
 
 export default function VendorSummaryCards() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const userType = (user as any)?.user_type
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const userType = (user as any)?.user_type || userProfileData?.user_type
   const isBranchManager = userType === 'branch'
-  const { useGetVendorCardCountsService } = vendorQueries()
-  const { data: cardCountsData, isLoading } = useGetVendorCardCountsService()
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
 
-  // Extract card counts from API response
+  const { useGetVendorCardCountsService } = vendorQueries()
+  const { data: vendorCardCountsData, isLoading: isLoadingVendorCounts } =
+    useGetVendorCardCountsService()
+
+  const { useGetCorporateSuperAdminCardsService } = corporateQueries()
+  const { data: corporateCardsData, isLoading: isLoadingCorporateCards } =
+    useGetCorporateSuperAdminCardsService()
+
+  // Extract card counts from API response - use corporate cards if corporate super admin
   const metrics = useMemo(() => {
-    if (!cardCountsData) {
+    if (isCorporateSuperAdmin) {
+      // For corporate super admin, calculate counts from cards list
+      if (!corporateCardsData) {
+        return {
+          DashX: 0,
+          DashPass: 0,
+        }
+      }
+
+      const cards = Array.isArray(corporateCardsData)
+        ? corporateCardsData
+        : corporateCardsData?.data || []
+
+      const dashXCount = cards.filter(
+        (card: any) =>
+          card.type?.toLowerCase() === 'dashx' || card.card_type?.toLowerCase() === 'dashx',
+      ).length
+      const dashPassCount = cards.filter(
+        (card: any) =>
+          card.type?.toLowerCase() === 'dashpass' || card.card_type?.toLowerCase() === 'dashpass',
+      ).length
+
       return {
-        DashX: 0,
-        DashPass: 0,
+        DashX: dashXCount,
+        DashPass: dashPassCount,
+      }
+    } else {
+      // For regular vendors, use vendor card counts endpoint
+      if (!vendorCardCountsData) {
+        return {
+          DashX: 0,
+          DashPass: 0,
+        }
+      }
+
+      return {
+        DashX: vendorCardCountsData.DashX || 0,
+        DashPass: vendorCardCountsData.DashPass || 0,
       }
     }
+  }, [isCorporateSuperAdmin, corporateCardsData, vendorCardCountsData])
 
-    return {
-      DashX: cardCountsData.DashX || 0,
-      DashPass: cardCountsData.DashPass || 0,
-    }
-  }, [cardCountsData])
+  const isLoading = isCorporateSuperAdmin ? isLoadingCorporateCards : isLoadingVendorCounts
 
   const CARD_INFO = useMemo(
     () => [

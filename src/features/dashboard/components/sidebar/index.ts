@@ -1,5 +1,6 @@
 export { default as Sidebar } from './Sidebar'
 export { default as CorporateSidebar } from './CorporateSidebar'
+export { default as CorporateVendorSidebar } from './CorporateVendorSidebar'
 export { default as VendorSidebar } from './VendorSidebar'
 export { default as BranchSidebar } from './BranchSidebar'
 export { default as UserSidebar } from './UserSidebar'

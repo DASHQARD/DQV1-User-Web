@@ -2,7 +2,7 @@ import AjoSavingsIllustration from '@/assets/images/ajo-savings.png'
 import GroupSavingsIllustration from '@/assets/images/group-savings.png'
 import IndividualSavingsIllustration from '@/assets/images/individual-savings.png'
 import WalletIllustration from '@/assets/images/wallet-illustration.png'
-import { VendorCards } from '@/features/dashboard/components'
+import VendorCards from '@/features/dashboard/components/vendors/cards/Cards'
 
 type Props = {
   dashx_redemptions: string

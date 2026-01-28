@@ -1,17 +1,21 @@
 import React from 'react'
 import { useNavigate, Link, useSearchParams, useParams } from 'react-router-dom'
-import { Text, Button, Modal, Dropdown, Combobox, Tag, EmptyState } from '@/components'
+import { Text, Button, Dropdown, Tag, EmptyState } from '@/components'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
-import { usePersistedModalState, useUserProfile, useToast } from '@/hooks'
+import { usePersistedModalState, useUserProfile } from '@/hooks'
 import {
   RedemptionDetails,
   BranchDetailsModal,
   ViewExperience,
+  UpdateBranchStatusModal,
+  DeleteBranchModal,
 } from '@/features/dashboard/components'
 import { CardItems } from '@/features/website/components'
 import { ROUTES, MODALS } from '@/utils/constants'
-import { vendorQueries, useVendorMutations } from '@/features'
+import { vendorQueries } from '@/features'
+import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
+import { useAuthStore } from '@/stores'
 import LoaderGif from '@/assets/gifs/loader.gif'
 import { getStatusVariant } from '@/utils/helpers/common'
 import EmptyStateImage from '@/assets/images/empty-state.png'
@@ -35,19 +39,26 @@ export function BranchDetails() {
     useGetAllVendorsDetailsForVendorService()
 
   // Get user profile and vendor ID
+  const { user } = useAuthStore()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { useGetBranchesByVendorIdService } = vendorQueries()
-  const { useUpdateBranchStatusService, useDeleteBranchByVendorService } = useVendorMutations()
-  const { mutateAsync: updateBranchStatus, isPending: isUpdatingStatus } =
-    useUpdateBranchStatusService()
-  const { mutateAsync: deleteBranchByVendor, isPending: isDeletingBranch } =
-    useDeleteBranchByVendorService()
-  const { error } = useToast()
+  const userType = (user as any)?.user_type || userProfileData?.user_type
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
 
-  const [isStatusModalOpen, setIsStatusModalOpen] = React.useState(false)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
-  const [selectedStatus, setSelectedStatus] = React.useState<string>('')
+  const { useGetBranchesByVendorIdService } = vendorQueries()
+  const {
+    useGetCorporateBranchByIdService,
+    useGetCorporateBranchManagersService,
+    useGetCorporateBranchRedemptionsService,
+    useGetCorporateBranchCardsService,
+    useGetCorporateBranchSummaryService,
+  } = corporateQueries()
+  const branchStatusModal = usePersistedModalState({
+    paramName: MODALS.BRANCH.ROOT,
+  })
+  const branchDeleteModal = usePersistedModalState({
+    paramName: MODALS.BRANCH.ROOT,
+  })
 
   // Get vendor_id from URL params or user profile
   const vendorIdFromParams = searchParams.get('vendor_id')
@@ -60,13 +71,6 @@ export function BranchDetails() {
       ? Number(vendorIdFromProfile)
       : null
 
-  // Fetch branches for the vendor
-  const {
-    data: branchData,
-    isLoading: isLoadingBranches,
-    isError: isErrorBranches,
-  } = useGetBranchesByVendorIdService(vendorId, false)
-
   // Extract branch_id from URL path or query params first
   const branchId = React.useMemo(() => {
     // Priority: 1. Query param, 2. URL path param
@@ -75,117 +79,226 @@ export function BranchDetails() {
     return null
   }, [branchIdFromParams, branchIdFromPath])
 
-  // Find the specific branch that matches branchId from the branches array
+  // Fetch branch data - use corporate endpoint if user is corporate super admin
+  const {
+    data: corporateBranchData,
+    isLoading: isLoadingCorporateBranch,
+    isError: isErrorCorporateBranch,
+  } = useGetCorporateBranchByIdService(isCorporateSuperAdmin ? branchId : null)
+
+  useGetCorporateBranchManagersService(isCorporateSuperAdmin ? branchId : null)
+
+  // Fetch branch redemptions - use corporate endpoint if user is corporate super admin
+  const { data: corporateBranchRedemptions, isLoading: isLoadingCorporateBranchRedemptions } =
+    useGetCorporateBranchRedemptionsService(isCorporateSuperAdmin ? branchId : null)
+
+  // Fetch branch cards - use corporate endpoint if user is corporate super admin
+  const { data: corporateBranchCards } = useGetCorporateBranchCardsService(
+    isCorporateSuperAdmin ? branchId : null,
+  )
+
+  // Fetch branch summary - use corporate endpoint if user is corporate super admin
+  const { data: corporateBranchSummary, isLoading: isLoadingCorporateBranchSummary } =
+    useGetCorporateBranchSummaryService(isCorporateSuperAdmin ? branchId : null)
+
+  // Fetch branches for the vendor (for non-corporate users)
+  const {
+    data: branchData,
+    isLoading: isLoadingBranches,
+    isError: isErrorBranches,
+  } = useGetBranchesByVendorIdService(isCorporateSuperAdmin ? null : vendorId, false)
+
+  // Determine which data source to use
+  const isLoadingBranchData = isCorporateSuperAdmin ? isLoadingCorporateBranch : isLoadingBranches
+  const isErrorBranchData = isCorporateSuperAdmin ? isErrorCorporateBranch : isErrorBranches
+
+  // Find the specific branch - use corporate branch data if corporate super admin, otherwise find from vendor branches array
   const branches = React.useMemo(() => {
-    if (!branchData || !Array.isArray(branchData)) return null
-    if (!branchId) {
-      // If no branchId specified, return first branch as fallback
-      return branchData[0] || null
+    if (isCorporateSuperAdmin) {
+      // For corporate super admin, use the direct branch data from corporate endpoint
+      if (!corporateBranchData) return null
+      // Handle both direct object and wrapped response
+      return corporateBranchData?.data || corporateBranchData || null
+    } else {
+      // For regular vendors, find branch from the branches array
+      if (!branchData || !Array.isArray(branchData)) return null
+      if (!branchId) {
+        // If no branchId specified, return first branch as fallback
+        return branchData[0] || null
+      }
+      // Find branch that matches the branchId
+      const foundBranch = branchData.find((branch: any) => {
+        const bId = branch.id || branch.branch_id
+        return String(bId) === String(branchId)
+      })
+      return foundBranch || branchData[0] || null
     }
-    // Find branch that matches the branchId
-    const foundBranch = branchData.find((branch: any) => {
-      const bId = branch.id || branch.branch_id
-      return String(bId) === String(branchId)
-    })
-    return foundBranch || branchData[0] || null
-  }, [branchData, branchId])
+  }, [isCorporateSuperAdmin, corporateBranchData, branchData, branchId])
 
-  // Extract cards for the specific branch from vendors details
+  // Extract cards for the specific branch - use corporate endpoint if user is corporate super admin
   const experiences = React.useMemo(() => {
-    if (!vendorsDetailsResponse || !vendorId || !branchId) return []
+    if (isCorporateSuperAdmin) {
+      // For corporate super admin, use the direct cards data from corporate endpoint
+      if (!corporateBranchCards) return []
+      // Handle both direct array and wrapped response
+      const cards = Array.isArray(corporateBranchCards)
+        ? corporateBranchCards
+        : corporateBranchCards?.data || []
 
-    // Handle both direct array response and wrapped response with data property
-    const vendorsData = Array.isArray(vendorsDetailsResponse)
-      ? vendorsDetailsResponse
-      : (vendorsDetailsResponse as any)?.data || []
+      if (!Array.isArray(cards)) return []
 
-    if (!Array.isArray(vendorsData)) return []
+      // Transform cards to experiences format
+      return cards.map((card: any) => ({
+        id: String(card.card_id || card.id || ''),
+        card_id: card.card_id || card.id,
+        product: card.card_name || card.product || 'Gift Card',
+        type: card.card_type || card.type || 'Gift Card',
+        price: String(card.card_price || card.price || 0),
+        currency: card.currency || 'GHS',
+        description: card.card_description || card.description || '',
+        status: card.card_status || card.status || 'active',
+        expiry_date: card.expiry_date || '',
+        issue_date: card.issue_date || '',
+        images: card.images || [],
+        terms_and_conditions: card.terms_and_conditions || [],
+        vendor_name: branches?.branch_name || '',
+        branch_name: branches?.branch_name || '',
+        branch_location: branches?.branch_location || '',
+        base_price: String(card.card_price || card.price || 0),
+        markup_price: null,
+        service_fee: '0',
+        rating: 0,
+        created_at: card.created_at || '',
+        updated_at: card.updated_at || card.created_at || '',
+        recipient_count: '0',
+        vendor_id: branches?.vendor_id || 0,
+      }))
+    } else {
+      // For regular vendors, extract from vendors details response
+      if (!vendorsDetailsResponse || !vendorId || !branchId) return []
 
-    // Find the vendor that matches the current vendor_id
-    const vendor = vendorsData.find((v: any) => {
-      const vId = v.vendor_id || v.id
-      return String(vId) === String(vendorId)
-    })
+      // Handle both direct array response and wrapped response with data property
+      const vendorsData = Array.isArray(vendorsDetailsResponse)
+        ? vendorsDetailsResponse
+        : (vendorsDetailsResponse as any)?.data || []
 
-    if (!vendor || !vendor.branches_with_cards || !Array.isArray(vendor.branches_with_cards)) {
-      return []
+      if (!Array.isArray(vendorsData)) return []
+
+      // Find the vendor that matches the current vendor_id
+      const vendor = vendorsData.find((v: any) => {
+        const vId = v.vendor_id || v.id
+        return String(vId) === String(vendorId)
+      })
+
+      if (!vendor || !vendor.branches_with_cards || !Array.isArray(vendor.branches_with_cards)) {
+        return []
+      }
+
+      // Find the specific branch
+      const branch = vendor.branches_with_cards.find((b: any) => {
+        const bId = b.branch_id || b.id
+        return String(bId) === String(branchId)
+      })
+
+      if (!branch || !branch.cards || !Array.isArray(branch.cards)) {
+        return []
+      }
+
+      // Transform cards to experiences format
+      return branch.cards.map((card: any) => ({
+        id: String(card.card_id || card.id || ''),
+        card_id: card.card_id || card.id,
+        product: card.card_name || card.product || 'Gift Card',
+        type: card.card_type || card.type || 'Gift Card',
+        price: String(card.card_price || card.price || 0),
+        currency: card.currency || 'GHS',
+        description: card.card_description || card.description || '',
+        status: card.card_status || card.status || 'active',
+        expiry_date: card.expiry_date || '',
+        issue_date: card.issue_date || '',
+        images: card.images || [],
+        terms_and_conditions: card.terms_and_conditions || [],
+        vendor_name: branch.branch_name || vendor.business_name || '',
+        branch_name: branch.branch_name || '',
+        branch_location: branch.branch_location || '',
+        base_price: String(card.card_price || card.price || 0),
+        markup_price: null,
+        service_fee: '0',
+        rating: 0,
+        created_at: card.created_at || '',
+        updated_at: card.updated_at || card.created_at || '',
+        recipient_count: '0',
+        vendor_id: vendor.vendor_id || vendor.id || 0,
+      }))
     }
+  }, [
+    isCorporateSuperAdmin,
+    corporateBranchCards,
+    vendorsDetailsResponse,
+    vendorId,
+    branchId,
+    branches,
+  ])
 
-    // Find the specific branch
-    const branch = vendor.branches_with_cards.find((b: any) => {
-      const bId = b.branch_id || b.id
-      return String(bId) === String(branchId)
-    })
-
-    if (!branch || !branch.cards || !Array.isArray(branch.cards)) {
-      return []
-    }
-
-    // Transform cards to experiences format
-    return branch.cards.map((card: any) => ({
-      id: String(card.card_id || card.id || ''),
-      card_id: card.card_id || card.id,
-      product: card.card_name || card.product || 'Gift Card',
-      type: card.card_type || card.type || 'Gift Card',
-      price: String(card.card_price || card.price || 0),
-      currency: card.currency || 'GHS',
-      description: card.card_description || card.description || '',
-      status: card.card_status || card.status || 'active',
-      expiry_date: card.expiry_date || '',
-      issue_date: card.issue_date || '',
-      images: card.images || [],
-      terms_and_conditions: card.terms_and_conditions || [],
-      vendor_name: branch.branch_name || vendor.business_name || '',
-      branch_name: branch.branch_name || '',
-      branch_location: branch.branch_location || '',
-      base_price: String(card.card_price || card.price || 0),
-      markup_price: null,
-      service_fee: '0',
-      rating: 0,
-      created_at: card.created_at || '',
-      updated_at: card.updated_at || card.created_at || '',
-      recipient_count: '0',
-      vendor_id: vendor.vendor_id || vendor.id || 0,
-    }))
-  }, [vendorsDetailsResponse, vendorId, branchId])
-
-  // Fetch branch redemptions using /redemptions endpoint
+  // Fetch branch redemptions - use corporate endpoint if user is corporate super admin, otherwise use vendor endpoint
   const redemptionQueries = useRedemptionQueries()
   const branchIdForApi = branches?.id || branches?.branch_id
   const branchNameForApi = branches?.branch_name
-  const { data: redemptionsResponse, isLoading: isLoadingRedemptions } =
-    redemptionQueries.useGetVendorRedemptionsListService({
-      limit: 100, // Fetch more to ensure we get all branch redemptions
-      branch_id: branchIdForApi ? Number(branchIdForApi) : undefined,
-      branch_name: branchNameForApi,
-    })
 
-  // Get all branch redemptions (filtered by current branch)
+  // For corporate super admin, use corporate branch redemptions endpoint
+  // For regular vendors, use vendor redemptions endpoint
+  const { data: vendorRedemptionsResponse, isLoading: isLoadingVendorRedemptions } =
+    redemptionQueries.useGetVendorRedemptionsListService(
+      isCorporateSuperAdmin
+        ? undefined
+        : {
+            limit: 100, // Fetch more to ensure we get all branch redemptions
+            branch_id: branchIdForApi ? Number(branchIdForApi) : undefined,
+            branch_name: branchNameForApi,
+          },
+    )
+
+  // Determine which loading state to use
+  const isLoadingRedemptions = isCorporateSuperAdmin
+    ? isLoadingCorporateBranchRedemptions
+    : isLoadingVendorRedemptions
+
+  // Get all branch redemptions
   const branchRedemptions = React.useMemo(() => {
-    if (!redemptionsResponse?.data || !branches) return []
-    const redemptions = redemptionsResponse.data || []
+    if (isCorporateSuperAdmin) {
+      // For corporate super admin, use the direct redemptions data from corporate endpoint
+      if (!corporateBranchRedemptions) return []
+      // Handle both direct array and wrapped response
+      return Array.isArray(corporateBranchRedemptions)
+        ? corporateBranchRedemptions
+        : corporateBranchRedemptions?.data || []
+    } else {
+      // For regular vendors, filter from vendor redemptions response
+      if (!vendorRedemptionsResponse?.data || !branches) return []
+      const redemptions = vendorRedemptionsResponse.data || []
 
-    // Additional client-side filtering to ensure we only show this branch's redemptions
-    const branchName = branches.branch_name
-    const branchLocation = branches.branch_location
-    const branchId = branches.id || branches.branch_id
+      // Additional client-side filtering to ensure we only show this branch's redemptions
+      const branchName = branches.branch_name
+      const branchLocation = branches.branch_location
+      const branchId = branches.id || branches.branch_id
 
-    return redemptions.filter((redemption: any) => {
-      // Match by branch_name (most reliable)
-      if (redemption.branch_name && branchName) {
-        return redemption.branch_name === branchName
-      }
-      // Fallback: match by branch_location
-      if (redemption.branch_location && branchLocation) {
-        return redemption.branch_location === branchLocation
-      }
-      // Fallback: match by branch_id if available in redemption
-      if (redemption.branch_id && branchId) {
-        return String(redemption.branch_id) === String(branchId)
-      }
-      return false
-    })
-  }, [redemptionsResponse, branches])
+      return redemptions.filter((redemption: any) => {
+        // Match by branch_name (most reliable)
+        if (redemption.branch_name && branchName) {
+          return redemption.branch_name === branchName
+        }
+        // Fallback: match by branch_location
+        if (redemption.branch_location && branchLocation) {
+          return redemption.branch_location === branchLocation
+        }
+        // Fallback: match by branch_id if available in redemption
+        if (redemption.branch_id && branchId) {
+          return String(redemption.branch_id) === String(branchId)
+        }
+        return false
+      })
+    }
+  }, [isCorporateSuperAdmin, corporateBranchRedemptions, vendorRedemptionsResponse, branches])
 
   // Get recent redemptions (first 5) - sorted by most recent first
   const recentRedemptions = React.useMemo(() => {
@@ -201,49 +314,54 @@ export function BranchDetails() {
       .slice(0, 5)
   }, [branchRedemptions])
 
-  // Calculate total redemptions count for the branch
+  // Calculate metrics - use corporate branch summary if available, otherwise calculate from redemptions
+  const metrics = React.useMemo(() => {
+    if (isCorporateSuperAdmin && corporateBranchSummary) {
+      // For corporate super admin, use summary data from API
+      const summary = corporateBranchSummary?.data || corporateBranchSummary || {}
+      return {
+        totalRedemptions: summary.total_redemptions || summary.totalRedemptions || 0,
+        totalPayouts: summary.total_payouts || summary.totalPayouts || 0,
+        totalPayoutsDashX: summary.total_payouts_dashx || summary.totalPayoutsDashX || 0,
+        totalPayoutsDashPass: summary.total_payouts_dashpass || summary.totalPayoutsDashPass || 0,
+        pendingPayout: summary.pending_payout || summary.pendingPayout || 0,
+        currency: summary.currency || 'GHS',
+      }
+    } else {
+      // For regular vendors, calculate from redemptions array
+      const totalRedemptions = branchRedemptions.length
+      const totalPayouts = branchRedemptions.reduce(
+        (sum: number, r: any) => sum + Number(r.amount || 0),
+        0,
+      )
+      const totalPayoutsDashX = branchRedemptions
+        .filter((r: any) => r.card_type?.toLowerCase() === 'dashx')
+        .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0)
+      const totalPayoutsDashPass = branchRedemptions
+        .filter((r: any) => r.card_type?.toLowerCase() === 'dashpass')
+        .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0)
+      const pendingPayout = branchRedemptions
+        .filter((r: any) => r.status?.toLowerCase() === 'pending')
+        .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0)
+
+      return {
+        totalRedemptions,
+        totalPayouts,
+        totalPayoutsDashX,
+        totalPayoutsDashPass,
+        pendingPayout,
+        currency: 'GHS',
+      }
+    }
+  }, [isCorporateSuperAdmin, corporateBranchSummary, branchRedemptions])
+
+  // Calculate total redemptions count for the branch (for backward compatibility)
   const totalRedemptions = React.useMemo(() => {
-    return branchRedemptions.length
-  }, [branchRedemptions])
-
-  // Handle status update
-  const handleStatusUpdate = async () => {
-    if (!branches?.id || !selectedStatus) return
-
-    try {
-      await updateBranchStatus({
-        branch_id: Number(branches.id),
-        status: selectedStatus,
-      })
-      setIsStatusModalOpen(false)
-      setSelectedStatus('')
-    } catch (err: any) {
-      error(err?.message || 'Failed to update branch status')
-    }
-  }
-
-  // Handle delete branch
-  const handleDeleteBranch = async () => {
-    if (!branches?.id) return
-
-    try {
-      await deleteBranchByVendor({
-        branch_id: Number(branches.id),
-      })
-      setIsDeleteModalOpen(false)
-    } catch (err: any) {
-      error(err?.message || 'Failed to delete branch')
-    }
-  }
-
-  // Status options (API only accepts: approved, suspended)
-  const statusOptions = [
-    { label: 'Approved', value: 'approved' },
-    { label: 'Suspended', value: 'suspended' },
-  ]
+    return metrics.totalRedemptions
+  }, [metrics])
 
   // Show loading state
-  if (isLoadingBranches || isLoadingVendorsDetails) {
+  if (isLoadingBranchData || isLoadingVendorsDetails) {
     return (
       <div className="flex justify-center items-center h-full">
         <img src={LoaderGif} alt="loading" className="w-10 h-10" />
@@ -257,7 +375,7 @@ export function BranchDetails() {
       <div className="flex flex-col justify-center items-center h-full gap-4">
         <Icon icon="bi:exclamation-circle" className="text-4xl text-red-500" />
         <Text variant="h3" className="text-gray-700">
-          {isErrorBranches ? 'Error loading branch details' : 'Branch not found'}
+          {isErrorBranchData ? 'Error loading branch details' : 'Branch not found'}
         </Text>
         <Button
           variant="secondary"
@@ -315,13 +433,14 @@ export function BranchDetails() {
                     {
                       label: 'Update Status',
                       onClickFn: () => {
-                        setSelectedStatus(branches.status || '')
-                        setIsStatusModalOpen(true)
+                        branchStatusModal.openModal(MODALS.BRANCH.UPDATE_STATUS, branches)
                       },
                     },
                     {
                       label: 'Delete Branch',
-                      onClickFn: () => setIsDeleteModalOpen(true),
+                      onClickFn: () => {
+                        branchDeleteModal.openModal(MODALS.BRANCH.DELETE, branches)
+                      },
                     },
                   ]}
                 >
@@ -351,7 +470,7 @@ export function BranchDetails() {
               <Icon icon="bi:credit-card-2-front" />
             </div>
             <div className="flex-1">
-              {isLoadingRedemptions ? (
+              {isLoadingRedemptions || isLoadingCorporateBranchSummary ? (
                 <div className="text-sm text-[#6c757d] mb-2 font-medium">Loading...</div>
               ) : (
                 <>
@@ -583,132 +702,8 @@ export function BranchDetails() {
       <BranchDetailsModal branch={branches} />
       <RedemptionDetails />
       <ViewExperience />
-
-      {/* Update Status Modal */}
-      <Modal
-        isOpen={isStatusModalOpen}
-        setIsOpen={setIsStatusModalOpen}
-        panelClass="!max-w-md"
-        position="center"
-      >
-        <div className="p-6 space-y-4">
-          <div className="flex flex-col gap-4 items-center justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Icon icon="bi:gear-fill" className="text-2xl text-blue-600" />
-            </div>
-            <div className="space-y-2 text-center w-full">
-              <Text variant="h3" className="font-semibold">
-                Update Branch Status
-              </Text>
-              <p className="text-sm text-gray-600">Select a new status for this branch</p>
-            </div>
-          </div>
-
-          <div className="w-full">
-            <Combobox
-              label="Branch Status"
-              value={selectedStatus}
-              onChange={(e: any) => {
-                const value = e?.target?.value || e?.value || ''
-                setSelectedStatus(value)
-              }}
-              options={statusOptions}
-            />
-            {branches && (
-              <div className="mt-3 flex items-center gap-2">
-                <Text variant="span" className="text-xs text-gray-500">
-                  Current Status:
-                </Text>
-                <span
-                  className={cn(
-                    'px-2 py-1 rounded-full text-xs font-medium',
-                    getStatusVariant(branches.status) === 'success' &&
-                      'bg-green-100 text-green-700',
-                    getStatusVariant(branches.status) === 'warning' &&
-                      'bg-yellow-100 text-yellow-700',
-                    getStatusVariant(branches.status) === 'error' && 'bg-red-100 text-red-700',
-                  )}
-                >
-                  {branches.status}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setIsStatusModalOpen(false)
-                setSelectedStatus('')
-              }}
-              className="flex-1 rounded-full"
-              disabled={isUpdatingStatus}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleStatusUpdate}
-              className="flex-1 rounded-full"
-              disabled={isUpdatingStatus || !selectedStatus}
-              loading={isUpdatingStatus}
-            >
-              Update Status
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Delete Branch Modal */}
-      <Modal
-        isOpen={isDeleteModalOpen}
-        setIsOpen={setIsDeleteModalOpen}
-        panelClass="!max-w-md"
-        position="center"
-      >
-        <div className="p-6 space-y-4">
-          <div className="flex flex-col gap-4 items-center justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <Icon icon="bi:exclamation-triangle-fill" className="text-2xl text-red-600" />
-            </div>
-            <div className="space-y-2 text-center">
-              <Text variant="h3" className="font-semibold">
-                Delete Branch
-              </Text>
-              <p className="text-sm text-gray-600">
-                Are you sure you want to delete{' '}
-                <strong>{branches?.branch_name || 'this branch'}</strong>? This action cannot be
-                undone and will remove all associated data.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="flex-1 rounded-full"
-              disabled={isDeletingBranch}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="danger"
-              onClick={handleDeleteBranch}
-              className="flex-1 rounded-full"
-              disabled={isDeletingBranch}
-              loading={isDeletingBranch}
-            >
-              Delete Branch
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <UpdateBranchStatusModal />
+      <DeleteBranchModal />
     </>
   )
 }

@@ -20,6 +20,11 @@ import {
   checkout,
   updateRequestStatus,
   requestBusinessUpdate,
+  addCorporateBranch,
+  deleteCorporateBranch,
+  deleteCorporateSuperAdminCard,
+  updateCorporateSuperAdminCard,
+  deleteCorporateRequest,
 } from '../services'
 import { useToast } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
@@ -350,12 +355,31 @@ export function corporateMutations() {
     const queryClient = useQueryClient()
     return useMutation({
       mutationFn: (data: { id: number; status: string }) => updateRequestStatus(data),
-      onSuccess: (response: any) => {
+      onSuccess: (response: any, variables) => {
         success(response?.message || 'Request status updated successfully')
         queryClient.invalidateQueries({ queryKey: ['requests-corporate'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-request', variables.id] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-branches-list'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-branches'] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to update request status. Please try again.')
+      },
+    })
+  }
+
+  function useDeleteCorporateRequestService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (id: number | string) => deleteCorporateRequest(id),
+      onSuccess: (response: any, id: number | string) => {
+        success(response?.message || 'Request deleted successfully')
+        queryClient.invalidateQueries({ queryKey: ['requests-corporate'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-request', id] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to delete request. Please try again.')
       },
     })
   }
@@ -375,6 +399,73 @@ export function corporateMutations() {
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to submit update request. Please try again.')
+      },
+    })
+  }
+
+  function useAddCorporateBranchService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: addCorporateBranch,
+      onSuccess: (response: any) => {
+        queryClient.invalidateQueries({ queryKey: ['corporate-branches'] })
+        success(response?.message || 'Branch created successfully')
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to create branch. Please try again.')
+      },
+    })
+  }
+
+  function useDeleteCorporateBranchService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    const navigate = useNavigate()
+    return useMutation({
+      mutationFn: (branchId: number | string) => deleteCorporateBranch(branchId),
+      onSuccess: (response: any, branchId) => {
+        success(response?.message || 'Branch deleted successfully')
+        queryClient.invalidateQueries({ queryKey: ['corporate-branches'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-branches-list'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-branch', branchId] })
+        navigate(ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES)
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to delete branch. Please try again.')
+      },
+    })
+  }
+
+  function useDeleteCorporateSuperAdminCardService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (id: number | string) => deleteCorporateSuperAdminCard(id),
+      onSuccess: (response: any, id: number | string) => {
+        success(response?.message || 'Card deleted successfully')
+        queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-card', id] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to delete card. Please try again.')
+      },
+    })
+  }
+
+  function useUpdateCorporateSuperAdminCardService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: ({ id, data }: { id: number | string; data: Record<string, any> }) =>
+        updateCorporateSuperAdminCard(id, data),
+      onSuccess: (response: any, { id }) => {
+        success(response?.message || 'Card updated successfully')
+        queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-card', id] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to update card. Please try again.')
       },
     })
   }
@@ -399,6 +490,11 @@ export function corporateMutations() {
     useDeletePaymentDetailsService,
     useCheckoutService,
     useUpdateRequestStatusService,
+    useDeleteCorporateRequestService,
     useRequestBusinessUpdateService,
+    useAddCorporateBranchService,
+    useDeleteCorporateBranchService,
+    useDeleteCorporateSuperAdminCardService,
+    useUpdateCorporateSuperAdminCardService,
   }
 }

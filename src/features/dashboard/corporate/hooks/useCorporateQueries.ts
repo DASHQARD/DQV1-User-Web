@@ -4,6 +4,7 @@ import {
   getCorporateById,
   getAuditLogsCorporate,
   getRequestsCorporate,
+  getCorporateRequestById,
   getCorporateAdmins,
   getInvitedCorporateAdmins,
   getCorporatePaymentDetails,
@@ -14,6 +15,17 @@ import {
   getPaymentDetails,
   getPaymentDetailsByUserId,
   getCorporateCards,
+  getCorporateBranches,
+  getCorporateBranchesList,
+  getCorporateBranchById,
+  getCorporateBranchManagers,
+  getCorporateBranchRedemptions,
+  getCorporateBranchCards,
+  getCorporateBranchSummary,
+  getCorporatePayments,
+  getCorporatePaymentById,
+  getCorporateSuperAdminCards,
+  getCorporateSuperAdminCardById,
 } from '../services'
 import { getCards } from '@/features/dashboard/services/cards'
 import { useAuthStore } from '@/stores'
@@ -60,6 +72,14 @@ export function corporateQueries() {
       queryKey: ['requests-corporate', query],
       queryFn: () => getRequestsCorporate(query),
       enabled: isCorporateAdmin,
+    })
+  }
+
+  function useGetCorporateRequestByIdService(id: number | string | null) {
+    return useQuery({
+      queryKey: ['corporate-request', id],
+      queryFn: () => getCorporateRequestById(id!),
+      enabled: !!id,
     })
   }
 
@@ -142,11 +162,97 @@ export function corporateQueries() {
     })
   }
 
+  function useGetCorporateSuperAdminCardsService(query?: Record<string, any>) {
+    return useQuery({
+      queryKey: ['corporate-super-admin-cards', query],
+      queryFn: () => getCorporateSuperAdminCards(query),
+    })
+  }
+
+  function useGetCorporateSuperAdminCardByIdService(id: number | string | null) {
+    return useQuery({
+      queryKey: ['corporate-super-admin-card', id],
+      queryFn: () => getCorporateSuperAdminCardById(id!),
+      enabled: !!id,
+    })
+  }
+
+  function useGetCorporateBranchesService(corporateUserId: number | string | null) {
+    return useQuery({
+      queryKey: ['corporate-branches', corporateUserId],
+      queryFn: () => getCorporateBranches(corporateUserId!),
+      enabled: !!corporateUserId,
+    })
+  }
+
+  function useGetCorporateBranchesListService() {
+    return useQuery({
+      queryKey: ['corporate-branches-list'],
+      queryFn: () => getCorporateBranchesList(),
+    })
+  }
+
+  function useGetCorporateBranchByIdService(branchId: number | string | null) {
+    return useQuery({
+      queryKey: ['corporate-branch', branchId],
+      queryFn: () => getCorporateBranchById(branchId!),
+      enabled: !!branchId,
+    })
+  }
+
+  function useGetCorporateBranchManagersService(branchId: number | string | null) {
+    return useQuery({
+      queryKey: ['corporate-branch-managers', branchId],
+      queryFn: () => getCorporateBranchManagers(branchId!),
+      enabled: !!branchId,
+    })
+  }
+
+  function useGetCorporateBranchRedemptionsService(branchId: number | string | null) {
+    return useQuery({
+      queryKey: ['corporate-branch-redemptions', branchId],
+      queryFn: () => getCorporateBranchRedemptions(branchId!),
+      enabled: !!branchId,
+    })
+  }
+
+  function useGetCorporateBranchCardsService(branchId: number | string | null) {
+    return useQuery({
+      queryKey: ['corporate-branch-cards', branchId],
+      queryFn: () => getCorporateBranchCards(branchId!),
+      enabled: !!branchId,
+    })
+  }
+
+  function useGetCorporateBranchSummaryService(branchId: number | string | null) {
+    return useQuery({
+      queryKey: ['corporate-branch-summary', branchId],
+      queryFn: () => getCorporateBranchSummary(branchId!),
+      enabled: !!branchId,
+    })
+  }
+
+  function useGetCorporatePaymentsService(query?: Record<string, any>) {
+    return useQuery({
+      queryKey: ['corporate-payments', query],
+      queryFn: () => getCorporatePayments(query),
+    })
+  }
+
+  function useGetCorporatePaymentByIdService(id: number | string | null) {
+    return useQuery({
+      queryKey: ['corporate-payment', id],
+      queryFn: () => getCorporatePaymentById(id!),
+      enabled: !!id,
+    })
+  }
+
   return {
     useGetCorporateService,
     useGetCorporateByIdService,
     useGetAuditLogsCorporateService,
     useGetRequestsCorporateService,
+    useGetCorporateRequestByIdService,
     useGetCorporateAdminsService,
     useGetInvitedCorporateAdminsService,
     useGetCorporatePaymentInfoService,
@@ -158,5 +264,16 @@ export function corporateQueries() {
     useGetPaymentDetailsByUserIdService,
     useGetCardsService,
     useGetCorporateCardsService,
+    useGetCorporateSuperAdminCardsService,
+    useGetCorporateSuperAdminCardByIdService,
+    useGetCorporateBranchesService,
+    useGetCorporateBranchesListService,
+    useGetCorporateBranchByIdService,
+    useGetCorporateBranchManagersService,
+    useGetCorporateBranchRedemptionsService,
+    useGetCorporateBranchCardsService,
+    useGetCorporateBranchSummaryService,
+    useGetCorporatePaymentsService,
+    useGetCorporatePaymentByIdService,
   }
 }
