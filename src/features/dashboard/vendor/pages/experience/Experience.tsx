@@ -37,6 +37,7 @@ export default function Experience() {
   const { data: userProfileData } = useGetUserProfileService()
   const userType = (userProfileData as any)?.user_type
   const isCorporate = userType === 'corporate' || userType === 'corporate super admin'
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
 
   const { useGetCardsByVendorIdService } = vendorQueries()
   const { data: cardsResponse, isLoading } = useGetCardsByVendorIdService(params)
@@ -45,12 +46,22 @@ export default function Experience() {
   const { data: branchCardsResponse, isLoading: isLoadingBranchCards } =
     useGetBranchExperiencesService(params)
 
-  const { useGetCorporateCardsService } = corporateQueries()
+  const { useGetCorporateCardsService, useGetCorporateSuperAdminCardsService } = corporateQueries()
   const { data: corporateCardsResponse, isLoading: isLoadingCorporateCards } =
     useGetCorporateCardsService(params)
+  const { data: corporateSuperAdminCardsResponse, isLoading: isLoadingCorporateSuperAdminCards } =
+    useGetCorporateSuperAdminCardsService(params)
 
-  const response = isCorporate ? corporateCardsResponse : cardsResponse || branchCardsResponse
-  const isLoadingAny = isCorporate ? isLoadingCorporateCards : isLoading || isLoadingBranchCards
+  // Use corporate super admin endpoint for corporate super admin, otherwise use regular corporate endpoint
+  const corporateResponse = isCorporateSuperAdmin
+    ? corporateSuperAdminCardsResponse
+    : corporateCardsResponse
+  const isLoadingCorporate = isCorporateSuperAdmin
+    ? isLoadingCorporateSuperAdminCards
+    : isLoadingCorporateCards
+
+  const response = isCorporate ? corporateResponse : cardsResponse || branchCardsResponse
+  const isLoadingAny = isCorporate ? isLoadingCorporate : isLoading || isLoadingBranchCards
 
   const experiencesData = useMemo(() => {
     if (!response) return []

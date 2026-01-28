@@ -2,6 +2,7 @@ import React from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/stores'
 import CorporateSidebar from './sidebar/CorporateSidebar'
+import CorporateVendorSidebar from './sidebar/CorporateVendorSidebar'
 import VendorSidebar from './sidebar/VendorSidebar'
 import BranchSidebar from './sidebar/BranchSidebar'
 import UserSidebar from './sidebar/UserSidebar'
@@ -65,11 +66,22 @@ export default function Sidebar() {
     return <BranchSidebar />
   }
 
+  // For corporate users, show CorporateVendorSidebar when account=vendor
+  const isCorporateUser =
+    userType === 'corporate' ||
+    userType === 'corporate super admin' ||
+    userType === 'corporate admin'
+
   if (currentProfile === 'corporate') {
     return <CorporateSidebar />
   }
 
   if (currentProfile === 'vendor') {
+    // If user is corporate and switching to vendor view, show CorporateVendorSidebar
+    if (isCorporateUser) {
+      return <CorporateVendorSidebar />
+    }
+    // Otherwise show regular VendorSidebar
     return <VendorSidebar />
   }
 

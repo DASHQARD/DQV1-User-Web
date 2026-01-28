@@ -26,10 +26,8 @@ export default function CorporateSidebar() {
   console.log('allVendorsDetails', allVendorsDetails)
 
   const allVendorsCreatedByCorporate = React.useMemo(() => {
-    const vendorsData = Array.isArray(allVendorsDetails)
-      ? allVendorsDetails
-      : allVendorsDetails?.data || []
-    return vendorsData.filter(
+    const vendorsData = allVendorsDetails
+    return vendorsData?.filter(
       (vendor: any) =>
         vendor.corporate_user_id === user?.id && vendor.approval_status === 'auto_approved',
     )
@@ -200,38 +198,27 @@ export default function CorporateSidebar() {
                 Switch Workspace
               </Text>
 
-              {/* List of vendor accounts */}
+              {/* Switch to Vendor View */}
+
               {allVendorsCreatedByCorporate && allVendorsCreatedByCorporate.length > 0 && (
-                <div className="mb-3 space-y-1 max-h-[200px] overflow-y-auto">
-                  {allVendorsCreatedByCorporate.map((vendor: any) => (
-                    <button
-                      key={vendor.vendor_id || vendor.id}
-                      onClick={() => {
-                        setIsPopoverOpen(false)
-                        const vendorId = vendor.vendor_id || vendor.id
-                        navigate(
-                          `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor${vendorId ? `&vendor_id=${vendorId}` : ''}`,
-                        )
-                      }}
-                      className="flex items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors"
-                    >
-                      <Avatar
-                        size="sm"
-                        src={logoUrl}
-                        name={vendor.vendor_name || vendor.business_name}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <Text variant="span" weight="semibold" className="block text-sm truncate">
-                          {vendor.vendor_name || vendor.business_name}
-                        </Text>
-                        <Text variant="span" className="block text-xs text-gray-500 truncate">
-                          {vendor.gvid || `ID: ${vendor.vendor_id || vendor.id}`}
-                        </Text>
-                      </div>
-                      <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
-                    </button>
-                  ))}
-                </div>
+                <button
+                  onClick={() => {
+                    setIsPopoverOpen(false)
+                    navigate(`${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor`)
+                  }}
+                  className="flex items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors mb-3"
+                >
+                  <Avatar size="sm" src={logoUrl} name={user?.business_details?.[0]?.name} />
+                  <div className="flex-1 min-w-0">
+                    <Text variant="span" weight="semibold" className="block text-sm truncate">
+                      Vendor View
+                    </Text>
+                    <Text variant="span" className="block text-xs text-gray-500 mt-0.5 truncate">
+                      Switch to vendor sidebar
+                    </Text>
+                  </div>
+                  <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
+                </button>
               )}
 
               <button
@@ -421,6 +408,7 @@ export default function CorporateSidebar() {
             // Also hide Admins and Notifications tabs for corporate admin users
             // Keep all items but mark Transactions, Audit Logs, and Recipients as disabled if onboarding incomplete or not approved
             // Remove Requests completely from corporate sidebar (moved to vendor sidebar)
+            // Remove Branches from corporate sidebar
             const processedItems = section.items
               .filter((item) => {
                 const isCorporateAdmin = user?.user_type === 'corporate admin'
@@ -473,6 +461,7 @@ export default function CorporateSidebar() {
                 )}
                 {processedItems.map((item) => {
                   const isDisabled = item.disabled
+
                   return (
                     <li
                       key={item.path}

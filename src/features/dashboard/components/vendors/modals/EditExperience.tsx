@@ -10,6 +10,7 @@ import { useVendorMutations, vendorQueries } from '@/features'
 import { CreateExperienceSchema } from '@/utils/schemas'
 import { Icon } from '@/libs'
 import { useBranchMutations } from '@/features/dashboard/branch/hooks'
+import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
 
 type FormData = z.infer<typeof CreateExperienceSchema> & { id: number }
 
@@ -28,10 +29,15 @@ export function EditExperience() {
   const { data: branches } = useBranchesService()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const isBranch = userProfileData?.user_type === 'branch'
+  const userType = userProfileData?.user_type
+  const isBranch = userType === 'branch'
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
   const { useUpdateBranchExperienceService } = useBranchMutations()
   const { mutateAsync: updateBranchExperience, isPending: isUpdatingBranchExperience } =
     useUpdateBranchExperienceService()
+  const { useUpdateCorporateSuperAdminCardService } = corporateMutations()
+  const { mutateAsync: updateCorporateCard, isPending: isUpdatingCorporateCard } =
+    useUpdateCorporateSuperAdminCardService()
 
   const toast = useToast()
 
@@ -233,7 +239,9 @@ export function EditExperience() {
         ],
       }
 
-      if (isBranch) {
+      if (isCorporateSuperAdmin) {
+        await updateCorporateCard({ id: card.id, data: payload })
+      } else if (isBranch) {
         await updateBranchExperience(branchPayload)
       } else {
         await updateCard(payload)
@@ -247,7 +255,8 @@ export function EditExperience() {
 
   if (!card) return null
 
-  const isPending = isUpdating || isUploading || isUpdatingBranchExperience
+  const isPending =
+    isUpdating || isUploading || isUpdatingBranchExperience || isUpdatingCorporateCard
 
   return (
     <Modal

@@ -1,5 +1,7 @@
 export { RedemptionDetails } from './RedemptionDetails'
 export { BranchDetailsModal } from './BranchDetailsModal'
+export { UpdateBranchStatusModal } from './UpdateBranchStatusModal'
+export { DeleteBranchModal } from './DeleteBranchModal'
 export { default as CreateExperience } from './CreateExperience'
 export { ViewExperience } from './ViewExperience'
 export { EditExperience } from './EditExperience'

@@ -20,6 +20,7 @@ export const ROUTES = {
         ADMINS: '/dashboard/corporate/admins',
         NOTIFICATIONS: '/dashboard/corporate/notifications',
         RECIPIENTS: '/dashboard/corporate/recipients',
+        BRANCHES: '/dashboard/corporate/branches',
         SETTINGS: '/dashboard/corporate/settings',
         GIFT_CARD_DETAILS: '/dashboard/corporate/gift-cards',
         COMPLIANCE: {

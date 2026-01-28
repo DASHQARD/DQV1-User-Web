@@ -28,6 +28,7 @@ export function Dropdown({
     <AnimatePresence>
       <DropdownMenu.Root modal={enableModal}>
         <DropdownMenu.Trigger
+          asChild
           disabled={disabled}
           className="rounded-lg outline-none "
           data-testid={'menu-btn'}

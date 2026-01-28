@@ -42,6 +42,14 @@ export const updateRequestStatus = async (data: { id: number; status: string }):
   return await patchMethod(`/requests/corporate/update-status`, data)
 }
 
+export const getCorporateRequestById = async (id: number | string): Promise<any> => {
+  return await getList(`/requests/corporate/info/${id}`)
+}
+
+export const deleteCorporateRequest = async (id: number | string): Promise<any> => {
+  return await deleteMethod(`/requests/corporate/delete/${id}`)
+}
+
 export const getCorporateAdmins = async (params?: Record<string, any>): Promise<any> => {
   const queryString = getQueryString(params)
   const fullUrl = queryString
@@ -263,10 +271,81 @@ export const getCorporateCards = async (params?: Record<string, any>): Promise<a
   return response
 }
 
+export const getCorporateSuperAdminCards = async (params?: Record<string, any>): Promise<any> => {
+  const queryString = getQueryString(params)
+  const fullUrl = queryString
+    ? `/cards/corporate-super-admin?${queryString}`
+    : `/cards/corporate-super-admin`
+  const response = await axiosClient.get(fullUrl)
+  return response
+}
+
+export const getCorporateSuperAdminCardById = async (id: number | string): Promise<any> => {
+  return await getList(`/cards/corporate-super-admin/${id}`)
+}
+
+export const deleteCorporateSuperAdminCard = async (id: number | string): Promise<any> => {
+  return await deleteMethod(`/cards/corporate-super-admin/${id}`)
+}
+
+export const updateCorporateSuperAdminCard = async (
+  id: number | string,
+  data: Record<string, any>,
+): Promise<any> => {
+  return await putMethod(`/cards/corporate-super-admin/${id}`, data)
+}
+
 export const requestBusinessUpdate = async (data: {
   fields_to_update: Record<string, boolean>
   proposed_values: Record<string, string>
   reason_for_change?: string
 }): Promise<any> => {
   return await postMethod(`/business-details/request-update`, data)
+}
+
+export const getCorporateBranches = async (corporateUserId: number | string): Promise<any> => {
+  return await getList(`/branches/corporate/${corporateUserId}`)
+}
+
+export const getCorporateBranchesList = async (): Promise<any> => {
+  return await getList(`/branches/corporate`)
+}
+
+export const getCorporateBranchById = async (branchId: number | string): Promise<any> => {
+  return await getList(`/branches/corporate/${branchId}`)
+}
+
+export const getCorporateBranchManagers = async (branchId: number | string): Promise<any> => {
+  return await getList(`/branches/corporate/${branchId}/managers`)
+}
+
+export const getCorporateBranchRedemptions = async (branchId: number | string): Promise<any> => {
+  return await getList(`/branches/corporate/${branchId}/redemptions`)
+}
+
+export const getCorporateBranchCards = async (branchId: number | string): Promise<any> => {
+  return await getList(`/branches/corporate/${branchId}/cards`)
+}
+
+export const getCorporateBranchSummary = async (branchId: number | string): Promise<any> => {
+  return await getList(`/branches/corporate/${branchId}/summary`)
+}
+
+export const addCorporateBranch = async (data: any): Promise<any> => {
+  return await postMethod(`/branches/corporate`, data)
+}
+
+export const deleteCorporateBranch = async (branchId: number | string): Promise<any> => {
+  return await deleteMethod(`/branches/corporate/${branchId}`)
+}
+
+export const getCorporatePayments = async (params?: Record<string, any>): Promise<any> => {
+  const queryString = getQueryString(params)
+  const fullUrl = queryString ? `/payments/corporate?${queryString}` : `/payments/corporate`
+  const response = await axiosClient.get(fullUrl)
+  return response
+}
+
+export const getCorporatePaymentById = async (id: number | string): Promise<any> => {
+  return await getList(`/payments/corporate/${id}`)
 }
