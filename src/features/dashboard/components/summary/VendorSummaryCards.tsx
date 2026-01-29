@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 
 import DashXIllustration from '@/assets/svgs/Dashx_bg.svg'
 import DashPassIllustration from '@/assets/images/dashpass_bg.png'
@@ -14,6 +14,9 @@ import { useUserProfile } from '@/hooks'
 
 export default function VendorSummaryCards() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
+
   const { user } = useAuthStore()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
@@ -25,25 +28,36 @@ export default function VendorSummaryCards() {
   const { data: vendorCardCountsData, isLoading: isLoadingVendorCounts } =
     useGetVendorCardCountsService()
 
-  const { useGetCorporateSuperAdminCardsService } = corporateQueries()
+  const {
+    useGetCorporateSuperAdminCardsService,
+    useGetCorporateSuperAdminVendorCardsSummaryService,
+  } = corporateQueries()
   const { data: corporateCardsData, isLoading: isLoadingCorporateCards } =
     useGetCorporateSuperAdminCardsService()
 
-  // Extract card counts from API response - use corporate cards if corporate super admin
-  const metrics = useMemo(() => {
-    if (isCorporateSuperAdmin) {
-      // For corporate super admin, calculate counts from cards list
-      if (!corporateCardsData) {
-        return {
-          DashX: 0,
-          DashPass: 0,
-        }
-      }
+  const { data: vendorSummaryData, isLoading: isLoadingVendorSummary } =
+    useGetCorporateSuperAdminVendorCardsSummaryService(
+      isCorporateSuperAdmin && vendorIdFromUrl ? vendorIdFromUrl : null,
+    )
 
+  // Extract card counts: corporate super admin with vendor selected → vendor summary endpoint; else corporate cards list or vendor counts
+  const metrics = useMemo(() => {
+    if (isCorporateSuperAdmin && vendorIdFromUrl && vendorSummaryData != null) {
+      const raw = (vendorSummaryData as any)?.data ?? vendorSummaryData
+      const byType = (raw as any)?.cards_by_type ?? {}
+      return {
+        DashX: Number(byType.DashX) || 0,
+        DashPass: Number(byType.DashPass) || 0,
+      }
+    }
+
+    if (isCorporateSuperAdmin && !vendorIdFromUrl) {
+      if (!corporateCardsData) {
+        return { DashX: 0, DashPass: 0 }
+      }
       const cards = Array.isArray(corporateCardsData)
         ? corporateCardsData
         : corporateCardsData?.data || []
-
       const dashXCount = cards.filter(
         (card: any) =>
           card.type?.toLowerCase() === 'dashx' || card.card_type?.toLowerCase() === 'dashx',
@@ -52,28 +66,30 @@ export default function VendorSummaryCards() {
         (card: any) =>
           card.type?.toLowerCase() === 'dashpass' || card.card_type?.toLowerCase() === 'dashpass',
       ).length
-
-      return {
-        DashX: dashXCount,
-        DashPass: dashPassCount,
-      }
-    } else {
-      // For regular vendors, use vendor card counts endpoint
-      if (!vendorCardCountsData) {
-        return {
-          DashX: 0,
-          DashPass: 0,
-        }
-      }
-
-      return {
-        DashX: vendorCardCountsData.DashX || 0,
-        DashPass: vendorCardCountsData.DashPass || 0,
-      }
+      return { DashX: dashXCount, DashPass: dashPassCount }
     }
-  }, [isCorporateSuperAdmin, corporateCardsData, vendorCardCountsData])
 
-  const isLoading = isCorporateSuperAdmin ? isLoadingCorporateCards : isLoadingVendorCounts
+    if (!vendorCardCountsData) {
+      return { DashX: 0, DashPass: 0 }
+    }
+    return {
+      DashX: vendorCardCountsData.DashX || 0,
+      DashPass: vendorCardCountsData.DashPass || 0,
+    }
+  }, [
+    isCorporateSuperAdmin,
+    vendorIdFromUrl,
+    vendorSummaryData,
+    corporateCardsData,
+    vendorCardCountsData,
+  ])
+
+  const isLoading =
+    isCorporateSuperAdmin && vendorIdFromUrl
+      ? isLoadingVendorSummary
+      : isCorporateSuperAdmin
+        ? isLoadingCorporateCards
+        : isLoadingVendorCounts
 
   const CARD_INFO = useMemo(
     () => [
@@ -101,7 +117,8 @@ export default function VendorSummaryCards() {
 
   const addAccountParam = (path: string): string => {
     const separator = path?.includes('?') ? '&' : '?'
-    return `${path}${separator}account=vendor`
+    const base = `${path}${separator}account=vendor`
+    return vendorIdFromUrl ? `${base}&vendor_id=${vendorIdFromUrl}` : base
   }
 
   if (isLoading) {

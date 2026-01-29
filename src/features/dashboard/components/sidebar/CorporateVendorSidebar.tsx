@@ -1,9 +1,9 @@
 import React from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { VENDOR_NAV_ITEMS, ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
-import { Text, Tooltip, TooltipTrigger, TooltipContent, Avatar } from '@/components'
+import { Text, Tooltip, TooltipTrigger, TooltipContent, Avatar, Tag } from '@/components'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { PaymentChangeNotifications } from '../corporate/notifications/PaymentChangeNotifications'
 import { ExperienceApprovalNotifications } from '../corporate/notifications/ExperienceApprovalNotifications'
@@ -11,10 +11,12 @@ import { CreateVendorAccount } from '../corporate/modals'
 import { useUserProfile, usePresignedURL } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
+import { vendorQueries } from '@/features/dashboard/vendor'
 
 export default function CorporateVendorSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { logout, user } = useAuthStore()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
@@ -23,6 +25,55 @@ export default function CorporateVendorSidebar() {
   const { data: userProfileData } = useGetUserProfileService()
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
+
+  const { useGetAllVendorsDetailsService } = vendorQueries()
+  const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
+
+  const allVendorsCreatedByCorporate = React.useMemo(() => {
+    const vendorsData = allVendorsDetails
+    return (
+      vendorsData?.filter((vendor: any) => vendor.corporate_user_id === userProfileData?.id) ?? []
+    )
+  }, [allVendorsDetails, userProfileData?.id])
+
+  const hasVendorsPendingVerification = React.useMemo(() => {
+    return allVendorsCreatedByCorporate.some(
+      (vendor: any) =>
+        vendor.approval_status !== 'approved' && vendor.approval_status !== 'auto_approved',
+    )
+  }, [allVendorsCreatedByCorporate])
+
+  const currentVendorId = searchParams.get('vendor_id')
+  const currentVendor = React.useMemo(() => {
+    if (!currentVendorId || allVendorsCreatedByCorporate.length === 0) return null
+    return allVendorsCreatedByCorporate.find(
+      (vendor: any) =>
+        String(vendor.vendor_id) === currentVendorId || String(vendor.id) === currentVendorId,
+    )
+  }, [currentVendorId, allVendorsCreatedByCorporate])
+
+  const [vendorLogoUrls, setVendorLogoUrls] = React.useState<Record<number, string>>({})
+  React.useEffect(() => {
+    if (allVendorsCreatedByCorporate.length === 0) return
+    const fetchLogos = async () => {
+      const logoPromises = allVendorsCreatedByCorporate.map(async (vendor: any) => {
+        if (!vendor.vendor_logo) return null
+        try {
+          const url = await fetchPresignedURL(vendor.vendor_logo)
+          return { vendorId: vendor.vendor_id ?? vendor.id, url }
+        } catch {
+          return null
+        }
+      })
+      const results = await Promise.all(logoPromises)
+      const logoMap: Record<number, string> = {}
+      results.forEach((result) => {
+        if (result) logoMap[result.vendorId] = result.url
+      })
+      setVendorLogoUrls(logoMap)
+    }
+    fetchLogos()
+  }, [allVendorsCreatedByCorporate, fetchPresignedURL])
 
   const userType = (user as any)?.user_type || userProfileData?.user_type
   const isVendor = userType === 'vendor'
@@ -33,11 +84,19 @@ export default function CorporateVendorSidebar() {
     return 'Vendor'
   }, [])
 
-  const { useGetCorporateBranchesListService, useGetCorporatePaymentsService } = corporateQueries()
-  const { data: corporateBranches } = useGetCorporateBranchesListService()
+  const {
+    useGetCorporateBranchesListService,
+    useGetCorporateBranchesByVendorIdService,
+    useGetCorporatePaymentsService,
+  } = corporateQueries()
+  const { data: corporateBranchesList } = useGetCorporateBranchesListService()
+  const { data: corporateBranchesByVendor } =
+    useGetCorporateBranchesByVendorIdService(currentVendorId)
   // Fetch corporate payments using /payments/corporate endpoint
   useGetCorporatePaymentsService()
 
+  // When vendor selected, use vendor-scoped branches (GET /branches/corporate?vendor_id=:id); else all corporate branches
+  const corporateBranches = currentVendorId ? corporateBranchesByVendor : corporateBranchesList
   // Handle branches data structure (array or wrapped response)
   const branchesArray = React.useMemo(() => {
     if (!corporateBranches) return []
@@ -115,48 +174,52 @@ export default function CorporateVendorSidebar() {
   // Get corporate business details
   const corporateBusiness = userProfileData?.business_details?.[0]
   const corporateName = corporateBusiness?.name || 'Corporate Account'
-  // const corporateId = userProfileData?.corporate_id_from_business || ''
 
-  // Get vendor information from user profile
+  // Current vendor display: from URL-selected vendor when available
   const vendorName = React.useMemo(() => {
+    if (currentVendor) {
+      return currentVendor.vendor_name || currentVendor.business_name || 'Vendor Account'
+    }
     return userProfileData?.business_details?.[0]?.name || 'Vendor Account'
-  }, [userProfileData?.business_details])
-  const vendorGvid = ''
+  }, [currentVendor, userProfileData?.business_details])
+  const vendorGvid = currentVendor?.gvid ?? ''
+
   const [currentVendorLogoUrl, setCurrentVendorLogoUrl] = React.useState<string | null>(null)
 
-  // Fetch vendor logo presigned URL
+  // Fetch current vendor logo: use selected vendor's logo when available, else corporate/profile logo
   React.useEffect(() => {
+    if (currentVendor?.vendor_logo) {
+      let cancelled = false
+      fetchPresignedURL(currentVendor.vendor_logo)
+        .then((url) => {
+          if (!cancelled) setCurrentVendorLogoUrl(url)
+        })
+        .catch(() => {
+          if (!cancelled) setCurrentVendorLogoUrl(null)
+        })
+      return () => {
+        cancelled = true
+      }
+    }
     const logoDocument = userProfileData?.business_documents?.find(
       (doc: any) => doc.type === 'logo',
     )
-
     if (!logoDocument?.file_url) {
       setCurrentVendorLogoUrl(null)
       return
     }
-
     let cancelled = false
-
-    const loadVendorLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logoDocument.file_url)
-        if (!cancelled) {
-          setCurrentVendorLogoUrl(url)
-        }
-      } catch (error) {
-        console.error('Failed to fetch vendor logo presigned URL', error)
-        if (!cancelled) {
-          setCurrentVendorLogoUrl(null)
-        }
-      }
-    }
-
-    loadVendorLogo()
-
+    fetchPresignedURL(logoDocument.file_url)
+      .then((url) => {
+        if (!cancelled) setCurrentVendorLogoUrl(url)
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentVendorLogoUrl(null)
+      })
     return () => {
       cancelled = true
     }
-  }, [userProfileData?.business_documents, fetchPresignedURL])
+  }, [currentVendor?.vendor_logo, userProfileData?.business_documents, fetchPresignedURL])
 
   // Branches state
   const [isBranchesExpanded, setIsBranchesExpanded] = React.useState(false)
@@ -200,7 +263,8 @@ export default function CorporateVendorSidebar() {
 
   const addAccountParam = (path: string): string => {
     const separator = path?.includes('?') ? '&' : '?'
-    return `${path}${separator}account=vendor`
+    const base = `${path}${separator}account=vendor`
+    return currentVendorId ? `${base}&vendor_id=${currentVendorId}` : base
   }
 
   const accountMenuContent = (
@@ -241,7 +305,7 @@ export default function CorporateVendorSidebar() {
           sideOffset={8}
           className="min-w-[280px] max-w-[320px] p-0 bg-white border-none"
         >
-          {/* Header */}
+          {/* Header - current vendor account */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
               <Avatar size="sm" src={currentVendorLogoUrl} name={vendorName} />
@@ -249,11 +313,9 @@ export default function CorporateVendorSidebar() {
                 <Text variant="span" weight="semibold" className="block text-sm truncate">
                   {vendorName}
                 </Text>
-                {vendorGvid && (
-                  <Text variant="span" className="block text-xs text-gray-500 truncate">
-                    {vendorGvid}
-                  </Text>
-                )}
+                <Text variant="span" className="block text-xs text-gray-500 truncate">
+                  {vendorGvid || (currentVendorId ? `ID: ${currentVendorId}` : 'Vendor Account')}
+                </Text>
               </div>
             </div>
           </div>
@@ -266,6 +328,99 @@ export default function CorporateVendorSidebar() {
             >
               Switch Workspace
             </Text>
+
+            {/* List of vendor accounts - current one indicated; only approved/auto_approved are switchable */}
+            {allVendorsCreatedByCorporate.length > 0 && (
+              <div className="mb-3 space-y-1 max-h-[200px] overflow-y-auto">
+                {allVendorsCreatedByCorporate.map((vendor: any) => {
+                  const vendorId = vendor.vendor_id ?? vendor.id
+                  const canSwitch =
+                    vendor.approval_status === 'approved' ||
+                    vendor.approval_status === 'auto_approved'
+                  const isCurrentVendor =
+                    currentVendorId &&
+                    (String(vendorId) === currentVendorId || String(vendor.id) === currentVendorId)
+                  const approvalLabel =
+                    vendor.approval_status === 'pending'
+                      ? 'Pending approval'
+                      : vendor.approval_status === 'rejected'
+                        ? 'Rejected'
+                        : vendor.approval_status
+                          ? String(vendor.approval_status).replace(/_/g, ' ')
+                          : 'Not approved'
+                  return (
+                    <div
+                      key={vendorId}
+                      className={cn(
+                        'flex items-center gap-3 w-full text-left rounded-lg p-2 transition-colors',
+                        isCurrentVendor && 'bg-[rgba(64,45,135,0.08)]',
+                        !canSwitch && 'opacity-70 cursor-not-allowed bg-gray-50',
+                        canSwitch && 'hover:bg-gray-50',
+                      )}
+                    >
+                      <Avatar
+                        size="sm"
+                        src={vendorLogoUrls[vendorId]}
+                        name={vendor.vendor_name || vendor.business_name}
+                        className={!canSwitch ? 'opacity-75' : undefined}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <Text variant="span" weight="semibold" className="block text-sm truncate">
+                          {vendor.vendor_name || vendor.business_name}
+                        </Text>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Text variant="span" className="block text-xs text-gray-500 truncate">
+                            {vendor.gvid || `ID: ${vendorId}`}
+                          </Text>
+                          {!canSwitch && (
+                            <Tag
+                              value={approvalLabel}
+                              variant="warning"
+                              className="text-[10px] px-1.5 py-0"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      {canSwitch ? (
+                        isCurrentVendor ? (
+                          <Icon
+                            icon="bi:check-circle-fill"
+                            className="text-[#402D87] text-lg shrink-0"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsPopoverOpen(false)
+                              navigate(
+                                `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor&vendor_id=${vendorId}`,
+                              )
+                            }}
+                            className="shrink-0 p-1 -m-1 rounded hover:bg-gray-200 transition-colors"
+                            aria-label={`Switch to ${vendor.vendor_name || vendor.business_name}`}
+                          >
+                            <Icon icon="bi:chevron-right" className="text-gray-400 text-sm" />
+                          </button>
+                        )
+                      ) : (
+                        <span title={approvalLabel} className="shrink-0">
+                          <Icon icon="bi:lock-fill" className="text-gray-400 text-sm" />
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {hasVendorsPendingVerification && (
+              <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 flex items-center gap-2">
+                <Icon icon="bi:clock-history" className="text-amber-600 text-sm shrink-0" />
+                <Text variant="span" className="text-xs text-amber-800">
+                  Some vendor accounts are pending verification
+                </Text>
+              </div>
+            )}
 
             {canAccessCorporate && (
               <button
@@ -366,7 +521,12 @@ export default function CorporateVendorSidebar() {
                       weight="bold"
                       className="block text-sm text-gray-900 truncate"
                     >
-                      {vendorName} {vendorGvid && `- ${vendorGvid}`}
+                      {vendorName}
+                      {vendorGvid
+                        ? ` - ${vendorGvid}`
+                        : currentVendorId
+                          ? ` - ID: ${currentVendorId}`
+                          : ''}
                     </Text>
 
                     <Text variant="span" className="block text-xs text-gray-500 truncate">

@@ -94,11 +94,12 @@ export function vendorQueries() {
     const { useGetUserProfileService } = useUserProfile()
     const { data: userProfileData } = useGetUserProfileService()
     const vendor_id = userProfileData?.vendor_id
+    const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
 
     return useQuery({
       queryKey: ['cards-by-vendor-id', vendor_id, params],
       queryFn: () => getCardsByVendorId({ vendor_id: Number(vendor_id) || 0, ...params }),
-      enabled: !!vendor_id && userProfileData?.user_type !== 'branch',
+      enabled: !!vendor_id && userProfileData?.user_type !== 'branch' && !isCorporateSuperAdmin,
     })
   }
 
@@ -131,10 +132,11 @@ export function vendorQueries() {
     })
   }
 
-  function useGetAllVendorsDetailsForVendorService() {
+  function useGetAllVendorsDetailsForVendorService(enabled: boolean = true) {
     return useQuery({
       queryKey: ['all-vendors-details-for-vendor'],
       queryFn: getAllVendorsDetails,
+      enabled,
     })
   }
 

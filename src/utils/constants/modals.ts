@@ -62,6 +62,16 @@ export const MODALS = {
     UPDATE_STATUS: 'update-branch-status',
     DELETE: 'delete-branch',
   },
+  BRANCH_MANAGER_INVITATION: {
+    PARAM_NAME: 'branch-manager-invitation',
+    CHILDREN: {
+      CREATE: 'create',
+      CANCEL: 'cancel',
+      DELETE: 'delete',
+      REMOVE: 'remove',
+      UPDATE: 'update',
+    },
+  },
   VENDOR_ACCOUNT: {
     ROOT: 'vendor-account-modal',
     CREATE: 'create-vendor-account',

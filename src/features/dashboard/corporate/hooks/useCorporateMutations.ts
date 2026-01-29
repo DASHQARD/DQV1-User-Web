@@ -22,6 +22,11 @@ import {
   requestBusinessUpdate,
   addCorporateBranch,
   deleteCorporateBranch,
+  createCorporateBranchManagerInvitation,
+  deleteCorporateBranchManagerInvitation,
+  deleteCorporateVendorBranchManagerInvitation,
+  updateCorporateBranchManagerInvitation,
+  updateCorporateVendorBranchManagerInvitation,
   deleteCorporateSuperAdminCard,
   updateCorporateSuperAdminCard,
   deleteCorporateRequest,
@@ -358,6 +363,7 @@ export function corporateMutations() {
       onSuccess: (response: any, variables) => {
         success(response?.message || 'Request status updated successfully')
         queryClient.invalidateQueries({ queryKey: ['requests-corporate'] })
+        queryClient.invalidateQueries({ queryKey: ['requests-corporate-super-admin-vendor'] })
         queryClient.invalidateQueries({ queryKey: ['corporate-request', variables.id] })
         queryClient.invalidateQueries({ queryKey: ['corporate-branches-list'] })
         queryClient.invalidateQueries({ queryKey: ['corporate-branches'] })
@@ -376,6 +382,7 @@ export function corporateMutations() {
       onSuccess: (response: any, id: number | string) => {
         success(response?.message || 'Request deleted successfully')
         queryClient.invalidateQueries({ queryKey: ['requests-corporate'] })
+        queryClient.invalidateQueries({ queryKey: ['requests-corporate-super-admin-vendor'] })
         queryClient.invalidateQueries({ queryKey: ['corporate-request', id] })
       },
       onError: (err: any) => {
@@ -437,6 +444,107 @@ export function corporateMutations() {
     })
   }
 
+  function useCreateCorporateBranchManagerInvitationService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: {
+        branch_id: number
+        branch_manager_name: string
+        branch_manager_email: string
+        branch_manager_phone: string
+      }) => createCorporateBranchManagerInvitation(data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Branch manager invitation sent successfully')
+        queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitations'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to send branch manager invitation. Please try again.')
+      },
+    })
+  }
+
+  function useDeleteCorporateBranchManagerInvitationService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (id: number | string) => deleteCorporateBranchManagerInvitation(id),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Branch manager invitation deleted successfully')
+        queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitations'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to delete branch manager invitation. Please try again.')
+      },
+    })
+  }
+
+  function useDeleteCorporateVendorBranchManagerInvitationService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (id: number | string) => deleteCorporateVendorBranchManagerInvitation(id),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Branch manager invitation deleted successfully')
+        queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitations'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to delete branch manager invitation. Please try again.')
+      },
+    })
+  }
+
+  function useUpdateCorporateBranchManagerInvitationService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: ({
+        id,
+        data,
+      }: {
+        id: number | string
+        data: {
+          branch_manager_name: string
+          branch_manager_email: string
+          branch_manager_phone: string
+        }
+      }) => updateCorporateBranchManagerInvitation(id, data),
+      onSuccess: (response: any, { id }) => {
+        success(response?.message || 'Branch manager invitation updated successfully')
+        queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitations'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitation', id] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to update branch manager invitation. Please try again.')
+      },
+    })
+  }
+
+  function useUpdateCorporateVendorBranchManagerInvitationService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: ({
+        id,
+        data,
+      }: {
+        id: number | string
+        data: {
+          branch_manager_name: string
+          branch_manager_email: string
+          branch_manager_phone: string
+        }
+      }) => updateCorporateVendorBranchManagerInvitation(id, data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Branch manager invitation updated successfully')
+        queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitations'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to update branch manager invitation. Please try again.')
+      },
+    })
+  }
+
   function useDeleteCorporateSuperAdminCardService() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
@@ -494,6 +602,11 @@ export function corporateMutations() {
     useRequestBusinessUpdateService,
     useAddCorporateBranchService,
     useDeleteCorporateBranchService,
+    useCreateCorporateBranchManagerInvitationService,
+    useDeleteCorporateBranchManagerInvitationService,
+    useDeleteCorporateVendorBranchManagerInvitationService,
+    useUpdateCorporateBranchManagerInvitationService,
+    useUpdateCorporateVendorBranchManagerInvitationService,
     useDeleteCorporateSuperAdminCardService,
     useUpdateCorporateSuperAdminCardService,
   }

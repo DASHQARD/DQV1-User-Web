@@ -1,16 +1,32 @@
 import { useMemo, useCallback } from 'react'
-import { Text, PaginatedTable } from '@/components'
+import { Text, PaginatedTable, Button } from '@/components'
 import {
   branchManagerInvitationsListCsvHeaders,
   branchManagerInvitationsListColumns,
 } from '@/features/dashboard/components/vendors/tableConfigs'
+import {
+  CancelBranchManagerInvitationModal,
+  DeleteBranchManagerInvitationModal,
+  InviteBranchManagerModal,
+  RemoveBranchManagerModal,
+  UpdateBranchManagerInvitationModal,
+} from '@/features/dashboard/components/vendors/modals'
+import { usePersistedModalState } from '@/hooks'
+import { MODALS } from '@/utils/constants'
+import { Icon } from '@/libs'
 import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType, GetBranchManagerInvitationsQuery } from '@/types'
-import { useReducerSpread } from '@/hooks'
+import { useReducerSpread, useUserProfile } from '@/hooks'
 import { vendorQueries } from '../../hooks'
+import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 
 export default function BranchManagers() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
+
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const userType = userProfileData?.user_type
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
 
   const apiQuery = useMemo((): GetBranchManagerInvitationsQuery => {
     const params: GetBranchManagerInvitationsQuery = {
@@ -25,8 +41,24 @@ export default function BranchManagers() {
   }, [query])
 
   const { useGetBranchManagerInvitationsService } = vendorQueries()
-  const { data: invitationsResponse, isLoading: isLoadingInvitations } =
-    useGetBranchManagerInvitationsService(apiQuery)
+  const { useGetCorporateBranchManagerInvitationsService } = corporateQueries()
+
+  const { data: vendorInvitationsResponse, isLoading: isLoadingVendorInvitations } =
+    useGetBranchManagerInvitationsService(isCorporateSuperAdmin ? undefined : apiQuery)
+
+  const { data: corporateInvitationsResponse, isLoading: isLoadingCorporateInvitations } =
+    useGetCorporateBranchManagerInvitationsService(isCorporateSuperAdmin ? apiQuery : undefined)
+
+  const invitationsResponse = isCorporateSuperAdmin
+    ? corporateInvitationsResponse
+    : vendorInvitationsResponse
+  const isLoadingInvitations = isCorporateSuperAdmin
+    ? isLoadingCorporateInvitations
+    : isLoadingVendorInvitations
+
+  const inviteModal = usePersistedModalState({
+    paramName: MODALS.BRANCH_MANAGER_INVITATION.PARAM_NAME,
+  })
 
   const invitations = useMemo(() => {
     if (!invitationsResponse) return []
@@ -56,11 +88,28 @@ export default function BranchManagers() {
 
   return (
     <div className="py-10">
+      <CancelBranchManagerInvitationModal />
+      <DeleteBranchManagerInvitationModal />
+      <InviteBranchManagerModal />
+      <RemoveBranchManagerModal />
+      <UpdateBranchManagerInvitationModal />
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between">
           <Text variant="h2" weight="semibold" className="text-primary-900">
             Branch Managers
           </Text>
+          {isCorporateSuperAdmin && (
+            <Button
+              variant="secondary"
+              onClick={() =>
+                inviteModal.openModal(MODALS.BRANCH_MANAGER_INVITATION.CHILDREN.CREATE)
+              }
+              className="flex items-center gap-2"
+            >
+              <Icon icon="bi:person-plus-fill" className="text-lg" />
+              Invite Branch Manager
+            </Button>
+          )}
         </div>
         <div className="relative pt-14">
           <PaginatedTable

@@ -4,6 +4,7 @@ import {
   getCorporateById,
   getAuditLogsCorporate,
   getRequestsCorporate,
+  getRequestsCorporateSuperAdminByVendor,
   getCorporateRequestById,
   getCorporateAdmins,
   getInvitedCorporateAdmins,
@@ -16,6 +17,7 @@ import {
   getPaymentDetailsByUserId,
   getCorporateCards,
   getCorporateBranches,
+  getCorporateBranchesByVendorId,
   getCorporateBranchesList,
   getCorporateBranchById,
   getCorporateBranchManagers,
@@ -26,6 +28,12 @@ import {
   getCorporatePaymentById,
   getCorporateSuperAdminCards,
   getCorporateSuperAdminCardById,
+  getCorporateSuperAdminVendorCardsSummary,
+  getCardsByVendorIdForCorporate,
+  getCorporateRedemptions,
+  getCorporateRedemptionsByVendorId,
+  getCorporateBranchManagerInvitations,
+  getCorporateBranchManagerInvitationById,
 } from '../services'
 import { getCards } from '@/features/dashboard/services/cards'
 import { useAuthStore } from '@/stores'
@@ -72,6 +80,14 @@ export function corporateQueries() {
       queryKey: ['requests-corporate', query],
       queryFn: () => getRequestsCorporate(query),
       enabled: isCorporateAdmin,
+    })
+  }
+
+  function useGetRequestsCorporateSuperAdminVendorService(vendorId: string | null) {
+    return useQuery({
+      queryKey: ['requests-corporate-super-admin-vendor', vendorId],
+      queryFn: () => getRequestsCorporateSuperAdminByVendor(vendorId!),
+      enabled: !!vendorId,
     })
   }
 
@@ -156,16 +172,26 @@ export function corporateQueries() {
   }
 
   function useGetCorporateCardsService(query?: Record<string, any>) {
+    const { user } = useAuthStore()
+    const userType = (user as any)?.user_type
+    const isCorporate = userType === 'corporate super admin' || userType === 'corporate admin'
+
     return useQuery({
       queryKey: ['corporate-cards-experience', query],
       queryFn: () => getCorporateCards(query),
+      enabled: isCorporate,
     })
   }
 
   function useGetCorporateSuperAdminCardsService(query?: Record<string, any>) {
+    const { user } = useAuthStore()
+    const userType = (user as any)?.user_type
+    const isCorporateSuperAdmin = userType === 'corporate super admin'
+
     return useQuery({
       queryKey: ['corporate-super-admin-cards', query],
       queryFn: () => getCorporateSuperAdminCards(query),
+      enabled: isCorporateSuperAdmin,
     })
   }
 
@@ -185,10 +211,23 @@ export function corporateQueries() {
     })
   }
 
+  function useGetCorporateBranchesByVendorIdService(vendorId: string | null) {
+    return useQuery({
+      queryKey: ['corporate-branches-by-vendor', vendorId],
+      queryFn: () => getCorporateBranchesByVendorId(vendorId!),
+      enabled: !!vendorId,
+    })
+  }
+
   function useGetCorporateBranchesListService() {
+    const { user } = useAuthStore()
+    const userType = (user as any)?.user_type
+    const isCorporateSuperAdmin = userType === 'corporate super admin'
+
     return useQuery({
       queryKey: ['corporate-branches-list'],
       queryFn: () => getCorporateBranchesList(),
+      enabled: isCorporateSuperAdmin,
     })
   }
 
@@ -247,11 +286,90 @@ export function corporateQueries() {
     })
   }
 
+  function useGetCorporateRedemptionsService(
+    query?: Record<string, any>,
+    options?: { skipWhenVendorSelected?: boolean },
+  ) {
+    const { user } = useAuthStore()
+    const userType = (user as any)?.user_type
+    const isCorporateSuperAdmin = userType === 'corporate super admin'
+    const skip = options?.skipWhenVendorSelected === true
+
+    return useQuery({
+      queryKey: ['corporate-redemptions', query],
+      queryFn: () => getCorporateRedemptions(query),
+      enabled: isCorporateSuperAdmin && !skip,
+    })
+  }
+
+  function useGetCorporateRedemptionsByVendorIdService(
+    vendorId: number | string | null,
+    params?: Record<string, any>,
+  ) {
+    const { user } = useAuthStore()
+    const userType = (user as any)?.user_type
+    const isCorporateSuperAdmin = userType === 'corporate super admin'
+
+    return useQuery({
+      queryKey: ['corporate-redemptions-by-vendor', vendorId, params],
+      queryFn: () => getCorporateRedemptionsByVendorId(vendorId!, params),
+      enabled: isCorporateSuperAdmin && !!vendorId,
+    })
+  }
+
+  function useGetCorporateBranchManagerInvitationsService(params?: Record<string, any>) {
+    const { user } = useAuthStore()
+    const userType = (user as any)?.user_type
+    const isCorporateSuperAdmin = userType === 'corporate super admin'
+
+    return useQuery({
+      queryKey: ['corporate-branch-manager-invitations', params],
+      queryFn: () => getCorporateBranchManagerInvitations(params),
+      enabled: isCorporateSuperAdmin,
+    })
+  }
+
+  function useGetCorporateBranchManagerInvitationByIdService(id: number | string | null) {
+    return useQuery({
+      queryKey: ['corporate-branch-manager-invitation', id],
+      queryFn: () => getCorporateBranchManagerInvitationById(id!),
+      enabled: !!id,
+    })
+  }
+
+  function useGetCorporateSuperAdminVendorCardsSummaryService(vendorId: number | string | null) {
+    const { user } = useAuthStore()
+    const userType = (user as any)?.user_type
+    const isCorporateSuperAdmin = userType === 'corporate super admin'
+
+    return useQuery({
+      queryKey: ['corporate-super-admin-vendor-cards-summary', vendorId],
+      queryFn: () => getCorporateSuperAdminVendorCardsSummary(vendorId!),
+      enabled: isCorporateSuperAdmin && !!vendorId,
+    })
+  }
+
+  function useGetCardsByVendorIdForCorporateService(
+    vendorId: number | string | null,
+    params?: Record<string, any>,
+  ) {
+    const { user } = useAuthStore()
+    const userType = (user as any)?.user_type
+    const isCorporateSuperAdmin = userType === 'corporate super admin'
+
+    return useQuery({
+      queryKey: ['corporate-vendor-cards', vendorId, params],
+      queryFn: () => getCardsByVendorIdForCorporate(vendorId!, params),
+      enabled: isCorporateSuperAdmin && !!vendorId,
+    })
+  }
+
   return {
     useGetCorporateService,
     useGetCorporateByIdService,
     useGetAuditLogsCorporateService,
     useGetRequestsCorporateService,
+    useGetRequestsCorporateSuperAdminVendorService,
     useGetCorporateRequestByIdService,
     useGetCorporateAdminsService,
     useGetInvitedCorporateAdminsService,
@@ -266,7 +384,10 @@ export function corporateQueries() {
     useGetCorporateCardsService,
     useGetCorporateSuperAdminCardsService,
     useGetCorporateSuperAdminCardByIdService,
+    useGetCorporateSuperAdminVendorCardsSummaryService,
+    useGetCardsByVendorIdForCorporateService,
     useGetCorporateBranchesService,
+    useGetCorporateBranchesByVendorIdService,
     useGetCorporateBranchesListService,
     useGetCorporateBranchByIdService,
     useGetCorporateBranchManagersService,
@@ -275,5 +396,9 @@ export function corporateQueries() {
     useGetCorporateBranchSummaryService,
     useGetCorporatePaymentsService,
     useGetCorporatePaymentByIdService,
+    useGetCorporateRedemptionsService,
+    useGetCorporateRedemptionsByVendorIdService,
+    useGetCorporateBranchManagerInvitationsService,
+    useGetCorporateBranchManagerInvitationByIdService,
   }
 }
