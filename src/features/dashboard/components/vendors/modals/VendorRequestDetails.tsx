@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Button, Modal, PrintView, Tag } from '@/components'
 import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { MODALS } from '@/utils/constants'
@@ -11,6 +12,9 @@ import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorpor
 import { RequestDetailsSkeleton } from './skeletons'
 
 export function VendorRequestDetails() {
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
+
   const modal = usePersistedModalState<{ id: number | string; request_id?: string }>({
     paramName: MODALS.REQUEST.PARAM_NAME,
   })
@@ -18,17 +22,32 @@ export function VendorRequestDetails() {
   const { data: userProfileData } = useGetUserProfileService()
   const userType = userProfileData?.user_type
   const isCorporateSuperAdmin = userType === 'corporate super admin'
+  const useCorporateVendorScoped = isCorporateSuperAdmin && !!vendorIdFromUrl
 
-  const { useGetRequestsVendorService } = vendorQueries()
-  const { data: requestsResponse, isLoading: isLoadingVendorRequests } =
-    useGetRequestsVendorService()
+  const { useGetRequestsVendorService, useGetRequestVendorInfoService } = vendorQueries()
+  const { useGetCorporateRequestByIdService, useGetCorporateSuperAdminVendorRequestInfoService } =
+    corporateQueries()
 
-  const { useGetCorporateRequestByIdService } = corporateQueries()
   const requestId = modal.modalData?.id ?? null
-  const { data: corporateRequestResponse, isLoading: isLoadingCorporateRequest } =
-    useGetCorporateRequestByIdService(isCorporateSuperAdmin ? requestId : null)
 
-  // Extract data array from response (for vendor requests)
+  const { data: requestsResponse, isLoading: isLoadingVendorRequests } =
+    useGetRequestsVendorService(useCorporateVendorScoped ? undefined : {})
+
+  const { data: corporateRequestResponse, isLoading: isLoadingCorporateRequest } =
+    useGetCorporateRequestByIdService(
+      isCorporateSuperAdmin && !vendorIdFromUrl && requestId ? requestId : null,
+    )
+
+  const { data: corporateVendorRequestResponse, isLoading: isLoadingCorporateVendorRequest } =
+    useGetCorporateSuperAdminVendorRequestInfoService(
+      useCorporateVendorScoped && requestId ? vendorIdFromUrl! : null,
+      useCorporateVendorScoped && requestId ? requestId : null,
+    )
+
+  const { data: vendorRequestInfoResponse, isLoading: isLoadingVendorRequestInfo } =
+    useGetRequestVendorInfoService(!isCorporateSuperAdmin && requestId ? requestId : null)
+
+  // Extract data array from response (for vendor requests fallback)
   const requestsList = useMemo(() => {
     if (!requestsResponse) return []
     return Array.isArray(requestsResponse)
@@ -38,23 +57,38 @@ export function VendorRequestDetails() {
         : []
   }, [requestsResponse])
 
-  // Find the request by id - use corporate endpoint if corporate super admin, otherwise use vendor list
+  // Find the request by id: corporate+vendor_id → vendor-scoped get; corporate → corporate get; vendor → vendor get or list
   const data = useMemo(() => {
-    if (isCorporateSuperAdmin) {
-      // For corporate super admin, use the direct request data from corporate endpoint
-      if (!corporateRequestResponse) return null
-      return corporateRequestResponse?.data || corporateRequestResponse || null
-    } else {
-      // For vendors, find from the requests list
-      if (!requestId || !requestsList.length) return null
-      return requestsList.find((request: any) => {
-        const id = request.id || request.request_id
-        return String(id) === String(requestId) || String(request.request_id) === String(requestId)
-      })
+    if (useCorporateVendorScoped && corporateVendorRequestResponse) {
+      return corporateVendorRequestResponse?.data || corporateVendorRequestResponse || null
     }
-  }, [isCorporateSuperAdmin, corporateRequestResponse, requestId, requestsList])
+    if (isCorporateSuperAdmin && !vendorIdFromUrl && corporateRequestResponse) {
+      return corporateRequestResponse?.data || corporateRequestResponse || null
+    }
+    if (!isCorporateSuperAdmin && vendorRequestInfoResponse) {
+      return vendorRequestInfoResponse?.data || vendorRequestInfoResponse || null
+    }
+    if (!requestId || !requestsList.length) return null
+    return requestsList.find((request: any) => {
+      const id = request.id || request.request_id
+      return String(id) === String(requestId) || String(request.request_id) === String(requestId)
+    })
+  }, [
+    useCorporateVendorScoped,
+    corporateVendorRequestResponse,
+    isCorporateSuperAdmin,
+    vendorIdFromUrl,
+    corporateRequestResponse,
+    requestId,
+    requestsList,
+    vendorRequestInfoResponse,
+  ])
 
-  const isPending = isLoadingVendorRequests || isLoadingCorporateRequest
+  const isPending =
+    isLoadingVendorRequests ||
+    isLoadingCorporateRequest ||
+    isLoadingCorporateVendorRequest ||
+    (!isCorporateSuperAdmin && !!requestId && isLoadingVendorRequestInfo)
 
   const requestInfo = useMemo(() => {
     if (!data) return []

@@ -7,6 +7,7 @@ export { DeleteBranchManagerInvitationModal } from './DeleteBranchManagerInvitat
 export { InviteBranchManagerModal } from './InviteBranchManagerModal'
 export { RemoveBranchManagerModal } from './RemoveBranchManagerModal'
 export { UpdateBranchManagerInvitationModal } from './UpdateBranchManagerInvitationModal'
+export { UpdateBranchManagerDetailsModal } from './UpdateBranchManagerDetailsModal'
 export { default as CreateExperience } from './CreateExperience'
 export { ViewExperience } from './ViewExperience'
 export { EditExperience } from './EditExperience'

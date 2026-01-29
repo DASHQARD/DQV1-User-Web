@@ -44,5 +44,5 @@ export const getBranchManagerInvitation = async (token: string): Promise<any> =>
 }
 
 export const onboardBranchManager = async (payload: OnboardBranchManagerPayload): Promise<any> => {
-  return await postMethod(`${commonUrl}/onboard/branch-manager`, payload)
+  return await postMethod(`${commonUrl}/branch-manager-invitation/accept`, payload)
 }

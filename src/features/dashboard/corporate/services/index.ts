@@ -48,8 +48,24 @@ export const getRequestsCorporateSuperAdminByVendor = async (
   return response
 }
 
+/** GET /requests/corporate-super-admin/vendor/:vendor_id/info/:id */
+export const getCorporateSuperAdminVendorRequestInfo = async (
+  vendorId: string | number,
+  id: number | string,
+): Promise<any> => {
+  return await getList(`/requests/corporate-super-admin/vendor/${vendorId}/info/${id}`)
+}
+
 export const updateRequestStatus = async (data: { id: number; status: string }): Promise<any> => {
   return await patchMethod(`/requests/corporate/update-status`, data)
+}
+
+/** PATCH /requests/corporate-super-admin/vendor/:vendor_id/update-status */
+export const updateCorporateSuperAdminVendorRequestStatus = async (
+  vendorId: string | number,
+  data: { id: number; status: string },
+): Promise<any> => {
+  return await patchMethod(`/requests/corporate-super-admin/vendor/${vendorId}/update-status`, data)
 }
 
 export const getCorporateRequestById = async (id: number | string): Promise<any> => {
@@ -58,6 +74,14 @@ export const getCorporateRequestById = async (id: number | string): Promise<any>
 
 export const deleteCorporateRequest = async (id: number | string): Promise<any> => {
   return await deleteMethod(`/requests/corporate/delete/${id}`)
+}
+
+/** DELETE /requests/corporate-super-admin/vendor/:vendor_id/delete/:id */
+export const deleteCorporateSuperAdminVendorRequest = async (
+  vendorId: string | number,
+  id: number | string,
+): Promise<any> => {
+  return await deleteMethod(`/requests/corporate-super-admin/vendor/${vendorId}/delete/${id}`)
 }
 
 export const getCorporateAdmins = async (params?: Record<string, any>): Promise<any> => {

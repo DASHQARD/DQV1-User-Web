@@ -235,8 +235,18 @@ export function EditExperience() {
 
       const branchIds = selectedBranches
 
+      // API allows only file_url and file_name for images/terms (no id)
+      const imagesPayload = uploadedImages.map((img: any) => ({
+        file_url: img.file_url,
+        file_name: img.file_name,
+      }))
+      const termsPayload = uploadedTerms.map((term: any) => ({
+        file_url: term.file_url,
+        file_name: term.file_name,
+      }))
+
       const payload: any = {
-        id: card.id,
+        card_id: card.id ?? card.card_id,
         product: data.product,
         description: data.description,
         type: data.type,
@@ -244,8 +254,8 @@ export function EditExperience() {
         currency: data.currency,
         issue_date: data.issue_date,
         expiry_date: data.expiry_date,
-        images: uploadedImages,
-        terms_and_conditions: uploadedTerms,
+        images: imagesPayload,
+        terms_and_conditions: termsPayload,
         redemption_branches: branchIds.length > 0 ? branchIds.map((id) => ({ branch_id: id })) : [],
       }
 

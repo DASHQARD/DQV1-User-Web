@@ -471,11 +471,6 @@ export default function CorporateSidebar() {
               .filter((item) => {
                 const isCorporateAdmin = user?.user_type === 'corporate admin'
 
-                // Remove Requests from corporate sidebar (moved to vendor sidebar)
-                if (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS) {
-                  return false
-                }
-
                 // Hide Admins and Notifications for corporate admin users
                 if (
                   (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||

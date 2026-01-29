@@ -18,10 +18,12 @@ import {
   updateCard,
   deleteCard,
   updateRequestStatus,
+  deleteRequestVendor,
   updatePaymentPreferences,
   cancelBranchManagerInvitation,
   deleteBranchManagerInvitation,
   removeBranchManager,
+  updateBranchManagerDetails,
   updateBranchStatus,
 } from '../services'
 import type {
@@ -282,6 +284,20 @@ export function useVendorMutations() {
     })
   }
 
+  function useDeleteRequestVendorService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (id: number | string) => deleteRequestVendor(id),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Request deleted successfully')
+        queryClient.invalidateQueries({ queryKey: ['requests-vendor'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to delete request. Please try again.')
+      },
+    })
+  }
+
   function useCancelBranchManagerInvitationService() {
     const queryClient = useQueryClient()
     return useMutation({
@@ -321,6 +337,27 @@ export function useVendorMutations() {
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to remove branch manager. Please try again.')
+      },
+    })
+  }
+
+  function useUpdateBranchManagerDetailsService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: {
+        branch_manager_user_id: number
+        email: string
+        phone_number: string
+        password: string
+      }) => updateBranchManagerDetails(data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Branch manager details updated successfully')
+        queryClient.invalidateQueries({ queryKey: ['branches'] })
+        queryClient.invalidateQueries({ queryKey: ['branches-by-vendor-id'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-branch'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to update branch manager details. Please try again.')
       },
     })
   }
@@ -376,10 +413,12 @@ export function useVendorMutations() {
     useUpdateBranchPaymentDetailsService,
     useDeleteBranchPaymentDetailsService,
     useUpdateRequestStatusService,
+    useDeleteRequestVendorService,
     useUpdatePaymentPreferencesService,
     useCancelBranchManagerInvitationService,
     useDeleteBranchManagerInvitationService,
     useRemoveBranchManagerService,
+    useUpdateBranchManagerDetailsService,
     useUpdateBranchStatusService,
     useDeleteBranchByVendorService,
   }

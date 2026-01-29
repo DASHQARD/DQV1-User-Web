@@ -27,18 +27,28 @@ export default function VendorSidebar() {
 
   const userType = (user as any)?.user_type || userProfileData?.user_type
   const isVendor = userType === 'vendor'
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
 
   // Get display name - always show "Vendor" when on vendor dashboard
   const displayName = React.useMemo(() => {
     return 'Vendor'
   }, [])
 
-  const { useBranchesService, useGetAllVendorsDetailsService } = vendorQueries()
+  const { useBranchesService, useGetAllVendorsDetailsService, useGetRequestsVendorService } =
+    vendorQueries()
   const { data: branches } = useBranchesService()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
+  const { data: requestsResponse } = useGetRequestsVendorService({ limit: 100 })
 
-  console.log('switch workspace', allVendorsDetails)
+  // Pending requests count for sidebar badge
+  const pendingRequestsCount = React.useMemo(() => {
+    if (!requestsResponse) return 0
+    const list = Array.isArray(requestsResponse)
+      ? requestsResponse
+      : Array.isArray(requestsResponse?.data)
+        ? requestsResponse.data
+        : []
+    return list.filter((r: any) => String(r?.status).toLowerCase() === 'pending').length
+  }, [requestsResponse])
 
   // Handle branches data structure (array or wrapped response)
   const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
@@ -531,12 +541,7 @@ export default function VendorSidebar() {
         <ul className="py-2 px-3">
           {VENDOR_NAV_ITEMS.map((section) => {
             // Filter items based on user type - only show Requests for corporate super admin
-            const filteredItems = section.items.filter((item) => {
-              if (item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS) {
-                return isCorporateSuperAdmin
-              }
-              return true
-            })
+            const filteredItems = section.items
 
             // Skip section if no items after filtering
             if (filteredItems.length === 0) {
@@ -727,18 +732,31 @@ export default function VendorSidebar() {
                                 !isActive(item.path) && 'hover:text-[#402D87]',
                               )}
                             >
-                              <Icon
-                                icon={item.icon}
-                                className={cn(
-                                  'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-                                  isActive(item.path) && 'text-[#402D87]',
-                                  !isActive(item.path) &&
-                                    'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
-                                )}
-                              />
+                              <span className="relative inline-flex">
+                                <Icon
+                                  icon={item.icon}
+                                  className={cn(
+                                    'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                                    isActive(item.path) && 'text-[#402D87]',
+                                    !isActive(item.path) &&
+                                      'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                                  )}
+                                />
+                                {item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS &&
+                                  pendingRequestsCount > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold px-1">
+                                      {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
+                                    </span>
+                                  )}
+                              </span>
                             </Link>
                           </TooltipTrigger>
-                          <TooltipContent side="right">{item.label}</TooltipContent>
+                          <TooltipContent side="right">
+                            {item.label}
+                            {item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS &&
+                              pendingRequestsCount > 0 &&
+                              ` (${pendingRequestsCount} pending)`}
+                          </TooltipContent>
                         </Tooltip>
                       ) : (
                         <Link
@@ -759,7 +777,13 @@ export default function VendorSidebar() {
                                 'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
                             )}
                           />
-                          <span>{item.label}</span>
+                          <span className="flex-1">{item.label}</span>
+                          {item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS &&
+                            pendingRequestsCount > 0 && (
+                              <span className="shrink-0 min-w-[20px] h-5 flex items-center justify-center rounded-full bg-amber-500 text-white text-xs font-semibold px-1.5">
+                                {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
+                              </span>
+                            )}
                         </Link>
                       )}
                       {isCollapsed && isActive(item.path) && (
