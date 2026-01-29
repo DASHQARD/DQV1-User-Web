@@ -1,15 +1,24 @@
 import { useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router'
 import { PaginatedTable, Text } from '@/components'
 import { redemptionListColumns, redemptionListCsvHeaders } from '../../../components'
 import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType } from '@/types'
-import { useReducerSpread } from '@/hooks'
+import { useReducerSpread, useUserProfile } from '@/hooks'
 import { OPTIONS } from '@/utils/constants/filter'
 import { useRedemptionQueries } from '@/features/dashboard/hooks'
 import { branchQueries } from '@/features/dashboard/branch/hooks'
+import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 
 export default function Redemptions() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
+
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const userType = userProfileData?.user_type
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
 
   const params = useMemo(() => {
     const apiParams: Record<string, unknown> = {
@@ -24,16 +33,42 @@ export default function Redemptions() {
     return apiParams
   }, [query])
 
+  const { useGetCorporateRedemptionsService, useGetCorporateRedemptionsByVendorIdService } =
+    corporateQueries()
+  const { data: corporateRedemptionsResponse, isLoading: isLoadingCorporateRedemptions } =
+    useGetCorporateRedemptionsService(
+      isCorporateSuperAdmin && !vendorIdFromUrl ? params : undefined,
+      { skipWhenVendorSelected: !!vendorIdFromUrl },
+    )
+  const {
+    data: corporateVendorRedemptionsResponse,
+    isLoading: isLoadingCorporateVendorRedemptions,
+  } = useGetCorporateRedemptionsByVendorIdService(
+    isCorporateSuperAdmin && vendorIdFromUrl ? vendorIdFromUrl : null,
+    isCorporateSuperAdmin && vendorIdFromUrl ? params : undefined,
+  )
+
   const { useGetVendorRedemptionsService } = useRedemptionQueries()
   const { data: vendorRedemptionsResponse, isLoading: isLoadingVendorRedemptions } =
-    useGetVendorRedemptionsService(params)
+    useGetVendorRedemptionsService(isCorporateSuperAdmin ? undefined : params)
 
   const { useGetBranchRedemptionsService } = branchQueries()
   const { data: branchRedemptionsResponse, isLoading: isLoadingBranchRedemptions } =
     useGetBranchRedemptionsService()
 
-  const redemptionsResponse = vendorRedemptionsResponse || branchRedemptionsResponse
-  const isLoading = isLoadingVendorRedemptions || isLoadingBranchRedemptions
+  // Corporate super admin with vendor selected → GET /redemptions/corporate/vendors/:vendor_id; else all corporate or vendor/branch
+  const redemptionsResponse =
+    isCorporateSuperAdmin && vendorIdFromUrl
+      ? corporateVendorRedemptionsResponse
+      : isCorporateSuperAdmin
+        ? corporateRedemptionsResponse
+        : vendorRedemptionsResponse || branchRedemptionsResponse
+  const isLoading =
+    isCorporateSuperAdmin && vendorIdFromUrl
+      ? isLoadingCorporateVendorRedemptions
+      : isCorporateSuperAdmin
+        ? isLoadingCorporateRedemptions
+        : isLoadingVendorRedemptions || isLoadingBranchRedemptions
 
   const redemptionsData = useMemo(() => {
     if (!redemptionsResponse) return []

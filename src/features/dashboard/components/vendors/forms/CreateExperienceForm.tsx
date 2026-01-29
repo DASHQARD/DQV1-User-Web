@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { useState, useEffect, useMemo } from 'react'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { FileUploader, Input, Combobox, Button, Text } from '@/components'
@@ -67,6 +67,15 @@ export default function CreateExperienceForm() {
   })
 
   const isPending = isCreating || isUploading || isCreatingBranchExperience
+
+  const issueDate = useWatch({ control: form.control, name: 'issue_date' })
+  const minExpiryDate = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    if (!issueDate) return today
+    const next = new Date(issueDate)
+    next.setDate(next.getDate() + 1)
+    return next.toISOString().split('T')[0]
+  }, [issueDate])
 
   const isModalOpen = modal.isModalOpen(MODALS.EXPERIENCE.CREATE)
 
@@ -331,7 +340,7 @@ export default function CreateExperienceForm() {
         <Input
           label="Expiry Date"
           type="date"
-          min={new Date().toISOString().split('T')[0]}
+          min={minExpiryDate}
           {...form.register('expiry_date')}
           error={form.formState.errors.expiry_date?.message}
         />

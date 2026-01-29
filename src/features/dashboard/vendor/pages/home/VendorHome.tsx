@@ -1,4 +1,5 @@
 import React from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Text } from '@/components'
 import {
   VendorSummaryCards,
@@ -14,11 +15,18 @@ import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorpor
 import BranchHome from '../branches/BranchHome'
 
 export default function VendorHome() {
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
+
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useGetBranchesByVendorIdService, useGetCardsByVendorIdService } = vendorQueries()
-  const { useGetCorporateBranchesListService, useGetCorporateSuperAdminCardsService } =
-    corporateQueries()
+  const {
+    useGetCorporateBranchesListService,
+    useGetCorporateBranchesByVendorIdService,
+    useGetCorporateSuperAdminCardsService,
+    useGetCardsByVendorIdForCorporateService,
+  } = corporateQueries()
   // const { useGetRedemptionsSummaryService } = useRedemptionQueries()
 
   // Check if user is a branch manager
@@ -29,30 +37,53 @@ export default function VendorHome() {
   // Get vendor_id from user profile
   const vendorId = userProfileData?.vendor_id ? Number(userProfileData.vendor_id) : null
 
-  // Fetch branches - use corporate endpoint if corporate super admin
+  // Fetch branches: corporate super admin with vendor selected → GET /branches/corporate?vendor_id=:vendor_id; else corporate list or vendor by profile
   const { data: vendorBranchesResponse, isLoading: isLoadingVendorBranches } =
     useGetBranchesByVendorIdService(isCorporateSuperAdmin ? null : vendorId, false)
-  const { data: corporateBranchesResponse, isLoading: isLoadingCorporateBranches } =
+  const { data: corporateBranchesListResponse, isLoading: isLoadingCorporateBranchesList } =
     useGetCorporateBranchesListService()
+  const { data: corporateBranchesByVendorResponse, isLoading: isLoadingCorporateBranchesByVendor } =
+    useGetCorporateBranchesByVendorIdService(
+      isCorporateSuperAdmin && vendorIdFromUrl ? vendorIdFromUrl : null,
+    )
 
-  // Fetch experiences/cards - use corporate super admin endpoint if corporate super admin
+  // Fetch experiences/cards: corporate super admin with vendor selected → GET /cards/:vendor_id; else corporate list or vendor by profile
   const { data: vendorExperiencesData, isLoading: isLoadingVendorExperiences } =
     useGetCardsByVendorIdService()
   const { data: corporateExperiencesData, isLoading: isLoadingCorporateExperiences } =
     useGetCorporateSuperAdminCardsService()
+  const { data: corporateVendorExperiencesData, isLoading: isLoadingCorporateVendorExperiences } =
+    useGetCardsByVendorIdForCorporateService(
+      isCorporateSuperAdmin && vendorIdFromUrl ? vendorIdFromUrl : null,
+      { limit: 10 },
+    )
 
-  // Determine which data source to use
-  const branchesResponse = isCorporateSuperAdmin
-    ? corporateBranchesResponse
-    : vendorBranchesResponse
-  const isLoadingBranches = isCorporateSuperAdmin
-    ? isLoadingCorporateBranches
-    : isLoadingVendorBranches
+  // Determine which data source to use for branches
+  const branchesResponse =
+    isCorporateSuperAdmin && vendorIdFromUrl
+      ? corporateBranchesByVendorResponse
+      : isCorporateSuperAdmin
+        ? corporateBranchesListResponse
+        : vendorBranchesResponse
+  const isLoadingBranches =
+    isCorporateSuperAdmin && vendorIdFromUrl
+      ? isLoadingCorporateBranchesByVendor
+      : isCorporateSuperAdmin
+        ? isLoadingCorporateBranchesList
+        : isLoadingVendorBranches
 
-  const experiencesData = isCorporateSuperAdmin ? corporateExperiencesData : vendorExperiencesData
-  const isLoadingExperiences = isCorporateSuperAdmin
-    ? isLoadingCorporateExperiences
-    : isLoadingVendorExperiences
+  const experiencesData =
+    isCorporateSuperAdmin && vendorIdFromUrl
+      ? corporateVendorExperiencesData
+      : isCorporateSuperAdmin
+        ? corporateExperiencesData
+        : vendorExperiencesData
+  const isLoadingExperiences =
+    isCorporateSuperAdmin && vendorIdFromUrl
+      ? isLoadingCorporateVendorExperiences
+      : isCorporateSuperAdmin
+        ? isLoadingCorporateExperiences
+        : isLoadingVendorExperiences
   // const { data: redemptionSummaryData, isLoading: isLoadingRedemptionSummary } =
   //   useGetRedemptionsSummaryService()
   // const { useGetVendorRedemptionsListService } = useRedemptionQueries()
@@ -102,7 +133,8 @@ export default function VendorHome() {
 
   const addAccountParam = (path: string): string => {
     const separator = path?.includes('?') ? '&' : '?'
-    return `${path}${separator}account=vendor`
+    const base = `${path}${separator}account=vendor`
+    return vendorIdFromUrl ? `${base}&vendor_id=${vendorIdFromUrl}` : base
   }
 
   // If branch manager, render BranchHome instead

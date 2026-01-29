@@ -13,7 +13,7 @@ const DOCUMENT_ICONS: Record<DocumentFileType, string> = {
   docx: DocXImage,
 }
 
-function getDocumentFileType(file: File, accept?: string): DocumentFileType | null {
+function getDocumentFileType(file: File): DocumentFileType | null {
   const name = file.name.toLowerCase()
   const type = file.type
 
@@ -22,26 +22,20 @@ function getDocumentFileType(file: File, accept?: string): DocumentFileType | nu
     type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
     type === 'application/vnd.ms-excel.sheet.macroEnabled.12' ||
     name.endsWith('.xlsx') ||
-    name.endsWith('.xls') ||
-    (accept && (accept.includes('.xlsx') || accept.includes('.xls')))
+    name.endsWith('.xls')
   ) {
     return 'excel'
   }
-  if (type === 'application/pdf' || name.endsWith('.pdf') || (accept && accept.includes('.pdf'))) {
+  if (type === 'application/pdf' || name.endsWith('.pdf')) {
     return 'pdf'
   }
   if (
     type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    name.endsWith('.docx') ||
-    (accept && accept.includes('.docx'))
+    name.endsWith('.docx')
   ) {
     return 'docx'
   }
-  if (
-    type === 'application/msword' ||
-    name.endsWith('.doc') ||
-    (accept && accept.includes('.doc'))
-  ) {
+  if (type === 'application/msword' || name.endsWith('.doc')) {
     return 'doc'
   }
   return null
@@ -72,10 +66,7 @@ export default function FileUploader({
   const [isDragging, setIsDragging] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  const documentFileType = React.useMemo(
-    () => (value ? getDocumentFileType(value, accept) : null),
-    [value, accept],
-  )
+  const documentFileType = React.useMemo(() => (value ? getDocumentFileType(value) : null), [value])
   const hasDocumentIcon = !!documentFileType
   const documentIconSrc = documentFileType ? DOCUMENT_ICONS[documentFileType] : null
 

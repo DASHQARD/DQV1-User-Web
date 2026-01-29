@@ -38,6 +38,16 @@ export const getRequestsCorporate = async (params?: Record<string, any>): Promis
   return response
 }
 
+/** GET /requests/corporate-super-admin/vendor/:vendor_id/requests — requests for a vendor when corporate super admin has switched to that vendor */
+export const getRequestsCorporateSuperAdminByVendor = async (
+  vendorId: string | number,
+): Promise<any> => {
+  const response = await axiosClient.get(
+    `/requests/corporate-super-admin/vendor/${vendorId}/requests`,
+  )
+  return response
+}
+
 export const updateRequestStatus = async (data: { id: number; status: string }): Promise<any> => {
   return await patchMethod(`/requests/corporate/update-status`, data)
 }
@@ -284,6 +294,24 @@ export const getCorporateSuperAdminCardById = async (id: number | string): Promi
   return await getList(`/cards/corporate-super-admin/${id}`)
 }
 
+export const getCorporateSuperAdminVendorCardsSummary = async (
+  vendorId: number | string,
+): Promise<any> => {
+  return await getList(`/cards/corporate-super-admin/vendor/${vendorId}/cards/summary`)
+}
+
+/** Fetch cards for a vendor when corporate super admin has switched to that vendor (GET /cards/corporate-super-admin/vendor/:vendor_id/cards) */
+export const getCardsByVendorIdForCorporate = async (
+  vendorId: number | string,
+  params?: Record<string, any>,
+): Promise<any> => {
+  const queryString = getQueryString(params)
+  const base = `/cards/corporate-super-admin/vendor/${vendorId}/cards`
+  const fullUrl = queryString ? `${base}?${queryString}` : base
+  const response = await axiosClient.get(fullUrl)
+  return response
+}
+
 export const deleteCorporateSuperAdminCard = async (id: number | string): Promise<any> => {
   return await deleteMethod(`/cards/corporate-super-admin/${id}`)
 }
@@ -305,6 +333,11 @@ export const requestBusinessUpdate = async (data: {
 
 export const getCorporateBranches = async (corporateUserId: number | string): Promise<any> => {
   return await getList(`/branches/corporate/${corporateUserId}`)
+}
+
+/** GET /branches/corporate?vendor_id=:vendor_id — branches for a vendor when corporate super admin has switched to that vendor */
+export const getCorporateBranchesByVendorId = async (vendorId: number | string): Promise<any> => {
+  return await getList(`/branches/corporate`, { vendor_id: vendorId })
 }
 
 export const getCorporateBranchesList = async (): Promise<any> => {
@@ -348,4 +381,84 @@ export const getCorporatePayments = async (params?: Record<string, any>): Promis
 
 export const getCorporatePaymentById = async (id: number | string): Promise<any> => {
   return await getList(`/payments/corporate/${id}`)
+}
+
+export const getCorporateRedemptions = async (params?: Record<string, any>): Promise<any> => {
+  const queryString = getQueryString(params)
+  const fullUrl = queryString ? `/redemptions/corporate?${queryString}` : `/redemptions/corporate`
+  const response = await axiosClient.get(fullUrl)
+  return response
+}
+
+/** GET /redemptions/corporate/vendors/:vendor_id — redemptions for a vendor when corporate super admin has switched to that vendor */
+export const getCorporateRedemptionsByVendorId = async (
+  vendorId: number | string,
+  params?: Record<string, any>,
+): Promise<any> => {
+  const queryString = getQueryString(params)
+  const base = `/redemptions/corporate/vendors/${vendorId}`
+  const fullUrl = queryString ? `${base}?${queryString}` : base
+  const response = await axiosClient.get(fullUrl)
+  return response
+}
+
+export const getCorporateBranchManagerInvitations = async (
+  params?: Record<string, any>,
+): Promise<any> => {
+  const queryString = getQueryString(params)
+  const fullUrl = queryString
+    ? `/branches/corporate/branch-manager-invitations?${queryString}`
+    : `/branches/corporate/branch-manager-invitations`
+  const response = await axiosClient.get(fullUrl)
+  return response
+}
+
+/** POST /branches/corporate/branch-manager-invitations */
+export const createCorporateBranchManagerInvitation = async (data: {
+  branch_id: number
+  branch_manager_name: string
+  branch_manager_email: string
+  branch_manager_phone: string
+}): Promise<any> => {
+  return await postMethod(`/branches/corporate/branch-manager-invitations`, data)
+}
+
+export const getCorporateBranchManagerInvitationById = async (
+  id: number | string,
+): Promise<any> => {
+  return await getList(`/branches/corporate/branch-manager-invitations/${id}`)
+}
+
+export const deleteCorporateBranchManagerInvitation = async (id: number | string): Promise<any> => {
+  return await deleteMethod(`/branches/corporate/branch-manager-invitations/${id}`)
+}
+
+/** DELETE /branches/corporate/vendor-invitations/:id — when corporate super admin has switched to a vendor */
+export const deleteCorporateVendorBranchManagerInvitation = async (
+  id: number | string,
+): Promise<any> => {
+  return await deleteMethod(`/branches/corporate/vendor-invitations/${id}`)
+}
+
+/** PUT /branches/corporate/vendor-invitations/:id/cancel — update when corporate super admin has switched to a vendor */
+export const updateCorporateVendorBranchManagerInvitation = async (
+  id: number | string,
+  data: {
+    branch_manager_name: string
+    branch_manager_email: string
+    branch_manager_phone: string
+  },
+): Promise<any> => {
+  return await putMethod(`/branches/corporate/vendor-invitations/${id}/cancel`, data)
+}
+
+export const updateCorporateBranchManagerInvitation = async (
+  id: number | string,
+  data: {
+    branch_manager_name: string
+    branch_manager_email: string
+    branch_manager_phone: string
+  },
+): Promise<any> => {
+  return await putMethod(`/branches/corporate/branch-manager-invitations/${id}`, data)
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,6 +11,7 @@ import { CreateExperienceSchema } from '@/utils/schemas'
 import { Icon } from '@/libs'
 import { useBranchMutations } from '@/features/dashboard/branch/hooks'
 import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
+import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 
 type FormData = z.infer<typeof CreateExperienceSchema> & { id: number }
 
@@ -19,7 +20,47 @@ export function EditExperience() {
     paramName: MODALS.EXPERIENCE.ROOT,
   })
 
-  const card = modal.modalData as any
+  const isModalOpen = modal.isModalOpen(MODALS.EXPERIENCE.EDIT)
+  const cardFromModal = modal.modalData as any
+
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const userType = userProfileData?.user_type
+  const isBranch = userType === 'branch'
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
+
+  // Fetch card details from API if corporate super admin
+  const { useGetCorporateSuperAdminCardByIdService } = corporateQueries()
+  const cardId = cardFromModal?.id || cardFromModal?.card_id
+  const { data: corporateCardData, isLoading: isLoadingCorporateCard } =
+    useGetCorporateSuperAdminCardByIdService(isCorporateSuperAdmin && isModalOpen ? cardId : null)
+
+  // Use fetched card data for corporate super admin, otherwise use modal data
+  const card = React.useMemo(() => {
+    if (isCorporateSuperAdmin && corporateCardData) {
+      const cardData = corporateCardData?.data || corporateCardData
+      // Transform to match expected format
+      return {
+        ...cardFromModal,
+        ...cardData,
+        id: cardData.card_id || cardData.id || cardFromModal?.id,
+        card_id: cardData.card_id || cardData.id,
+        product: cardData.card_name || cardData.product || cardFromModal?.product,
+        type: cardData.card_type || cardData.type || cardFromModal?.type,
+        price: cardData.card_price || cardData.price || cardFromModal?.price,
+        currency: cardData.currency || cardFromModal?.currency || 'GHS',
+        description:
+          cardData.card_description || cardData.description || cardFromModal?.description,
+        status: cardData.card_status || cardData.status || cardFromModal?.status,
+        expiry_date: cardData.expiry_date || cardFromModal?.expiry_date,
+        issue_date: cardData.issue_date || cardFromModal?.issue_date,
+        images: cardData.images || cardFromModal?.images || [],
+        terms_and_conditions:
+          cardData.terms_and_conditions || cardFromModal?.terms_and_conditions || [],
+      }
+    }
+    return cardFromModal
+  }, [isCorporateSuperAdmin, corporateCardData, cardFromModal])
 
   const { useUpdateCardService } = useVendorMutations()
   const { mutateAsync: updateCard, isPending: isUpdating } = useUpdateCardService()
@@ -27,11 +68,6 @@ export function EditExperience() {
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const { useBranchesService } = vendorQueries()
   const { data: branches } = useBranchesService()
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const userType = userProfileData?.user_type
-  const isBranch = userType === 'branch'
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
   const { useUpdateBranchExperienceService } = useBranchMutations()
   const { mutateAsync: updateBranchExperience, isPending: isUpdatingBranchExperience } =
     useUpdateBranchExperienceService()
@@ -69,8 +105,6 @@ export function EditExperience() {
     },
   })
 
-  const isModalOpen = modal.isModalOpen(MODALS.EXPERIENCE.EDIT)
-
   useEffect(() => {
     if (!isModalOpen || !card) return
     form.reset({
@@ -86,7 +120,7 @@ export function EditExperience() {
       terms_and_conditions: [],
       redemption_branches: [],
     })
-  }, [isModalOpen, card])
+  }, [isModalOpen, card, form])
   // Load existing images and terms
   useEffect(() => {
     if (!isModalOpen || !card) return
@@ -253,6 +287,28 @@ export function EditExperience() {
     }
   }
 
+  // Show loading state while fetching corporate card data
+  if (isCorporateSuperAdmin && isModalOpen && isLoadingCorporateCard) {
+    return (
+      <Modal
+        title="Edit Experience"
+        position="side"
+        isOpen={isModalOpen}
+        setIsOpen={modal.closeModal}
+        panelClass="!w-[864px]"
+      >
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-900 mx-auto mb-4"></div>
+            <Text variant="span" className="text-gray-600">
+              Loading card details...
+            </Text>
+          </div>
+        </div>
+      </Modal>
+    )
+  }
+
   if (!card) return null
 
   const isPending =
@@ -264,9 +320,9 @@ export function EditExperience() {
       position="side"
       isOpen={isModalOpen}
       setIsOpen={modal.closeModal}
-      panelClass="!w-[864px] p-8"
+      panelClass="!w-[864px]"
     >
-      <form onSubmit={form.handleSubmit(onSubmit)} className="w-full flex flex-col gap-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="w-full flex flex-col gap-6 p-8">
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="Gift Card Name"

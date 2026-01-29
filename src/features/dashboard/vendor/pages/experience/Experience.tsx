@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router'
 import { Text, PaginatedTable } from '@/components'
 import { useReducerSpread, useUserProfile } from '@/hooks'
 import {
@@ -19,6 +20,8 @@ import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorpor
 
 export default function Experience() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
 
   const params = useMemo(() => {
     const apiParams: Record<string, unknown> = {
@@ -46,19 +49,34 @@ export default function Experience() {
   const { data: branchCardsResponse, isLoading: isLoadingBranchCards } =
     useGetBranchExperiencesService(params)
 
-  const { useGetCorporateCardsService, useGetCorporateSuperAdminCardsService } = corporateQueries()
+  const {
+    useGetCorporateCardsService,
+    useGetCorporateSuperAdminCardsService,
+    useGetCardsByVendorIdForCorporateService,
+  } = corporateQueries()
   const { data: corporateCardsResponse, isLoading: isLoadingCorporateCards } =
     useGetCorporateCardsService(params)
   const { data: corporateSuperAdminCardsResponse, isLoading: isLoadingCorporateSuperAdminCards } =
     useGetCorporateSuperAdminCardsService(params)
+  const { data: corporateVendorCardsResponse, isLoading: isLoadingCorporateVendorCards } =
+    useGetCardsByVendorIdForCorporateService(
+      isCorporateSuperAdmin && vendorIdFromUrl ? vendorIdFromUrl : null,
+      params,
+    )
 
-  // Use corporate super admin endpoint for corporate super admin, otherwise use regular corporate endpoint
-  const corporateResponse = isCorporateSuperAdmin
-    ? corporateSuperAdminCardsResponse
-    : corporateCardsResponse
-  const isLoadingCorporate = isCorporateSuperAdmin
-    ? isLoadingCorporateSuperAdminCards
-    : isLoadingCorporateCards
+  // Corporate super admin with vendor selected → /cards/corporate-super-admin/vendor/:id/cards; else super admin all cards or regular corporate
+  const corporateResponse =
+    isCorporateSuperAdmin && vendorIdFromUrl
+      ? corporateVendorCardsResponse
+      : isCorporateSuperAdmin
+        ? corporateSuperAdminCardsResponse
+        : corporateCardsResponse
+  const isLoadingCorporate =
+    isCorporateSuperAdmin && vendorIdFromUrl
+      ? isLoadingCorporateVendorCards
+      : isCorporateSuperAdmin
+        ? isLoadingCorporateSuperAdminCards
+        : isLoadingCorporateCards
 
   const response = isCorporate ? corporateResponse : cardsResponse || branchCardsResponse
   const isLoadingAny = isCorporate ? isLoadingCorporate : isLoading || isLoadingBranchCards

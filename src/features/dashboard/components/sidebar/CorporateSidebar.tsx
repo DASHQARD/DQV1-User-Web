@@ -23,18 +23,21 @@ export default function CorporateSidebar() {
   const { useGetAllVendorsDetailsService } = vendorQueries()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
 
-  console.log('allVendorsDetails', allVendorsDetails)
-
   const allVendorsCreatedByCorporate = React.useMemo(() => {
     const vendorsData = allVendorsDetails
-    return vendorsData?.filter(
-      (vendor: any) =>
-        vendor.corporate_user_id === user?.id && vendor.approval_status === 'auto_approved',
-    )
+    return vendorsData?.filter((vendor: any) => vendor.corporate_user_id === user?.id) ?? []
   }, [allVendorsDetails, user?.id])
+
+  const hasVendorsPendingVerification = React.useMemo(() => {
+    return allVendorsCreatedByCorporate.some(
+      (vendor: any) =>
+        vendor.approval_status !== 'approved' && vendor.approval_status !== 'auto_approved',
+    )
+  }, [allVendorsCreatedByCorporate])
 
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
+  const [vendorLogoUrls, setVendorLogoUrls] = React.useState<Record<number, string>>({})
 
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
@@ -102,6 +105,34 @@ export default function CorporateSidebar() {
       cancelled = true
     }
   }, [user?.business_documents, fetchPresignedURL])
+
+  // Fetch vendor logo presigned URLs for created vendors
+  React.useEffect(() => {
+    if (allVendorsCreatedByCorporate.length === 0) return
+
+    const fetchLogos = async () => {
+      const logoPromises = allVendorsCreatedByCorporate.map(async (vendor: any) => {
+        if (!vendor.vendor_logo) return null
+        try {
+          const url = await fetchPresignedURL(vendor.vendor_logo)
+          return { vendorId: vendor.vendor_id ?? vendor.id, url }
+        } catch {
+          return null
+        }
+      })
+
+      const results = await Promise.all(logoPromises)
+      const logoMap: Record<number, string> = {}
+      results.forEach((result) => {
+        if (result) {
+          logoMap[result.vendorId] = result.url
+        }
+      })
+      setVendorLogoUrls(logoMap)
+    }
+
+    fetchLogos()
+  }, [allVendorsCreatedByCorporate, fetchPresignedURL])
 
   const isActive = (path: string) => {
     // Exact match for root dashboard
@@ -198,32 +229,59 @@ export default function CorporateSidebar() {
                 Switch Workspace
               </Text>
 
-              {/* Switch to Vendor View */}
+              {/* List of vendors created by corporate - only approved/auto_approved are switchable */}
+              {allVendorsCreatedByCorporate.length > 0 && (
+                <div className="mb-3 space-y-1 max-h-[200px] overflow-y-auto">
+                  {allVendorsCreatedByCorporate.map((vendor: any) => {
+                    const vendorId = vendor.vendor_id ?? vendor.id
+                    const canSwitch =
+                      vendor.approval_status === 'approved' ||
+                      vendor.approval_status === 'auto_approved'
+                    return (
+                      <div
+                        key={vendorId}
+                        onClick={() => {
+                          setIsPopoverOpen(false)
+                          navigate(
+                            `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor${vendorId ? `&vendor_id=${vendorId}` : ''}`,
+                          )
+                        }}
+                        className="flex items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors"
+                      >
+                        <Avatar
+                          size="sm"
+                          src={vendorLogoUrls[vendorId]}
+                          name={vendor.vendor_name || vendor.business_name}
+                          className={!canSwitch ? 'opacity-75' : undefined}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <Text variant="span" weight="semibold" className="block text-sm truncate">
+                            {vendor.vendor_name || vendor.business_name}
+                          </Text>
+                          <Text variant="span" className="block text-xs text-gray-500 truncate">
+                            {vendor.gvid || `ID: ${vendorId}`}
+                          </Text>
+                        </div>
+                        <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
 
-              {allVendorsCreatedByCorporate && allVendorsCreatedByCorporate.length > 0 && (
-                <button
-                  onClick={() => {
-                    setIsPopoverOpen(false)
-                    navigate(`${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor`)
-                  }}
-                  className="flex items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors mb-3"
-                >
-                  <Avatar size="sm" src={logoUrl} name={user?.business_details?.[0]?.name} />
-                  <div className="flex-1 min-w-0">
-                    <Text variant="span" weight="semibold" className="block text-sm truncate">
-                      Vendor View
-                    </Text>
-                    <Text variant="span" className="block text-xs text-gray-500 mt-0.5 truncate">
-                      Switch to vendor sidebar
-                    </Text>
-                  </div>
-                  <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
-                </button>
+              {hasVendorsPendingVerification && (
+                <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 flex items-center gap-2">
+                  <Icon icon="bi:clock-history" className="text-amber-600 text-sm shrink-0" />
+                  <Text variant="span" className="text-xs text-amber-800">
+                    Some vendor accounts are pending verification
+                  </Text>
+                </div>
               )}
 
               <button
                 onClick={() => {
                   if (canAccessRestrictedFeatures) {
+                    setIsPopoverOpen(false)
                     vendorAccountModal.openModal(
                       MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_VENDOR_ACCOUNT,
                       {
@@ -454,7 +512,7 @@ export default function CorporateSidebar() {
               <React.Fragment key={section.section}>
                 {!isCollapsed && (
                   <li className="py-5 px-5 mt-5 first:mt-3">
-                    <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-[#6c757d]/90 relative flex items-center after:content-[''] after:absolute after:bottom-[-6px] after:left-0 after:w-5 after:h-0.5 after:bg-linear-to-r after:from-[#402D87] after:to-[rgba(64,45,135,0.4)] after:rounded-sm after:shadow-[0_1px_2px_rgba(64,45,135,0.2)] before:content-[''] before:absolute before:top-[-0.5rem] before:left-[-1.25rem] before:right-[-1.25rem] before:h-px before:bg-gradient-to-r before:from-transparent before:via-black/6 before:to-transparent">
+                    <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-[#6c757d]/90 relative flex items-center after:content-[''] after:absolute after:bottom-[-6px] after:left-0 after:w-5 after:h-0.5 after:bg-linear-to-r after:from-[#402D87] after:to-[rgba(64,45,135,0.4)] after:rounded-sm after:shadow-[0_1px_2px_rgba(64,45,135,0.2)] before:content-[''] before:absolute before:-top-2 before:-left-5 before:-right-5 before:h-px before:bg-linear-to-r before:from-transparent before:via-black/6 before:to-transparent">
                       {section.section}
                     </span>
                   </li>
@@ -564,7 +622,7 @@ export default function CorporateSidebar() {
                         </>
                       )}
                       {isCollapsed && isActive(item.path) && !isDisabled && (
-                        <div className="absolute right-[-0.75rem] top-1/2 -translate-y-1/2 w-1 h-6 bg-linear-to-b from-[#402D87] to-[#2d1a72] rounded-l-sm" />
+                        <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-1 h-6 bg-linear-to-b from-[#402D87] to-[#2d1a72] rounded-l-sm" />
                       )}
                     </li>
                   )

@@ -1,20 +1,37 @@
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { Text, Tag } from '@/components'
 import { ROUTES } from '@/utils/constants'
-
+import { useAuthStore } from '@/stores'
 import { getStatusVariant } from '@/utils/helpers'
 import { corporateQueries } from '../../corporate'
 import { formatDate } from '@/utils/format'
 
 export default function RecentRequests() {
-  const { useGetRequestsCorporateService } = corporateQueries()
-  const { data: requestsResponse } = useGetRequestsCorporateService()
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
+  const { user } = useAuthStore()
+  const userType = (user as any)?.user_type
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
+
+  const { useGetRequestsCorporateService, useGetRequestsCorporateSuperAdminVendorService } =
+    corporateQueries()
+  const { data: corporateRequestsResponse } = useGetRequestsCorporateService()
+  const { data: vendorRequestsResponse } = useGetRequestsCorporateSuperAdminVendorService(
+    isCorporateSuperAdmin && vendorIdFromUrl ? vendorIdFromUrl : null,
+  )
+
+  const requestsResponse =
+    isCorporateSuperAdmin && vendorIdFromUrl ? vendorRequestsResponse : corporateRequestsResponse
 
   const recentRequests = useMemo(() => {
     if (!requestsResponse) return []
-    return Array.isArray(requestsResponse) ? requestsResponse : []
+    return Array.isArray(requestsResponse)
+      ? requestsResponse
+      : Array.isArray((requestsResponse as any)?.data)
+        ? (requestsResponse as any).data
+        : []
   }, [requestsResponse])
 
   return (
@@ -26,7 +43,7 @@ export default function RecentRequests() {
         </h5>
 
         <Link
-          to={`${ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS}?account=vendor`}
+          to={`${ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS}?account=vendor${vendorIdFromUrl ? `&vendor_id=${vendorIdFromUrl}` : ''}`}
           className="text-[#402D87] no-underline text-sm font-medium flex items-center transition-colors duration-200 hover:text-[#2d1a72]"
         >
           View all <Icon icon="bi:arrow-right" className="ml-1" />

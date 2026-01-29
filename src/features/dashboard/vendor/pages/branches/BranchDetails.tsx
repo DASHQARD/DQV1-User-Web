@@ -10,6 +10,7 @@ import {
   ViewExperience,
   UpdateBranchStatusModal,
   DeleteBranchModal,
+  BranchMetricsCards,
 } from '@/features/dashboard/components'
 import { CardItems } from '@/features/website/components'
 import { ROUTES, MODALS } from '@/utils/constants'
@@ -34,16 +35,16 @@ export function BranchDetails() {
     paramName: MODALS.EXPERIENCE.ROOT,
   })
 
-  const { useGetAllVendorsDetailsForVendorService } = vendorQueries()
-  const { data: vendorsDetailsResponse, isLoading: isLoadingVendorsDetails } =
-    useGetAllVendorsDetailsForVendorService()
-
   // Get user profile and vendor ID
   const { user } = useAuthStore()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const userType = (user as any)?.user_type || userProfileData?.user_type
   const isCorporateSuperAdmin = userType === 'corporate super admin'
+
+  const { useGetAllVendorsDetailsForVendorService } = vendorQueries()
+  const { data: vendorsDetailsResponse, isLoading: isLoadingVendorsDetails } =
+    useGetAllVendorsDetailsForVendorService(isCorporateSuperAdmin ? false : true)
 
   const { useGetBranchesByVendorIdService } = vendorQueries()
   const {
@@ -314,54 +315,41 @@ export function BranchDetails() {
       .slice(0, 5)
   }, [branchRedemptions])
 
-  // Calculate metrics - use corporate branch summary if available, otherwise calculate from redemptions
-  const metrics = React.useMemo(() => {
+  // Get branch summary data - use corporate branch summary if available, otherwise calculate from redemptions
+  const branchSummary = React.useMemo(() => {
     if (isCorporateSuperAdmin && corporateBranchSummary) {
       // For corporate super admin, use summary data from API
-      const summary = corporateBranchSummary?.data || corporateBranchSummary || {}
-      return {
-        totalRedemptions: summary.total_redemptions || summary.totalRedemptions || 0,
-        totalPayouts: summary.total_payouts || summary.totalPayouts || 0,
-        totalPayoutsDashX: summary.total_payouts_dashx || summary.totalPayoutsDashX || 0,
-        totalPayoutsDashPass: summary.total_payouts_dashpass || summary.totalPayoutsDashPass || 0,
-        pendingPayout: summary.pending_payout || summary.pendingPayout || 0,
-        currency: summary.currency || 'GHS',
-      }
+      // Handle both direct object and wrapped response
+      return corporateBranchSummary?.data || corporateBranchSummary || null
     } else {
       // For regular vendors, calculate from redemptions array
       const totalRedemptions = branchRedemptions.length
-      const totalPayouts = branchRedemptions.reduce(
+      const totalRedemptionAmount = branchRedemptions.reduce(
         (sum: number, r: any) => sum + Number(r.amount || 0),
         0,
       )
-      const totalPayoutsDashX = branchRedemptions
-        .filter((r: any) => r.card_type?.toLowerCase() === 'dashx')
-        .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0)
-      const totalPayoutsDashPass = branchRedemptions
-        .filter((r: any) => r.card_type?.toLowerCase() === 'dashpass')
-        .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0)
-      const pendingPayout = branchRedemptions
-        .filter((r: any) => r.status?.toLowerCase() === 'pending')
-        .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0)
+      const dashxCards = branchRedemptions.filter(
+        (r: any) => r.card_type?.toLowerCase() === 'dashx',
+      ).length
+      const dashpassCards = branchRedemptions.filter(
+        (r: any) => r.card_type?.toLowerCase() === 'dashpass',
+      ).length
+
+      // Get total cards from experiences
+      const totalCards = experiences.length
 
       return {
-        totalRedemptions,
-        totalPayouts,
-        totalPayoutsDashX,
-        totalPayoutsDashPass,
-        pendingPayout,
-        currency: 'GHS',
+        total_redemptions: totalRedemptions,
+        total_redemption_amount: totalRedemptionAmount,
+        dashx_cards: dashxCards,
+        dashpass_cards: dashpassCards,
+        total_cards: totalCards,
       }
     }
-  }, [isCorporateSuperAdmin, corporateBranchSummary, branchRedemptions])
-
-  // Calculate total redemptions count for the branch (for backward compatibility)
-  const totalRedemptions = React.useMemo(() => {
-    return metrics.totalRedemptions
-  }, [metrics])
+  }, [isCorporateSuperAdmin, corporateBranchSummary, branchRedemptions, experiences])
 
   // Show loading state
-  if (isLoadingBranchData || isLoadingVendorsDetails) {
+  if (isLoadingBranchData || (!isCorporateSuperAdmin && isLoadingVendorsDetails)) {
     return (
       <div className="flex justify-center items-center h-full">
         <img src={LoaderGif} alt="loading" className="w-10 h-10" />
@@ -463,52 +451,10 @@ export function BranchDetails() {
         </div>
 
         {/* Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Total Redemptions */}
-          <div className="bg-white rounded-xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] flex items-center gap-5">
-            <div className="w-16 h-16 rounded-xl bg-linear-to-br from-[#402D87] to-[#2d1a72] flex items-center justify-center text-white text-3xl shrink-0">
-              <Icon icon="bi:credit-card-2-front" />
-            </div>
-            <div className="flex-1">
-              {isLoadingRedemptions || isLoadingCorporateBranchSummary ? (
-                <div className="text-sm text-[#6c757d] mb-2 font-medium">Loading...</div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold mb-1 leading-none text-[#402D87]">
-                    {totalRedemptions}
-                  </div>
-                  <div className="text-sm text-[#6c757d] mb-2 font-medium">Total Redemptions</div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Total Payouts */}
-          {/* <div className="bg-white rounded-xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] flex items-center gap-5">
-            <div className="w-16 h-16 rounded-xl bg-linear-to-br from-[#402D87] to-[#2d1a72] flex items-center justify-center text-white text-3xl shrink-0">
-              <Icon icon="bi:currency-exchange" />
-            </div>
-            <div className="flex-1">
-              <div className="text-2xl font-bold mb-1 leading-none text-[#402D87]">
-                {formatCurrency(metrics.totalPayouts, 'GHS')}
-              </div>
-              <div className="text-sm text-[#6c757d] mb-2 font-medium">Total Payouts</div>
-            </div>
-          </div> */}
-
-          {/* Total Payouts - DashX */}
-          {/* <div className="bg-white rounded-xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] flex items-center gap-5">
-            <div className="w-16 h-16 rounded-xl bg-linear-to-br from-[#402D87] to-[#2d1a72] flex items-center justify-center text-white text-3xl shrink-0">
-              <Icon icon="bi:wallet2" />
-            </div>
-            <div className="flex-1">
-              <div className="text-2xl font-bold mb-1 leading-none text-[#402D87]">
-                {formatCurrency(metrics.totalPayoutsDashX, 'GHS')}
-              </div>
-              <div className="text-sm text-[#6c757d] mb-2 font-medium">Total Payouts - DashX</div>
-            </div>
-          </div> */}
-        </div>
+        <BranchMetricsCards
+          summary={branchSummary}
+          isLoading={isLoadingRedemptions || isLoadingCorporateBranchSummary}
+        />
 
         {/* Recent Redemptions */}
         <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">

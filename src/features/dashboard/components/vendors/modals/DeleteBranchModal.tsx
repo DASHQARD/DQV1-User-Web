@@ -12,6 +12,7 @@ export function DeleteBranchModal() {
   })
 
   const branch = modal.modalData
+
   const { user } = useAuthStore()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
@@ -19,33 +20,38 @@ export function DeleteBranchModal() {
   const isCorporateSuperAdmin = userType === 'corporate super admin'
 
   const { useDeleteBranchByVendorService } = useVendorMutations()
-  const { mutateAsync: deleteBranchByVendor, isPending: isDeletingVendorBranch } =
-    useDeleteBranchByVendorService()
+  const deleteBranchByVendorMutation = useDeleteBranchByVendorService()
 
   const { useDeleteCorporateBranchService } = corporateMutations()
-  const { mutateAsync: deleteCorporateBranch, isPending: isDeletingCorporateBranch } =
-    useDeleteCorporateBranchService()
+  const deleteCorporateBranchMutation = useDeleteCorporateBranchService()
 
-  const isDeletingBranch = isCorporateSuperAdmin
-    ? isDeletingCorporateBranch
-    : isDeletingVendorBranch
+  const isDeletingBranch =
+    deleteBranchByVendorMutation.isPending || deleteCorporateBranchMutation.isPending
 
-  const handleDeleteBranch = async () => {
+  const handleDeleteBranch = () => {
     const branchId = branch?.id || branch?.branch_id
-    if (!branchId) return
+    if (!branchId) {
+      console.error('Branch ID not found')
+      return
+    }
 
-    try {
-      if (isCorporateSuperAdmin) {
-        await deleteCorporateBranch(branchId)
-      } else {
-        await deleteBranchByVendor({
+    if (isCorporateSuperAdmin) {
+      deleteCorporateBranchMutation.mutate(branchId, {
+        onSuccess: () => {
+          modal.closeModal()
+        },
+      })
+    } else {
+      deleteBranchByVendorMutation.mutate(
+        {
           branch_id: Number(branchId),
-        })
-      }
-      modal.closeModal()
-    } catch (err: unknown) {
-      console.error('Failed to delete branch:', err)
-      // Error is handled by the mutation hook
+        },
+        {
+          onSuccess: () => {
+            modal.closeModal()
+          },
+        },
+      )
     }
   }
 

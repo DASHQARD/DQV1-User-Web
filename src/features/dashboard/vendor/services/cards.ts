@@ -16,9 +16,12 @@ export const getCardsByVendorId = async (opts: {
   after?: string
   search?: string
   status?: string
+  card_type?: string
+  dateFrom?: string
+  dateTo?: string
 }): Promise<any> => {
   const { vendor_id, ...queryParams } = opts
-  const queryString = getQueryString(queryParams)
+  const queryString = getQueryString({ ...queryParams, vendor_id })
   const base = `${commonManagerUrl}/vendor/${vendor_id}`
   const fullUrl = queryString ? `${base}?${queryString}` : base
   const response = await axiosClient.get(fullUrl)
