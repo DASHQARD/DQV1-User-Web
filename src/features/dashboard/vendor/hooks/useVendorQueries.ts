@@ -8,6 +8,7 @@ import {
   getSingleVendorInfo,
   getAuditLogsVendor,
   getRequestsVendor,
+  getRequestVendorInfo,
   getCardsByVendorId,
   getCardById,
   getCardsMetrics,
@@ -87,6 +88,18 @@ export function vendorQueries() {
       queryKey: isCorporateSuperAdmin ? ['requests-corporate', query] : ['requests-vendor', query],
       queryFn: () =>
         isCorporateSuperAdmin ? getRequestsCorporate(query) : getRequestsVendor(query),
+      // Don't run until profile is loaded; don't run /requests/corporate when caller passes undefined (corporate viewing vendor's requests)
+      enabled:
+        userProfileData !== undefined &&
+        (query !== undefined || userProfileData?.user_type !== 'corporate super admin'),
+    })
+  }
+
+  function useGetRequestVendorInfoService(id: number | string | null) {
+    return useQuery({
+      queryKey: ['request-vendor-info', id],
+      queryFn: () => getRequestVendorInfo(id as number | string),
+      enabled: !!id,
     })
   }
 
@@ -171,6 +184,7 @@ export function vendorQueries() {
     useGetBranchesByVendorIdService,
     useGetAuditLogsVendorService,
     useGetRequestsVendorService,
+    useGetRequestVendorInfoService,
     useGetCardsByVendorIdService,
     useGetCardByIdService,
     useGetCardsMetricsService,

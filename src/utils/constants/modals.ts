@@ -60,6 +60,7 @@ export const MODALS = {
     BULK_UPLOAD: 'bulk-upload-branches',
     VIEW: 'view-branch',
     UPDATE_STATUS: 'update-branch-status',
+    UPDATE_MANAGER_DETAILS: 'update-branch-manager-details',
     DELETE: 'delete-branch',
   },
   BRANCH_MANAGER_INVITATION: {

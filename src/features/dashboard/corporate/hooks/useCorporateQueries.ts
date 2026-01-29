@@ -6,6 +6,7 @@ import {
   getRequestsCorporate,
   getRequestsCorporateSuperAdminByVendor,
   getCorporateRequestById,
+  getCorporateSuperAdminVendorRequestInfo,
   getCorporateAdmins,
   getInvitedCorporateAdmins,
   getCorporatePaymentDetails,
@@ -96,6 +97,17 @@ export function corporateQueries() {
       queryKey: ['corporate-request', id],
       queryFn: () => getCorporateRequestById(id!),
       enabled: !!id,
+    })
+  }
+
+  function useGetCorporateSuperAdminVendorRequestInfoService(
+    vendorId: string | number | null,
+    id: number | string | null,
+  ) {
+    return useQuery({
+      queryKey: ['corporate-super-admin-vendor-request', vendorId, id],
+      queryFn: () => getCorporateSuperAdminVendorRequestInfo(vendorId!, id!),
+      enabled: !!vendorId && !!id,
     })
   }
 
@@ -371,6 +383,7 @@ export function corporateQueries() {
     useGetRequestsCorporateService,
     useGetRequestsCorporateSuperAdminVendorService,
     useGetCorporateRequestByIdService,
+    useGetCorporateSuperAdminVendorRequestInfoService,
     useGetCorporateAdminsService,
     useGetInvitedCorporateAdminsService,
     useGetCorporatePaymentInfoService,

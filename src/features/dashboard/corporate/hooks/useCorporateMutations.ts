@@ -19,6 +19,7 @@ import {
   deletePaymentDetails,
   checkout,
   updateRequestStatus,
+  updateCorporateSuperAdminVendorRequestStatus,
   requestBusinessUpdate,
   addCorporateBranch,
   deleteCorporateBranch,
@@ -30,6 +31,7 @@ import {
   deleteCorporateSuperAdminCard,
   updateCorporateSuperAdminCard,
   deleteCorporateRequest,
+  deleteCorporateSuperAdminVendorRequest,
 } from '../services'
 import { useToast } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
@@ -391,6 +393,43 @@ export function corporateMutations() {
     })
   }
 
+  function useUpdateCorporateSuperAdminVendorRequestStatusService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: ({
+        vendorId,
+        data,
+      }: {
+        vendorId: string | number
+        data: { id: number; status: string }
+      }) => updateCorporateSuperAdminVendorRequestStatus(vendorId, data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Request status updated successfully')
+        queryClient.invalidateQueries({ queryKey: ['requests-corporate-super-admin-vendor'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to update request status. Please try again.')
+      },
+    })
+  }
+
+  function useDeleteCorporateSuperAdminVendorRequestService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: ({ vendorId, id }: { vendorId: string | number; id: number | string }) =>
+        deleteCorporateSuperAdminVendorRequest(vendorId, id),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Request deleted successfully')
+        queryClient.invalidateQueries({ queryKey: ['requests-corporate-super-admin-vendor'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to delete request. Please try again.')
+      },
+    })
+  }
+
   function useRequestBusinessUpdateService() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
@@ -598,7 +637,9 @@ export function corporateMutations() {
     useDeletePaymentDetailsService,
     useCheckoutService,
     useUpdateRequestStatusService,
+    useUpdateCorporateSuperAdminVendorRequestStatusService,
     useDeleteCorporateRequestService,
+    useDeleteCorporateSuperAdminVendorRequestService,
     useRequestBusinessUpdateService,
     useAddCorporateBranchService,
     useDeleteCorporateBranchService,

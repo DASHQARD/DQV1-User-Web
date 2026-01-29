@@ -9,6 +9,7 @@ import {
   BranchDetailsModal,
   ViewExperience,
   UpdateBranchStatusModal,
+  UpdateBranchManagerDetailsModal,
   DeleteBranchModal,
   BranchMetricsCards,
 } from '@/features/dashboard/components'
@@ -418,6 +419,19 @@ export function BranchDetails() {
               <>
                 <Dropdown
                   actions={[
+                    ...(branches?.user_id
+                      ? [
+                          {
+                            label: 'Update Branch Manager Details',
+                            onClickFn: () => {
+                              branchStatusModal.openModal(
+                                MODALS.BRANCH.UPDATE_MANAGER_DETAILS,
+                                branches,
+                              )
+                            },
+                          },
+                        ]
+                      : []),
                     {
                       label: 'Update Status',
                       onClickFn: () => {
@@ -649,6 +663,7 @@ export function BranchDetails() {
       <RedemptionDetails />
       <ViewExperience />
       <UpdateBranchStatusModal />
+      <UpdateBranchManagerDetailsModal />
       <DeleteBranchModal />
     </>
   )

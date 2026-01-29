@@ -50,8 +50,16 @@ export const getRequestsVendor = async (params?: Record<string, any>): Promise<a
   return await getList<any>(`/requests/vendors`, params)
 }
 
+export const getRequestVendorInfo = async (id: number | string): Promise<any> => {
+  return await getList<any>(`/requests/vendors/info/${id}`)
+}
+
 export const updateRequestStatus = async (data: { id: number; status: string }): Promise<any> => {
   return await patchMethod(`/requests/vendors/update-status`, data)
+}
+
+export const deleteRequestVendor = async (id: number | string): Promise<any> => {
+  return await deleteMethod(`/requests/vendors/delete/${id}`)
 }
 
 export const updateBusinessDetails = async (data: {
@@ -140,4 +148,17 @@ export const acceptBranchManagerInvitation = async (data: {
   password: string
 }): Promise<any> => {
   return await postMethod(`/vendors/branch-manager-invitation/accept`, data)
+}
+
+export interface UpdateBranchManagerDetailsPayload {
+  branch_manager_user_id: number
+  email: string
+  phone_number: string
+  password: string
+}
+
+export const updateBranchManagerDetails = async (
+  data: UpdateBranchManagerDetailsPayload,
+): Promise<any> => {
+  return await patchMethod(`/vendors/branch-manager/update-details`, data)
 }
