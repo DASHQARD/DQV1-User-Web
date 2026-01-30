@@ -108,6 +108,7 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
       form.setValue('business_industry', '', { shouldValidate: false })
       form.setValue('logo', null, { shouldValidate: false })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted to avoid unnecessary re-runs
   }, [checkboxVendorDetailsSameAsCorporate, corporateUser])
 
   return (

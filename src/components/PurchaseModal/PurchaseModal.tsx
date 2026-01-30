@@ -190,7 +190,8 @@ export default function PurchaseModal() {
       setAssignToSelf(true)
       assignRecipientMutation.reset()
     }
-  }, [assignRecipientMutation.isSuccess, assignRecipientMutation, modal, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted to avoid unnecessary re-runs
+  }, [assignRecipientMutation.isSuccess, assignRecipientMutation, modal])
 
   const handleCloseModal = React.useCallback(() => {
     modal.closeModal()
