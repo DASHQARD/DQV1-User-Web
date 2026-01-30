@@ -3,6 +3,7 @@ import { Text, PaginatedTable } from '@/components'
 import {
   ApproveAction,
   RejectAction,
+  DeleteRequestModal,
   requestListCsvHeaders,
   requestsListColumns,
   VendorRequestDetails,
@@ -72,6 +73,7 @@ export default function Requests() {
       <VendorRequestDetails />
       <ApproveAction />
       <RejectAction />
+      <DeleteRequestModal />
     </>
   )
 }

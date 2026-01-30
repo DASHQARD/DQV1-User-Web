@@ -99,7 +99,7 @@ export default function RecentTransactions() {
           Recent Transactions
         </h5>
         <Link
-          to={addAccountParam(ROUTES.IN_APP.DASHBOARD.CORPORATE.TRANSACTIONS)}
+          to={addAccountParam(ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE)}
           className="text-[#402D87] no-underline text-sm font-medium flex items-center transition-colors duration-200 hover:text-[#2d1a72]"
         >
           View all <Icon icon="bi:arrow-right" className="ml-1" />

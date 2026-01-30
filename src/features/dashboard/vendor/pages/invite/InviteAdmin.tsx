@@ -1,14 +1,19 @@
+import { useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button, Input, Text } from '@/components'
-import { useToast } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { InviteVendorAdminSchema } from '@/utils/schemas/invite'
+import { corporateMutations } from '@/features/dashboard/corporate/hooks'
 
 type InviteVendorAdminFormData = z.infer<typeof InviteVendorAdminSchema>
 
 export function InviteAdmin() {
-  const toast = useToast()
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
 
   const form = useForm<InviteVendorAdminFormData>({
     resolver: zodResolver(InviteVendorAdminSchema),
@@ -19,20 +24,30 @@ export function InviteAdmin() {
     },
   })
 
-  const onSubmit = async (data: InviteVendorAdminFormData) => {
-    try {
-      // TODO: Replace with actual API call
-      console.log('Inviting admin:', data)
+  const { useInviteVendorAdminService } = corporateMutations()
+  const inviteVendorAdminMutation = useInviteVendorAdminService()
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+  const vendorId =
+    vendorIdFromUrl ??
+    (userProfileData?.vendor_id != null ? String(userProfileData.vendor_id) : null)
 
-      toast.success(`Invitation sent to ${data.email}`)
-      form.reset()
-    } catch (error: any) {
-      console.error('Error inviting admin:', error)
-      toast.error(error?.message || 'Failed to send invitation. Please try again.')
-    }
+  const onSubmit = (data: InviteVendorAdminFormData) => {
+    if (!vendorId) return
+    inviteVendorAdminMutation.mutate(
+      {
+        vendorId,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        phone_number: '',
+        role: 'admin',
+      },
+      {
+        onSuccess: () => {
+          form.reset()
+        },
+      },
+    )
   }
 
   return (
@@ -76,12 +91,19 @@ export function InviteAdmin() {
             type="button"
             variant="outline"
             onClick={() => form.reset()}
-            disabled={form.formState.isSubmitting}
+            disabled={form.formState.isSubmitting || inviteVendorAdminMutation.isPending}
           >
             Clear
           </Button>
-          <Button type="submit" variant="secondary" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Sending...' : 'Send Invitation'}
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={
+              form.formState.isSubmitting || !vendorId || inviteVendorAdminMutation.isPending
+            }
+            loading={inviteVendorAdminMutation.isPending}
+          >
+            {inviteVendorAdminMutation.isPending ? 'Sending...' : 'Send Invitation'}
           </Button>
         </div>
       </form>

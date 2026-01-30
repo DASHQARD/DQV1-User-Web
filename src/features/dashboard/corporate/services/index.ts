@@ -99,6 +99,14 @@ export const inviteAdmin = async (data: InviteAdminPayload): Promise<any> => {
   return await postMethod(`${CORPORATE_API_URL}/invite`, data)
 }
 
+/** POST /vendors/:vendor_id/admin/invite — when corporate super admin has switched to a vendor account */
+export const inviteVendorAdmin = async (
+  vendorId: number | string,
+  data: InviteAdminPayload,
+): Promise<any> => {
+  return await postMethod(`/vendors/${vendorId}/admin/invite`, data)
+}
+
 export const getInvitedCorporateAdmins = async (params?: Record<string, any>): Promise<any> => {
   const queryString = getQueryString(params)
   const fullUrl = queryString

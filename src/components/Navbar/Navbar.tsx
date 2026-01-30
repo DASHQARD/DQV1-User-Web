@@ -11,6 +11,7 @@ import { Modal } from '@/components'
 import { CartPopoverContent } from '@/components/CartModal'
 import { useUserProfile, usePresignedURL } from '@/hooks'
 import { vendorQueries } from '@/features'
+import { branchQueries } from '@/features/dashboard/branch'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -89,6 +90,12 @@ export default function Navbar() {
   // Get vendor_id for fetching branches
   const vendorId = userProfileData?.vendor_id ? Number(userProfileData.vendor_id) : null
   const { data: branchesData } = useGetBranchesByVendorIdService(vendorId, false)
+
+  // Branch info for branch manager logo
+  const { useGetBranchInfoService } = branchQueries()
+  const { data: branchInfoData } = useGetBranchInfoService()
+  const branchInfo = (branchInfoData as any)?.data ?? branchInfoData
+  const businessDetails = branchInfo?.business_details
 
   // Get first branch for navigation
   const firstBranch = useMemo(() => {
@@ -169,6 +176,37 @@ export default function Navbar() {
       cancelled = true
     }
   }, [isAuthenticated, isVendor, userProfileData?.business_documents, fetchPresignedURL])
+
+  // Fetch branch manager logo from branch info business_details
+  useEffect(() => {
+    if (!isAuthenticated || !isBranchManager || !businessDetails?.logo) {
+      if (isBranchManager) {
+        setAvatarUrl(null)
+      }
+      return
+    }
+
+    let cancelled = false
+    const loadLogo = async () => {
+      try {
+        const url = await fetchPresignedURL(businessDetails.logo)
+        if (!cancelled) {
+          const avatarUrlValue = typeof url === 'string' ? url : (url as any)?.url || url
+          setAvatarUrl(avatarUrlValue)
+        }
+      } catch (error) {
+        console.error('Failed to fetch branch logo', error)
+        if (!cancelled) {
+          setAvatarUrl(null)
+        }
+      }
+    }
+    loadLogo()
+    return () => {
+      cancelled = true
+    }
+  }, [isAuthenticated, isBranchManager, businessDetails?.logo, fetchPresignedURL])
+
   // Menu items based on user type
   const menuItems = useMemo(() => {
     // Branch manager menu items
@@ -354,6 +392,10 @@ export default function Navbar() {
       path: ROUTES.IN_APP.CONTACT,
     },
   ]
+
+  const showAvatar =
+    (isRegularUser || isCorporateUser || isVendor || isBranchManager) && Boolean(avatarUrl)
+
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200/60 shadow-sm">
@@ -422,10 +464,10 @@ export default function Navbar() {
                       className="bg-gray-50 flex items-center justify-center rounded-full overflow-hidden relative hover:bg-gray-100 transition-colors ring-2 ring-transparent hover:ring-primary-200"
                       aria-label="Account"
                     >
-                      {(isRegularUser || isCorporateUser || isVendor) && avatarUrl ? (
+                      {showAvatar ? (
                         <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                           <img
-                            src={avatarUrl}
+                            src={avatarUrl ?? undefined}
                             alt={displayName}
                             className="w-full h-full rounded-full object-cover"
                             onError={() => setAvatarUrl(null)}
@@ -571,10 +613,10 @@ export default function Navbar() {
                 <>
                   <div className="border-t border-gray-200 pt-3 mt-3">
                     <div className="flex items-center gap-3 px-4 py-3 mb-2">
-                      {(isRegularUser || isCorporateUser || isVendor) && avatarUrl ? (
+                      {showAvatar ? (
                         <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                           <img
-                            src={avatarUrl}
+                            src={avatarUrl ?? undefined}
                             alt={displayName}
                             className="w-full h-full rounded-full object-cover"
                             onError={() => setAvatarUrl(null)}

@@ -4,7 +4,7 @@ import { Icon } from '@/libs'
 import { BRANCH_NAV_ITEMS, ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
 import { Text, Tooltip, TooltipTrigger, TooltipContent, Avatar, Tag } from '@/components'
-import { useUserProfile, usePresignedURL } from '@/hooks'
+import { usePresignedURL } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { branchQueries } from '@/features/dashboard/branch'
 
@@ -14,63 +14,49 @@ export default function BranchSidebar() {
   const { logout } = useAuthStore()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
 
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
 
   const { useGetBranchInfoService } = branchQueries()
   const { data: branchInfoData } = useGetBranchInfoService()
-  console.log('branchInfoData', branchInfoData)
 
-  // Get branch name and branch manager name
-  const branchName = React.useMemo(() => {
-    return userProfileData?.branches?.[0]?.branch_name || null
-  }, [userProfileData?.branches])
+  // Support both wrapped ({ data: {...} }) and flat ({ branch, ... }) response shapes
+  const branchInfo = (branchInfoData as any)?.data ?? branchInfoData
+  const branch = branchInfo?.branch
+  const branchManager = branchInfo?.branch_manager
+  const paymentDetails = branchInfo?.payment_details
+  const businessDetails = branchInfo?.business_details
 
-  const branchManagerName = React.useMemo(() => {
-    return userProfileData?.branches?.[0]?.branch_manager_name || null
-  }, [userProfileData?.branches])
+  const branchName = branch?.branch_name ?? null
+  const branchManagerName = branch?.branch_manager_name ?? branchManager?.fullname ?? null
+  const branchLocation = branch?.branch_location ?? null
 
-  const branchLocation = React.useMemo(() => {
-    return userProfileData?.branches?.[0]?.branch_location || null
-  }, [userProfileData?.branches])
-
-  // Check if branch manager onboarding is complete
+  // Check if branch manager onboarding is complete (from branch info: manager details + payment)
   const isOnboardingComplete = React.useMemo(() => {
-    const hasPersonalDetails =
-      Boolean(userProfileData?.fullname) &&
-      Boolean(userProfileData?.street_address) &&
-      Boolean(userProfileData?.dob) &&
-      Boolean(userProfileData?.id_type) &&
-      Boolean(userProfileData?.id_number)
+    const hasManagerDetails =
+      Boolean(branchManager?.fullname) &&
+      Boolean(branchManager?.email) &&
+      Boolean(branchManager?.phonenumber)
+    const hasPayment = Boolean(paymentDetails?.momo_number ?? paymentDetails?.id)
+    return hasManagerDetails && hasPayment
+  }, [branchManager, paymentDetails])
 
-    const hasIDImages = Boolean(userProfileData?.id_images?.length)
-    const hasPaymentDetails =
-      Boolean(userProfileData?.momo_accounts?.length) ||
-      Boolean(userProfileData?.bank_accounts?.length)
-
-    return hasPersonalDetails && hasIDImages && hasPaymentDetails
-  }, [userProfileData])
-
-  // Calculate discovery score - only count personal details and upload ID for branch managers
+  // Discovery score: branch manager details (50%) + payment details (50%)
   const discoveryScore = React.useMemo(() => {
-    const progress = userProfileData?.onboarding_progress
-    if (!progress) return 0
-
-    const steps = [progress.personal_details_completed, progress.upload_id_completed]
+    const hasManagerDetails =
+      Boolean(branchManager?.fullname) &&
+      Boolean(branchManager?.email) &&
+      Boolean(branchManager?.phonenumber)
+    const hasPayment = Boolean(paymentDetails?.momo_number ?? paymentDetails?.id)
+    const steps = [hasManagerDetails, hasPayment]
     const completedCount = steps.filter(Boolean).length
-    const totalCount = steps.length
-    return Math.round((completedCount / totalCount) * 100)
-  }, [userProfileData?.onboarding_progress])
+    return Math.round((completedCount / steps.length) * 100)
+  }, [branchManager, paymentDetails])
 
-  // Fetch vendor logo presigned URL (from business_documents)
+  // Fetch logo presigned URL from branch info business_details
   React.useEffect(() => {
-    const logoDocument = userProfileData?.business_documents?.find(
-      (doc: any) => doc.type === 'logo',
-    )
-
-    if (!logoDocument?.file_url) {
+    const logoKey = businessDetails?.logo
+    if (!logoKey) {
       setLogoUrl(null)
       return
     }
@@ -79,12 +65,12 @@ export default function BranchSidebar() {
 
     const loadLogo = async () => {
       try {
-        const url = await fetchPresignedURL(logoDocument.file_url)
-        if (!cancelled) {
-          setLogoUrl(url)
-        }
-      } catch (error) {
-        console.error('Failed to fetch logo presigned URL', error)
+        const result = await fetchPresignedURL(logoKey)
+        if (cancelled) return
+        const url =
+          typeof result === 'string' ? result : ((result as { url?: string })?.url ?? null)
+        setLogoUrl(url)
+      } catch {
         if (!cancelled) {
           setLogoUrl(null)
         }
@@ -96,7 +82,7 @@ export default function BranchSidebar() {
     return () => {
       cancelled = true
     }
-  }, [userProfileData?.business_documents, fetchPresignedURL])
+  }, [businessDetails?.logo, fetchPresignedURL])
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {

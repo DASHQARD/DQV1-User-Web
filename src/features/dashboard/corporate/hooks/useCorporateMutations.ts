@@ -4,6 +4,7 @@ import {
   createVendor,
   deleteCorporateAdminInvitation,
   inviteAdmin,
+  inviteVendorAdmin,
   addRecipient,
   deleteRecipient,
   uploadBulkRecipients,
@@ -49,6 +50,26 @@ export function corporateMutations() {
       mutationFn: inviteAdmin,
       onSuccess: () => {
         success('Admin invited successfully')
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to invite admin. Please try again.')
+      },
+    })
+  }
+
+  function useInviteVendorAdminService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: ({
+        vendorId,
+        ...data
+      }: { vendorId: string | number } & Parameters<typeof inviteVendorAdmin>[1]) =>
+        inviteVendorAdmin(vendorId, data),
+      onSuccess: (_, variables) => {
+        success('Admin invited successfully')
+        queryClient.invalidateQueries({ queryKey: ['invited-corporate-admins'] })
+        queryClient.invalidateQueries({ queryKey: ['invited-admins', variables.vendorId] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to invite admin. Please try again.')
@@ -619,6 +640,7 @@ export function corporateMutations() {
 
   return {
     useInviteAdminForCorporateService,
+    useInviteVendorAdminService,
     useAcceptCorporateAdminInvitationService,
     useDeleteCorporateAdminInvitationService,
     useCreateVendorService,

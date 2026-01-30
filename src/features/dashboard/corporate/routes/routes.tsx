@@ -13,6 +13,7 @@ import {
 } from '../../pages'
 import { CorporateHome } from '../pages'
 import { Purchase } from '../pages/purchase'
+import { Transactions } from '../pages/transactions'
 import { Requests } from '../pages/requests'
 import { AuditLogs } from '../pages/auditLogs'
 import { Admins } from '../pages/admins'
@@ -32,6 +33,10 @@ export const corporateRoutes: RouteObject[] = [
   {
     path: 'purchase',
     element: <Purchase />,
+  },
+  {
+    path: 'transactions',
+    element: <Transactions />,
   },
   {
     path: 'requests',

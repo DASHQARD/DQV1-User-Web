@@ -237,33 +237,71 @@ export default function CorporateSidebar() {
                     const canSwitch =
                       vendor.approval_status === 'approved' ||
                       vendor.approval_status === 'auto_approved'
+                    const isPendingVerification = !canSwitch
                     return (
-                      <div
-                        key={vendorId}
-                        onClick={() => {
-                          setIsPopoverOpen(false)
-                          navigate(
-                            `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor${vendorId ? `&vendor_id=${vendorId}` : ''}`,
-                          )
-                        }}
-                        className="flex items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors"
-                      >
-                        <Avatar
-                          size="sm"
-                          src={vendorLogoUrls[vendorId]}
-                          name={vendor.vendor_name || vendor.business_name}
-                          className={!canSwitch ? 'opacity-75' : undefined}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <Text variant="span" weight="semibold" className="block text-sm truncate">
-                            {vendor.vendor_name || vendor.business_name}
-                          </Text>
-                          <Text variant="span" className="block text-xs text-gray-500 truncate">
-                            {vendor.gvid || `ID: ${vendorId}`}
-                          </Text>
-                        </div>
-                        <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
-                      </div>
+                      <Tooltip key={vendorId}>
+                        <TooltipTrigger asChild>
+                          <div
+                            onClick={() => {
+                              if (!canSwitch) return
+                              setIsPopoverOpen(false)
+                              navigate(
+                                `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor${vendorId ? `&vendor_id=${vendorId}` : ''}`,
+                              )
+                            }}
+                            className={cn(
+                              'flex items-center gap-3 w-full text-left rounded-lg p-2 transition-colors',
+                              canSwitch
+                                ? 'hover:bg-gray-50 cursor-pointer'
+                                : 'cursor-not-allowed opacity-70 bg-gray-50/80',
+                            )}
+                          >
+                            <Avatar
+                              size="sm"
+                              src={vendorLogoUrls[vendorId]}
+                              name={vendor.vendor_name || vendor.business_name}
+                              className={isPendingVerification ? 'opacity-75' : undefined}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Text
+                                  variant="span"
+                                  weight="semibold"
+                                  className="block text-sm truncate"
+                                >
+                                  {vendor.vendor_name || vendor.business_name}
+                                </Text>
+                                {isPendingVerification && (
+                                  <Tag
+                                    value="Pending verification"
+                                    variant="warning"
+                                    className="text-[10px] shrink-0"
+                                  />
+                                )}
+                              </div>
+                              <Text variant="span" className="block text-xs text-gray-500 truncate">
+                                {vendor.gvid || `ID: ${vendorId}`}
+                              </Text>
+                            </div>
+                            {canSwitch ? (
+                              <Icon
+                                icon="bi:chevron-right"
+                                className="text-gray-400 text-sm shrink-0"
+                              />
+                            ) : (
+                              <Icon
+                                icon="bi:lock-fill"
+                                className="text-amber-500 text-sm shrink-0"
+                              />
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-[200px]">
+                          {isPendingVerification
+                            ? 'This vendor account is pending verification. You cannot switch to it until it is approved.'
+                            : `Switch to ${vendor.vendor_name || vendor.business_name}`}
+                        </TooltipContent>
+                      </Tooltip>
                     )
                   })}
                 </div>

@@ -2,7 +2,7 @@ import React from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import {
   Button,
@@ -25,6 +25,8 @@ import { useAuthStore } from '@/stores'
 
 export default function CreateBranchForm() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
   const { user } = useAuthStore()
   const { useGetCountriesService } = useAuth()
   const { data: countries } = useGetCountriesService()
@@ -34,6 +36,10 @@ export default function CreateBranchForm() {
 
   const userType = (user as any)?.user_type || userProfileData?.user_type
   const isCorporateSuperAdmin = userType === 'corporate super admin'
+  const corporatePayloadWithVendor = (payload: Record<string, unknown>) =>
+    isCorporateSuperAdmin && vendorIdFromUrl
+      ? { ...payload, vendor_id: Number(vendorIdFromUrl) || vendorIdFromUrl }
+      : payload
 
   const { useAddBranchService } = useVendorMutations()
   const { useAddCorporateBranchService } = corporateMutations()
@@ -152,7 +158,7 @@ export default function CreateBranchForm() {
           sort_code,
           swift_code,
         }
-        await createBranch(bankData as typeof data)
+        await createBranch(corporatePayloadWithVendor(bankData) as typeof data)
       }
       // Remove bank fields if payment method is mobile_money
       else if (data.payment_method === 'mobile_money') {
@@ -180,9 +186,11 @@ export default function CreateBranchForm() {
           mobile_money_provider,
           mobile_money_number,
         }
-        await createBranch(mobileMoneyData as typeof data)
+        await createBranch(corporatePayloadWithVendor(mobileMoneyData) as typeof data)
       } else {
-        await createBranch(data)
+        await createBranch(
+          corporatePayloadWithVendor(data as Record<string, unknown>) as typeof data,
+        )
       }
 
       // Navigate to branch managers page after successful creation
