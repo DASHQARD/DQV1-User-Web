@@ -174,7 +174,13 @@ export default function PurchaseModal() {
         form.setValue('amount', modalData.amount)
       }
     }
-  }, [assignToSelf, useUserProfile, form, modalData])
+  }, [
+    assignToSelf,
+    modalData,
+    userProfileData?.email,
+    userProfileData?.fullname,
+    userProfileData?.phonenumber,
+  ])
 
   // Close modal on successful assignment
   React.useEffect(() => {
