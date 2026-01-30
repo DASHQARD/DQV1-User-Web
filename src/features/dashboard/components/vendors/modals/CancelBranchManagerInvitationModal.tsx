@@ -2,6 +2,8 @@ import { Modal, Text, Button } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { useVendorMutations } from '@/features'
+import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
+import { useAuthStore } from '@/stores'
 import { Icon } from '@/libs'
 
 export function CancelBranchManagerInvitationModal() {
@@ -9,9 +11,18 @@ export function CancelBranchManagerInvitationModal() {
     paramName: MODALS.BRANCH_MANAGER_INVITATION.PARAM_NAME,
   })
 
+  const { user } = useAuthStore()
+  const userType = (user as any)?.user_type
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
+
   const invitation = modal.modalData
   const { useCancelBranchManagerInvitationService } = useVendorMutations()
-  const cancelMutation = useCancelBranchManagerInvitationService()
+  const { useCancelCorporateBranchManagerInvitationService } = corporateMutations()
+
+  const vendorCancelMutation = useCancelBranchManagerInvitationService()
+  const corporateCancelMutation = useCancelCorporateBranchManagerInvitationService()
+
+  const cancelMutation = isCorporateSuperAdmin ? corporateCancelMutation : vendorCancelMutation
 
   const handleCancel = () => {
     const invitationId = invitation?.id

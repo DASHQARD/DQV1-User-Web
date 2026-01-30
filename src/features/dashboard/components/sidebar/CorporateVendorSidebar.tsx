@@ -16,7 +16,7 @@ import { vendorQueries } from '@/features/dashboard/vendor'
 export default function CorporateVendorSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { logout, user } = useAuthStore()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
@@ -30,11 +30,14 @@ export default function CorporateVendorSidebar() {
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
 
   const allVendorsCreatedByCorporate = React.useMemo(() => {
-    const vendorsData = allVendorsDetails
-    return (
-      vendorsData?.filter((vendor: any) => vendor.corporate_user_id === userProfileData?.id) ?? []
+    const vendorsData = Array.isArray(allVendorsDetails)
+      ? allVendorsDetails
+      : (allVendorsDetails?.data ?? [])
+    const corporateId = userProfileData?.id ?? (user as any)?.id
+    return vendorsData.filter(
+      (vendor: any) => String(vendor.corporate_user_id) === String(corporateId),
     )
-  }, [allVendorsDetails, userProfileData?.id])
+  }, [allVendorsDetails, userProfileData?.id, user])
 
   const hasVendorsPendingVerification = React.useMemo(() => {
     return allVendorsCreatedByCorporate.some(
@@ -348,14 +351,45 @@ export default function CorporateVendorSidebar() {
                         : vendor.approval_status
                           ? String(vendor.approval_status).replace(/_/g, ' ')
                           : 'Not approved'
+                  const handleSwitchToVendor = () => {
+                    if (!canSwitch || isCurrentVendor) return
+                    setIsPopoverOpen(false)
+                    const isAlreadyOnVendorView =
+                      searchParams.get('account') === 'vendor' &&
+                      location.pathname.startsWith(ROUTES.IN_APP.DASHBOARD.VENDOR.HOME)
+                    if (isAlreadyOnVendorView) {
+                      const next = new URLSearchParams(searchParams)
+                      next.set('vendor_id', String(vendorId))
+                      setSearchParams(next, { replace: true })
+                    } else {
+                      navigate(
+                        `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor&vendor_id=${vendorId}`,
+                      )
+                    }
+                  }
+
                   return (
                     <div
                       key={vendorId}
+                      role={canSwitch && !isCurrentVendor ? 'button' : undefined}
+                      tabIndex={canSwitch && !isCurrentVendor ? 0 : undefined}
+                      onClick={canSwitch && !isCurrentVendor ? handleSwitchToVendor : undefined}
+                      onKeyDown={
+                        canSwitch && !isCurrentVendor
+                          ? (e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                handleSwitchToVendor()
+                              }
+                            }
+                          : undefined
+                      }
                       className={cn(
                         'flex items-center gap-3 w-full text-left rounded-lg p-2 transition-colors',
                         isCurrentVendor && 'bg-[rgba(64,45,135,0.08)]',
                         !canSwitch && 'opacity-70 cursor-not-allowed bg-gray-50',
-                        canSwitch && 'hover:bg-gray-50',
+                        canSwitch && !isCurrentVendor && 'cursor-pointer hover:bg-gray-50',
+                        canSwitch && isCurrentVendor && 'hover:bg-gray-50',
                       )}
                     >
                       <Avatar
@@ -388,19 +422,12 @@ export default function CorporateVendorSidebar() {
                             className="text-[#402D87] text-lg shrink-0"
                           />
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsPopoverOpen(false)
-                              navigate(
-                                `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor&vendor_id=${vendorId}`,
-                              )
-                            }}
-                            className="shrink-0 p-1 -m-1 rounded hover:bg-gray-200 transition-colors"
-                            aria-label={`Switch to ${vendor.vendor_name || vendor.business_name}`}
+                          <span
+                            className="shrink-0 p-1 -m-1 rounded hover:bg-gray-200 transition-colors pointer-events-none"
+                            aria-hidden
                           >
                             <Icon icon="bi:chevron-right" className="text-gray-400 text-sm" />
-                          </button>
+                          </span>
                         )
                       ) : (
                         <span title={approvalLabel} className="shrink-0">

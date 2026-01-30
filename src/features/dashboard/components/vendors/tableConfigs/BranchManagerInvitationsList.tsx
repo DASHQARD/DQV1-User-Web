@@ -3,14 +3,22 @@ import type { CsvHeader } from '@/types'
 import { formatDate } from '@/utils/format'
 import { BranchManagerInvitationActionCell } from './BranchManagerInvitationActionCell'
 
+/** Supports both shapes: invitations (branch_manager_*) and branch-managers list (fullname, email) */
+const emailAccessor = (row: any) => row.branch_manager_email ?? row.email ?? ''
+const nameAccessor = (row: any) => row.branch_manager_name ?? row.fullname ?? ''
+
 export const branchManagerInvitationsListColumns = [
   {
     header: 'Email',
-    accessorKey: 'branch_manager_email',
+    id: 'email',
+    accessorFn: emailAccessor,
+    cell: ({ getValue }: any) => getValue() ?? '—',
   },
   {
     header: 'Name',
-    accessorKey: 'branch_manager_name',
+    id: 'name',
+    accessorFn: nameAccessor,
+    cell: ({ getValue }: any) => getValue() ?? '—',
   },
   {
     header: 'Branch',

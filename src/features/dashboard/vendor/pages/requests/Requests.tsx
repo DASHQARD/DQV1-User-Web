@@ -15,6 +15,7 @@ import {
   VendorRequestDetails,
   VendorApproveAction,
   VendorRejectAction,
+  VendorDeleteRequestModal,
 } from '@/features/dashboard/components/vendors/modals'
 
 export default function Requests() {
@@ -102,6 +103,7 @@ export default function Requests() {
       <VendorRequestDetails />
       <VendorApproveAction />
       <VendorRejectAction />
+      <VendorDeleteRequestModal />
     </>
   )
 }

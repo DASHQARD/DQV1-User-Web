@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Text, PaginatedTable, Button } from '@/components'
 import {
   branchManagerInvitationsListCsvHeaders,
@@ -22,14 +23,17 @@ import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorpor
 
 export default function BranchManagers() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const userType = userProfileData?.user_type
   const isCorporateSuperAdmin = userType === 'corporate super admin'
+  const isCorporateSwitchedToVendor = isCorporateSuperAdmin && !!vendorIdFromUrl
 
-  const apiQuery = useMemo((): GetBranchManagerInvitationsQuery => {
-    const params: GetBranchManagerInvitationsQuery = {
+  const apiQuery = useMemo((): GetBranchManagerInvitationsQuery & { vendor_id?: string } => {
+    const params: GetBranchManagerInvitationsQuery & { vendor_id?: string } = {
       limit: Number(query.limit) || 10,
     }
     if (query.after) params.after = query.after
@@ -37,23 +41,43 @@ export default function BranchManagers() {
     if ((query as any).status) params.status = (query as any).status
     if (query.dateFrom) params.dateFrom = query.dateFrom
     if (query.dateTo) params.dateTo = query.dateTo
+    if (isCorporateSwitchedToVendor && vendorIdFromUrl) params.vendor_id = vendorIdFromUrl
     return params
-  }, [query])
+  }, [query, isCorporateSwitchedToVendor, vendorIdFromUrl])
 
   const { useGetBranchManagerInvitationsService } = vendorQueries()
-  const { useGetCorporateBranchManagerInvitationsService } = corporateQueries()
+  const {
+    useGetCorporateSuperAdminVendorBranchManagersService,
+    useGetCorporateBranchManagerInvitationsService,
+  } = corporateQueries()
 
   const { data: vendorInvitationsResponse, isLoading: isLoadingVendorInvitations } =
-    useGetBranchManagerInvitationsService(isCorporateSuperAdmin ? undefined : apiQuery)
+    useGetBranchManagerInvitationsService(apiQuery, { skip: isCorporateSuperAdmin })
 
-  const { data: corporateInvitationsResponse, isLoading: isLoadingCorporateInvitations } =
-    useGetCorporateBranchManagerInvitationsService(isCorporateSuperAdmin ? apiQuery : undefined)
+  const {
+    data: corporateSuperAdminVendorBranchManagersResponse,
+    isLoading: isLoadingVendorScoped,
+  } = useGetCorporateSuperAdminVendorBranchManagersService(
+    vendorIdFromUrl ?? null,
+    isCorporateSwitchedToVendor ? apiQuery : undefined,
+  )
 
+  const { data: corporateInvitationsAllResponse, isLoading: isLoadingCorporateInvitationsAll } =
+    useGetCorporateBranchManagerInvitationsService(
+      isCorporateSuperAdmin && !vendorIdFromUrl ? apiQuery : undefined,
+      { skip: !!vendorIdFromUrl },
+    )
+
+  const corporateInvitationsResponse = isCorporateSwitchedToVendor
+    ? corporateSuperAdminVendorBranchManagersResponse
+    : corporateInvitationsAllResponse
   const invitationsResponse = isCorporateSuperAdmin
     ? corporateInvitationsResponse
     : vendorInvitationsResponse
   const isLoadingInvitations = isCorporateSuperAdmin
-    ? isLoadingCorporateInvitations
+    ? isCorporateSwitchedToVendor
+      ? isLoadingVendorScoped
+      : isLoadingCorporateInvitationsAll
     : isLoadingVendorInvitations
 
   const inviteModal = usePersistedModalState({
@@ -62,7 +86,13 @@ export default function BranchManagers() {
 
   const invitations = useMemo(() => {
     if (!invitationsResponse) return []
-    return Array.isArray(invitationsResponse?.data) ? invitationsResponse.data : []
+    const list = Array.isArray(invitationsResponse?.data) ? invitationsResponse.data : []
+    return list.map((row: any) => ({
+      ...row,
+      branch_manager_email: row.branch_manager_email ?? row.email,
+      branch_manager_name: row.branch_manager_name ?? row.fullname,
+      branch_manager_phone: row.branch_manager_phone ?? row.phonenumber,
+    }))
   }, [invitationsResponse])
 
   const pagination = invitationsResponse?.pagination
