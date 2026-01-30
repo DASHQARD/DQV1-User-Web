@@ -52,6 +52,7 @@ export const MODALS = {
       VIEW: 'view',
       APPROVE: 'approve',
       REJECT: 'reject',
+      DELETE: 'delete',
     },
   },
   BRANCH: {

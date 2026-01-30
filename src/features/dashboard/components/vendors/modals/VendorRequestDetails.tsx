@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Button, Modal, PrintView, Tag } from '@/components'
 import { usePersistedModalState, useUserProfile } from '@/hooks'
@@ -93,40 +93,63 @@ export function VendorRequestDetails() {
   const requestInfo = useMemo(() => {
     if (!data) return []
 
-    return [
+    const card = data?.card_details as Record<string, unknown> | undefined
+    const formatPrice = (price: unknown, currency?: string) =>
+      price != null ? `${currency ? `${currency} ` : ''}${Number(price).toLocaleString()}` : '-'
+
+    const rows: Array<{
+      label: string
+      value: React.ReactNode
+      isSection?: boolean
+      spanFull?: boolean
+    }> = [
       {
         label: 'Status',
         value: <Tag variant={getStatusVariant(data?.status)} value={data?.status || ''} />,
       },
-      {
-        label: 'Request ID',
-        value: data?.request_id || data?.id || '-',
-      },
-      {
-        label: 'Request Type',
-        value: data?.type || '-',
-      },
-      {
-        label: 'Requested By',
-        value: data?.name || '-',
-      },
-      {
-        label: 'User Type',
-        value: data?.user_type || '-',
-      },
-      {
-        label: 'Description',
-        value: data?.description || '-',
-      },
-      {
-        label: 'Created At',
-        value: formatFullDate(data?.created_at),
-      },
-      {
-        label: 'Updated At',
-        value: formatFullDate(data?.updated_at),
-      },
+      { label: 'Request ID', value: data?.request_id || data?.id || '-' },
+      { label: 'Request Type', value: data?.type || '-' },
+      { label: 'Module', value: data?.module || '-' },
+      { label: 'Requested By', value: data?.name || '-' },
+      { label: 'User Type', value: data?.user_type || '-' },
+      { label: 'Entity ID', value: data?.entity_id ?? '-' },
+      { label: 'Description', value: data?.description || '-', spanFull: true },
+      { label: 'Created At', value: formatFullDate(data?.created_at) },
+      { label: 'Updated At', value: formatFullDate(data?.updated_at) },
+      ...(data?.reviewed_by != null
+        ? [{ label: 'Reviewed By', value: String(data.reviewed_by) }]
+        : []),
+      ...(data?.reviewed_at != null
+        ? [{ label: 'Reviewed At', value: formatFullDate(data.reviewed_at) }]
+        : []),
     ]
+
+    if (card && typeof card === 'object') {
+      rows.push({ label: 'Card details', value: '', isSection: true })
+      rows.push({ label: 'Product', value: (card.product as string) || '-' })
+      rows.push({ label: 'Type', value: (card.type as string) || '-' })
+      rows.push({ label: 'Price', value: formatPrice(card.price, card.currency as string) })
+      rows.push({ label: 'Currency', value: (card.currency as string) || '-' })
+      rows.push({ label: 'Status', value: (card.status as string) || '-' })
+      rows.push({
+        label: 'Description',
+        value: (card.description as string) || '-',
+        spanFull: true,
+      })
+      rows.push({ label: 'Issue Date', value: formatFullDate(card.issue_date as string) })
+      rows.push({ label: 'Expiry Date', value: formatFullDate(card.expiry_date as string) })
+      rows.push({
+        label: 'Is Activated',
+        value: card.is_activated != null ? (card.is_activated ? 'Yes' : 'No') : '-',
+      })
+      if (card.vendor_id != null) {
+        rows.push({ label: 'Vendor ID', value: String(card.vendor_id) })
+      }
+      rows.push({ label: 'Card Created At', value: formatFullDate(card.created_at as string) })
+      rows.push({ label: 'Card Updated At', value: formatFullDate(card.updated_at as string) })
+    }
+
+    return rows
   }, [data])
 
   return (
@@ -135,28 +158,40 @@ export function VendorRequestDetails() {
       position="side"
       isOpen={modal.isModalOpen(MODALS.REQUEST.CHILDREN.VIEW)}
       setIsOpen={modal.closeModal}
+      panelClass="!w-[864px]"
     >
       <PrintView>
         {isPending ? (
           <RequestDetailsSkeleton />
         ) : (
-          <div className="h-full px-6 flex flex-col justify-between">
-            <div className="grow">
-              {requestInfo.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex flex-col gap-1 py-3 border-t border-t-gray-200 first:border-0"
-                >
-                  <p className="text-xs text-gray-400">{item.label}</p>
-                  <p className="text-sm font-medium text-primary-800 capitalize">
-                    {item.value || '-'}
-                  </p>
-                </div>
-              ))}
+          <div className="h-full px-8 py-6 flex flex-col gap-6">
+            <div className="grid grid-cols-2 gap-x-10 gap-y-4">
+              {requestInfo.map((item) =>
+                item.isSection ? (
+                  <div
+                    key={item.label}
+                    className="col-span-2 pt-4 mt-2 border-t border-gray-200 first:pt-0 first:mt-0 first:border-0"
+                  >
+                    <p className="text-sm font-semibold text-primary-800 uppercase tracking-wide">
+                      {item.label}
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    key={item.label}
+                    className={`flex flex-col gap-0.5 py-2 min-w-0 ${item.spanFull ? 'col-span-2' : ''}`}
+                  >
+                    <p className="text-xs text-gray-500 font-medium">{item.label}</p>
+                    <div className="text-sm text-primary-800 capitalize wrap-break-word">
+                      {item.value ?? '-'}
+                    </div>
+                  </div>
+                ),
+              )}
             </div>
 
             {data?.status?.toLowerCase() === 'pending' && (
-              <div className="flex gap-3 justify-end pt-4 border-t border-t-gray-200">
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 shrink-0">
                 <Button
                   variant="secondary"
                   loading={isPending}

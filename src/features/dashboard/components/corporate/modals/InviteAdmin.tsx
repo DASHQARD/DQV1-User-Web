@@ -81,23 +81,26 @@ export function InviteAdmin() {
               <Controller
                 control={form.control}
                 name="phone_number"
-                render={({ field: { onChange } }) => {
+                render={({ field: { onChange, value } }) => {
                   return (
                     <BasePhoneInput
-                      placeholder="Enter number eg. 5512345678"
+                      placeholder="Enter number"
                       options={phoneCountries}
-                      maxLength={9}
+                      maxLength={14}
+                      selectedVal={value}
                       handleChange={onChange}
                       label="Phone Number"
                       error={form.formState.errors.phone_number?.message}
+                      hint={
+                        <>
+                          Please enter your number in the format:{' '}
+                          <span className="font-medium">5512345678</span>
+                        </>
+                      }
                     />
                   )
                 }}
               />
-              <p className="text-xs text-gray-500">
-                Please enter your number in the format:{' '}
-                <span className="font-medium">5512345678</span>
-              </p>
             </div>
 
             <Controller

@@ -16,7 +16,7 @@ export function ViewExperience() {
   // Normalize card fields (vendor uses product/type/price, corporate API uses card_name/card_type/card_price)
   const displayCard = React.useMemo(() => {
     if (!card) return null
-    const priceVal = card.price ?? card.card_price ?? card.base_price
+    const priceVal = card.base_price ?? card.price ?? card.card_price
     const priceNum = typeof priceVal === 'number' ? priceVal : parseFloat(priceVal)
     return {
       product: card.product || card.card_name || '-',
