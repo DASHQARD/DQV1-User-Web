@@ -486,7 +486,7 @@ function CreateVendorAccountContent({
         )
       }
     },
-    [corporateUser, uploadFiles, countries, toast, handleCloseModal, methods],
+    [corporateUser, createVendor, uploadFiles, countries, toast, handleCloseModal, methods],
   )
 
   return (

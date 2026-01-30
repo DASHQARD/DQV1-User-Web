@@ -37,13 +37,30 @@ export const DEACTIVATION_OPTIONS = [
   // },
 ]
 
+/** Reasons for a vendor to reject a card created by a branch (vendor review of branch-created card) */
 export const REJECT_REASON_OPTIONS = [
   {
-    label: 'Insufficient funds',
-    value: 'Insufficient funds',
+    label: 'Card details do not meet vendor standards',
+    value: 'Card details do not meet vendor standards',
   },
   {
-    label: 'Invalid account number',
-    value: 'Invalid account number',
+    label: 'Incorrect pricing or base price',
+    value: 'Incorrect pricing or base price',
+  },
+  {
+    label: 'Invalid or incomplete card information',
+    value: 'Invalid or incomplete card information',
+  },
+  {
+    label: 'Duplicate or similar experience already exists',
+    value: 'Duplicate or similar experience already exists',
+  },
+  {
+    label: 'Images or terms and conditions not acceptable',
+    value: 'Images or terms and conditions not acceptable',
+  },
+  {
+    label: 'Product or experience type not approved',
+    value: 'Product or experience type not approved',
   },
 ]

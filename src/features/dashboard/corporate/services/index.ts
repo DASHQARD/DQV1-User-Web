@@ -380,6 +380,7 @@ export const getCorporateBranchById = async (branchId: number | string): Promise
   return await getList(`/branches/corporate/${branchId}`)
 }
 
+/** GET /branches/corporate/{id}/managers — branch manager details for a specific branch (used when corporate has switched to a vendor account) */
 export const getCorporateBranchManagers = async (branchId: number | string): Promise<any> => {
   return await getList(`/branches/corporate/${branchId}/managers`)
 }
@@ -434,6 +435,21 @@ export const getCorporateRedemptionsByVendorId = async (
   return response
 }
 
+/** GET /vendors/corporate-super-admin/:vendor_id/branch-managers — branch managers for a vendor when corporate super admin has switched to that vendor */
+export const getCorporateSuperAdminVendorBranchManagers = async (
+  vendorId: string | number,
+  params?: Record<string, any>,
+): Promise<any> => {
+  const queryParams = params ? { ...params } : {}
+  delete queryParams.vendor_id
+  const queryString = getQueryString(queryParams)
+  const base = `/vendors/corporate-super-admin/${vendorId}/branch-managers`
+  const fullUrl = queryString ? `${base}?${queryString}` : base
+  const response = await axiosClient.get(fullUrl)
+  return response
+}
+
+/** GET /branches/corporate/branch-manager-invitations — paginated list of branch manager invitations (all; when corporate super admin has not switched to a vendor) */
 export const getCorporateBranchManagerInvitations = async (
   params?: Record<string, any>,
 ): Promise<any> => {
@@ -463,6 +479,11 @@ export const getCorporateBranchManagerInvitationById = async (
 
 export const deleteCorporateBranchManagerInvitation = async (id: number | string): Promise<any> => {
   return await deleteMethod(`/branches/corporate/branch-manager-invitations/${id}`)
+}
+
+/** PATCH /branches/corporate/branch-manager-invitations/:id/cancel — cancel a branch manager invitation */
+export const cancelCorporateBranchManagerInvitation = async (id: number | string): Promise<any> => {
+  return await patchMethod(`/branches/corporate/branch-manager-invitations/${id}/cancel`)
 }
 
 /** DELETE /branches/corporate/vendor-invitations/:id — when corporate super admin has switched to a vendor */

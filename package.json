@@ -1,7 +1,7 @@
 {
   "name": "dqv1-user-web",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,7 +11,13 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "preview": "vite preview",
-    "update-icons": "node scripts/update-icon-names && npm run lint"
+    "update-icons": "node scripts/update-icon-names && npm run lint",
+    "release": "standard-version"
+  },
+  "standard-version": {
+    "scripts": {
+      "postbump": "prettier --write CHANGELOG.md"
+    }
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -49,6 +55,7 @@
     "react-select": "^5.10.2",
     "react-spring": "^10.0.3",
     "recharts": "^3.5.1",
+    "standard-version": "^9.5.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "validator": "^13.15.23",

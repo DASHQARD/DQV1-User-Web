@@ -25,6 +25,7 @@ export function VendorNameForm({ onSubmit, corporateUser }: VendorNameFormProps)
         shouldValidate: false,
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted to avoid unnecessary re-runs
   }, [useCorporateInfo, corporateUser])
 
   return (

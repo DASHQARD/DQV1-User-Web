@@ -174,7 +174,14 @@ export default function PurchaseModal() {
         form.setValue('amount', modalData.amount)
       }
     }
-  }, [assignToSelf, useUserProfile, form, modalData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted to avoid unnecessary re-runs
+  }, [
+    assignToSelf,
+    modalData,
+    userProfileData?.email,
+    userProfileData?.fullname,
+    userProfileData?.phonenumber,
+  ])
 
   // Close modal on successful assignment
   React.useEffect(() => {
@@ -184,7 +191,8 @@ export default function PurchaseModal() {
       setAssignToSelf(true)
       assignRecipientMutation.reset()
     }
-  }, [assignRecipientMutation.isSuccess, assignRecipientMutation, modal, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted to avoid unnecessary re-runs
+  }, [assignRecipientMutation.isSuccess, assignRecipientMutation, modal])
 
   const handleCloseModal = React.useCallback(() => {
     modal.closeModal()
