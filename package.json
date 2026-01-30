@@ -1,7 +1,7 @@
 {
   "name": "dqv1-user-web",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,11 @@
     "preview": "vite preview",
     "update-icons": "node scripts/update-icon-names && npm run lint",
     "release": "standard-version"
+  },
+  "standard-version": {
+    "scripts": {
+      "postbump": "prettier --write CHANGELOG.md"
+    }
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -174,6 +174,7 @@ export default function PurchaseModal() {
         form.setValue('amount', modalData.amount)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted to avoid unnecessary re-runs
   }, [
     assignToSelf,
     modalData,

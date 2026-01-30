@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.4](https://github.com/DASHQARD/DQV1-User-Web/compare/v0.0.3...v0.0.4) (2026-01-30)
+
+### Bug Fixes
+
+- add eslint-disable comments to avoid unnecessary re-runs in PurchaseModal, VendorDetailsForm, and VendorNameForm components ([a6e98c5](https://github.com/DASHQARD/DQV1-User-Web/commit/a6e98c5f6b846c67fd425de25ccb093f147823f4))
+
 ### 0.0.3 (2026-01-30)
 
 ### Features
