@@ -6,6 +6,7 @@ import {
   createVendor,
   deleteBranch,
   deleteBranchByVendor,
+  inviteCoAdmin,
   removeVendorAdmin,
   VendorInvite,
   createExperience,
@@ -115,6 +116,24 @@ export function useVendorMutations() {
       mutationFn: removeVendorAdmin,
       onSuccess: () => {
         success('Vendor admin removed successfully')
+      },
+    })
+  }
+
+  function useInviteCoAdminService() {
+    return useMutation({
+      mutationFn: (data: {
+        email: string
+        first_name: string
+        last_name: string
+        phone_number: string
+        role: string
+      }) => inviteCoAdmin(data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Co-admin invitation sent successfully')
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to send co-admin invitation. Please try again.')
       },
     })
   }
@@ -398,6 +417,7 @@ export function useVendorMutations() {
   return {
     useCreateVendorService,
     useVendorInviteService,
+    useInviteCoAdminService,
     useCancelVendorInvitationService,
     useRemoveVendorInfoService,
     useAddBranchService,

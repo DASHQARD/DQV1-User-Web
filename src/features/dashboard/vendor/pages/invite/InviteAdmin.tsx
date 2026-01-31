@@ -1,37 +1,65 @@
 import { useSearchParams } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button, Input, Text } from '@/components'
-import { useUserProfile } from '@/hooks'
-import { InviteVendorAdminSchema } from '@/utils/schemas/invite'
+import { Button, Input, BasePhoneInput } from '@/components'
+import { useUserProfile, useCountriesData } from '@/hooks'
+import { InviteVendorCoAdminSchema } from '@/utils/schemas/invite'
 import { corporateMutations } from '@/features/dashboard/corporate/hooks'
+import { useVendorMutations } from '@/features'
 
-type InviteVendorAdminFormData = z.infer<typeof InviteVendorAdminSchema>
+type InviteVendorCoAdminFormData = z.infer<typeof InviteVendorCoAdminSchema>
 
 export function InviteAdmin() {
   const [searchParams] = useSearchParams()
   const vendorIdFromUrl = searchParams.get('vendor_id')
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
+  const { countries: phoneCountries } = useCountriesData()
 
-  const form = useForm<InviteVendorAdminFormData>({
-    resolver: zodResolver(InviteVendorAdminSchema),
+  const userType = userProfileData?.user_type
+  const isVendor = userType === 'vendor'
+
+  const coAdminForm = useForm<InviteVendorCoAdminFormData>({
+    resolver: zodResolver(InviteVendorCoAdminSchema),
     defaultValues: {
       first_name: '',
       last_name: '',
       email: '',
+      phone_number: '',
     },
   })
 
   const { useInviteVendorAdminService } = corporateMutations()
+  const { useInviteCoAdminService } = useVendorMutations()
+
   const inviteVendorAdminMutation = useInviteVendorAdminService()
+  const inviteCoAdminMutation = useInviteCoAdminService()
 
   const vendorId =
     vendorIdFromUrl ??
     (userProfileData?.vendor_id != null ? String(userProfileData.vendor_id) : null)
 
-  const onSubmit = (data: InviteVendorAdminFormData) => {
+  const isPending = inviteVendorAdminMutation.isPending || inviteCoAdminMutation.isPending
+
+  const onSubmit = (data: InviteVendorCoAdminFormData) => {
+    if (isVendor) {
+      inviteCoAdminMutation.mutate(
+        {
+          email: data.email,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone_number: data.phone_number ?? '',
+          role: 'admin',
+        },
+        {
+          onSuccess: () => {
+            coAdminForm.reset()
+          },
+        },
+      )
+      return
+    }
     if (!vendorId) return
     inviteVendorAdminMutation.mutate(
       {
@@ -44,66 +72,82 @@ export function InviteAdmin() {
       },
       {
         onSuccess: () => {
-          form.reset()
+          coAdminForm.reset()
         },
       },
     )
   }
 
+  const submitDisabled = isVendor
+    ? coAdminForm.formState.isSubmitting || isPending
+    : coAdminForm.formState.isSubmitting || !vendorId || isPending
+
   return (
     <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] p-6">
-      <div className="mb-6">
-        <Text variant="h3" weight="semibold" className="text-gray-900 mb-2">
-          Invite Admin
-        </Text>
-        <Text variant="span" className="text-gray-500 text-sm">
-          Send an invitation to a new admin. They will receive an email with instructions to set up
-          their account.
-        </Text>
-      </div>
-
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-[600px]">
+      <form
+        onSubmit={coAdminForm.handleSubmit(onSubmit)}
+        className="flex flex-col gap-6 max-w-[600px]"
+      >
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="First Name"
             placeholder="Enter first name"
-            {...form.register('first_name')}
-            error={form.formState.errors.first_name?.message}
+            {...coAdminForm.register('first_name')}
+            error={coAdminForm.formState.errors.first_name?.message}
           />
           <Input
             label="Last Name"
             placeholder="Enter last name"
-            {...form.register('last_name')}
-            error={form.formState.errors.last_name?.message}
+            {...coAdminForm.register('last_name')}
+            error={coAdminForm.formState.errors.last_name?.message}
           />
           <Input
             label="Email Address"
             type="email"
             placeholder="Enter email address"
             className="col-span-full"
-            {...form.register('email')}
-            error={form.formState.errors.email?.message}
+            {...coAdminForm.register('email')}
+            error={coAdminForm.formState.errors.email?.message}
           />
+          {isVendor && (
+            <div className="col-span-full">
+              <Controller
+                control={coAdminForm.control}
+                name="phone_number"
+                render={({ field: { onChange, value } }) => (
+                  <BasePhoneInput
+                    placeholder="Enter number eg. 5512345678"
+                    options={phoneCountries}
+                    maxLength={14}
+                    handleChange={onChange}
+                    selectedVal={value ?? ''}
+                    label="Phone Number"
+                    error={coAdminForm.formState.errors.phone_number?.message}
+                    disabled={isPending}
+                    hint={
+                      <>
+                        Please enter number in the format:{' '}
+                        <span className="font-medium">5512345678</span>
+                      </>
+                    }
+                  />
+                )}
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
           <Button
             type="button"
             variant="outline"
-            onClick={() => form.reset()}
-            disabled={form.formState.isSubmitting || inviteVendorAdminMutation.isPending}
+            onClick={() => coAdminForm.reset()}
+            disabled={coAdminForm.formState.isSubmitting || isPending}
           >
             Clear
           </Button>
-          <Button
-            type="submit"
-            variant="secondary"
-            disabled={
-              form.formState.isSubmitting || !vendorId || inviteVendorAdminMutation.isPending
-            }
-            loading={inviteVendorAdminMutation.isPending}
-          >
-            {inviteVendorAdminMutation.isPending ? 'Sending...' : 'Send Invitation'}
+          <Button type="submit" variant="secondary" disabled={submitDisabled} loading={isPending}>
+            {isPending ? 'Sending...' : 'Send Invitation'}
           </Button>
         </div>
       </form>
