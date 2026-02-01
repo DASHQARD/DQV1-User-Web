@@ -40,10 +40,12 @@ export default function CorporateVendorSidebar() {
   }, [allVendorsDetails, userProfileData?.id, user])
 
   const hasVendorsPendingVerification = React.useMemo(() => {
-    return allVendorsCreatedByCorporate.some(
-      (vendor: any) =>
-        vendor.approval_status !== 'approved' && vendor.approval_status !== 'auto_approved',
-    )
+    return allVendorsCreatedByCorporate.some((vendor: any) => {
+      const isApproved =
+        vendor.approval_status === 'approved' || vendor.approval_status === 'auto_approved'
+      const isActive = vendor.status === 'active'
+      return !isApproved || !isActive
+    })
   }, [allVendorsCreatedByCorporate])
 
   const currentVendorId = searchParams.get('vendor_id')
@@ -338,19 +340,29 @@ export default function CorporateVendorSidebar() {
                 {allVendorsCreatedByCorporate.map((vendor: any) => {
                   const vendorId = vendor.vendor_id ?? vendor.id
                   const canSwitch =
-                    vendor.approval_status === 'approved' ||
-                    vendor.approval_status === 'auto_approved'
+                    (vendor.approval_status === 'approved' ||
+                      vendor.approval_status === 'auto_approved') &&
+                    vendor.status === 'active'
                   const isCurrentVendor =
                     currentVendorId &&
                     (String(vendorId) === currentVendorId || String(vendor.id) === currentVendorId)
-                  const approvalLabel =
-                    vendor.approval_status === 'pending'
+                  const isApproved =
+                    vendor.approval_status === 'approved' ||
+                    vendor.approval_status === 'auto_approved'
+                  const isActive = vendor.status === 'active'
+                  const needsOnboarding = isApproved && !isActive
+                  const statusLabel = needsOnboarding
+                    ? 'Complete onboarding'
+                    : vendor.approval_status === 'pending'
                       ? 'Pending approval'
                       : vendor.approval_status === 'rejected'
                         ? 'Rejected'
                         : vendor.approval_status
                           ? String(vendor.approval_status).replace(/_/g, ' ')
                           : 'Not approved'
+                  const lockTooltip = needsOnboarding
+                    ? 'Approved. Complete onboarding to switch to this vendor.'
+                    : statusLabel
                   const handleSwitchToVendor = () => {
                     if (!canSwitch || isCurrentVendor) return
                     setIsPopoverOpen(false)
@@ -408,7 +420,7 @@ export default function CorporateVendorSidebar() {
                           </Text>
                           {!canSwitch && (
                             <Tag
-                              value={approvalLabel}
+                              value={statusLabel}
                               variant="warning"
                               className="text-[10px] px-1.5 py-0"
                             />
@@ -430,7 +442,7 @@ export default function CorporateVendorSidebar() {
                           </span>
                         )
                       ) : (
-                        <span title={approvalLabel} className="shrink-0">
+                        <span title={lockTooltip} className="shrink-0">
                           <Icon icon="bi:lock-fill" className="text-gray-400 text-sm" />
                         </span>
                       )}
@@ -444,7 +456,7 @@ export default function CorporateVendorSidebar() {
               <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 flex items-center gap-2">
                 <Icon icon="bi:clock-history" className="text-amber-600 text-sm shrink-0" />
                 <Text variant="span" className="text-xs text-amber-800">
-                  Some vendor accounts are pending verification
+                  Some vendor accounts need attention (pending approval or onboarding)
                 </Text>
               </div>
             )}
@@ -469,8 +481,6 @@ export default function CorporateVendorSidebar() {
                 <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
               </button>
             )}
-
-            <CreateVendorAccount />
           </div>
 
           {/* Footer Actions */}
@@ -485,6 +495,7 @@ export default function CorporateVendorSidebar() {
           </div>
         </PopoverContent>
       </Popover>
+      <CreateVendorAccount />
     </>
   )
 

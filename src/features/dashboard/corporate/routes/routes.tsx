@@ -16,6 +16,8 @@ import { Purchase } from '../pages/purchase'
 import { Transactions } from '../pages/transactions'
 import { Requests } from '../pages/requests'
 import { AuditLogs } from '../pages/auditLogs'
+import { VendorInvitations } from '../pages/vendorInvitations'
+import { AllVendors } from '../pages/allVendors'
 import { Admins } from '../pages/admins'
 import { Notifications } from '../pages/notifications'
 import { Recipients } from '../pages/recipients'
@@ -41,6 +43,14 @@ export const corporateRoutes: RouteObject[] = [
   {
     path: 'requests',
     element: <Requests />,
+  },
+  {
+    path: 'vendor-invitations',
+    element: <VendorInvitations />,
+  },
+  {
+    path: 'vendors',
+    element: <AllVendors />,
   },
   {
     path: 'audit-logs',

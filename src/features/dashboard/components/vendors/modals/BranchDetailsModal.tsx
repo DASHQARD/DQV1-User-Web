@@ -1,13 +1,10 @@
 import React from 'react'
-import { useForm, Controller, useWatch } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { Controller } from 'react-hook-form'
 import {
   Button,
   Modal,
   Text,
   Tag,
-  // Avatar,
   Input,
   Combobox,
   RadioGroup,
@@ -16,309 +13,35 @@ import {
   Loader,
 } from '@/components'
 import { Icon } from '@/libs'
-import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { getStatusVariant } from '@/utils/helpers/common'
-import type { Branch } from '@/utils/schemas'
-import { useVendorMutations } from '@/features/dashboard/vendor/hooks/useVendorMutations'
-import { vendorQueries } from '@/features/dashboard/vendor/hooks/useVendorQueries'
-import { GHANA_BANKS } from '@/assets/data/banks'
-import { useCountriesData } from '@/hooks'
-import type { UpdateBranchPaymentDetailsPayload, AddBranchPaymentDetailsPayload } from '@/types'
+import { useBranchDetailsModal } from './useBranchDetailsModal'
 
-interface BranchDetailsModalProps {
-  branch: Branch | null
-}
-
-const PaymentDetailsSchema = z
-  .object({
-    payment_method: z.enum(['mobile_money', 'bank']).optional(),
-    mobile_money_provider: z.string().optional(),
-    mobile_money_number: z.string().optional(),
-    bank_name: z.string().optional(),
-    bank_branch: z.string().optional(),
-    account_holder_name: z.string().optional(),
-    account_number: z.string().optional(),
-    swift_code: z.string().optional(),
-    sort_code: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      // If payment_method is mobile_money, provider and number are required
-      if (data.payment_method === 'mobile_money') {
-        return !!(data.mobile_money_provider && data.mobile_money_number)
-      }
-      return true
-    },
-    {
-      message: 'Mobile Money Provider and Mobile Money Number are required',
-      path: ['mobile_money_provider'],
-    },
-  )
-  .refine(
-    (data) => {
-      // If payment_method is bank, all bank fields are required
-      if (data.payment_method === 'bank') {
-        return !!(
-          data.bank_name &&
-          data.account_number &&
-          data.account_holder_name &&
-          data.sort_code &&
-          data.swift_code
-        )
-      }
-      return true
-    },
-    {
-      message: 'All bank details are required',
-      path: ['bank_name'],
-    },
-  )
-
-export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalProps) {
-  const modal = usePersistedModalState<Branch>({
-    paramName: MODALS.BRANCH.VIEW,
-  })
-
-  // Use modalData if available (when opened via openModal with data), otherwise use prop
-  const branch = React.useMemo(() => {
-    return modal.modalData || branchProp || null
-  }, [modal.modalData, branchProp])
-
+export function BranchDetailsModal() {
   const {
-    useUpdateBranchPaymentDetailsService,
-    useDeleteBranchPaymentDetailsService,
-    useAddBranchPaymentDetailsService,
-  } = useVendorMutations()
-  const { mutateAsync: updateBranchPaymentDetails, isPending: isUpdatingPaymentDetails } =
-    useUpdateBranchPaymentDetailsService()
-  const { mutateAsync: deleteBranchPaymentDetails, isPending: isDeletingPaymentDetails } =
-    useDeleteBranchPaymentDetailsService()
-  const { mutateAsync: addBranchPaymentDetails, isPending: isAddingPaymentDetails } =
-    useAddBranchPaymentDetailsService()
-
-  const { useGetBranchPaymentDetailsService } = vendorQueries()
-  const { data: paymentDetailsResponse, isLoading: isLoadingPaymentDetails } =
-    useGetBranchPaymentDetailsService(branch?.id || null)
-
-  const { countries } = useCountriesData()
-
-  // Extract payment details from response
-  const mobileMoneyAccounts = React.useMemo(() => {
-    return paymentDetailsResponse?.mobile_money_accounts || []
-  }, [paymentDetailsResponse])
-
-  const bankAccounts = React.useMemo(() => {
-    return paymentDetailsResponse?.bank_accounts || []
-  }, [paymentDetailsResponse])
-
-  const [isEditing, setIsEditing] = React.useState(false)
-  const [editedBranch, setEditedBranch] = React.useState(branch)
-  const [isEditingPayment, setIsEditingPayment] = React.useState(false)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
-
-  // Initialize payment form with existing data
-  const initialPaymentValues = React.useMemo(() => {
-    if (mobileMoneyAccounts.length > 0) {
-      const account = mobileMoneyAccounts[0]
-      // Format phone number for BasePhoneInput (expects +233-XXXXXXXXX format)
-      // API returns format like "0507301396" (local format)
-      let phoneNumber = account.momo_number || ''
-      if (phoneNumber) {
-        // Extract only digits
-        const digitsOnly = phoneNumber.replace(/\D/g, '')
-        // Remove country code prefix if present (233 for Ghana)
-        let localNumber = digitsOnly
-        if (digitsOnly.startsWith('233')) {
-          localNumber = digitsOnly.slice(3) // Remove '233' prefix
-        } else if (digitsOnly.startsWith('0')) {
-          localNumber = digitsOnly.slice(1) // Remove '0' prefix
-        }
-        // Format for BasePhoneInput: "+233-{local_number}"
-        phoneNumber = localNumber ? `+233-${localNumber}` : ''
-      }
-      return {
-        payment_method: 'mobile_money' as const,
-        mobile_money_provider: account.provider || '',
-        mobile_money_number: phoneNumber || '',
-        bank_name: '',
-        bank_branch: '',
-        account_holder_name: '',
-        account_number: '',
-        swift_code: '',
-        sort_code: '',
-      }
-    }
-    if (bankAccounts.length > 0) {
-      const account = bankAccounts[0]
-      return {
-        payment_method: 'bank' as const,
-        mobile_money_provider: '',
-        mobile_money_number: '',
-        bank_name: account.bank_name || '',
-        bank_branch: account.bank_branch || '',
-        account_holder_name: account.account_holder_name || '',
-        account_number: account.account_number || '',
-        swift_code: account.swift_code || '',
-        sort_code: account.sort_code || '',
-      }
-    }
-    return {
-      payment_method: 'mobile_money' as const,
-      mobile_money_provider: '',
-      mobile_money_number: '',
-      bank_name: '',
-      bank_branch: '',
-      account_holder_name: '',
-      account_number: '',
-      swift_code: '',
-      sort_code: '',
-    }
-  }, [mobileMoneyAccounts, bankAccounts])
-
-  const paymentForm = useForm<z.infer<typeof PaymentDetailsSchema>>({
-    resolver: zodResolver(PaymentDetailsSchema),
-    defaultValues: initialPaymentValues,
-  })
-
-  const paymentMethod = useWatch({
-    control: paymentForm.control,
-    name: 'payment_method',
-  })
-
-  React.useEffect(() => {
-    setEditedBranch(branch)
-  }, [branch])
-
-  // Track if modal is open to reset form only when opening
-  const isModalOpen = modal.isModalOpen(MODALS.BRANCH.VIEW)
-  const prevModalOpenRef = React.useRef(false)
-  const initialPaymentValuesRef = React.useRef(initialPaymentValues)
-
-  // Update ref when initialPaymentValues changes
-  React.useEffect(() => {
-    initialPaymentValuesRef.current = initialPaymentValues
-  }, [initialPaymentValues])
-
-  React.useEffect(() => {
-    // Only reset form when modal opens (transitions from closed to open)
-    if (isModalOpen && !prevModalOpenRef.current) {
-      paymentForm.reset(initialPaymentValuesRef.current)
-    }
-    prevModalOpenRef.current = isModalOpen
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isModalOpen])
-
-  // Reset form when editing is cancelled - use ref to avoid infinite loop
-  const prevIsEditingPaymentRef = React.useRef(isEditingPayment)
-  React.useEffect(() => {
-    // Only reset when transitioning from editing to not editing
-    if (prevIsEditingPaymentRef.current && !isEditingPayment) {
-      paymentForm.reset(initialPaymentValuesRef.current)
-    }
-    prevIsEditingPaymentRef.current = isEditingPayment
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditingPayment])
-
-  const handleCloseModal = React.useCallback(() => {
-    modal.closeModal()
-    setIsEditing(false)
-    setIsEditingPayment(false)
-    setIsDeleteModalOpen(false)
-    // Reset form with current initial values when closing
-    paymentForm.reset(initialPaymentValuesRef.current)
-  }, [modal, paymentForm])
-
-  const handleDeletePaymentDetails = async () => {
-    if (!branch?.id) return
-
-    try {
-      await deleteBranchPaymentDetails(branch.id)
-      setIsDeleteModalOpen(false)
-      setIsEditingPayment(false)
-      paymentForm.reset(initialPaymentValuesRef.current)
-    } catch (error) {
-      console.error('Failed to delete branch payment details:', error)
-      // Keep modal open on error so user can retry
-    }
-  }
-
-  const handleSavePaymentDetails = async (data: z.infer<typeof PaymentDetailsSchema>) => {
-    if (!branch?.id) return
-
-    try {
-      // Check if payment details already exist
-      const hasExistingPaymentDetails = mobileMoneyAccounts.length > 0 || bankAccounts.length > 0
-
-      if (!hasExistingPaymentDetails) {
-        // Use POST /vendors/add/branch-payment-details to add new payment details
-        const payload: AddBranchPaymentDetailsPayload = {
-          branch_id: Number(branch.id),
-          payment_method: data.payment_method || 'mobile_money',
-        }
-
-        if (
-          data.payment_method === 'mobile_money' &&
-          data.mobile_money_provider &&
-          data.mobile_money_number
-        ) {
-          payload.mobile_money_provider = data.mobile_money_provider
-          payload.mobile_money_number = data.mobile_money_number
-        } else if (data.payment_method === 'bank') {
-          payload.bank_name = data.bank_name || ''
-          payload.branch = data.bank_branch || ''
-          payload.account_name = data.account_holder_name || ''
-          payload.account_number = data.account_number || ''
-          payload.sort_code = data.sort_code || ''
-          payload.swift_code = data.swift_code || ''
-        }
-
-        await addBranchPaymentDetails(payload)
-      } else {
-        if (!data.payment_method) {
-          throw new Error('Payment method is required')
-        }
-
-        const payload: UpdateBranchPaymentDetailsPayload = {
-          branch_id: Number(branch.id),
-          payment_method: data.payment_method,
-        }
-
-        if (data.payment_method === 'mobile_money') {
-          payload.mobile_money_provider = data.mobile_money_provider
-          payload.mobile_money_number = data.mobile_money_number
-        } else if (data.payment_method === 'bank') {
-          payload.bank_name = data.bank_name
-          payload.branch = data.bank_branch
-          payload.account_name = data.account_holder_name
-          payload.account_number = data.account_number
-          payload.sort_code = data.sort_code
-          payload.swift_code = data.swift_code
-        }
-
-        await updateBranchPaymentDetails(payload)
-      }
-
-      // Editing mode will be closed and form reset in the mutation's onSuccess handler via query invalidation
-      // But we also reset it here to ensure UI state is updated immediately
-      setIsEditingPayment(false)
-      paymentForm.reset(initialPaymentValuesRef.current)
-    } catch (error) {
-      console.error('Failed to save branch payment details:', error)
-      // Keep editing mode open on error so user can retry
-    }
-  }
-
-  const mobileMoneyProviders = [
-    { label: 'MTN', value: 'mtn' },
-    { label: 'Vodafone', value: 'vodafone' },
-    { label: 'AirtelTigo', value: 'airteltigo' },
-  ]
-
-  const bankOptions = GHANA_BANKS.map((bank) => ({
-    label: bank.name,
-    value: bank.name,
-  }))
+    modal,
+    branch,
+    isEditing,
+    editedBranch,
+    setEditedBranch,
+    setIsEditing,
+    isEditingPayment,
+    setIsEditingPayment,
+    openDeletePaymentDetailsModal,
+    paymentForm,
+    paymentMethod,
+    mobileMoneyAccounts,
+    bankAccounts,
+    isLoadingPaymentDetails,
+    isUpdatingPaymentDetails,
+    isAddingPaymentDetails,
+    handleCloseModal,
+    handleSavePaymentDetails,
+    cancelPaymentEdit,
+    mobileMoneyProviders,
+    bankOptions,
+    countries,
+  } = useBranchDetailsModal()
 
   if (!branch) return null
 
@@ -341,27 +64,11 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                 Branch Details
               </Text>
             </div>
-            {/* {!isEditing && !isEditingPayment && (
-              <Button
-                variant="secondary"
-                size="small"
-                onClick={() => setIsEditing(true)}
-                className="rounded-full"
-              >
-                Edit
-              </Button>
-            )} */}
           </div>
 
-          {/* Branch Profile Section */}
           <div className="bg-white rounded-xl py-5 border border-gray-200">
             <div className="px-6 flex items-center justify-center gap-6">
               <section className="flex items-center gap-3 flex-col">
-                {/* <Avatar
-                  name={branch.branch_name}
-                  size="lg"
-                  className="rounded-xl flex justify-center items-center"
-                /> */}
                 <div className="py-2.5 px-2 flex flex-col gap-1 text-center capitalize">
                   <Text variant="h4" weight="medium" className="text-gray-800">
                     {branch.branch_name}
@@ -377,7 +84,6 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
             </div>
           </div>
 
-          {/* Branch Information */}
           <div className="flex flex-col gap-6">
             <Text variant="h5" weight="medium">
               Branch Information
@@ -442,7 +148,6 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
             </section>
           </div>
 
-          {/* Branch Owner/Manager Section */}
           <div className="border-t border-gray-200 pt-6">
             <Text variant="h5" weight="medium" className="mb-4">
               Branch Owner
@@ -478,7 +183,6 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
             </section>
           </div>
 
-          {/* Payment Details Section */}
           <div className="border-t border-gray-200 pt-6">
             <div className="flex items-center justify-between mb-4">
               <Text variant="h5" weight="medium">
@@ -490,9 +194,8 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                     <Button
                       variant="outline"
                       size="small"
-                      onClick={() => setIsDeleteModalOpen(true)}
+                      onClick={openDeletePaymentDetailsModal}
                       className="rounded-full text-red-600 border-red-600 hover:bg-red-50"
-                      disabled={isDeletingPaymentDetails}
                     >
                       Delete
                     </Button>
@@ -557,9 +260,9 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                             label="Mobile Money Provider"
                             options={mobileMoneyProviders}
                             value={field.value}
-                            onChange={(e: any) => {
-                              const value = e?.target?.value || e?.value || ''
-                              field.onChange(value)
+                            onChange={(e: unknown) => {
+                              const ev = e as { target?: { value?: string }; value?: string }
+                              field.onChange(ev?.target?.value ?? ev?.value ?? '')
                             }}
                             error={error?.message}
                             placeholder="Select provider"
@@ -567,7 +270,6 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                         )}
                       />
                     </div>
-
                     <div className="flex flex-col gap-1">
                       <Controller
                         control={paymentForm.control}
@@ -603,9 +305,9 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                             label="Bank Name"
                             options={bankOptions}
                             value={field.value}
-                            onChange={(e: any) => {
-                              const value = e?.target?.value || e?.value || ''
-                              field.onChange(value)
+                            onChange={(e: unknown) => {
+                              const ev = e as { target?: { value?: string }; value?: string }
+                              field.onChange(ev?.target?.value ?? ev?.value ?? '')
                             }}
                             error={error?.message}
                             placeholder="Select bank"
@@ -614,7 +316,6 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                         )}
                       />
                     </div>
-
                     <div>
                       <Input
                         label="Bank Branch"
@@ -623,7 +324,6 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                         error={paymentForm.formState.errors.bank_branch?.message}
                       />
                     </div>
-
                     <div>
                       <Input
                         label="Account Number"
@@ -632,7 +332,6 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                         error={paymentForm.formState.errors.account_number?.message}
                       />
                     </div>
-
                     <div className="sm:col-span-2">
                       <Input
                         label="Account Holder Name"
@@ -641,7 +340,6 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                         error={paymentForm.formState.errors.account_holder_name?.message}
                       />
                     </div>
-
                     <div>
                       <Input
                         label="Sort Code"
@@ -650,7 +348,6 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                         error={paymentForm.formState.errors.sort_code?.message}
                       />
                     </div>
-
                     <div>
                       <Input
                         label="SWIFT Code"
@@ -676,10 +373,7 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
                     type="button"
                     variant="outline"
                     size="medium"
-                    onClick={() => {
-                      setIsEditingPayment(false)
-                      paymentForm.reset(initialPaymentValuesRef.current)
-                    }}
+                    onClick={cancelPaymentEdit}
                     disabled={isUpdatingPaymentDetails || isAddingPaymentDetails}
                     className="flex-1 rounded-full"
                   >
@@ -738,16 +432,12 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
             )}
           </div>
 
-          {/* Action Buttons */}
           {isEditing && (
             <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
               <Button
                 variant="secondary"
                 size="medium"
-                onClick={() => {
-                  // TODO: Save changes for branch info (not payment details)
-                  setIsEditing(false)
-                }}
+                onClick={() => setIsEditing(false)}
                 className="flex-1 rounded-full"
               >
                 Save Changes
@@ -767,53 +457,6 @@ export function BranchDetailsModal({ branch: branchProp }: BranchDetailsModalPro
           )}
         </div>
       </section>
-
-      {/* Delete Payment Details Confirmation Modal */}
-      <Modal
-        isOpen={isDeleteModalOpen}
-        setIsOpen={setIsDeleteModalOpen}
-        panelClass="!max-w-md"
-        position="center"
-      >
-        <div className="p-6 space-y-4">
-          <div className="flex flex-col gap-4 items-center justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <Icon icon="bi:exclamation-triangle-fill" className="text-2xl text-red-600" />
-            </div>
-            <div className="space-y-2 text-center">
-              <Text variant="h3" className="font-semibold">
-                Delete Payment Details
-              </Text>
-              <p className="text-sm text-gray-600">
-                Are you sure you want to delete the payment details for this branch? This action
-                cannot be undone.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="flex-1 rounded-full"
-              disabled={isDeletingPaymentDetails}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="danger"
-              onClick={handleDeletePaymentDetails}
-              className="flex-1 rounded-full"
-              disabled={isDeletingPaymentDetails}
-              loading={isDeletingPaymentDetails}
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </Modal>
   )
 }

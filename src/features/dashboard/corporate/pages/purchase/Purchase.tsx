@@ -1,78 +1,29 @@
-import { useLocation } from 'react-router-dom'
 import { Button, Text, TabbedView, PaginatedTable } from '@/components'
 import {
   BulkPurchaseEmployeesModal,
-  IndividualPurchaseModal,
+  // IndividualPurchaseModal,
   transactionsListColumns,
   TransactionDetails,
   transactionListCsvHeaders,
 } from '@/features/dashboard/components'
 import { Icon } from '@/libs'
-import { usePersistedModalState, useReducerSpread } from '@/hooks'
-import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
 import { usePurchaseManagement } from '@/features/dashboard/hooks'
-import { useMemo, useCallback } from 'react'
-import { corporateQueries } from '../../hooks'
-import type { QueryType } from '@/types'
 import { OPTIONS } from '@/utils/constants/filter'
 
 export default function Purchase() {
-  const { purchaseTabConfig } = usePurchaseManagement()
-  const location = useLocation()
-  const searchParams = new URLSearchParams(location.search)
-  const currentTab = searchParams.get('tab') || 'bulk'
-
-  const bulkPurchaseModal = usePersistedModalState({
-    paramName: MODALS.BULK_EMPLOYEE_PURCHASE.PARAM_NAME,
-  })
-
-  const handleBulkPurchase = () => {
-    bulkPurchaseModal.openModal(MODALS.BULK_EMPLOYEE_PURCHASE.CHILDREN.CREATE)
-  }
-
-  const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
-  const { useGetAllCorporatePaymentsService } = corporateQueries()
-
-  // Build query parameters for the API
-  const queryParams = useMemo(() => {
-    const params: Record<string, any> = {
-      limit: query.limit || 10,
-    }
-    if (query.after) {
-      params.after = query.after
-    }
-    if (query.status) params.status = query.status
-    if ((query as any).type) params.type = (query as any).type
-    // Map camelCase to snake_case for backend
-    if (query.dateFrom) params.date_from = query.dateFrom
-    if (query.dateTo) params.date_to = query.dateTo
-    return params
-  }, [query])
-
-  const { data: paymentsResponse, isLoading } = useGetAllCorporatePaymentsService(queryParams)
-
-  // Extract data and pagination from response
-  const allCorporatePayments = paymentsResponse?.data || []
-  const pagination = paymentsResponse?.pagination
-
-  // Handle cursor-based pagination
-  const handleNextPage = useCallback(() => {
-    if (pagination?.hasNextPage && pagination?.next) {
-      setQuery({ ...query, after: pagination.next })
-    }
-  }, [pagination?.hasNextPage, pagination?.next, query, setQuery])
-
-  const handleSetAfter = useCallback(
-    (after: string) => {
-      setQuery({ ...query, after })
-    },
-    [query, setQuery],
-  )
-
-  // Calculate estimated total for display
-  const estimatedTotal = pagination?.hasNextPage
-    ? allCorporatePayments.length + (query.limit || 10)
-    : allCorporatePayments.length
+  const {
+    purchaseTabConfig,
+    currentTab,
+    handleBulkPurchase,
+    query,
+    setQuery,
+    allCorporatePayments,
+    pagination,
+    isLoading,
+    handleNextPage,
+    handleSetAfter,
+    estimatedTotal,
+  } = usePurchaseManagement()
 
   return (
     <>
@@ -156,8 +107,8 @@ export default function Purchase() {
       </div>
 
       <TransactionDetails />
-      <BulkPurchaseEmployeesModal modal={bulkPurchaseModal} />
-      <IndividualPurchaseModal />
+      <BulkPurchaseEmployeesModal />
+      {/* <IndividualPurchaseModal />  */}
     </>
   )
 }

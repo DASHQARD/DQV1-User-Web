@@ -4,15 +4,9 @@ import { Text, Loader } from '@/components'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
 import { ROUTES } from '@/utils/constants'
-
-interface RecentBranchesProps {
-  branches: any[]
-  isLoading: boolean
-  addAccountParam: (path: string) => string
-}
+import type { RecentBranchesProps } from '@/types'
 
 export function RecentBranches({ branches, isLoading, addAccountParam }: RecentBranchesProps) {
-  // Get recent branches (first 5)
   const recentBranches = React.useMemo(() => {
     return branches.slice(0, 5)
   }, [branches])
@@ -26,12 +20,6 @@ export function RecentBranches({ branches, isLoading, addAccountParam }: RecentB
             <span className="ml-2 text-sm font-normal text-gray-500">({branches.length})</span>
           )}
         </h5>
-        <Link
-          to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES)}
-          className="text-[#402D87] no-underline text-sm font-medium flex items-center transition-colors duration-200 hover:text-[#2d1a72]"
-        >
-          Manage branches <Icon icon="bi:arrow-right" className="ml-1" />
-        </Link>
       </div>
       <div className="px-6 pb-6">
         {isLoading ? (

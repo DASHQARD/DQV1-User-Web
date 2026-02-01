@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
 import {
   Breadcrumb,
@@ -19,6 +19,7 @@ import React from 'react'
 
 export default function AddBranch() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const toast = useToast()
   // const queryClient = useQueryClient()
   const { useGetUserProfileService } = useUserProfile()
@@ -119,7 +120,11 @@ export default function AddBranch() {
               <Button
                 className="w-fit !bg-black !text-white !rounded-none"
                 size="small"
-                onClick={() => navigate(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.CREATE_BRANCH)}
+                onClick={() => {
+                  const path = ROUTES.IN_APP.DASHBOARD.COMPLIANCE.CREATE_BRANCH
+                  const query = searchParams.toString()
+                  navigate(query ? `${path}?${query}` : path)
+                }}
               >
                 <Icon icon="bi:plus" className="size-6" />
                 Add Branch

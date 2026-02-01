@@ -1,58 +1,12 @@
-import { z } from 'zod'
-import { useSearchParams } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
-
 import { Input, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
-import { AcceptBranchManagerInvitationSchema } from '@/utils/schemas/vendor/branchManager'
-import { useToast } from '@/hooks'
-import { onboardBranchManager } from '@/features/dashboard/vendor/services/branches'
-import { ROUTES } from '@/utils/constants'
+import { useAcceptBranchManagerForm } from '../../hooks'
 
 export default function AcceptBranchManagerForm() {
-  const [searchParams] = useSearchParams()
-  const token = searchParams.get('token')
-  const { error, success } = useToast()
-  const navigate = useNavigate()
+  const { form, onSubmit, isPending, hasValidToken } = useAcceptBranchManagerForm()
 
-  const form = useForm<z.infer<typeof AcceptBranchManagerInvitationSchema>>({
-    resolver: zodResolver(AcceptBranchManagerInvitationSchema),
-    defaultValues: {
-      password: '',
-      confirm_password: '',
-    },
-  })
-
-  const onboardBranchManagerMutation = useMutation({
-    mutationFn: onboardBranchManager,
-    onSuccess: (response: any) => {
-      success(response?.message || 'Branch manager invitation accepted successfully')
-      navigate(ROUTES.IN_APP.AUTH.LOGIN)
-    },
-    onError: (err: any) => {
-      error(err?.message || 'Failed to accept branch manager invitation. Please try again.')
-    },
-  })
-
-  const handleSubmit = async (data: z.infer<typeof AcceptBranchManagerInvitationSchema>) => {
-    if (!token) {
-      error('Invalid invitation token')
-      return
-    }
-
-    const payload = {
-      token: token,
-      password: data.password,
-    }
-
-    onboardBranchManagerMutation.mutate(payload)
-  }
-
-  if (!token) {
+  if (!hasValidToken) {
     return (
       <div className="max-w-[470.61px] w-full flex flex-col items-center justify-center gap-4 py-10">
         <Icon icon="bi:exclamation-triangle" className="text-4xl text-red-500" />
@@ -69,7 +23,7 @@ export default function AcceptBranchManagerForm() {
 
   return (
     <form
-      onSubmit={form.handleSubmit(handleSubmit)}
+      onSubmit={form.handleSubmit(onSubmit)}
       className="max-w-[470.61px] w-full flex flex-col gap-10"
     >
       <div className="flex items-center gap-3">
@@ -107,8 +61,8 @@ export default function AcceptBranchManagerForm() {
           type="submit"
           variant="secondary"
           className="w-full"
-          loading={onboardBranchManagerMutation.isPending}
-          disabled={onboardBranchManagerMutation.isPending}
+          loading={isPending}
+          disabled={isPending}
         >
           Accept Invitation
         </Button>

@@ -1,198 +1,30 @@
-import { Controller, useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate } from 'react-router-dom'
+import { Controller } from 'react-hook-form'
 import { Combobox, Input, Text, FileUploader, Loader, Modal } from '@/components'
 import { Button } from '@/components/Button'
-import { ProfileAndIdentitySchema } from '@/utils/schemas'
-import { useAuth } from '../../../../auth/hooks'
-import { useUserProfile, useUploadFiles, usePresignedURL, useToast } from '@/hooks'
-import { ROUTES } from '@/utils/constants'
-import React from 'react'
 import { cn } from '@/libs'
-import { useAuthStore } from '@/stores'
 import { SuccessImage } from '@/assets/images'
+import { useOnboardingForm } from '../hooks/useOnboardingForm'
 
 export default function OnboardingForm() {
-  const navigate = useNavigate()
-  const { user } = useAuthStore()
-  const userType = (user as any)?.user_type
-  const isBranchManager = userType === 'branch'
-  const isCorporateAdmin = userType === 'corporate admin'
-  const isVendor = userType === 'vendor'
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData, isLoading } = useGetUserProfileService()
-  const toast = useToast()
-
-  const { usePersonalDetailsWithIDService } = useAuth()
-  const { mutateAsync: submitPersonalDetailsWithID, isPending: isSubmittingPersonalDetailsWithID } =
-    usePersonalDetailsWithIDService()
-  const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const { mutateAsync: fetchPresignedURL, isPending: isFetchingPresignedURL } = usePresignedURL()
-
-  const [frontOfIdentification, setFrontOfIdentification] = React.useState<string | null>(null)
-  const [backOfIdentification, setBackOfIdentification] = React.useState<string | null>(null)
-  const [showSuccessModal, setShowSuccessModal] = React.useState(false)
-
-  // Create schema with conditional validation for back_id
-  const dynamicSchema = React.useMemo(() => {
-    // Extend the schema to make back_id optional, then add conditional validation
-    const baseSchema = ProfileAndIdentitySchema.omit({ back_id: true }).extend({
-      back_id: z
-        .instanceof(File, { message: 'Back ID photo is required' })
-        .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB')
-        .optional(),
-    })
-
-    return baseSchema.superRefine((data, ctx) => {
-      // For passport and national_id, back_id is optional (only front_id required)
-      if (data.id_type === 'passport' || data.id_type === 'national_id') {
-        // Passport and National ID only need front_id
-        if (!data.front_id) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message:
-              data.id_type === 'passport'
-                ? 'Passport page is required'
-                : 'Front ID photo is required',
-            path: ['front_id'],
-          })
-        }
-        // back_id is optional for passport and national_id, so no validation needed
-      }
-    })
-  }, [])
-
-  type FormData = z.infer<typeof dynamicSchema>
-
-  const form = useForm<FormData>({
-    resolver: zodResolver(dynamicSchema),
-    mode: 'onChange',
-  })
-
-  // Watch ID type to determine which uploaders to show
-  const selectedIdType = form.watch('id_type')
-  const isPassport = selectedIdType === 'passport'
-  const isNationalId = selectedIdType === 'national_id'
-  const needsOnlyFront = isPassport || isNationalId // Both passport and national_id only need front
-
-  const isPending = isSubmittingPersonalDetailsWithID || isUploading
-
-  // Reset back_id when ID type changes to passport or national_id
-  React.useEffect(() => {
-    if (needsOnlyFront) {
-      const currentBackId = form.getValues('back_id')
-      if (currentBackId) {
-        form.setValue('back_id', undefined as any)
-        form.clearErrors('back_id')
-      }
-    }
-  }, [needsOnlyFront, form])
-
-  React.useEffect(() => {
-    if (!userProfileData?.id_images?.length) {
-      if (userProfileData) {
-        form.reset({
-          first_name: userProfileData?.fullname?.split(' ')[0] || '',
-          last_name: userProfileData?.fullname?.split(' ')[1] || '',
-          dob: userProfileData?.dob || '',
-          street_address: userProfileData?.street_address || '',
-          id_type: userProfileData?.id_type || '',
-          id_number: userProfileData?.id_number || '',
-        } as any)
-      }
-      return
-    }
-
-    let cancelled = false
-
-    const loadImages = async () => {
-      try {
-        const [frontUrl, backUrl] = await Promise.all([
-          userProfileData.id_images[0]
-            ? fetchPresignedURL(userProfileData.id_images[0].file_url)
-            : null,
-          userProfileData.id_images[1]
-            ? fetchPresignedURL(userProfileData.id_images[1].file_url)
-            : null,
-        ])
-
-        if (cancelled) return
-
-        setFrontOfIdentification(frontUrl)
-        setBackOfIdentification(backUrl || null)
-
-        // Reset form with existing data
-        form.reset({
-          first_name: userProfileData?.fullname?.split(' ')[0] || '',
-          last_name: userProfileData?.fullname?.split(' ')[1] || '',
-          dob: userProfileData?.dob || '',
-          street_address: userProfileData?.street_address || '',
-          id_type: userProfileData?.id_type || '',
-          id_number: userProfileData?.id_number || '',
-        } as any)
-      } catch (error) {
-        console.error('Failed to fetch identification images', error)
-        if (!cancelled) {
-          toast.error('Unable to fetch existing identification images.')
-        }
-      }
-    }
-
-    loadImages()
-
-    return () => {
-      cancelled = true
-    }
-  }, [fetchPresignedURL, toast, userProfileData, form])
-
-  const onSubmit = async (data: FormData) => {
-    try {
-      // First upload ID images - handle passport and national_id (one file) vs other IDs (two files)
-      const filesToUpload: File[] = [data.front_id]
-      if (data.back_id && !needsOnlyFront) {
-        filesToUpload.push(data.back_id)
-      }
-
-      const uploadPromises = filesToUpload.map((file) => uploadFiles([file]))
-      const responses = await Promise.all(uploadPromises)
-
-      const identificationPhotos = responses.map(
-        (response: { file_name: string; file_key: string }[], index: number) => ({
-          file_url: response[0].file_key,
-          file_name: filesToUpload[index].name,
-        }),
-      )
-
-      // Submit personal details with identification photos
-      const onboardingPayload = {
-        full_name: `${data.first_name} ${data.last_name}`,
-        street_address: data.street_address,
-        dob: data.dob,
-        id_type: data.id_type,
-        id_number: data.id_number,
-        identification_photos: identificationPhotos,
-      }
-
-      await submitPersonalDetailsWithID(onboardingPayload, {
-        onSuccess: () => {
-          setShowSuccessModal(true)
-        },
-      })
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to save. Please try again.')
-    }
-  }
-
-  function handleSuccessContinue() {
-    setShowSuccessModal(false)
-    if (isBranchManager || isVendor || isCorporateAdmin) {
-      navigate(-1)
-    } else {
-      const businessDetailsUrl = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS}?account=corporate`
-      navigate(businessDetailsUrl)
-    }
-  }
+  const {
+    form,
+    frontOfIdentification,
+    backOfIdentification,
+    showSuccessModal,
+    setShowSuccessModal,
+    isPassport,
+    isNationalId,
+    needsOnlyFront,
+    isPending,
+    isLoading,
+    isFetchingPresignedURL,
+    userProfileData,
+    onSubmit,
+    handleSuccessContinue,
+    handleDiscard,
+    dobMaxDate,
+    submitButtonLabel,
+  } = useOnboardingForm()
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
@@ -231,11 +63,7 @@ export default function OnboardingForm() {
             isRequired
             placeholder="Enter your date of birth"
             className="col-span-full"
-            max={(() => {
-              const today = new Date()
-              const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
-              return maxDate.toISOString().split('T')[0]
-            })()}
+            max={dobMaxDate}
             {...form.register('dob')}
             error={form.formState.errors.dob?.message}
           />
@@ -393,7 +221,7 @@ export default function OnboardingForm() {
       </section>
 
       <div className="flex justify-end gap-4">
-        <Button type="button" variant="outline" className="w-fit" onClick={() => navigate(-1)}>
+        <Button type="button" variant="outline" className="w-fit" onClick={handleDiscard}>
           Discard
         </Button>
         <Button
@@ -403,7 +231,7 @@ export default function OnboardingForm() {
           variant="secondary"
           className="w-fit"
         >
-          {isBranchManager || isCorporateAdmin ? 'Submit' : 'Submit & Continue'}
+          {submitButtonLabel}
         </Button>
       </div>
 

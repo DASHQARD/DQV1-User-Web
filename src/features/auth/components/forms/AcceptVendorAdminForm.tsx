@@ -1,43 +1,14 @@
-import { z } from 'zod'
-import { useSearchParams } from 'react-router-dom'
-
 import { Input, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { AcceptVendorAdminInvitationSchema } from '@/utils/schemas'
-import { useToast } from '@/hooks'
-import { useVendorMutations } from '@/features/dashboard'
+import { useAcceptVendorAdminForm } from '../../hooks'
 
 export default function AcceptVendorAdminForm() {
-  const [searchParams] = useSearchParams()
-  const token = searchParams.get('token')
-  const { error } = useToast()
-
-  const form = useForm<z.infer<typeof AcceptVendorAdminInvitationSchema>>({
-    resolver: zodResolver(AcceptVendorAdminInvitationSchema),
-  })
-  const { useAcceptVendorInvitationService } = useVendorMutations()
-  const acceptVendorInvitationMutation = useAcceptVendorInvitationService()
-
-  const handleSubmit = (data: z.infer<typeof AcceptVendorAdminInvitationSchema>) => {
-    if (!token) {
-      error('Invalid invitation token')
-      return
-    }
-
-    const payload = {
-      password: data.password,
-      // confirm_password: data.confirm_password,
-      token: token,
-    }
-    acceptVendorInvitationMutation.mutate(payload)
-  }
+  const { form, onSubmit, isPending } = useAcceptVendorAdminForm()
 
   return (
     <form
-      onSubmit={form.handleSubmit(handleSubmit)}
+      onSubmit={form.handleSubmit(onSubmit)}
       className="max-w-[470.61px] w-full flex flex-col gap-10"
     >
       <div className="flex items-center gap-3">
@@ -74,8 +45,8 @@ export default function AcceptVendorAdminForm() {
           type="submit"
           variant="secondary"
           className="w-full"
-          loading={acceptVendorInvitationMutation.isPending}
-          disabled={acceptVendorInvitationMutation.isPending}
+          loading={isPending}
+          disabled={isPending}
         >
           Accept Invitation
         </Button>

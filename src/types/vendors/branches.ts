@@ -3,6 +3,12 @@ export type UpdateBranchStatusPayload = {
   status: string
 }
 
+export interface RecentBranchesProps {
+  branches: any[]
+  isLoading: boolean
+  addAccountParam: (path: string) => string
+}
+
 export interface BranchPaymentDetailsResponse {
   // getList returns res.data where res is already response.data from interceptor
   // So this represents the nested "data" property from the API response

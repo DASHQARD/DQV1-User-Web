@@ -63,6 +63,7 @@ export const MODALS = {
     UPDATE_STATUS: 'update-branch-status',
     UPDATE_MANAGER_DETAILS: 'update-branch-manager-details',
     DELETE: 'delete-branch',
+    DELETE_PAYMENT_DETAILS: 'delete-branch-payment-details',
   },
   BRANCH_MANAGER_INVITATION: {
     PARAM_NAME: 'branch-manager-invitation',
@@ -129,6 +130,10 @@ export const MODALS = {
   INVITE_ADMIN: {
     ROOT: 'invite-admin-modal',
     CREATE: 'invite-admin',
+  },
+  REQUEST_BUSINESS_UPDATE: {
+    PARAM_NAME: 'request-business-update',
+    ROOT: 'request-business-update',
   },
   VENDOR_PAYMENT_MANAGEMENT: {
     PARAM_NAME: 'vendor-payment-management',

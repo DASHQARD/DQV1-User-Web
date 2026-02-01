@@ -1,4 +1,3 @@
-import { useMemo, useCallback } from 'react'
 import { Text, PaginatedTable } from '@/components'
 import {
   ApproveAction,
@@ -12,27 +11,16 @@ import { useCorporateRequests } from '@/features/dashboard/hooks'
 import { OPTIONS } from '@/utils/constants/filter'
 
 export default function Requests() {
-  const { query, requestCorporatesList, pagination, isLoadingRequestCorporatesList, setQuery } =
-    useCorporateRequests()
-
-  const handleNextPage = useCallback(() => {
-    if (pagination?.hasNextPage && pagination?.next) {
-      setQuery({ ...query, after: pagination.next })
-    }
-  }, [pagination, query, setQuery])
-
-  const handleSetAfter = useCallback(
-    (after: string) => {
-      setQuery({ ...query, after })
-    },
-    [query, setQuery],
-  )
-
-  const estimatedTotal = useMemo(() => {
-    return pagination?.hasNextPage
-      ? requestCorporatesList.length + (Number(query.limit) || 10)
-      : requestCorporatesList.length
-  }, [pagination, requestCorporatesList.length, query.limit])
+  const {
+    query,
+    requestCorporatesList,
+    pagination,
+    isLoadingRequestCorporatesList,
+    setQuery,
+    handleNextPage,
+    handleSetAfter,
+    estimatedTotal,
+  } = useCorporateRequests()
 
   return (
     <>

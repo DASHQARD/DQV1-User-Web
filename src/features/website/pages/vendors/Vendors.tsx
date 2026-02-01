@@ -93,11 +93,7 @@ export default function Vendors() {
               return (
                 <div
                   key={vendor.id || vendor.vendor_id}
-                  onClick={() =>
-                    navigate(
-                      `/vendor?vendor_id=${vendor.vendor_id}&id=${vendor.id || vendor.vendor_id}&name=${encodeURIComponent(vendorName)}`,
-                    )
-                  }
+                  onClick={() => navigate(`/vendor?vendor_id=${vendor.vendor_id}`)}
                   className="cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 >
                   <VendorItems

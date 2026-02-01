@@ -21,6 +21,8 @@ export const ROUTES = {
         NOTIFICATIONS: '/dashboard/corporate/notifications',
         RECIPIENTS: '/dashboard/corporate/recipients',
         BRANCHES: '/dashboard/corporate/branches',
+        VENDOR_INVITATIONS: '/dashboard/corporate/vendor-invitations',
+        ALL_VENDORS: '/dashboard/corporate/vendors',
         SETTINGS: '/dashboard/corporate/settings',
         GIFT_CARD_DETAILS: '/dashboard/corporate/gift-cards',
         COMPLIANCE: {
@@ -167,6 +169,7 @@ export const MODAL_NAMES = {
   },
   AUTH: {
     ROOT: 'auth-modal',
+    EMAIL_SENT: 'auth-email-sent',
     LOGOUT: 'logout',
   },
   ROLE: {
@@ -250,3 +253,5 @@ export const MODAL_NAMES = {
     REJECT_DAILY_LIMIT: 'reject-daily-limit',
   },
 }
+
+export const PASSWORD_SPECIAL_CHARACTERS = '!@#$%^&*()'

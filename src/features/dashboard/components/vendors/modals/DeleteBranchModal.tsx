@@ -1,69 +1,14 @@
 import { Modal, Text, Button } from '@/components'
-import { usePersistedModalState, useUserProfile } from '@/hooks'
-import { MODALS } from '@/utils/constants'
-import { useVendorMutations } from '@/features'
 import { Icon } from '@/libs'
-import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
-import { useAuthStore } from '@/stores'
+import { useDeleteBranchModal } from './useDeleteBranchModal'
 
 export function DeleteBranchModal() {
-  const modal = usePersistedModalState<any>({
-    paramName: MODALS.BRANCH.ROOT,
-  })
-
-  const branch = modal.modalData
-
-  const { user } = useAuthStore()
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const userType = (user as any)?.user_type || userProfileData?.user_type
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
-
-  const { useDeleteBranchByVendorService } = useVendorMutations()
-  const deleteBranchByVendorMutation = useDeleteBranchByVendorService()
-
-  const { useDeleteCorporateBranchService } = corporateMutations()
-  const deleteCorporateBranchMutation = useDeleteCorporateBranchService()
-
-  const isDeletingBranch =
-    deleteBranchByVendorMutation.isPending || deleteCorporateBranchMutation.isPending
-
-  const handleDeleteBranch = () => {
-    const branchId = branch?.id || branch?.branch_id
-    if (!branchId) {
-      console.error('Branch ID not found')
-      return
-    }
-
-    if (isCorporateSuperAdmin) {
-      deleteCorporateBranchMutation.mutate(branchId, {
-        onSuccess: () => {
-          modal.closeModal()
-        },
-      })
-    } else {
-      deleteBranchByVendorMutation.mutate(
-        {
-          branch_id: Number(branchId),
-        },
-        {
-          onSuccess: () => {
-            modal.closeModal()
-          },
-        },
-      )
-    }
-  }
+  const { branch, modal, handleDeleteBranch, isDeletingBranch, isOpen } = useDeleteBranchModal()
 
   if (!branch) return null
 
   return (
-    <Modal
-      isOpen={modal.isModalOpen(MODALS.BRANCH.DELETE)}
-      setIsOpen={modal.closeModal}
-      panelClass="!max-w-md"
-      position="center"
-    >
+    <Modal isOpen={isOpen} setIsOpen={modal.closeModal} panelClass="!max-w-md" position="center">
       <div className="p-6 space-y-4">
         <div className="flex flex-col gap-4 items-center justify-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
@@ -74,9 +19,8 @@ export function DeleteBranchModal() {
               Delete Branch
             </Text>
             <p className="text-sm text-gray-600">
-              Are you sure you want to delete{' '}
-              <strong>{branch?.branch_name || 'this branch'}</strong>? This action cannot be undone
-              and will remove all associated data.
+              Are you sure you want to delete <strong>{branch.branch_name ?? 'this branch'}</strong>
+              ? This action cannot be undone and will remove all associated data.
             </p>
           </div>
         </div>

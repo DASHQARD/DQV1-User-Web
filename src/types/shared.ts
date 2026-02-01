@@ -5,6 +5,13 @@ import type { IconNames } from './icon-names'
 
 import type { PageType } from './search'
 
+export type BusinessDocumentType =
+  | 'certificate_of_incorporation'
+  | 'business_license'
+  | 'articles_of_incorporation'
+  | 'utility_bill'
+  | 'logo'
+
 export type DropdownOption = {
   label: string
   value: string

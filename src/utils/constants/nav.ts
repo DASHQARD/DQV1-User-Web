@@ -38,6 +38,16 @@ export const CORPORATE_NAV_ITEMS = [
         label: 'Admins',
         icon: 'bi:people-fill',
       },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.VENDOR_INVITATIONS,
+        label: 'Vendor Invitations',
+        icon: 'bi:envelope-plus',
+      },
+      {
+        path: ROUTES.IN_APP.DASHBOARD.CORPORATE.ALL_VENDORS,
+        label: 'All Vendors',
+        icon: 'bi:shop',
+      },
       // {
       //   path: ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS,
       //   label: 'Notifications',

@@ -15,5 +15,7 @@ export const OPTIONS = {
   CARD_TYPE: ['DashPro', 'DashGo', 'DashX', 'DashPass'],
   CORPORATE_ADMIN_STATUS: ['active', 'inactive', 'suspended'],
   CORPORATE_ADMIN_INVITATION_STATUS: ['pending', 'accepted', 'expired', 'cancelled'],
+  VENDOR_INVITATION_STATUS: ['pending', 'accepted', 'expired', 'cancelled'],
+  VENDOR_STATUS: ['active', 'inactive', 'suspended', 'pending'],
   BRANCH_AND_CORPORATE_EXPERIENCE_CARD_TYPE: ['DashX', 'DashPass'],
 }

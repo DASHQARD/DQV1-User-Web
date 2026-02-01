@@ -1892,25 +1892,6 @@ export default function RedemptionPage() {
                                 </button>
                               </div>
                             </div>
-                            {/* Show vendor details on successful retrieval */}
-                            {selectedVendor && (
-                              <div className="mt-3 pt-3 border-t border-green-200 space-y-2 text-xs">
-                                <div className="flex justify-between text-gray-600">
-                                  <span>Vendor ID:</span>
-                                  <span className="font-semibold text-gray-900">
-                                    {selectedVendor.vendor_id || 'N/A'}
-                                  </span>
-                                </div>
-                                {selectedVendor.country && (
-                                  <div className="flex justify-between text-gray-600">
-                                    <span>Country:</span>
-                                    <span className="font-semibold text-gray-900">
-                                      {selectedVendor.country}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
                           </div>
                         )}
                       </div>

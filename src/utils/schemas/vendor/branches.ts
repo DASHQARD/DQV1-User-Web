@@ -125,3 +125,49 @@ export const CreateBranchFormSchema = z
       path: ['bank_name'],
     },
   )
+
+/** Schema for branch payment details form (Branch Details Modal – add/edit payment) */
+export const BranchPaymentDetailsSchema = z
+  .object({
+    payment_method: z.enum(['mobile_money', 'bank']).optional(),
+    mobile_money_provider: z.string().optional(),
+    mobile_money_number: z.string().optional(),
+    bank_name: z.string().optional(),
+    bank_branch: z.string().optional(),
+    account_holder_name: z.string().optional(),
+    account_number: z.string().optional(),
+    swift_code: z.string().optional(),
+    sort_code: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.payment_method === 'mobile_money') {
+        return !!(data.mobile_money_provider && data.mobile_money_number)
+      }
+      return true
+    },
+    {
+      message: 'Mobile Money Provider and Mobile Money Number are required',
+      path: ['mobile_money_provider'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.payment_method === 'bank') {
+        return !!(
+          data.bank_name &&
+          data.account_number &&
+          data.account_holder_name &&
+          data.sort_code &&
+          data.swift_code
+        )
+      }
+      return true
+    },
+    {
+      message: 'All bank details are required',
+      path: ['bank_name'],
+    },
+  )
+
+export type BranchPaymentDetailsFormData = z.infer<typeof BranchPaymentDetailsSchema>

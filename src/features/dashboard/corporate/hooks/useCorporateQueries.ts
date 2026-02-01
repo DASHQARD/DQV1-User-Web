@@ -33,9 +33,12 @@ import {
   getCardsByVendorIdForCorporate,
   getCorporateRedemptions,
   getCorporateRedemptionsByVendorId,
-  getCorporateSuperAdminVendorBranchManagers,
+  getCorporateSuperAdminBranchManagers,
   getCorporateBranchManagerInvitations,
   getCorporateBranchManagerInvitationById,
+  getVendorInvitations,
+  getAllVendorsManagement,
+  getVendorByIdManagement,
 } from '../services'
 import { getCards } from '@/features/dashboard/services/cards'
 import { useAuthStore } from '@/stores'
@@ -330,8 +333,8 @@ export function corporateQueries() {
     })
   }
 
-  function useGetCorporateSuperAdminVendorBranchManagersService(
-    vendorId: string | null | undefined,
+  function useGetCorporateSuperAdminBranchManagersService(
+    vendorId: number | string | null,
     params?: Record<string, any>,
   ) {
     const { user } = useAuthStore()
@@ -339,16 +342,13 @@ export function corporateQueries() {
     const isCorporateSuperAdmin = userType === 'corporate super admin'
 
     return useQuery({
-      queryKey: ['corporate-super-admin-vendor-branch-managers', vendorId, params],
-      queryFn: () => getCorporateSuperAdminVendorBranchManagers(vendorId!, params),
+      queryKey: ['corporate-super-admin-branch-managers', vendorId, params],
+      queryFn: () => getCorporateSuperAdminBranchManagers(vendorId!, params),
       enabled: isCorporateSuperAdmin && !!vendorId,
     })
   }
 
-  function useGetCorporateBranchManagerInvitationsService(
-    params?: Record<string, any>,
-    options?: { skip?: boolean },
-  ) {
+  function useGetCorporateBranchManagerInvitationsService(params?: Record<string, any>) {
     const { user } = useAuthStore()
     const userType = (user as any)?.user_type
     const isCorporateSuperAdmin = userType === 'corporate super admin'
@@ -356,7 +356,7 @@ export function corporateQueries() {
     return useQuery({
       queryKey: ['corporate-branch-manager-invitations', params],
       queryFn: () => getCorporateBranchManagerInvitations(params),
-      enabled: isCorporateSuperAdmin && !options?.skip,
+      enabled: isCorporateSuperAdmin,
     })
   }
 
@@ -364,6 +364,28 @@ export function corporateQueries() {
     return useQuery({
       queryKey: ['corporate-branch-manager-invitation', id],
       queryFn: () => getCorporateBranchManagerInvitationById(id!),
+      enabled: !!id,
+    })
+  }
+
+  function useGetVendorInvitationsService(params?: Record<string, any>) {
+    return useQuery({
+      queryKey: ['vendor-invitations', params],
+      queryFn: () => getVendorInvitations(params),
+    })
+  }
+
+  function useGetAllVendorsManagementService(params?: Record<string, any>) {
+    return useQuery({
+      queryKey: ['all-vendors-management', params],
+      queryFn: () => getAllVendorsManagement(params),
+    })
+  }
+
+  function useGetVendorByIdManagementService(id: number | string | null) {
+    return useQuery({
+      queryKey: ['vendor-by-id-management', id],
+      queryFn: () => getVendorByIdManagement(id!),
       enabled: !!id,
     })
   }
@@ -430,8 +452,11 @@ export function corporateQueries() {
     useGetCorporatePaymentByIdService,
     useGetCorporateRedemptionsService,
     useGetCorporateRedemptionsByVendorIdService,
-    useGetCorporateSuperAdminVendorBranchManagersService,
+    useGetCorporateSuperAdminBranchManagersService,
     useGetCorporateBranchManagerInvitationsService,
     useGetCorporateBranchManagerInvitationByIdService,
+    useGetVendorInvitationsService,
+    useGetAllVendorsManagementService,
+    useGetVendorByIdManagementService,
   }
 }

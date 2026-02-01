@@ -1,5 +1,3 @@
-import { useMemo, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { Text, PaginatedTable, Button } from '@/components'
 import {
   branchManagerInvitationsListCsvHeaders,
@@ -12,109 +10,22 @@ import {
   RemoveBranchManagerModal,
   UpdateBranchManagerInvitationModal,
 } from '@/features/dashboard/components/vendors/modals'
-import { usePersistedModalState } from '@/hooks'
-import { MODALS } from '@/utils/constants'
 import { Icon } from '@/libs'
-import { DEFAULT_QUERY } from '@/utils/constants'
-import type { QueryType, GetBranchManagerInvitationsQuery } from '@/types'
-import { useReducerSpread, useUserProfile } from '@/hooks'
-import { vendorQueries } from '../../hooks'
-import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
+import { useBranchManagers } from './useBranchManagers'
 
 export default function BranchManagers() {
-  const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
-  const [searchParams] = useSearchParams()
-  const vendorIdFromUrl = searchParams.get('vendor_id')
-
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const userType = userProfileData?.user_type
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
-  const isCorporateSwitchedToVendor = isCorporateSuperAdmin && !!vendorIdFromUrl
-
-  const apiQuery = useMemo((): GetBranchManagerInvitationsQuery & { vendor_id?: string } => {
-    const params: GetBranchManagerInvitationsQuery & { vendor_id?: string } = {
-      limit: Number(query.limit) || 10,
-    }
-    if (query.after) params.after = query.after
-    if (query.search) params.search = query.search
-    if ((query as any).status) params.status = (query as any).status
-    if (query.dateFrom) params.dateFrom = query.dateFrom
-    if (query.dateTo) params.dateTo = query.dateTo
-    if (isCorporateSwitchedToVendor && vendorIdFromUrl) params.vendor_id = vendorIdFromUrl
-    return params
-  }, [query, isCorporateSwitchedToVendor, vendorIdFromUrl])
-
-  const { useGetBranchManagerInvitationsService } = vendorQueries()
   const {
-    useGetCorporateSuperAdminVendorBranchManagersService,
-    useGetCorporateBranchManagerInvitationsService,
-  } = corporateQueries()
-
-  const { data: vendorInvitationsResponse, isLoading: isLoadingVendorInvitations } =
-    useGetBranchManagerInvitationsService(apiQuery, { skip: isCorporateSuperAdmin })
-
-  const {
-    data: corporateSuperAdminVendorBranchManagersResponse,
-    isLoading: isLoadingVendorScoped,
-  } = useGetCorporateSuperAdminVendorBranchManagersService(
-    vendorIdFromUrl ?? null,
-    isCorporateSwitchedToVendor ? apiQuery : undefined,
-  )
-
-  const { data: corporateInvitationsAllResponse, isLoading: isLoadingCorporateInvitationsAll } =
-    useGetCorporateBranchManagerInvitationsService(
-      isCorporateSuperAdmin && !vendorIdFromUrl ? apiQuery : undefined,
-      { skip: !!vendorIdFromUrl },
-    )
-
-  const corporateInvitationsResponse = isCorporateSwitchedToVendor
-    ? corporateSuperAdminVendorBranchManagersResponse
-    : corporateInvitationsAllResponse
-  const invitationsResponse = isCorporateSuperAdmin
-    ? corporateInvitationsResponse
-    : vendorInvitationsResponse
-  const isLoadingInvitations = isCorporateSuperAdmin
-    ? isCorporateSwitchedToVendor
-      ? isLoadingVendorScoped
-      : isLoadingCorporateInvitationsAll
-    : isLoadingVendorInvitations
-
-  const inviteModal = usePersistedModalState({
-    paramName: MODALS.BRANCH_MANAGER_INVITATION.PARAM_NAME,
-  })
-
-  const invitations = useMemo(() => {
-    if (!invitationsResponse) return []
-    const list = Array.isArray(invitationsResponse?.data) ? invitationsResponse.data : []
-    return list.map((row: any) => ({
-      ...row,
-      branch_manager_email: row.branch_manager_email ?? row.email,
-      branch_manager_name: row.branch_manager_name ?? row.fullname,
-      branch_manager_phone: row.branch_manager_phone ?? row.phonenumber,
-    }))
-  }, [invitationsResponse])
-
-  const pagination = invitationsResponse?.pagination
-
-  const handleNextPage = useCallback(() => {
-    if (pagination?.hasNextPage && pagination?.next) {
-      setQuery({ ...query, after: pagination.next })
-    }
-  }, [pagination, query, setQuery])
-
-  const handleSetAfter = useCallback(
-    (after: string) => {
-      setQuery({ ...query, after })
-    },
-    [query, setQuery],
-  )
-
-  const estimatedTotal = useMemo(() => {
-    return pagination?.hasNextPage
-      ? invitations.length + (Number(query.limit) || 10)
-      : invitations.length
-  }, [pagination, invitations.length, query.limit])
+    query,
+    setQuery,
+    isCorporateSuperAdmin,
+    invitations,
+    isLoadingInvitations,
+    pagination,
+    handleNextPage,
+    handleSetAfter,
+    estimatedTotal,
+    openInviteModal,
+  } = useBranchManagers()
 
   return (
     <div className="py-10">
@@ -131,9 +42,7 @@ export default function BranchManagers() {
           {isCorporateSuperAdmin && (
             <Button
               variant="secondary"
-              onClick={() =>
-                inviteModal.openModal(MODALS.BRANCH_MANAGER_INVITATION.CHILDREN.CREATE)
-              }
+              onClick={openInviteModal}
               className="flex items-center gap-2"
             >
               <Icon icon="bi:person-plus-fill" className="text-lg" />

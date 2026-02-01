@@ -1,95 +1,28 @@
 import { Text, Button } from '@/components'
 import { Icon } from '@/libs'
-import { useNavigate } from 'react-router-dom'
 import { StarImage } from '@/assets/images'
 import { cn } from '@/libs'
-import {
-  // RecentAuditLogs,
-  RecentTransactions,
-  CompleteCorporateWidget,
-} from '@/features/dashboard/components'
-import { useDashboardMetrics } from '../../../hooks/useDashboardMetrics'
-import { useUserProfile } from '@/hooks'
-import { ROUTES } from '@/utils/constants'
+import { RecentTransactions, CompleteCorporateWidget } from '@/features/dashboard/components'
+import { useCorporateHome } from '../../hooks/useCorporateHome'
 
 export default function CorporateHome() {
-  const { metrics, formatCurrency, isLoading } = useDashboardMetrics()
-
-  const navigate = useNavigate()
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-
-  const addAccountParam = (path: string): string => {
-    const separator = path?.includes('?') ? '&' : '?'
-    return `${path}${separator}account=corporate`
-  }
-
-  // Check if user is a corporate admin (only need one step)
-  const isCorporateAdmin = userProfileData?.user_type === 'corporate admin'
-
-  const onboardingProgress = {
-    hasProfile: Boolean(userProfileData?.onboarding_progress?.personal_details_completed),
-    hasID: Boolean(userProfileData?.onboarding_progress?.upload_id_completed),
-    hasProfileAndID: Boolean(
-      userProfileData?.onboarding_progress?.personal_details_completed &&
-        userProfileData?.onboarding_progress?.upload_id_completed,
-    ),
-    hasBusinessDetails: Boolean(userProfileData?.onboarding_progress?.business_details_completed),
-    hasBusinessDocs: Boolean(userProfileData?.onboarding_progress?.business_documents_completed),
-    hasBusinessDetailsAndDocs: Boolean(
-      userProfileData?.onboarding_progress?.business_details_completed &&
-        userProfileData?.onboarding_progress?.business_documents_completed,
-    ),
-  }
-
-  const { hasProfileAndID, hasBusinessDetailsAndDocs } = onboardingProgress
-
-  // For corporate admins, only count Profile & ID step
-  // For regular corporate users, count both steps
-  const completedCount = isCorporateAdmin
-    ? hasProfileAndID
-      ? 1
-      : 0
-    : (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0)
-  const totalCount = isCorporateAdmin ? 1 : 2
-  const progressPercentage = (completedCount / totalCount) * 100
-  const isComplete = completedCount === totalCount
-
-  // Check if user status is pending and KYC is complete
-  const userStatus = userProfileData?.status
-  const isPendingAndKYCComplete = userStatus === 'pending' && isComplete
-
-  // Check if user has completed onboarding and is approved
-  const isOnboardingComplete = progressPercentage === 100
-  const isApprovedOrVerified = userStatus === 'approved' || userStatus === 'verified'
-  const canAccessRestrictedFeatures = isOnboardingComplete && isApprovedOrVerified
-
-  const getNextIncompleteStep = () => {
-    if (!hasProfileAndID) {
-      return ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.PROFILE_INFORMATION
-    }
-    // Corporate admins only need Profile & ID, skip business details
-    if (isCorporateAdmin) {
-      return ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.ROOT
-    }
-    if (!hasBusinessDetailsAndDocs) {
-      return ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS
-    }
-    return ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.ROOT
-  }
-
-  const handleContinue = () => {
-    const nextStep = getNextIncompleteStep()
-    navigate(addAccountParam(nextStep))
-  }
-
-  const getNextStepName = () => {
-    if (!hasProfileAndID) return 'Profile Information & ID Upload'
-    // Corporate admins only need Profile & ID
-    if (isCorporateAdmin) return null
-    if (!hasBusinessDetailsAndDocs) return 'Business Details & Documents'
-    return null
-  }
+  const {
+    metrics,
+    formatCurrency,
+    isLoading,
+    isCorporateAdmin,
+    onboardingProgress: { hasProfileAndID, hasBusinessDetailsAndDocs },
+    completedCount,
+    totalCount,
+    progressPercentage,
+    isComplete,
+    isPendingAndKYCComplete,
+    canAccessRestrictedFeatures,
+    handleContinue,
+    getNextStepName,
+    navigateToProfileStep,
+    navigateToBusinessStep,
+  } = useCorporateHome()
 
   return (
     <div className="bg-[#f8f9fa] rounded-xl overflow-hidden min-h-[600px]">
@@ -199,13 +132,7 @@ export default function CorporateHome() {
                       variant={hasProfileAndID ? 'outline' : 'secondary'}
                       size="small"
                       className="rounded-full"
-                      onClick={() =>
-                        navigate(
-                          addAccountParam(
-                            ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.PROFILE_INFORMATION,
-                          ),
-                        )
-                      }
+                      onClick={navigateToProfileStep}
                     >
                       {hasProfileAndID ? 'Review details' : 'Complete step'}
                     </Button>
@@ -269,13 +196,7 @@ export default function CorporateHome() {
                         variant={hasBusinessDetailsAndDocs ? 'outline' : 'secondary'}
                         size="small"
                         className="rounded-full"
-                        onClick={() =>
-                          navigate(
-                            addAccountParam(
-                              ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS,
-                            ),
-                          )
-                        }
+                        onClick={navigateToBusinessStep}
                       >
                         {hasBusinessDetailsAndDocs ? 'Review details' : 'Complete step'}
                       </Button>

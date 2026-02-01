@@ -1,62 +1,24 @@
-import React from 'react'
 import { Modal, Text, Button, Combobox } from '@/components'
-import { usePersistedModalState } from '@/hooks'
-import { MODALS } from '@/utils/constants'
-import { useVendorMutations } from '@/features'
-import { Icon } from '@/libs'
-import { cn } from '@/libs'
+import { Icon, cn } from '@/libs'
 import { getStatusVariant } from '@/utils/helpers/common'
+import { useUpdateBranchStatusModal } from './useUpdateBranchStatusModal'
 
 export function UpdateBranchStatusModal() {
-  const modal = usePersistedModalState<any>({
-    paramName: MODALS.BRANCH.ROOT,
-  })
-
-  const branch = modal.modalData
-  const { useUpdateBranchStatusService } = useVendorMutations()
-  const { mutateAsync: updateBranchStatus, isPending: isUpdatingStatus } =
-    useUpdateBranchStatusService()
-
-  const [selectedStatus, setSelectedStatus] = React.useState<string>(branch?.status || '')
-
-  // Update selectedStatus when branch changes
-  React.useEffect(() => {
-    if (branch?.status) {
-      setSelectedStatus(branch.status)
-    }
-  }, [branch?.status])
-
-  // Status options (API only accepts: approved, suspended)
-  const statusOptions = [
-    { label: 'Approved', value: 'approved' },
-    { label: 'Suspended', value: 'suspended' },
-  ]
-
-  const handleStatusUpdate = async () => {
-    const branchId = branch?.id || branch?.branch_id
-    if (!branchId || !selectedStatus) return
-
-    try {
-      await updateBranchStatus({
-        branch_id: Number(branchId),
-        status: selectedStatus,
-      })
-      modal.closeModal()
-    } catch (err: unknown) {
-      console.error('Failed to update branch status:', err)
-      // Error is handled by the mutation hook
-    }
-  }
+  const {
+    branch,
+    modal,
+    selectedStatus,
+    setSelectedStatus,
+    statusOptions,
+    handleStatusUpdate,
+    isUpdatingStatus,
+    isOpen,
+  } = useUpdateBranchStatusModal()
 
   if (!branch) return null
 
   return (
-    <Modal
-      isOpen={modal.isModalOpen(MODALS.BRANCH.UPDATE_STATUS)}
-      setIsOpen={modal.closeModal}
-      panelClass="!max-w-md"
-      position="center"
-    >
+    <Modal isOpen={isOpen} setIsOpen={modal.closeModal} panelClass="!max-w-md" position="center">
       <div className="p-6 space-y-4">
         <div className="flex flex-col gap-4 items-center justify-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
@@ -74,29 +36,28 @@ export function UpdateBranchStatusModal() {
           <Combobox
             label="Branch Status"
             value={selectedStatus}
-            onChange={(e: any) => {
-              const value = e?.target?.value || e?.value || ''
+            onChange={(e: unknown) => {
+              const ev = e as { target?: { value?: string }; value?: string }
+              const value = ev?.target?.value ?? ev?.value ?? ''
               setSelectedStatus(value)
             }}
-            options={statusOptions}
+            options={[...statusOptions]}
           />
-          {branch && (
-            <div className="mt-3 flex items-center gap-2">
-              <Text variant="span" className="text-xs text-gray-500">
-                Current Status:
-              </Text>
-              <span
-                className={cn(
-                  'px-2 py-1 rounded-full text-xs font-medium',
-                  getStatusVariant(branch.status) === 'success' && 'bg-green-100 text-green-700',
-                  getStatusVariant(branch.status) === 'warning' && 'bg-yellow-100 text-yellow-700',
-                  getStatusVariant(branch.status) === 'error' && 'bg-red-100 text-red-700',
-                )}
-              >
-                {branch.status}
-              </span>
-            </div>
-          )}
+          <div className="mt-3 flex items-center gap-2">
+            <Text variant="span" className="text-xs text-gray-500">
+              Current Status:
+            </Text>
+            <span
+              className={cn(
+                'px-2 py-1 rounded-full text-xs font-medium',
+                getStatusVariant(branch.status) === 'success' && 'bg-green-100 text-green-700',
+                getStatusVariant(branch.status) === 'warning' && 'bg-yellow-100 text-yellow-700',
+                getStatusVariant(branch.status) === 'error' && 'bg-red-100 text-red-700',
+              )}
+            >
+              {branch.status}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 pt-4">
