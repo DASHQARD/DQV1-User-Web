@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vite'
+import type { InlineConfig } from 'vitest'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import svgr from 'vite-plugin-svgr'
@@ -30,4 +31,4 @@ export default defineConfig({
       exclude: ['node_modules/', 'src/test/'],
     },
   },
-})
+} as import('vite').UserConfig & { test: InlineConfig })
