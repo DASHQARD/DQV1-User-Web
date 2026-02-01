@@ -2,193 +2,36 @@ import React from 'react'
 import { Button, Input, Checkbox, Modal } from '@/components'
 import { BasePhoneInput, FileUploader } from '@/components'
 import { Text } from '@/components'
-import { useUserProfile, useToast, useCountriesData, useUploadFiles } from '@/hooks'
-import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
+import { usePersistedModalState } from '@/hooks'
+import { MODALS } from '@/utils/constants'
+import { BUSINESS_TYPE_OPTIONS } from '@/utils/constants'
+import {
+  useRequestBusinessUpdateModal,
+  UPDATABLE_FIELDS,
+  type FieldKey,
+} from '../hooks/useRequestBusinessUpdateModal'
 
-const BUSINESS_TYPE_OPTIONS = [
-  { value: 'llc', label: 'Limited Liability Company' },
-  { value: 'sole_proprietor', label: 'Sole Proprietorship' },
-  { value: 'partnership', label: 'Partnership' },
-  { value: 'corporation', label: 'Corporation' },
-] as const
+export function RequestBusinessUpdateModal() {
+  const modal = usePersistedModalState({
+    paramName: MODALS.REQUEST_BUSINESS_UPDATE.PARAM_NAME,
+  })
+  const isOpen = modal.isModalOpen(MODALS.REQUEST_BUSINESS_UPDATE.ROOT)
+  const onClose = modal.closeModal
 
-type FieldKey =
-  | 'name'
-  | 'type'
-  | 'phone'
-  | 'email'
-  | 'street_address'
-  | 'digital_address'
-  | 'registration_number'
-  | 'logo'
-
-const UPDATABLE_FIELDS: { key: FieldKey; label: string }[] = [
-  { key: 'name', label: 'Business name' },
-  { key: 'type', label: 'Business type' },
-  { key: 'phone', label: 'Phone number' },
-  { key: 'email', label: 'Email' },
-  { key: 'street_address', label: 'Street address' },
-  { key: 'digital_address', label: 'Digital address' },
-  { key: 'registration_number', label: 'Registration number' },
-  { key: 'logo', label: 'Business logo' },
-]
-
-const INITIAL_FIELDS: Record<FieldKey, boolean> = {
-  name: false,
-  type: false,
-  phone: false,
-  email: false,
-  street_address: false,
-  digital_address: false,
-  registration_number: false,
-  logo: false,
-}
-
-const INITIAL_PROPOSED: Record<FieldKey, string | File | null> = {
-  name: '',
-  type: '',
-  phone: '',
-  email: '',
-  street_address: '',
-  digital_address: '',
-  registration_number: '',
-  logo: null,
-}
-
-type Props = Readonly<{
-  isOpen: boolean
-  onClose: () => void
-}>
-
-export function RequestBusinessUpdateModal({ isOpen, onClose }: Props) {
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const { countries: phoneCountries } = useCountriesData()
-  const toast = useToast()
-  const { mutateAsync: uploadFiles } = useUploadFiles()
-  const { useRequestBusinessUpdateService } = corporateMutations()
-  const { mutateAsync: requestBusinessUpdate } = useRequestBusinessUpdateService()
-
-  const [isRequesting, setIsRequesting] = React.useState(false)
-  const [fieldsToUpdate, setFieldsToUpdate] =
-    React.useState<Record<FieldKey, boolean>>(INITIAL_FIELDS)
-  const [proposed, setProposed] =
-    React.useState<Record<FieldKey, string | File | null>>(INITIAL_PROPOSED)
-  const [reason, setReason] = React.useState('')
-
-  const business = userProfileData?.business_details?.[0]
-
-  const resetRequestForm = React.useCallback(() => {
-    setFieldsToUpdate({ ...INITIAL_FIELDS })
-    setProposed({ ...INITIAL_PROPOSED })
-    setReason('')
-  }, [])
-
-  React.useEffect(() => {
-    if (isOpen) resetRequestForm()
-  }, [isOpen, resetRequestForm])
-
-  const toggleField = React.useCallback(
-    (key: FieldKey, checked: boolean) => {
-      setFieldsToUpdate((prev) => ({ ...prev, [key]: checked }))
-      if (checked && business) {
-        const current = key === 'logo' ? null : ((business[key] as string) ?? '')
-        setProposed((prev) => ({ ...prev, [key]: current }))
-      } else {
-        setProposed((prev) => ({ ...prev, [key]: key === 'logo' ? null : '' }))
-      }
-    },
-    [business],
-  )
-
-  const setProposedValue = React.useCallback((key: FieldKey, value: string | File | null) => {
-    setProposed((prev) => ({ ...prev, [key]: value }))
-  }, [])
-
-  const handleClose = React.useCallback(() => {
-    resetRequestForm()
-    onClose()
-  }, [onClose, resetRequestForm])
-
-  const handleSetIsOpen = React.useCallback(
-    (o: boolean) => {
-      if (!o) {
-        resetRequestForm()
-        onClose()
-      }
-    },
-    [onClose, resetRequestForm],
-  )
-
-  const handleRequestUpdate = React.useCallback(async () => {
-    const selected = (Object.entries(fieldsToUpdate) as [FieldKey, boolean][]).filter(([, v]) => v)
-    if (selected.length === 0) {
-      toast.error('Select at least one field you want to update.')
-      return
-    }
-
-    for (const [key] of selected) {
-      const val = proposed[key]
-      if (key !== 'logo' && typeof val === 'string' && !val.trim()) {
-        toast.error(
-          `Please provide a value for ${UPDATABLE_FIELDS.find((f) => f.key === key)?.label}.`,
-        )
-        return
-      }
-      if (key === 'logo' && !val) {
-        toast.error('Please upload a new logo.')
-        return
-      }
-    }
-
-    setIsRequesting(true)
-    try {
-      // Build fields_to_update object
-      const fieldsToUpdatePayload: Record<string, boolean> = {}
-      for (const [key] of selected) {
-        fieldsToUpdatePayload[key] = true
-      }
-
-      // Build proposed_values object
-      const proposedValues: Record<string, string> = {}
-      let logoFileUrl = ''
-
-      // Upload logo first if it's selected
-      if (fieldsToUpdate.logo && proposed.logo instanceof File) {
-        const uploadResponse = await uploadFiles([proposed.logo])
-        if (uploadResponse && uploadResponse.length > 0) {
-          logoFileUrl = uploadResponse[0].file_key
-        } else {
-          toast.error('Failed to upload logo. Please try again.')
-          setIsRequesting(false)
-          return
-        }
-      }
-
-      // Build proposed_values with string values
-      for (const [key] of selected) {
-        if (key === 'logo') {
-          proposedValues[key] = logoFileUrl
-        } else {
-          const val = proposed[key]
-          proposedValues[key] = typeof val === 'string' ? val : ''
-        }
-      }
-
-      // Call the API
-      await requestBusinessUpdate({
-        fields_to_update: fieldsToUpdatePayload,
-        proposed_values: proposedValues,
-        reason_for_change: reason.trim() || undefined,
-      })
-
-      handleClose()
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to submit request. Please try again.')
-    } finally {
-      setIsRequesting(false)
-    }
-  }, [fieldsToUpdate, proposed, reason, toast, handleClose, uploadFiles, requestBusinessUpdate])
+  const {
+    business,
+    isRequesting,
+    fieldsToUpdate,
+    proposed,
+    reason,
+    setReason,
+    toggleField,
+    setProposedValue,
+    handleClose,
+    handleSetIsOpen,
+    handleRequestUpdate,
+    phoneCountries,
+  } = useRequestBusinessUpdateModal(isOpen, onClose)
 
   if (!business) return null
 
@@ -258,7 +101,7 @@ export function RequestBusinessUpdateModal({ isOpen, onClose }: Props) {
                     <option value="">Select type</option>
                     {BUSINESS_TYPE_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
-                        {opt.label}
+                        {opt.title}
                       </option>
                     ))}
                   </select>

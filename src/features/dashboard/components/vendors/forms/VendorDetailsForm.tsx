@@ -1,5 +1,4 @@
-import React from 'react'
-import { Controller, useFormContext } from 'react-hook-form'
+import { Controller } from 'react-hook-form'
 import {
   Button,
   Text,
@@ -12,104 +11,13 @@ import {
   CreatableCombobox,
 } from '@/components'
 import { cn, Icon } from '@/libs'
-import type { DropdownOption } from '@/types'
-import type { UserProfileResponse } from '@/types/user'
-
-const VENDOR_TYPE_OPTIONS = [
-  {
-    value: 'llc' as const,
-    title: 'Limited Liability Company',
-    description:
-      "A flexible structure that protects owners' personal assets from business liabilities.",
-  },
-  {
-    value: 'sole_proprietor' as const,
-    title: 'Sole Proprietorship',
-    description: 'A business owned and run by one person with no legal distinction from the owner.',
-  },
-  {
-    value: 'partnership' as const,
-    title: 'Partnership',
-    description: 'Two or more parties agree to share ownership, profits, and liability.',
-  },
-]
-
-const businessIndustryOptions: DropdownOption[] = [
-  { value: 'retail', label: 'Retail' },
-  { value: 'hospitality', label: 'Hospitality' },
-  { value: 'healthcare', label: 'Healthcare' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'finance', label: 'Finance' },
-  { value: 'education', label: 'Education' },
-  { value: 'real_estate', label: 'Real Estate' },
-  { value: 'manufacturing', label: 'Manufacturing' },
-  { value: 'transportation', label: 'Transportation' },
-  { value: 'food_beverage', label: 'Food & Beverage' },
-  { value: 'consulting', label: 'Consulting' },
-  { value: 'legal', label: 'Legal Services' },
-  { value: 'marketing', label: 'Marketing & Advertising' },
-  { value: 'construction', label: 'Construction' },
-  { value: 'agriculture', label: 'Agriculture' },
-]
-
-interface VendorDetailsFormProps {
-  onSubmit: (data: any) => void
-  onCancel: () => void
-  corporateUser?: UserProfileResponse | null
-}
+import type { VendorDetailsFormProps } from '@/types'
+import { BUSINESS_INDUSTRY_OPTIONS, BUSINESS_TYPE_OPTIONS } from '@/utils/constants'
+import { useVendorDetailsForm } from './useVendorDetailsForm'
 
 export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorDetailsFormProps) {
-  const form = useFormContext()
-
-  const checkboxVendorDetailsSameAsCorporate = form.watch(
-    'checkbox_vendor_details_same_as_corporate',
-  )
-  const type = form.watch('type')
-  const streetAddress = form.watch('street_address')
-  const digitalAddress = form.watch('digital_address')
-  const registrationNumber = form.watch('registration_number')
-  const employerIdentificationNumber = form.watch('employer_identification_number')
-  const businessIndustry = form.watch('business_industry')
-  const phone = form.watch('phone')
-  const email = form.watch('email')
-
-  // Update vendor details fields when checkbox is toggled
-  React.useEffect(() => {
-    if (checkboxVendorDetailsSameAsCorporate && corporateUser?.business_details?.[0]) {
-      const business = corporateUser.business_details[0]
-
-      form.setValue('type', (business.type as 'llc' | 'sole_proprietor' | 'partnership') || 'llc', {
-        shouldValidate: true,
-      })
-      form.setValue('phone', corporateUser?.phonenumber || '', { shouldValidate: true })
-      form.setValue('email', business.email || '', { shouldValidate: true })
-      form.setValue('street_address', business.street_address || '', { shouldValidate: true })
-      form.setValue('digital_address', business.digital_address || '', { shouldValidate: true })
-      form.setValue('registration_number', business.registration_number || '', {
-        shouldValidate: true,
-      })
-      form.setValue(
-        'employer_identification_number',
-        corporateUser?.employee_identification_number || '',
-        {
-          shouldValidate: true,
-        },
-      )
-      form.setValue('business_industry', corporateUser?.business_industry || '', {
-        shouldValidate: true,
-      })
-    } else if (!checkboxVendorDetailsSameAsCorporate) {
-      // Clear fields when unchecked; leave phone and email (filled in Step 2)
-      form.setValue('type', 'llc', { shouldValidate: false })
-      form.setValue('street_address', '', { shouldValidate: false })
-      form.setValue('digital_address', '', { shouldValidate: false })
-      form.setValue('registration_number', '', { shouldValidate: false })
-      form.setValue('employer_identification_number', '', { shouldValidate: false })
-      form.setValue('business_industry', '', { shouldValidate: false })
-      form.setValue('logo', null, { shouldValidate: false })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted to avoid unnecessary re-runs
-  }, [checkboxVendorDetailsSameAsCorporate, corporateUser])
+  const { form, checkboxVendorDetailsSameAsCorporate, isSubmitDisabled } =
+    useVendorDetailsForm(corporateUser)
 
   return (
     <div className="flex flex-col gap-6 max-w-[448px] w-full">
@@ -177,8 +85,12 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
               <Text as="label" className="text-sm font-medium text-gray-700">
                 Vendor Type
               </Text>
-              <RadioGroup value={value} onValueChange={onChange} className="flex flex-col gap-3">
-                {VENDOR_TYPE_OPTIONS.map((opt) => {
+              <RadioGroup
+                value={value ?? 'llc'}
+                onValueChange={onChange}
+                className="flex flex-col gap-3"
+              >
+                {BUSINESS_TYPE_OPTIONS.map((opt) => {
                   const isSelected = value === opt.value
                   const id = `vendor-type-${opt.value}`
                   return (
@@ -230,8 +142,8 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
         />
 
         <Input
-          label="Vendor Incorporation Registration Number"
-          placeholder="Enter your vendor incorporation registration number"
+          label="Business registration number (VAT)"
+          placeholder="Enter your business registration number (VAT)"
           {...form.register('registration_number')}
           error={form.formState.errors.registration_number?.message}
           maxLength={10}
@@ -252,7 +164,7 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
             <CreatableCombobox
               label="Business Industry"
               placeholder="Select or create your business industry"
-              options={businessIndustryOptions}
+              options={BUSINESS_INDUSTRY_OPTIONS}
               name={name}
               value={value}
               onChange={onChange}
@@ -337,27 +249,6 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
                 </div>
               )}
             />
-
-            <Controller
-              control={form.control}
-              name="utility_bill"
-              render={({ field: { onChange, value }, fieldState: { error } }) => (
-                <div
-                  className={
-                    checkboxVendorDetailsSameAsCorporate ? 'opacity-50 pointer-events-none' : ''
-                  }
-                >
-                  <FileUploader
-                    label="Utility Bill"
-                    value={value || null}
-                    onChange={onChange}
-                    error={error?.message}
-                    id="utility_bill"
-                    accept=".pdf,.doc,.docx,image/*"
-                  />
-                </div>
-              )}
-            />
           </div>
         </section>
       )}
@@ -372,34 +263,7 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
           <Icon icon="hugeicons:arrow-left-01" className="text-gray-600" />
         </button>
         <Button
-          disabled={
-            !type ||
-            !phone ||
-            !email ||
-            !streetAddress ||
-            !digitalAddress ||
-            !registrationNumber ||
-            !employerIdentificationNumber ||
-            !businessIndustry ||
-            (!checkboxVendorDetailsSameAsCorporate &&
-              (!form.watch('logo') ||
-                !form.watch('certificate_of_incorporation') ||
-                !form.watch('business_license') ||
-                !form.watch('utility_bill'))) ||
-            !!form.formState.errors.type ||
-            !!form.formState.errors.phone ||
-            !!form.formState.errors.email ||
-            !!form.formState.errors.street_address ||
-            !!form.formState.errors.digital_address ||
-            !!form.formState.errors.registration_number ||
-            !!form.formState.errors.employer_identification_number ||
-            !!form.formState.errors.business_industry ||
-            (!checkboxVendorDetailsSameAsCorporate &&
-              (!!form.formState.errors.logo ||
-                !!form.formState.errors.certificate_of_incorporation ||
-                !!form.formState.errors.business_license ||
-                !!form.formState.errors.utility_bill))
-          }
+          disabled={isSubmitDisabled}
           type="button"
           onClick={form.handleSubmit(onSubmit)}
           size="medium"

@@ -4,11 +4,13 @@ import {
   vendorPaymentListColumns,
   vendorPaymentListCsvHeaders,
 } from '@/features/dashboard/components/vendors/tableConfigs/VendorPaymentList'
-import { BranchDetailsModal } from '@/features/dashboard/components/vendors/modals'
-import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
+import {
+  BranchDetailsModal,
+  DeleteBranchPaymentDetailsModal,
+} from '@/features/dashboard/components/vendors/modals'
+import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType } from '@/types'
-import { useReducerSpread, usePersistedModalState } from '@/hooks'
-import type { Branch } from '@/utils/schemas'
+import { useReducerSpread } from '@/hooks'
 
 export default function Payments() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
@@ -17,15 +19,8 @@ export default function Payments() {
   const { data: vendorPaymentsResponse, isLoading: isLoadingVendorPayments } =
     useGetVendorPaymentsService(query)
 
-  const branchModal = usePersistedModalState<Branch>({
-    paramName: MODALS.BRANCH.VIEW,
-  })
-
   const payments = vendorPaymentsResponse?.data || []
   const total = vendorPaymentsResponse?.pagination?.limit ? payments.length : payments.length
-
-  // Get branch data from modal data if available
-  const branchData = branchModal.modalData
 
   return (
     <>
@@ -58,7 +53,8 @@ export default function Payments() {
         </div>
       </div>
 
-      <BranchDetailsModal branch={branchData || null} />
+      <BranchDetailsModal />
+      <DeleteBranchPaymentDetailsModal />
     </>
   )
 }

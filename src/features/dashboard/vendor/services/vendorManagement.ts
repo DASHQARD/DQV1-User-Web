@@ -31,7 +31,7 @@ export const cancelVendorInvitation = async (payload: CancelVendorInvitationPayl
 }
 
 export const getAllVendorsManagement = async () => {
-  return await getList(`${commonManagerUrl}/all-vendors`, { relationship_type: 'owner_managed' })
+  return await getList(`${commonManagerUrl}/all-vendors`)
 }
 
 export const getVendorInfoById = async (id: string) => {

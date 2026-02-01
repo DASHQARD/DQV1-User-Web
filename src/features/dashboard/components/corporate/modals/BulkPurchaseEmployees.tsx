@@ -1,27 +1,15 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Button, FileUploader, Modal, Text, Input, Checkbox, Tabs, Combobox } from '@/components'
 import { CardItems } from '@/features/website/components/CardItems/CardItems'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import DashProBg from '@/assets/svgs/dashpro_bg.svg'
 import RecipientTemplate from '@/assets/recipient_template.xlsx?url'
-import { usePersistedModalState, useToast, useDebouncedState } from '@/hooks'
+import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
-import { corporateQueries, corporateMutations } from '@/features/dashboard/corporate/hooks'
-import { getCarts } from '@/features/dashboard/corporate/services'
 import { formatCurrency } from '@/utils/format'
-import { useQueryClient } from '@tanstack/react-query'
-import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
-import type { DropdownOption } from '@/types'
-
-type RecipientRow = {
-  id?: number
-  name: string
-  email: string
-  phone: string
-  message?: string
-}
+import { useBulkPurchaseEmployeesModal } from './useBulkPurchaseEmployeesModal'
+import type { RecipientRow } from '@/types'
 
 export function BulkPurchaseEmployees() {
   const modal = usePersistedModalState({
@@ -39,609 +27,58 @@ export function BulkPurchaseEmployees() {
         <Icon icon="hugeicons:upload-01" className="mr-2" />
         Bulk Purchase (Employees)
       </Button>
-      <BulkPurchaseEmployeesModal modal={modal} />
+      <BulkPurchaseEmployeesModal />
     </>
   )
 }
 
-export function BulkPurchaseEmployeesModal({
-  modal,
-}: {
-  modal: ReturnType<typeof usePersistedModalState>
-}) {
-  const [step, setStep] = React.useState(1)
-  const [file, setFile] = React.useState<File | null>(null)
-  const [uploadedRecipients, setUploadedRecipients] = React.useState<RecipientRow[]>([])
-  const [selectedVendor, setSelectedVendor] = React.useState<number | null>(null)
-  const [selectedCardId, setSelectedCardId] = React.useState<number | null>(null)
-  const [selectedCardType, setSelectedCardType] = React.useState<string | null>(null)
-  const [selectedRecipients, setSelectedRecipients] = React.useState<Set<number>>(new Set())
-  const [cardRecipientAssignments, setCardRecipientAssignments] = React.useState<
-    Record<
-      string,
-      {
-        recipientIds: number[]
-        cardId?: number
-        cardType: string
-        vendorId?: number
-        dashGoAmount?: number
-        cardName?: string
-        cardPrice?: number
-        cardCurrency?: string
-      }
-    >
-  >({})
-  const [dashGoAmount, setDashGoAmount] = React.useState<string>('')
-  const [vendorSearch, setVendorSearch] = React.useState('')
-  const [selectedVendorId, setSelectedVendorId] = React.useState<string>('')
-  const [activeTab, setActiveTab] = React.useState<'vendors' | 'dashpro'>('vendors')
-  const [cartId, setCartId] = React.useState<number | null>(null)
-  const toast = useToast()
-  const queryClient = useQueryClient()
-  const navigate = useNavigate()
-
+export function BulkPurchaseEmployeesModal() {
   const {
-    useUploadBulkRecipientsService,
-    useAssignCardToRecipientsService,
-    useCreateDashGoAndAssignService,
-    useCreateDashProAndAssignService,
-    useAddToCartService,
-  } = corporateMutations()
-  const { useGetCartsService, useGetAllRecipientsService } = corporateQueries()
-
-  const uploadMutation = useUploadBulkRecipientsService()
-  const assignCardToRecipientsMutation = useAssignCardToRecipientsService()
-  const createDashGoMutation = useCreateDashGoAndAssignService()
-  const createDashProMutation = useCreateDashProAndAssignService()
-  const addToCartMutation = useAddToCartService()
-
-  // Debounce vendor search like redemption page
-  const { value: debouncedVendorSearch } = useDebouncedState({
-    initialValue: vendorSearch,
-    onChange: setVendorSearch,
-    debounceTime: 500,
-  })
-
-  const { usePublicVendorsService } = usePublicCatalogQueries()
-  // Fetch vendors based on search query
-  const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService(
-    debouncedVendorSearch
-      ? {
-          search: debouncedVendorSearch,
-          limit: 20,
-        }
-      : undefined,
-  )
-
-  const { data: cartsResponse } = useGetCartsService()
-  const { refetch: refetchRecipients } = useGetAllRecipientsService()
-
-  // Load existing cart items when modal opens
-  const existingCartItems = React.useMemo(() => {
-    const cartsData = cartsResponse?.data || []
-    if (!Array.isArray(cartsData) || cartsData.length === 0) return []
-    return cartsData
-  }, [cartsResponse])
-
-  // Check if there are existing cart items
-  const hasExistingCartItems = existingCartItems.length > 0
-
-  // Filter past purchases (completed carts)
-
-  // Extract vendors from API response (same pattern as redemption)
-  const vendors = React.useMemo(() => {
-    if (!vendorsResponse) return []
-    if (Array.isArray(vendorsResponse)) {
-      return vendorsResponse.filter((vendor: any) => vendor.branches_with_cards?.length > 0)
-    }
-    if (vendorsResponse && typeof vendorsResponse === 'object' && 'data' in vendorsResponse) {
-      return (
-        (vendorsResponse as any).data?.filter(
-          (vendor: any) => vendor.branches_with_cards?.length > 0,
-        ) || []
-      )
-    }
-    return []
-  }, [vendorsResponse])
-
-  // Convert vendors to dropdown options
-  const vendorOptions: DropdownOption[] = React.useMemo(() => {
-    return vendors.map((vendor: any) => ({
-      label: vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
-      value: vendor.vendor_id?.toString() || '',
-    }))
-  }, [vendors])
-
-  // Store full vendor data for later use (branches_with_cards)
-  const vendorsDataMap = React.useMemo(() => {
-    const vendorsData = vendors || []
-    const map = new Map()
-    vendorsData.forEach((vendor: any) => {
-      if (vendor.vendor_id) {
-        map.set(vendor.vendor_id, vendor)
-      }
-    })
-    return map
-  }, [vendors])
-
-  // Get selected vendor object
-  const selectedVendorData = React.useMemo(() => {
-    if (!selectedVendor) return null
-    return vendors.find((v: any) => v.vendor_id === selectedVendor) || null
-  }, [selectedVendor, vendors])
-
-  // Extract cards from vendors (from vendor_cards and branches_with_cards)
-  const allCards = React.useMemo(() => {
-    const vendorsData = vendors || []
-    const cardsFromVendors: any[] = []
-
-    vendorsData.forEach((vendor: any) => {
-      const vendorName = vendor.business_name || vendor.vendor_name || 'Unknown Vendor'
-      // Extract from vendor_cards array
-      if (vendor.vendor_cards && Array.isArray(vendor.vendor_cards)) {
-        vendor.vendor_cards.forEach((card: any) => {
-          cardsFromVendors.push({
-            card_id: card.card_id || card.id,
-            product: card.product || card.card_name,
-            vendor_name: vendorName,
-            vendor_id: vendor.vendor_id,
-            rating: card.rating || 0,
-            price: card.price || card.card_price,
-            currency: card.currency || 'GHS',
-            type: card.type || card.card_type,
-            description: card.card_description || card.description || '',
-            expiry_date: card.expiry_date || '',
-            terms_and_conditions: card.terms_and_conditions || [],
-            images: card.images || [],
-            issue_date: card.issue_date || '',
-            status: card.status || card.card_status || 'active',
-          })
-        })
-      }
-
-      // Extract from branches_with_cards (cards nested within branches)
-      if (vendor.branches_with_cards && Array.isArray(vendor.branches_with_cards)) {
-        vendor.branches_with_cards.forEach((branch: any) => {
-          if (branch.cards && Array.isArray(branch.cards)) {
-            branch.cards.forEach((card: any) => {
-              cardsFromVendors.push({
-                card_id: card.card_id || card.id,
-                product: card.card_name || card.product,
-                vendor_name: branch.branch_name || vendorName,
-                branch_name: branch.branch_name || '',
-                branch_location: branch.branch_location || '',
-                vendor_id: vendor.vendor_id,
-                rating: 0,
-                price: card.card_price || card.price,
-                currency: card.currency || 'GHS',
-                type: card.card_type || card.type,
-                description: card.card_description || card.description || '',
-                expiry_date: card.expiry_date || '',
-                terms_and_conditions: card.terms_and_conditions || [],
-                images: card.images || [],
-                issue_date: card.issue_date || '',
-                status: card.card_status || card.status || 'active',
-              })
-            })
-          }
-        })
-      }
-    })
-
-    // Deduplicate by card_id
-    const allCardsMap = new Map()
-    cardsFromVendors.forEach((card) => {
-      if (card.card_id && !allCardsMap.has(card.card_id)) {
-        allCardsMap.set(card.card_id, card)
-      }
-    })
-
-    return Array.from(allCardsMap.values())
-  }, [vendors])
-
-  // Get cards for selected vendor (excluding DashPro and DashGo)
-  const vendorCards = React.useMemo(() => {
-    if (!selectedVendor) return []
-    return allCards.filter((card: any) => card.vendor_id === selectedVendor)
-  }, [selectedVendor, allCards])
-
-  const selectedVendorName = React.useMemo(() => {
-    if (!selectedVendorData) return ''
-    return selectedVendorData.business_name || selectedVendorData.vendor_name || 'Unknown Vendor'
-  }, [selectedVendorData])
-
-  // Get or create cart and load existing recipients
-  React.useEffect(() => {
-    const cartsData = cartsResponse?.data || []
-    if (step >= 2 && cartsData.length > 0 && !cartId) {
-      // Use the first cart
-      setCartId(cartsData[0].cart_id)
-    }
-
-    // Load existing recipients when modal opens with saved cart items
-    if (step === 2 && hasExistingCartItems && uploadedRecipients.length === 0) {
-      refetchRecipients().then((recipientsData) => {
-        // Extract the data array from the response structure { data: { data: [...], pagination: {...} } }
-        if (recipientsData?.data?.data) {
-          setUploadedRecipients(recipientsData.data.data || [])
-        }
-      })
-    }
-  }, [
-    cartsResponse?.data,
+    modal,
     step,
+    setStep,
+    file,
+    setFile,
+    uploadedRecipients,
+    selectedVendor,
+    selectedVendorId,
+    selectedCardId,
+    selectedCardType,
+    selectedRecipients,
+    cardRecipientAssignments,
+    setCardRecipientAssignments,
+    dashGoAmount,
+    setDashGoAmount,
+    activeTab,
+    setActiveTab,
     cartId,
+    existingCartItems,
     hasExistingCartItems,
-    uploadedRecipients.length,
-    refetchRecipients,
-  ])
-
-  const downloadTemplate = () => {
-    // Use the Excel template file from assets
-    const a = document.createElement('a')
-    a.href = RecipientTemplate
-    a.download = 'bulk-recipients-template.xlsx'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }
-
-  const handleUpload = async () => {
-    if (!file) {
-      toast.error('Please select a file to upload')
-      return
-    }
-
-    try {
-      await uploadMutation.mutateAsync(file)
-
-      // Fetch recipients from the API after upload
-      const recipientsData = await refetchRecipients()
-
-      // Extract the data array from the response structure { data: { data: [...], pagination: {...} } }
-      setUploadedRecipients(recipientsData?.data?.data || [])
-
-      setStep(2)
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to upload recipients')
-    }
-  }
-
-  const handleToggleRecipient = (recipientId: number) => {
-    setSelectedRecipients((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(recipientId)) {
-        newSet.delete(recipientId)
-      } else {
-        newSet.add(recipientId)
-      }
-      return newSet
-    })
-  }
-
-  const handleSelectAllRecipients = () => {
-    const allRecipientIds = uploadedRecipients.filter((r) => r.id).map((r) => r.id!)
-    if (selectedRecipients.size === allRecipientIds.length) {
-      setSelectedRecipients(new Set())
-    } else {
-      setSelectedRecipients(new Set(allRecipientIds))
-    }
-  }
-
-  const handleVendorSelect = (vendorIdString: string) => {
-    const vendorId = Number(vendorIdString)
-    if (vendorId) {
-      setSelectedVendor(vendorId)
-      setSelectedVendorId(vendorIdString)
-      setSelectedCardId(null)
-      setSelectedCardType(null)
-      setSelectedRecipients(new Set())
-      setDashGoAmount('')
-    }
-  }
-
-  const handleBackToVendors = () => {
-    setSelectedVendor(null)
-    setSelectedVendorId('')
-    setSelectedCardId(null)
-    setSelectedCardType(null)
-    setVendorSearch('')
-    setSelectedRecipients(new Set())
-    setDashGoAmount('')
-  }
-
-  // Quick Assign handlers - These only select the card and show the recipients table
-  // Nothing is added to cart or saved until the user clicks "Save Assignment"
-  const handleCardSelect = (cardId: number, cardType: string) => {
-    setSelectedCardId(cardId)
-    setSelectedCardType(cardType)
-    // Pre-select recipients already assigned to this card
-    const assignmentKey = `card-${cardId}`
-    const assignment = cardRecipientAssignments[assignmentKey]
-    if (assignment) {
-      setSelectedRecipients(new Set(assignment.recipientIds))
-    } else {
-      setSelectedRecipients(new Set())
-    }
-    // Scroll to recipients table
-    setTimeout(() => {
-      const recipientsSection = document.getElementById('recipients-table-section')
-      if (recipientsSection) {
-        recipientsSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-    }, 100)
-  }
-
-  const handleDashGoSelect = () => {
-    setSelectedCardType('dashgo')
-    setSelectedCardId(selectedVendor || 0) // Use vendor ID as identifier for DashGo
-    setSelectedRecipients(new Set())
-    // Scroll to recipients table
-    setTimeout(() => {
-      const recipientsSection = document.getElementById('recipients-table-section')
-      if (recipientsSection) {
-        recipientsSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-    }, 100)
-  }
-
-  const handleDashProSelect = () => {
-    setSelectedCardType('dashpro')
-    setSelectedCardId(0) // DashPro doesn't have a card ID
-    setSelectedRecipients(new Set())
-    // Scroll to recipients table
-    setTimeout(() => {
-      const recipientsSection = document.getElementById('recipients-table-section')
-      if (recipientsSection) {
-        recipientsSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-    }, 100)
-  }
-
-  const handleSaveCardAssignment = async () => {
-    if (!selectedCardType || selectedRecipients.size === 0) {
-      toast.error('Please select a card and at least one recipient')
-      return
-    }
-
-    const recipientIds = Array.from(selectedRecipients)
-
-    // For DashGo, we need amount
-    if (selectedCardType === 'dashgo' && (!dashGoAmount || parseFloat(dashGoAmount) <= 0)) {
-      toast.error('Please enter a valid DashGo amount')
-      return
-    }
-
-    // For DashGo and DashPro, we'll create and assign immediately
-    if (selectedCardType === 'dashgo' || selectedCardType === 'dashpro') {
-      try {
-        // Get branches from vendor data (branches_with_cards)
-        const selectedVendorData = vendorsDataMap.get(selectedVendor)
-        const vendorBranches = selectedVendorData?.branches_with_cards || []
-
-        if (selectedCardType === 'dashgo') {
-          const payload = {
-            recipient_ids: recipientIds,
-            vendor_id: selectedVendor!,
-            product: 'DashGo Gift Card',
-            description: `Custom DashGo card for ${selectedVendorName}`,
-            price: parseFloat(dashGoAmount),
-            currency: 'GHS',
-            issue_date: new Date().toISOString().split('T')[0],
-            redemption_branches:
-              vendorBranches.length > 0
-                ? vendorBranches.map((branch: any) => ({
-                    branch_id: Number(branch.branch_id || branch.id),
-                  }))
-                : [],
-          }
-
-          const dashGoResponse = await createDashGoMutation.mutateAsync(payload)
-
-          // Try to get cart_id from response if available
-          if (dashGoResponse?.cart_id && !cartId) {
-            setCartId(dashGoResponse.cart_id)
-          }
-        } else if (selectedCardType === 'dashpro') {
-          const payload = {
-            recipient_ids: recipientIds,
-            product: 'DashPro Gift Card',
-            description: 'DashPro multi-vendor gift card',
-            price: parseFloat(dashGoAmount || '0'),
-            currency: 'GHS',
-            issue_date: new Date().toISOString().split('T')[0],
-          }
-
-          const dashProResponse = await createDashProMutation.mutateAsync(payload)
-
-          // Try to get cart_id from response if available
-          if (dashProResponse?.cart_id && !cartId) {
-            setCartId(dashProResponse.cart_id)
-          }
-        }
-
-        // Store assignment for summary
-        const assignmentKey =
-          selectedCardType === 'dashgo'
-            ? `dashgo-${selectedVendor || 0}`
-            : selectedCardType === 'dashpro'
-              ? 'dashpro-0'
-              : `card-${selectedCardId || 0}`
-        setCardRecipientAssignments((prev) => ({
-          ...prev,
-          [assignmentKey]: {
-            recipientIds,
-            cardType: selectedCardType,
-            vendorId: selectedVendor || undefined,
-            dashGoAmount:
-              selectedCardType === 'dashgo' || selectedCardType === 'dashpro'
-                ? parseFloat(dashGoAmount)
-                : undefined,
-            cardName: selectedCardType === 'dashgo' ? 'DashGo Gift Card' : 'DashPro Gift Card',
-            cardPrice: parseFloat(dashGoAmount),
-            cardCurrency: 'GHS',
-          },
-        }))
-
-        toast.success(
-          `${selectedCardType === 'dashgo' ? 'DashGo' : 'DashPro'} card created and assigned to ${recipientIds.length} recipient(s)`,
-        )
-        setSelectedCardId(null)
-        setSelectedCardType(null)
-        setSelectedRecipients(new Set())
-        setDashGoAmount('')
-      } catch (error: any) {
-        toast.error(error?.message || `Failed to create and assign ${selectedCardType}`)
-      }
-    } else if (selectedCardType === 'card') {
-      // Regular card - just store assignment
-      const assignmentKey = `card-${selectedCardId}`
-      const card = allCards.find((c: any) => c.card_id === selectedCardId)
-      setCardRecipientAssignments((prev) => ({
-        ...prev,
-        [assignmentKey]: {
-          recipientIds,
-          cardId: selectedCardId || undefined,
-          cardType: selectedCardType,
-          vendorId: selectedVendor || undefined,
-          cardName: card?.product || 'Unknown Card',
-          cardPrice: parseFloat(card?.price || '0'),
-          cardCurrency: card?.currency || 'GHS',
-        },
-      }))
-
-      toast.success(`Card assigned to ${recipientIds.length} recipient(s)`)
-      setSelectedCardId(null)
-      setSelectedCardType(null)
-      setSelectedRecipients(new Set())
-    }
-  }
-
-  const handleSaveToCart = async () => {
-    // Check if any card has recipients assigned
-    const hasAnyAssignment = Object.keys(cardRecipientAssignments).length > 0
-
-    if (!hasAnyAssignment) {
-      toast.error('Please assign at least one card to recipients')
-      return
-    }
-
-    try {
-      // Filter out DashGo and DashPro assignments (they're already created and assigned)
-      const regularCardAssignments = Object.entries(cardRecipientAssignments).filter(
-        ([, assignment]) => assignment.cardType === 'card',
-      )
-
-      if (regularCardAssignments.length > 0) {
-        // First, add regular cards to cart - one cart item per unique card
-        const cartItemPromises = regularCardAssignments.map(async ([, assignment]) => {
-          if (!assignment.cardId) return null
-
-          const totalQuantity = assignment.recipientIds.length
-
-          const cartData = {
-            card_id: assignment.cardId,
-            quantity: totalQuantity,
-          }
-
-          const cartItem = await addToCartMutation.mutateAsync(cartData)
-
-          // Store cart_id for later use - check multiple possible response structures
-          const returnedCartId =
-            cartItem?.cart_id ||
-            cartItem?.data?.cart_id ||
-            cartItem?.data?.cart?.cart_id ||
-            cartItem?.cart?.cart_id
-
-          if (returnedCartId) {
-            // Update cart ID if not set
-            if (!cartId) {
-              setCartId(returnedCartId)
-            }
-            return { cartId: returnedCartId, cardId: assignment.cardId }
-          }
-          return null
-        })
-
-        const cartResults = await Promise.all(cartItemPromises)
-        const validCartResults = cartResults.filter(Boolean) as Array<{
-          cartId: number
-          cardId: number
-        }>
-
-        // Update cart ID from the first cart item if not set
-        if (!cartId && validCartResults.length > 0) {
-          setCartId(validCartResults[0].cartId)
-        }
-
-        // Refetch carts to ensure we have the latest cart data
-        await queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
-        const updatedCartsResponse = await queryClient.fetchQuery({
-          queryKey: ['corporate-carts'],
-          queryFn: getCarts,
-        })
-
-        // If cartId is still not set, try to get it from the refreshed carts response
-        if (!cartId) {
-          const updatedCartsData = (updatedCartsResponse as any)?.data || []
-          if (updatedCartsData.length > 0) {
-            setCartId(updatedCartsData[0].cart_id)
-          }
-        }
-
-        // Then assign cards to recipients using the new endpoint
-        const assignPromises = regularCardAssignments.map(async ([, assignment]) => {
-          if (!assignment.cardId) return null
-          return await assignCardToRecipientsMutation.mutateAsync({
-            card_id: assignment.cardId,
-            recipient_ids: assignment.recipientIds,
-          })
-        })
-
-        await Promise.all(assignPromises)
-      }
-
-      // Invalidate carts query to refresh cart data
-      queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
-      queryClient.invalidateQueries({ queryKey: ['all-corporate-recipients'] })
-
-      // Check if there are DashGo/DashPro assignments (already created)
-      const dashGoDashProAssignments = Object.entries(cardRecipientAssignments).filter(
-        ([, assignment]) => assignment.cardType === 'dashgo' || assignment.cardType === 'dashpro',
-      )
-
-      if (regularCardAssignments.length > 0) {
-        toast.success(
-          'Cards saved to cart successfully. You can continue later or proceed to checkout.',
-        )
-      } else if (dashGoDashProAssignments.length > 0) {
-        toast.success('Cards created and assigned successfully')
-      }
-
-      // Clear current assignments after saving (user can add more)
-      setCardRecipientAssignments({})
-      setSelectedCardId(null)
-      setSelectedCardType(null)
-      setSelectedRecipients(new Set())
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to save cards to cart')
-    }
-  }
-
-  const handleClose = () => {
-    setStep(1)
-    setFile(null)
-    setUploadedRecipients([])
-    setSelectedCardId(null)
-    setSelectedCardType(null)
-    setSelectedVendor(null)
-    setSelectedRecipients(new Set())
-    setCardRecipientAssignments({})
-    setCartId(null)
-    setVendorSearch('')
-    setDashGoAmount('')
-    modal.closeModal()
-  }
+    vendorOptions,
+    selectedVendorData,
+    selectedVendorName,
+    allCards,
+    vendorCards,
+    isLoadingVendors,
+    downloadTemplate,
+    handleUpload,
+    handleToggleRecipient,
+    handleSelectAllRecipients,
+    handleVendorSelect,
+    handleClearVendor,
+    handleBackToVendors,
+    handleCardSelect,
+    handleDashGoSelect,
+    handleDashProSelect,
+    handleSaveCardAssignment,
+    handleSaveToCart,
+    handleClose,
+    handleCloseAndNavigate,
+    uploadMutation,
+    createDashGoMutation,
+    createDashProMutation,
+    addToCartMutation,
+  } = useBulkPurchaseEmployeesModal()
 
   return (
     <Modal
@@ -716,7 +153,7 @@ export function BulkPurchaseEmployeesModal({
               </div>
 
               <div className="flex items-end ml-4">
-                <Button variant="outline" onClick={downloadTemplate}>
+                <Button variant="outline" onClick={() => downloadTemplate(RecipientTemplate)}>
                   <Icon icon="hugeicons:download-01" className="mr-2" />
                   Download Template
                 </Button>
@@ -807,8 +244,7 @@ export function BulkPurchaseEmployeesModal({
                           if (vendorId) {
                             handleVendorSelect(vendorId)
                           } else {
-                            setSelectedVendor(null)
-                            setSelectedVendorId('')
+                            handleClearVendor()
                           }
                         }}
                         placeholder="Search for a vendor by name..."
@@ -824,9 +260,14 @@ export function BulkPurchaseEmployeesModal({
                               {selectedVendorName}
                             </Text>
                           </div>
-                          {selectedVendorData.branches_with_cards && (
+                          {(selectedVendorData as { branches_with_cards?: unknown[] })
+                            .branches_with_cards && (
                             <Text variant="span" className="text-sm text-green-700 block mt-1">
-                              {selectedVendorData.branches_with_cards.length} branch(es) available
+                              {
+                                (selectedVendorData as { branches_with_cards?: unknown[] })
+                                  .branches_with_cards?.length
+                              }{' '}
+                              branch(es) available
                             </Text>
                           )}
                         </div>
@@ -1123,9 +564,7 @@ export function BulkPurchaseEmployeesModal({
                       variant="secondary"
                       onClick={async () => {
                         await handleSaveToCart()
-                        // Close modal and navigate to checkout page
-                        handleClose()
-                        navigate('/checkout')
+                        handleCloseAndNavigate('/checkout')
                       }}
                       disabled={
                         Object.keys(cardRecipientAssignments).length === 0 ||
@@ -1139,10 +578,7 @@ export function BulkPurchaseEmployeesModal({
                   {Object.keys(cardRecipientAssignments).length === 0 && hasExistingCartItems && (
                     <Button
                       variant="secondary"
-                      onClick={() => {
-                        handleClose()
-                        navigate('/checkout')
-                      }}
+                      onClick={() => handleCloseAndNavigate('/checkout')}
                       disabled={!cartId}
                     >
                       Proceed to Checkout
@@ -1331,8 +767,10 @@ export function BulkPurchaseEmployeesModal({
                           : selectedCardType === 'dashpro'
                             ? 'DashPro'
                             : selectedCardType === 'card'
-                              ? allCards.find((c: any) => c.card_id === selectedCardId)?.product ||
-                                'this Card'
+                              ? String(
+                                  allCards.find((c: any) => c.card_id === selectedCardId)
+                                    ?.product || 'this Card',
+                                )
                               : 'this Card'}
                       </Text>
                       <Button variant="outline" size="small" onClick={handleSelectAllRecipients}>
@@ -1535,9 +973,7 @@ export function BulkPurchaseEmployeesModal({
                       variant="secondary"
                       onClick={async () => {
                         await handleSaveToCart()
-                        // Close modal and navigate to checkout page
-                        handleClose()
-                        navigate('/checkout')
+                        handleCloseAndNavigate('/checkout')
                       }}
                       disabled={
                         Object.keys(cardRecipientAssignments).length === 0 ||
@@ -1551,10 +987,7 @@ export function BulkPurchaseEmployeesModal({
                   {Object.keys(cardRecipientAssignments).length === 0 && hasExistingCartItems && (
                     <Button
                       variant="secondary"
-                      onClick={() => {
-                        handleClose()
-                        navigate('/checkout')
-                      }}
+                      onClick={() => handleCloseAndNavigate('/checkout')}
                       disabled={!cartId}
                     >
                       Proceed to Checkout

@@ -21,6 +21,8 @@ export const ROUTES = {
         NOTIFICATIONS: '/dashboard/corporate/notifications',
         RECIPIENTS: '/dashboard/corporate/recipients',
         BRANCHES: '/dashboard/corporate/branches',
+        VENDOR_INVITATIONS: '/dashboard/corporate/vendor-invitations',
+        ALL_VENDORS: '/dashboard/corporate/vendors',
         SETTINGS: '/dashboard/corporate/settings',
         GIFT_CARD_DETAILS: '/dashboard/corporate/gift-cards',
         COMPLIANCE: {

@@ -54,6 +54,8 @@ export function getStatusVariant(status?: string) {
       return 'error'
     case 'rejected':
       return 'error'
+    case 'suspended':
+      return 'error'
     default:
       return 'warning'
   }

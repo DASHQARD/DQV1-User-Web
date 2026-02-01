@@ -1,63 +1,25 @@
-import { useMemo, useCallback } from 'react'
 import { Text, Button } from '@/components'
 import { PaginatedTable } from '@/components/Table'
-import { DEFAULT_QUERY } from '@/utils/constants'
-import type { QueryType } from '@/types'
-import { useReducerSpread } from '@/hooks'
-import { Icon } from '@/libs'
-import { corporateQueries } from '../../hooks'
 import {
   CreateCorporateRecipient,
   ViewRecipientDetails,
 } from '@/features/dashboard/components/corporate/modals'
-import { usePersistedModalState } from '@/hooks'
-import { MODALS } from '@/utils/constants'
 import { recipientsColumns, recipientsCsvHeaders } from '@/features/dashboard/components'
+import { useCorporateRecipients } from '@/features/dashboard/hooks'
+import { Icon } from '@/libs'
 
 export default function Recipients() {
-  const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
-  const modal = usePersistedModalState({
-    paramName: MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_RECIPIENT,
-  })
-  const { useGetAllRecipientsService } = corporateQueries()
-
-  const params = useMemo(() => {
-    const apiParams: any = {
-      limit: query.limit || 10,
-    }
-    if (query.after) {
-      apiParams.after = query.after
-    }
-    if (query.search) {
-      apiParams.search = query.search
-    }
-    return apiParams
-  }, [query])
-
-  const { data: recipientsResponse, isLoading } = useGetAllRecipientsService(params)
-
-  // Extract data and pagination from response
-  const recipientsData = recipientsResponse?.data || []
-  const pagination = recipientsResponse?.pagination
-
-  // Handle cursor-based pagination
-  const handleNextPage = useCallback(() => {
-    if (pagination?.hasNextPage && pagination?.next) {
-      setQuery({ ...query, after: pagination.next })
-    }
-  }, [pagination?.hasNextPage, pagination?.next, query, setQuery])
-
-  const handleSetAfter = useCallback(
-    (after: string) => {
-      setQuery({ ...query, after })
-    },
-    [query, setQuery],
-  )
-
-  // Calculate estimated total for display
-  const estimatedTotal = pagination?.hasNextPage
-    ? recipientsData.length + (query.limit || 10)
-    : recipientsData.length
+  const {
+    query,
+    setQuery,
+    handleOpenCreateModal,
+    recipientsData,
+    pagination,
+    isLoading,
+    handleNextPage,
+    handleSetAfter,
+    estimatedTotal,
+  } = useCorporateRecipients()
 
   return (
     <>
@@ -70,7 +32,7 @@ export default function Recipients() {
             <Button
               variant="secondary"
               className="flex items-center gap-2"
-              onClick={() => modal.openModal(MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_RECIPIENT)}
+              onClick={handleOpenCreateModal}
             >
               <Icon icon="bi:person-plus-fill" className="w-4 h-4" />
               Add Recipient

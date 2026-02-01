@@ -1,3 +1,32 @@
+export interface RecipientRow {
+  id?: number
+  name: string
+  email: string
+  phone: string
+  message?: string
+}
+
+export interface CardRecipientAssignment {
+  recipientIds: number[]
+  cardId?: number
+  cardType: string
+  vendorId?: number
+  dashGoAmount?: number
+  cardName?: string
+  cardPrice?: number
+  cardCurrency?: string
+}
+
+/** Vendor shape from public catalog / bulk purchase (has branches_with_cards) */
+export interface PublicVendorWithCards {
+  vendor_id?: number
+  business_name?: string
+  vendor_name?: string
+  branches_with_cards?: unknown[]
+  vendor_cards?: unknown[]
+  [key: string]: unknown
+}
+
 export type RecipientDetailsData = {
   id: number
   name: string

@@ -1,386 +1,26 @@
 import { Button } from '@/components/Button'
 import { Input, FileUploader, CreatableCombobox, Text, Modal, ImageUpload } from '@/components'
-import { BUSINESS_INDUSTRY_OPTIONS, ROUTES } from '@/utils/constants'
-import { BusinessDetailsSchema, UploadBusinessIDSchema } from '@/utils/schemas'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { useAuth } from '../../../../auth/hooks'
-import { useNavigate } from 'react-router-dom'
 import { BasePhoneInput, RadioGroup, RadioGroupItem } from '@/components'
-import {
-  useCountriesData,
-  useUserProfile,
-  useUploadFiles,
-  usePresignedURL,
-  useToast,
-} from '@/hooks'
-import React from 'react'
+import { BUSINESS_INDUSTRY_OPTIONS } from '@/utils/constants'
+import { Controller } from 'react-hook-form'
 import { cn } from '@/libs'
 import LoaderGif from '@/assets/gifs/loader.gif'
-
-const CombinedBusinessSchema = BusinessDetailsSchema.merge(UploadBusinessIDSchema)
-
-const DRAFT_STORAGE_KEY = 'business_details_form_draft'
-
-const BUSINESS_TYPE_OPTIONS = [
-  {
-    value: 'llc' as const,
-    title: 'Limited Liability Company',
-    description:
-      "A flexible structure that protects owners' personal assets from business liabilities.",
-  },
-  {
-    value: 'sole_proprietor' as const,
-    title: 'Sole Proprietorship',
-    description: 'A business owned and run by one person with no legal distinction from the owner.',
-  },
-  {
-    value: 'partnership' as const,
-    title: 'Partnership',
-    description: 'Two or more parties agree to share ownership, profits, and liability.',
-  },
-]
+import { useBusinessDetailsForm } from '../hooks/useBusinessDetailsForm'
+import { BUSINESS_TYPE_OPTIONS } from '@/utils/constants'
 
 export default function BusinessDetailsForm() {
-  const { useBusinessDetailsWithDocumentsService } = useAuth()
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const { mutateAsync: submitBusinessDetails, isPending: isSubmittingDetails } =
-    useBusinessDetailsWithDocumentsService()
-  const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const { mutateAsync: fetchPresignedURL, isPending: isFetchingPresignedURL } = usePresignedURL()
-  const toast = useToast()
-  const [documentUrls, setDocumentUrls] = React.useState<Record<string, string | null>>({})
-  const [isSavingProgress, setIsSavingProgress] = React.useState(false)
+  const {
+    form,
+    documentUrls,
+    userProfileData,
+    phoneCountries,
+    isPending,
+    isSavingProgress,
+    onSubmit,
+    handleSaveProgress,
+    handleDiscard,
+  } = useBusinessDetailsForm()
 
-  const { countries: phoneCountries } = useCountriesData()
-  const navigate = useNavigate()
-
-  const form = useForm<z.infer<typeof CombinedBusinessSchema>>({
-    resolver: zodResolver(CombinedBusinessSchema),
-    mode: 'onChange',
-  })
-
-  // Save progress to localStorage (including File objects as base64)
-  const saveProgress = React.useCallback(async () => {
-    try {
-      const draftData: Record<string, any> = {}
-      const formValues = form.getValues()
-
-      // Save only non-file fields
-      const nonFileFields: (keyof typeof formValues)[] = [
-        'name',
-        'type',
-        'phone',
-        'email',
-        'street_address',
-        'digital_address',
-        'registration_number',
-        'employer_identification_number',
-        'business_industry',
-      ]
-
-      nonFileFields.forEach((field) => {
-        if (
-          formValues[field] !== undefined &&
-          formValues[field] !== null &&
-          formValues[field] !== ''
-        ) {
-          draftData[field] = formValues[field]
-        }
-      })
-
-      // Save file data as base64
-      const fileFields: (keyof typeof formValues)[] = [
-        'certificate_of_incorporation',
-        'business_license',
-        'articles_of_incorporation',
-        'utility_bill',
-        'logo',
-      ]
-
-      // Convert files to base64 and save
-      for (const field of fileFields) {
-        const file = formValues[field] as File | undefined
-        if (file) {
-          try {
-            // Convert file to base64
-            const base64 = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader()
-              reader.onload = () => {
-                const result = reader.result as string
-                resolve(result)
-              }
-              reader.onerror = reject
-              reader.readAsDataURL(file)
-            })
-
-            draftData[`${field}_name`] = file.name
-            draftData[`${field}_size`] = file.size
-            draftData[`${field}_type`] = file.type
-            draftData[`${field}_data`] = base64
-          } catch (fileError) {
-            console.error(`Failed to convert ${field} to base64:`, fileError)
-            // Still save metadata even if base64 conversion fails
-            draftData[`${field}_name`] = file.name
-            draftData[`${field}_size`] = file.size
-            draftData[`${field}_type`] = file.type
-          }
-        }
-      }
-
-      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData))
-      return true
-    } catch (error) {
-      console.error('Failed to save progress:', error)
-      return false
-    }
-  }, [form])
-
-  // Load saved progress from localStorage
-  const loadProgress = React.useCallback(() => {
-    try {
-      const savedData = localStorage.getItem(DRAFT_STORAGE_KEY)
-      if (!savedData) return null
-
-      const draftData = JSON.parse(savedData)
-
-      // Convert base64 strings back to File objects
-      const fileFields = [
-        'certificate_of_incorporation',
-        'business_license',
-        'articles_of_incorporation',
-        'utility_bill',
-        'logo',
-      ]
-
-      fileFields.forEach((field) => {
-        if (
-          draftData[`${field}_data`] &&
-          draftData[`${field}_name`] &&
-          draftData[`${field}_type`]
-        ) {
-          try {
-            // Convert base64 to File object
-            const base64Data = draftData[`${field}_data`]
-            const byteString = atob(base64Data.split(',')[1])
-            const mimeString = base64Data.split(',')[0].split(':')[1].split(';')[0]
-            const ab = new ArrayBuffer(byteString.length)
-            const ia = new Uint8Array(ab)
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i)
-            }
-            const blob = new Blob([ab], { type: mimeString })
-            const file = new File([blob], draftData[`${field}_name`], {
-              type: draftData[`${field}_type`],
-              lastModified: Date.now(),
-            })
-            draftData[field] = file
-          } catch (fileError) {
-            console.error(`Failed to convert ${field} from base64:`, fileError)
-          }
-        }
-      })
-
-      return draftData
-    } catch (error) {
-      console.error('Failed to load progress:', error)
-      return null
-    }
-  }, [])
-
-  // Clear saved progress
-  const clearProgress = React.useCallback(() => {
-    try {
-      localStorage.removeItem(DRAFT_STORAGE_KEY)
-    } catch (error) {
-      console.error('Failed to clear progress:', error)
-    }
-  }, [])
-
-  // Manual save progress handler
-  const handleSaveProgress = React.useCallback(async () => {
-    setIsSavingProgress(true)
-    try {
-      const success = await saveProgress()
-      if (success) {
-        toast.success('Progress saved successfully. You can continue later.')
-      } else {
-        toast.error('Failed to save progress. Please try again.')
-      }
-    } catch (error) {
-      console.error('Error saving progress:', error)
-      toast.error('Failed to save progress. Please try again.')
-    } finally {
-      setTimeout(() => setIsSavingProgress(false), 500)
-    }
-  }, [saveProgress, toast])
-
-  // Fetch business documents
-  React.useEffect(() => {
-    if (!userProfileData?.business_documents?.length) {
-      return
-    }
-
-    let cancelled = false
-
-    const loadDocuments = async () => {
-      try {
-        const documentPromises = userProfileData.business_documents.map(async (doc) => {
-          const url = await fetchPresignedURL(doc.file_url)
-          return { type: doc.type, url }
-        })
-
-        const results = await Promise.all(documentPromises)
-
-        if (cancelled) return
-
-        const urlsMap: Record<string, string | null> = {}
-        results.forEach(({ type, url }) => {
-          urlsMap[type] = url
-        })
-
-        setDocumentUrls(urlsMap)
-      } catch (error) {
-        console.error('Failed to fetch business documents', error)
-        if (!cancelled) {
-          toast.error('Unable to fetch existing business documents.')
-        }
-      }
-    }
-
-    loadDocuments()
-
-    return () => {
-      cancelled = true
-    }
-  }, [fetchPresignedURL, toast, userProfileData])
-
-  const isPending = isSubmittingDetails || isUploading || isFetchingPresignedURL
-
-  // Load saved progress on mount (only if no existing userProfileData)
-  React.useEffect(() => {
-    const hasExistingData =
-      userProfileData?.business_details &&
-      Array.isArray(userProfileData.business_details) &&
-      userProfileData.business_details.length > 0
-
-    if (!hasExistingData) {
-      const savedProgress = loadProgress()
-      if (savedProgress) {
-        form.reset({
-          name: savedProgress.name || '',
-          type: savedProgress.type,
-          phone: savedProgress.phone || '',
-          email: savedProgress.email || '',
-          street_address: savedProgress.street_address || '',
-          digital_address: savedProgress.digital_address || '',
-          registration_number: savedProgress.registration_number || '',
-          employer_identification_number: savedProgress.employer_identification_number || '',
-          business_industry: savedProgress.business_industry || '',
-          // Restore file fields if they exist
-          certificate_of_incorporation: savedProgress.certificate_of_incorporation || undefined,
-          business_license: savedProgress.business_license || undefined,
-          articles_of_incorporation: savedProgress.articles_of_incorporation || undefined,
-          utility_bill: savedProgress.utility_bill || undefined,
-          logo: savedProgress.logo || undefined,
-        })
-        // Trigger validation after a brief delay to ensure File objects are recognized
-        setTimeout(async () => {
-          // Manually trigger validation to update formState.isValid
-          await form.trigger()
-        }, 200)
-        toast.success('Saved progress loaded. Continue where you left off.')
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only run on mount
-
-  // Pre-fill form with existing business details and documents data
-  React.useEffect(() => {
-    if (
-      userProfileData?.business_details &&
-      Array.isArray(userProfileData.business_details) &&
-      userProfileData.business_details.length > 0
-    ) {
-      const businessDetail = userProfileData.business_details[0]
-      const firstDoc = userProfileData.business_documents?.[0]
-      form.reset({
-        name: businessDetail?.name || '',
-        type: businessDetail?.type,
-        phone: businessDetail?.phone || '',
-        email: businessDetail?.email || '',
-        street_address: businessDetail?.street_address || '',
-        digital_address: businessDetail?.digital_address || '',
-        registration_number: businessDetail?.registration_number || '',
-        employer_identification_number: firstDoc?.employer_identification_number || '',
-        business_industry: firstDoc?.business_industry || '',
-      })
-    }
-  }, [userProfileData, form])
-
-  const onSubmit = async (data: z.infer<typeof CombinedBusinessSchema>) => {
-    try {
-      // Upload all business documents
-      type DocumentType =
-        | 'certificate_of_incorporation'
-        | 'business_license'
-        | 'articles_of_incorporation'
-        | 'utility_bill'
-        | 'logo'
-
-      const documentTypes: Array<{ file: File; type: DocumentType }> = [
-        { file: data.logo, type: 'logo' },
-        { file: data.certificate_of_incorporation, type: 'certificate_of_incorporation' },
-        { file: data.business_license, type: 'business_license' },
-        { file: data.utility_bill, type: 'utility_bill' },
-        ...(data.articles_of_incorporation
-          ? [{ file: data.articles_of_incorporation, type: 'articles_of_incorporation' as const }]
-          : []),
-      ]
-
-      const uploadPromises = documentTypes.map((doc) => uploadFiles([doc.file]))
-      const responses = await Promise.all(uploadPromises)
-
-      const files = responses.map(
-        (response: { file_name: string; file_key: string }[], index: number) => ({
-          type: documentTypes[index].type,
-          file_url: response[0].file_key,
-          file_name: documentTypes[index].file.name,
-        }),
-      )
-
-      // Submit business details with documents in a single request
-      await submitBusinessDetails(
-        {
-          name: data.name,
-          type: data.type,
-          phone: data.phone,
-          email: data.email,
-          street_address: data.street_address,
-          digital_address: data.digital_address,
-          registration_number: data.registration_number,
-          country: 'Ghana',
-          country_code: '01',
-          employer_identification_number: data.employer_identification_number,
-          business_industry: data.business_industry,
-          files,
-        },
-        {
-          onSuccess: () => {
-            // Clear saved progress on successful submission
-            clearProgress()
-            const DashboardUrl = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME}?account=corporate`
-            navigate(DashboardUrl)
-          },
-        },
-      )
-    } catch (error: any) {
-      console.error('Submission failed:', error)
-      // Error toast is already shown by the mutation's onError handler
-    }
-  }
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
       <section className="flex flex-col gap-8">
@@ -575,7 +215,6 @@ export default function BusinessDetailsForm() {
             <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
               <li>Certificate of Incorporation (Required)</li>
               <li>Business License (Required)</li>
-              <li>Utility Bill (Required)</li>
               <li>Articles of Incorporation (Optional)</li>
             </ul>
           </div>
@@ -659,40 +298,6 @@ export default function BusinessDetailsForm() {
 
             <Controller
               control={form.control}
-              name="utility_bill"
-              render={({ field: { onChange, value }, fieldState: { error } }) => {
-                const existingUrl = documentUrls['utility_bill']
-                const existingDoc = userProfileData?.business_documents?.find(
-                  (doc) => doc.type === 'utility_bill',
-                )
-                return (
-                  <div className="space-y-2">
-                    {existingUrl && !value && (
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-48">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-medium text-gray-700">Current Document</p>
-                        </div>
-                        <img
-                          src={existingUrl}
-                          alt={existingDoc?.file_name || 'Utility Bill'}
-                          className="max-h-48 w-full object-contain rounded border border-gray-200"
-                        />
-                      </div>
-                    )}
-                    <FileUploader
-                      label={existingUrl && !value ? 'Replace Utility Bill' : 'Upload Utility Bill'}
-                      value={value}
-                      onChange={onChange}
-                      error={error?.message}
-                      id="utility_bill"
-                    />
-                  </div>
-                )
-              }}
-            />
-
-            <Controller
-              control={form.control}
               name="articles_of_incorporation"
               render={({ field: { onChange, value }, fieldState: { error } }) => {
                 const existingUrl = documentUrls['articles_of_incorporation']
@@ -733,7 +338,7 @@ export default function BusinessDetailsForm() {
       </section>
 
       <div className="flex gap-4">
-        <Button type="button" variant="outline" className="w-fit" onClick={() => navigate(-1)}>
+        <Button type="button" variant="outline" className="w-fit" onClick={handleDiscard}>
           Discard
         </Button>
         <Button

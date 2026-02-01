@@ -1,67 +1,12 @@
-import React from 'react'
-import { Controller, useFormContext } from 'react-hook-form'
+import { Controller } from 'react-hook-form'
 import { Button, Text, Input, Checkbox, FileUploader, Combobox, BasePhoneInput } from '@/components'
 import { Icon } from '@/libs'
-import { useCountriesData } from '@/hooks'
-import type { UserProfileResponse } from '@/types/user'
-
-interface VendorProfileFormProps {
-  onSubmit: () => void
-  onCancel: () => void
-  corporateUser?: UserProfileResponse | null
-}
+import type { VendorProfileFormProps } from '@/types'
+import { useVendorProfileForm } from './useVendorProfileForm'
 
 export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorProfileFormProps) {
-  const form = useFormContext()
-  const { countries } = useCountriesData()
-
-  const checkboxProfileSameAsCorporate = form.watch('checkbox_profile_same_as_corporate')
-  const firstName = form.watch('first_name')
-  const lastName = form.watch('last_name')
-  const dob = form.watch('dob')
-  const street_address = form.watch('street_address')
-  const idType = form.watch('id_type')
-  const idNumber = form.watch('id_number')
-  const frontId = form.watch('front_id')
-  const phone = form.watch('phone')
-  const email = form.watch('email')
-
-  // Update profile fields when checkbox is toggled. Exclude `form` and `business` from deps
-  // to avoid "Maximum update depth exceeded" (setValue triggers re-renders; form/business
-  // references can change each render and retrigger this effect).
-  React.useEffect(() => {
-    const business = corporateUser?.business_details?.[0]
-    if (checkboxProfileSameAsCorporate && corporateUser) {
-      const nameParts = corporateUser.fullname?.split(' ') || []
-      const firstNameValue = nameParts[0] || ''
-      const lastNameValue = nameParts.slice(1).join(' ') || ''
-
-      form.setValue('first_name', firstNameValue, { shouldValidate: false })
-      form.setValue('last_name', lastNameValue, { shouldValidate: false })
-      form.setValue('dob', corporateUser.dob || '', { shouldValidate: false })
-      form.setValue('street_address', corporateUser.street_address || '', {
-        shouldValidate: false,
-      })
-      form.setValue('id_type', corporateUser.id_type || '', { shouldValidate: false })
-      form.setValue('id_number', corporateUser.id_number || '', { shouldValidate: false })
-      form.setValue('phone', corporateUser.phonenumber || business?.phone || '', {
-        shouldValidate: false,
-      })
-      form.setValue('email', business?.email || '', { shouldValidate: false })
-    } else if (!checkboxProfileSameAsCorporate) {
-      form.setValue('first_name', '', { shouldValidate: false })
-      form.setValue('last_name', '', { shouldValidate: false })
-      form.setValue('dob', '', { shouldValidate: false })
-      form.setValue('street_address', '', { shouldValidate: false })
-      form.setValue('id_type', '', { shouldValidate: false })
-      form.setValue('id_number', '', { shouldValidate: false })
-      form.setValue('front_id', undefined, { shouldValidate: false })
-      form.setValue('back_id', undefined, { shouldValidate: false })
-      form.setValue('phone', '', { shouldValidate: false })
-      form.setValue('email', '', { shouldValidate: false })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- form stable; business derived from corporateUser
-  }, [checkboxProfileSameAsCorporate, corporateUser])
+  const { form, countries, checkboxProfileSameAsCorporate, isSubmitDisabled } =
+    useVendorProfileForm(corporateUser)
 
   return (
     <div className="flex flex-col gap-6 max-w-[448px] w-full">
@@ -91,18 +36,19 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
         )}
       />
 
-      {/* Key Person Details & Contact (single section) */}
+      {/* Key Person Details — ordered by importance: identity → contact → address & ID */}
       <section className="flex flex-col gap-4">
         <div>
           <Text variant="h2" weight="semibold" className="text-gray-900">
             Key Person Details
           </Text>
           <Text variant="span" weight="normal" className="text-gray-500 text-sm">
-            This would be the superuser of the vendor account. Include contact details below.
+            This would be the superuser of the vendor account.
           </Text>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
+          {/* 1. Identity — name */}
           <Input
             label="First Name"
             isRequired
@@ -119,6 +65,46 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
             error={form.formState.errors.last_name?.message}
             disabled={checkboxProfileSameAsCorporate}
           />
+
+          {/* 2. Contact — phone & email */}
+          <Controller
+            control={form.control}
+            name="phone"
+            render={({ field: { value, onChange } }) => (
+              <div
+                className={`col-span-full ${checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}`}
+              >
+                <BasePhoneInput
+                  label="Vendor phone number"
+                  isRequired
+                  placeholder="Enter number e.g. 5512345678"
+                  options={countries}
+                  selectedVal={value ?? ''}
+                  maxLength={14}
+                  handleChange={onChange}
+                  error={form.formState.errors.phone?.message}
+                  hint={
+                    <>
+                      Please enter your number in the format:{' '}
+                      <span className="font-medium">5512345678</span>
+                    </>
+                  }
+                  disabled={checkboxProfileSameAsCorporate}
+                />
+              </div>
+            )}
+          />
+          <Input
+            label="Email"
+            isRequired
+            placeholder="Enter vendor email"
+            type="email"
+            className="col-span-full"
+            {...form.register('email')}
+            error={form.formState.errors.email?.message}
+            disabled={checkboxProfileSameAsCorporate}
+          />
+
           <Input
             type="date"
             label="Date of Birth"
@@ -138,6 +124,8 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
             error={form.formState.errors.street_address?.message}
             disabled={checkboxProfileSameAsCorporate}
           />
+
+          {/* 4. ID verification */}
           <Controller
             name="id_type"
             control={form.control}
@@ -164,36 +152,6 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
             className="col-span-full"
             {...form.register('id_number')}
             error={form.formState.errors.id_number?.message}
-            disabled={checkboxProfileSameAsCorporate}
-          />
-          <Controller
-            control={form.control}
-            name="phone"
-            render={({ field: { value, onChange } }) => (
-              <div
-                className={`col-span-full ${checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}`}
-              >
-                <BasePhoneInput
-                  label="Vendor phone number"
-                  isRequired
-                  placeholder="Enter number e.g. 5512345678"
-                  options={countries}
-                  selectedVal={value ?? ''}
-                  maxLength={14}
-                  handleChange={onChange}
-                  error={form.formState.errors.phone?.message}
-                />
-              </div>
-            )}
-          />
-          <Input
-            label="Email"
-            isRequired
-            placeholder="Enter vendor email"
-            type="email"
-            className="col-span-full"
-            {...form.register('email')}
-            error={form.formState.errors.email?.message}
             disabled={checkboxProfileSameAsCorporate}
           />
         </div>
@@ -240,26 +198,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
           <Icon icon="hugeicons:arrow-left-01" className="text-gray-600" />
         </button>
         <Button
-          disabled={
-            !firstName ||
-            !lastName ||
-            !dob ||
-            !street_address ||
-            !idType ||
-            !idNumber ||
-            !phone ||
-            !email ||
-            (!checkboxProfileSameAsCorporate && !frontId) ||
-            !!form.formState.errors.first_name ||
-            !!form.formState.errors.last_name ||
-            !!form.formState.errors.dob ||
-            !!form.formState.errors.street_address ||
-            !!form.formState.errors.id_type ||
-            !!form.formState.errors.id_number ||
-            !!form.formState.errors.phone ||
-            !!form.formState.errors.email ||
-            (!checkboxProfileSameAsCorporate && !!form.formState.errors.front_id)
-          }
+          disabled={isSubmitDisabled}
           type="button"
           onClick={onSubmit}
           size="medium"

@@ -366,11 +366,12 @@ export function useVendorMutations() {
     const queryClient = useQueryClient()
     return useMutation({
       mutationFn: (data: UpdateBranchStatusPayload) => updateBranchStatus(data),
-      onSuccess: (response: any) => {
+      onSuccess: (response: any, variables: UpdateBranchStatusPayload) => {
         success(response?.message || 'Branch status updated successfully')
         queryClient.invalidateQueries({ queryKey: ['branches'] })
         queryClient.invalidateQueries({ queryKey: ['branch-manager-invitations'] })
         queryClient.invalidateQueries({ queryKey: ['branches-by-vendor-id'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-branch', variables.branch_id] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to update branch status. Please try again.')

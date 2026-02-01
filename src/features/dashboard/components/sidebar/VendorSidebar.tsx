@@ -403,8 +403,6 @@ export default function VendorSidebar() {
                 <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
               </button>
             )}
-
-            <CreateVendorAccount />
           </div>
 
           {/* Footer Actions */}
@@ -419,6 +417,7 @@ export default function VendorSidebar() {
           </div>
         </PopoverContent>
       </Popover>
+      <CreateVendorAccount />
     </>
   )
 

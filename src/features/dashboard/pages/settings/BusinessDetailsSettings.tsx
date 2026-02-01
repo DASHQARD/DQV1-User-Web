@@ -1,16 +1,9 @@
-import React from 'react'
+import type React from 'react'
 import { Button, Text } from '@/components'
 import { Icon } from '@/libs'
-import { useUserProfile, usePresignedURL } from '@/hooks'
 import { cn } from '@/libs'
 import { RequestBusinessUpdateModal } from '@/features/dashboard/components/corporate/modals'
-
-const BUSINESS_TYPE_LABELS: Record<string, string> = {
-  llc: 'Limited Liability Company',
-  sole_proprietor: 'Sole Proprietorship',
-  partnership: 'Partnership',
-  corporation: 'Corporation',
-}
+import { useBusinessDetailsSettings } from '@/features/dashboard/hooks'
 
 function DetailRow({
   label,
@@ -30,40 +23,7 @@ function DetailRow({
 }
 
 export function BusinessDetailsSettings() {
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
-  const [isRequestModalOpen, setIsRequestModalOpen] = React.useState(false)
-
-  const business = userProfileData?.business_details?.[0]
-
-  React.useEffect(() => {
-    const logoDocument = userProfileData?.business_documents?.find((doc) => doc.type === 'logo')
-    if (!logoDocument?.file_url) {
-      setLogoUrl(null)
-      return
-    }
-
-    let cancelled = false
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logoDocument.file_url)
-        if (!cancelled) setLogoUrl(url)
-      } catch {
-        if (!cancelled) setLogoUrl(null)
-      }
-    }
-    loadLogo()
-    return () => {
-      cancelled = true
-    }
-  }, [userProfileData?.business_documents, fetchPresignedURL])
-
-  const businessTypeLabel =
-    business?.type && BUSINESS_TYPE_LABELS[business.type]
-      ? BUSINESS_TYPE_LABELS[business.type]
-      : business?.type || '—'
+  const { business, logoUrl, businessTypeLabel, openRequestModal } = useBusinessDetailsSettings()
 
   if (!business) {
     return (
@@ -141,16 +101,13 @@ export function BusinessDetailsSettings() {
           <Text variant="span" className="text-gray-600 text-sm">
             Need to change something? Request an update.
           </Text>
-          <Button type="button" variant="secondary" onClick={() => setIsRequestModalOpen(true)}>
+          <Button type="button" variant="secondary" onClick={openRequestModal}>
             Request update
           </Button>
         </div>
       </div>
 
-      <RequestBusinessUpdateModal
-        isOpen={isRequestModalOpen}
-        onClose={() => setIsRequestModalOpen(false)}
-      />
+      <RequestBusinessUpdateModal />
     </div>
   )
 }

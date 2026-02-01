@@ -1,5 +1,5 @@
+import { useCallback, useMemo } from 'react'
 import { useReducerSpread } from '@/hooks'
-import { useMemo } from 'react'
 import { corporateQueries } from '../../corporate/hooks'
 import { useAuthStore } from '@/stores'
 import { usePersistedModalState } from '@/hooks'
@@ -51,6 +51,48 @@ export function useCorporateAdmins() {
   const pagination = corporateAdminsResponse?.pagination
   const invitedCorporateAdminsList = invitedAdminsResponse?.data || []
   const invitedPagination = invitedAdminsResponse?.pagination
+
+  const invitedHandleNextPage = useCallback(() => {
+    if (invitedPagination?.hasNextPage && invitedPagination?.next) {
+      setInvitedQuery({ ...invitedQuery, after: invitedPagination.next })
+    }
+  }, [invitedPagination, invitedQuery, setInvitedQuery])
+
+  const invitedHandleSetAfter = useCallback(
+    (after: string) => {
+      setInvitedQuery({ ...invitedQuery, after })
+    },
+    [invitedQuery, setInvitedQuery],
+  )
+
+  const invitedEstimatedTotal = useMemo(
+    () =>
+      invitedPagination?.hasNextPage
+        ? invitedCorporateAdminsList.length + (Number(invitedQuery.limit) || 10)
+        : invitedCorporateAdminsList.length,
+    [invitedPagination?.hasNextPage, invitedCorporateAdminsList.length, invitedQuery.limit],
+  )
+
+  const allAdminsHandleNextPage = useCallback(() => {
+    if (pagination?.hasNextPage && pagination?.next) {
+      setQuery({ ...query, after: pagination.next })
+    }
+  }, [pagination, query, setQuery])
+
+  const allAdminsHandleSetAfter = useCallback(
+    (after: string) => {
+      setQuery({ ...query, after })
+    },
+    [query, setQuery],
+  )
+
+  const allAdminsEstimatedTotal = useMemo(
+    () =>
+      pagination?.hasNextPage
+        ? corporateAdminsList.length + (Number(query.limit) || 10)
+        : corporateAdminsList.length,
+    [pagination?.hasNextPage, corporateAdminsList.length, query.limit],
+  )
 
   const corporateAdminTabConfigs = [
     {
@@ -161,6 +203,9 @@ export function useCorporateAdmins() {
     getCorporateAdminOptions,
     isLoadingCorporateAdminsList,
     setQuery,
+    allAdminsHandleNextPage,
+    allAdminsHandleSetAfter,
+    allAdminsEstimatedTotal,
     corporateAdminTabConfigs,
     modal,
     invitedQuery,
@@ -168,5 +213,8 @@ export function useCorporateAdmins() {
     invitedCorporateAdminsList,
     invitedPagination,
     isLoadingInvitedCorporateAdminsList,
+    invitedHandleNextPage,
+    invitedHandleSetAfter,
+    invitedEstimatedTotal,
   }
 }

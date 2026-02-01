@@ -1,10 +1,8 @@
-import React from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { useReducerSpread } from '@/hooks'
-
 import { corporateQueries } from '../../corporate/hooks'
 import { useAuthStore } from '@/stores'
 import { usePersistedModalState } from '@/hooks'
-// import { useSearch } from '@/hooks/useSearch'
 import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
 
 export function useCorporateRequests() {
@@ -45,6 +43,27 @@ export function useCorporateRequests() {
   }, [requestsResponse])
 
   const pagination = requestsResponse?.pagination
+
+  const handleNextPage = useCallback(() => {
+    if (pagination?.hasNextPage && pagination?.next) {
+      setQuery({ ...query, after: pagination.next })
+    }
+  }, [pagination, query, setQuery])
+
+  const handleSetAfter = useCallback(
+    (after: string) => {
+      setQuery({ ...query, after })
+    },
+    [query, setQuery],
+  )
+
+  const estimatedTotal = useMemo(
+    () =>
+      pagination?.hasNextPage
+        ? requestCorporatesList.length + (Number(query.limit) || 10)
+        : requestCorporatesList.length,
+    [pagination?.hasNextPage, requestCorporatesList.length, query.limit],
+  )
 
   function getRequestCorporateOptions({
     modal: modalInstance,
@@ -142,5 +161,8 @@ export function useCorporateRequests() {
     getRequestCorporateOptions,
     isLoadingRequestCorporatesList,
     setQuery,
+    handleNextPage,
+    handleSetAfter,
+    estimatedTotal,
   }
 }

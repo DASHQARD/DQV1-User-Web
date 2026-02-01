@@ -1,4 +1,5 @@
 export * from './corporate/admin'
+export * from './corporate/createVendor'
 export * from './auth'
 export * from './cards'
 export * from './contact'

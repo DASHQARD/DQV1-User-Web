@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { CORPORATE_NAV_ITEMS, ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
@@ -8,163 +8,35 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { PaymentChangeNotifications } from '../corporate/notifications/PaymentChangeNotifications'
 import { CreateVendorAccount } from '../corporate/modals'
 import { MODALS } from '@/utils/constants'
-import { usePersistedModalState, useUserProfile, usePresignedURL } from '@/hooks'
-import { useAuthStore } from '@/stores'
-import { vendorQueries } from '../../vendor'
+import { useCorporateSidebar } from './useCorporateSidebar'
 
 export default function CorporateSidebar() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { logout } = useAuthStore()
-
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: user } = useGetUserProfileService()
-
-  const { useGetAllVendorsDetailsService } = vendorQueries()
-  const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
-
-  const allVendorsCreatedByCorporate = React.useMemo(() => {
-    const vendorsData = allVendorsDetails
-    return vendorsData?.filter((vendor: any) => vendor.corporate_user_id === user?.id) ?? []
-  }, [allVendorsDetails, user?.id])
-
-  const hasVendorsPendingVerification = React.useMemo(() => {
-    return allVendorsCreatedByCorporate.some(
-      (vendor: any) =>
-        vendor.approval_status !== 'approved' && vendor.approval_status !== 'auto_approved',
-    )
-  }, [allVendorsCreatedByCorporate])
-
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
-  const [vendorLogoUrls, setVendorLogoUrls] = React.useState<Record<number, string>>({})
-
-  const [isCollapsed, setIsCollapsed] = React.useState(false)
-  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
-  const vendorAccountModal = usePersistedModalState({
-    paramName: MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_VENDOR_ACCOUNT,
-  })
-
-  const displayName = user?.user_type
-
-  // Calculate onboarding percentage
-  const onboardingProgress = React.useMemo(() => {
-    const isCorporateAdmin = user?.user_type === 'corporate admin'
-    const hasProfileAndID = Boolean(
-      user?.onboarding_progress?.personal_details_completed &&
-        user?.onboarding_progress?.upload_id_completed,
-    )
-    const hasBusinessDetailsAndDocs = Boolean(
-      user?.onboarding_progress?.business_details_completed &&
-        user?.onboarding_progress?.business_documents_completed,
-    )
-    // For corporate admins, only count Profile & ID step
-    // For regular corporate users, count both steps
-    const completedCount = isCorporateAdmin
-      ? hasProfileAndID
-        ? 1
-        : 0
-      : (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0)
-    const totalCount = isCorporateAdmin ? 1 : 2
-    return Math.round((completedCount / totalCount) * 100)
-  }, [user?.onboarding_progress, user?.user_type])
-
-  // Check if user has completed onboarding and is approved (for account menu)
-  const isOnboardingComplete = onboardingProgress === 100
-  const isApprovedOrVerified = user?.status === 'approved' || user?.status === 'verified'
-  const canAccessRestrictedFeatures = isOnboardingComplete && isApprovedOrVerified
-
-  // Fetch logo presigned URL
-  React.useEffect(() => {
-    const logoDocument = user?.business_documents?.find((doc) => doc.type === 'logo')
-
-    if (!logoDocument?.file_url) {
-      setLogoUrl(null)
-      return
-    }
-
-    let cancelled = false
-
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logoDocument.file_url)
-        if (!cancelled) {
-          setLogoUrl(url)
-        }
-      } catch (error) {
-        console.error('Failed to fetch logo presigned URL', error)
-        if (!cancelled) {
-          setLogoUrl(null)
-        }
-      }
-    }
-
-    loadLogo()
-
-    return () => {
-      cancelled = true
-    }
-  }, [user?.business_documents, fetchPresignedURL])
-
-  // Fetch vendor logo presigned URLs for created vendors
-  React.useEffect(() => {
-    if (allVendorsCreatedByCorporate.length === 0) return
-
-    const fetchLogos = async () => {
-      const logoPromises = allVendorsCreatedByCorporate.map(async (vendor: any) => {
-        if (!vendor.vendor_logo) return null
-        try {
-          const url = await fetchPresignedURL(vendor.vendor_logo)
-          return { vendorId: vendor.vendor_id ?? vendor.id, url }
-        } catch {
-          return null
-        }
-      })
-
-      const results = await Promise.all(logoPromises)
-      const logoMap: Record<number, string> = {}
-      results.forEach((result) => {
-        if (result) {
-          logoMap[result.vendorId] = result.url
-        }
-      })
-      setVendorLogoUrls(logoMap)
-    }
-
-    fetchLogos()
-  }, [allVendorsCreatedByCorporate, fetchPresignedURL])
-
-  const isActive = (path: string) => {
-    // Exact match for root dashboard
-    if (path === '/dashboard') {
-      return location.pathname === path
-    }
-    // Exact match for corporate home (Dashboard) - don't match child routes
-    if (path === ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME) {
-      return location.pathname === path
-    }
-    // Exact match
-    if (location.pathname === path) {
-      return true
-    }
-    // For other paths, check if pathname starts with the path
-    if (location.pathname.startsWith(path + '/')) {
-      if (path === ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT) {
-        return !location.pathname.startsWith(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ADD_BRANCH)
-      }
-      return true
-    }
-    return false
-  }
-
-  const addAccountParam = (path: string): string => {
-    const separator = path?.includes('?') ? '&' : '?'
-    return `${path}${separator}account=corporate`
-  }
+  const {
+    user,
+    allVendorsCreatedByCorporate,
+    hasVendorsPendingVerification,
+    pendingRequestsCount,
+    logoUrl,
+    vendorLogoUrls,
+    isCollapsed,
+    setIsCollapsed,
+    isPopoverOpen,
+    setIsPopoverOpen,
+    vendorAccountModal,
+    displayName,
+    onboardingProgress,
+    canAccessRestrictedFeatures,
+    isCorporateAdmin,
+    isActive,
+    addAccountParam,
+    getProcessedItems,
+    logout,
+    navigate,
+  } = useCorporateSidebar()
 
   const accountMenuContent = (() => {
     // Hide account menu for corporate admin users
-    if (user?.user_type === 'corporate admin' || user?.user_type === 'vendor') {
+    if (user?.user_type === 'corporate' || user?.user_type === 'vendor') {
       return null
     }
 
@@ -234,10 +106,22 @@ export default function CorporateSidebar() {
                 <div className="mb-3 space-y-1 max-h-[200px] overflow-y-auto">
                   {allVendorsCreatedByCorporate.map((vendor: any) => {
                     const vendorId = vendor.vendor_id ?? vendor.id
-                    const canSwitch =
+                    const isApproved =
                       vendor.approval_status === 'approved' ||
                       vendor.approval_status === 'auto_approved'
-                    const isPendingVerification = !canSwitch
+                    const isActive = vendor.status === 'active'
+                    const canSwitch = isApproved && isActive
+                    const needsOnboarding = isApproved && !isActive
+                    const statusLabel = needsOnboarding
+                      ? 'Complete onboarding'
+                      : !canSwitch
+                        ? 'Pending verification'
+                        : null
+                    const tooltipMessage = canSwitch
+                      ? `Switch to ${vendor.vendor_name || vendor.business_name}`
+                      : needsOnboarding
+                        ? 'This vendor is approved but onboarding is not complete. Complete onboarding to switch to this account.'
+                        : 'This vendor account is pending verification. You cannot switch until it is approved.'
                     return (
                       <Tooltip key={vendorId}>
                         <TooltipTrigger asChild>
@@ -260,7 +144,7 @@ export default function CorporateSidebar() {
                               size="sm"
                               src={vendorLogoUrls[vendorId]}
                               name={vendor.vendor_name || vendor.business_name}
-                              className={isPendingVerification ? 'opacity-75' : undefined}
+                              className={!canSwitch ? 'opacity-75' : undefined}
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
@@ -271,9 +155,9 @@ export default function CorporateSidebar() {
                                 >
                                   {vendor.vendor_name || vendor.business_name}
                                 </Text>
-                                {isPendingVerification && (
+                                {statusLabel && (
                                   <Tag
-                                    value="Pending verification"
+                                    value={statusLabel}
                                     variant="warning"
                                     className="text-[10px] shrink-0"
                                   />
@@ -296,10 +180,8 @@ export default function CorporateSidebar() {
                             )}
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-[200px]">
-                          {isPendingVerification
-                            ? 'This vendor account is pending verification. You cannot switch to it until it is approved.'
-                            : `Switch to ${vendor.vendor_name || vendor.business_name}`}
+                        <TooltipContent side="left" className="max-w-[240px]">
+                          {tooltipMessage}
                         </TooltipContent>
                       </Tooltip>
                     )
@@ -311,7 +193,7 @@ export default function CorporateSidebar() {
                 <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 flex items-center gap-2">
                   <Icon icon="bi:clock-history" className="text-amber-600 text-sm shrink-0" />
                   <Text variant="span" className="text-xs text-amber-800">
-                    Some vendor accounts are pending verification
+                    Some vendor accounts need attention (pending approval or onboarding)
                   </Text>
                 </div>
               )}
@@ -349,8 +231,6 @@ export default function CorporateSidebar() {
                   </Tooltip>
                 )}
               </button>
-
-              <CreateVendorAccount />
             </div>
 
             {/* Footer Actions */}
@@ -365,6 +245,7 @@ export default function CorporateSidebar() {
             </div>
           </PopoverContent>
         </Popover>
+        <CreateVendorAccount />
       </>
     )
   })()
@@ -495,52 +376,8 @@ export default function CorporateSidebar() {
         )}
         <ul className="py-2 px-3">
           {CORPORATE_NAV_ITEMS.map((section) => {
-            // Check if user has completed onboarding and is approved
-            const isOnboardingComplete = onboardingProgress === 100
-            const isApprovedOrVerified = user?.status === 'approved' || user?.status === 'verified'
-            const canAccessRestrictedFeatures = isOnboardingComplete && isApprovedOrVerified
+            const processedItems = getProcessedItems(section)
 
-            // Filter out Admins, Requests, Purchase, and Notifications items if user status is not approved or verified
-            // Also hide Admins and Notifications tabs for corporate admin users
-            // Keep all items but mark Transactions, Audit Logs, and Recipients as disabled if onboarding incomplete or not approved
-            // Remove Requests completely from corporate sidebar (moved to vendor sidebar)
-            // Remove Branches from corporate sidebar
-            const processedItems = section.items
-              .filter((item) => {
-                const isCorporateAdmin = user?.user_type === 'corporate admin'
-
-                // Hide Admins and Notifications for corporate admin users
-                if (
-                  (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||
-                    item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS) &&
-                  isCorporateAdmin
-                ) {
-                  return false
-                }
-
-                if (
-                  item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||
-                  item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE ||
-                  item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS
-                ) {
-                  return isApprovedOrVerified
-                }
-                return true
-              })
-              .map((item) => ({
-                ...item,
-                disabled:
-                  ((item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.TRANSACTIONS ||
-                    item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.AUDIT_LOGS ||
-                    item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.RECIPIENTS) &&
-                    !canAccessRestrictedFeatures) ||
-                  ((item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE ||
-                    item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS ||
-                    item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS) &&
-                    !isOnboardingComplete),
-              }))
-
-            // Don't render section if all items are filtered out
             if (processedItems.length === 0) {
               return null
             }
@@ -602,15 +439,23 @@ export default function CorporateSidebar() {
                                   !isActive(item.path) && 'hover:text-[#402D87]',
                                 )}
                               >
-                                <Icon
-                                  icon={item.icon}
-                                  className={cn(
-                                    'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-                                    isActive(item.path) && 'text-[#402D87]',
-                                    !isActive(item.path) &&
-                                      'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
-                                  )}
-                                />
+                                <span className="relative inline-flex">
+                                  <Icon
+                                    icon={item.icon}
+                                    className={cn(
+                                      'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                                      isActive(item.path) && 'text-[#402D87]',
+                                      !isActive(item.path) &&
+                                        'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                                    )}
+                                  />
+                                  {item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS &&
+                                    pendingRequestsCount > 0 && (
+                                      <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold px-1">
+                                        {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
+                                      </span>
+                                    )}
+                                </span>
                               </Link>
                             )}
                           </TooltipTrigger>
@@ -618,6 +463,9 @@ export default function CorporateSidebar() {
                             {isDisabled
                               ? `${item.label} - Complete onboarding and get approved to access`
                               : item.label}
+                            {item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS &&
+                              pendingRequestsCount > 0 &&
+                              ` (${pendingRequestsCount} pending)`}
                           </TooltipContent>
                         </Tooltip>
                       ) : (
@@ -653,7 +501,13 @@ export default function CorporateSidebar() {
                                     'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
                                 )}
                               />
-                              <span>{item.label}</span>
+                              <span className="flex-1">{item.label}</span>
+                              {item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS &&
+                                pendingRequestsCount > 0 && (
+                                  <span className="shrink-0 min-w-[20px] h-5 flex items-center justify-center rounded-full bg-amber-500 text-white text-xs font-semibold px-1.5">
+                                    {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
+                                  </span>
+                                )}
                             </Link>
                           )}
                         </>
@@ -674,16 +528,11 @@ export default function CorporateSidebar() {
       <div className="border-t border-gray-200 p-3 space-y-2">
         {/* Settings */}
         {(() => {
-          const isCorporateAdmin = user?.user_type === 'corporate admin'
-
-          // Hide Settings for corporate admin users
           if (isCorporateAdmin) {
             return null
           }
 
-          const isOnboardingComplete = onboardingProgress === 100
-          const isApprovedOrVerified = user?.status === 'approved' || user?.status === 'verified'
-          const canAccessSettings = isOnboardingComplete && isApprovedOrVerified
+          const canAccessSettings = canAccessRestrictedFeatures
 
           if (!canAccessSettings) {
             return isCollapsed ? (

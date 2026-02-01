@@ -1,4 +1,3 @@
-import { useMemo, useCallback } from 'react'
 import { PaginatedTable } from '@/components'
 import { useCorporateAdmins } from '@/features/dashboard/hooks'
 import { MODALS } from '@/utils/constants'
@@ -15,26 +14,10 @@ export default function InvitedAdmins() {
     invitedPagination,
     modal,
     isLoadingInvitedCorporateAdminsList,
+    invitedHandleNextPage,
+    invitedHandleSetAfter,
+    invitedEstimatedTotal,
   } = useCorporateAdmins()
-
-  const handleNextPage = useCallback(() => {
-    if (invitedPagination?.hasNextPage && invitedPagination?.next) {
-      setInvitedQuery({ ...invitedQuery, after: invitedPagination.next })
-    }
-  }, [invitedPagination, invitedQuery, setInvitedQuery])
-
-  const handleSetAfter = useCallback(
-    (after: string) => {
-      setInvitedQuery({ ...invitedQuery, after })
-    },
-    [invitedQuery, setInvitedQuery],
-  )
-
-  const estimatedTotal = useMemo(() => {
-    return invitedPagination?.hasNextPage
-      ? invitedCorporateAdminsList.length + (invitedQuery.limit || 10)
-      : invitedCorporateAdminsList.length
-  }, [invitedPagination, invitedCorporateAdminsList.length, invitedQuery.limit])
 
   return (
     <>
@@ -43,18 +26,18 @@ export default function InvitedAdmins() {
           filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
           columns={invitedAdminsListColumns}
           data={invitedCorporateAdminsList}
-          total={estimatedTotal}
+          total={invitedEstimatedTotal}
           loading={isLoadingInvitedCorporateAdminsList}
           query={invitedQuery}
           setQuery={setInvitedQuery}
           csvHeaders={invitedAdminsListCsvHeaders}
           printTitle="Invited Admins"
-          onNextPage={handleNextPage}
+          onNextPage={invitedHandleNextPage}
           hasNextPage={invitedPagination?.hasNextPage}
           hasPreviousPage={invitedPagination?.hasPreviousPage}
           currentAfter={invitedQuery.after}
           previousCursor={invitedPagination?.previous}
-          onSetAfter={handleSetAfter}
+          onSetAfter={invitedHandleSetAfter}
           filterBy={{
             simpleSelects: [
               { label: 'status', options: OPTIONS.CORPORATE_ADMIN_INVITATION_STATUS },

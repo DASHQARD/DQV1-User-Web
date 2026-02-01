@@ -1,12 +1,7 @@
 import React from 'react'
 import { Controller, useFormContext } from 'react-hook-form'
 import { Button, Text, Input, Checkbox } from '@/components'
-import type { UserProfileResponse } from '@/types/user'
-
-interface VendorNameFormProps {
-  onSubmit: () => void
-  corporateUser?: UserProfileResponse | null
-}
+import type { VendorNameFormProps } from '@/types'
 
 export function VendorNameForm({ onSubmit, corporateUser }: VendorNameFormProps) {
   const form = useFormContext()

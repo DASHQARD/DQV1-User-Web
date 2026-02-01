@@ -435,7 +435,22 @@ export const getCorporateRedemptionsByVendorId = async (
   return response
 }
 
-/** GET /branches/corporate/branch-manager-invitations — paginated list of branch manager invitations (used when corporate has switched to a vendor account; pass vendor_id in params to scope to that vendor) */
+/** GET /vendors/corporate-super-admin/:vendor_id/branch-managers — branch managers for a vendor when corporate super admin has switched to that vendor (vendor_id in path only; do not send in query) */
+export const getCorporateSuperAdminBranchManagers = async (
+  vendorId: number | string,
+  params?: Record<string, any>,
+): Promise<any> => {
+  const rest = Object.fromEntries(
+    Object.entries(params ?? {}).filter(([key]) => key !== 'vendor_id'),
+  )
+  const queryString = getQueryString(Object.keys(rest).length ? rest : undefined)
+  const base = `/vendors/corporate-super-admin/${vendorId}/branch-managers`
+  const fullUrl = queryString ? `${base}?${queryString}` : base
+  const response = await axiosClient.get(fullUrl)
+  return response
+}
+
+/** GET /branches/corporate/branch-manager-invitations — paginated list of branch manager invitations (used when corporate super admin has not switched to a vendor; pass vendor_id in params to scope) */
 export const getCorporateBranchManagerInvitations = async (
   params?: Record<string, any>,
 ): Promise<any> => {
@@ -496,3 +511,14 @@ export const updateCorporateBranchManagerInvitation = async (
 ): Promise<any> => {
   return await putMethod(`/branches/corporate/branch-manager-invitations/${id}`, data)
 }
+
+export {
+  getVendorInvitations,
+  cancelVendorInvitation,
+  getAllVendorsManagement,
+  getVendorByIdManagement,
+  deleteVendorManagement,
+  updateVendorStatusManagement,
+  removeVendorAdminManagement,
+  getVendorQrCodeManagement,
+} from './vendorManagement'
