@@ -751,7 +751,7 @@ export default function BusinessDetailsForm() {
           variant="secondary"
           className="w-fit"
         >
-          Save Changes
+          Submit
         </Button>
       </div>
 

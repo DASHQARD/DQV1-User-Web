@@ -1,29 +1,17 @@
 import { Link } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
 
 import { Input, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
-import { ForgotPasswordSchema } from '@/utils/schemas'
-import { useAuth } from '../hooks/auth'
+import { useForgotPasswordForm } from '../../hooks'
 
 export default function ForgotPasswordForm() {
-  const { useForgotPasswordService } = useAuth()
-  const { mutate, isPending } = useForgotPasswordService()
-  const emailForm = useForm<z.infer<typeof ForgotPasswordSchema>>({
-    resolver: zodResolver(ForgotPasswordSchema),
-  })
-
-  const handleEmailSubmit = (data: z.infer<typeof ForgotPasswordSchema>) => {
-    mutate(data.email)
-  }
+  const { form, onSubmit, isPending } = useForgotPasswordForm()
 
   return (
     <form
-      onSubmit={emailForm.handleSubmit(handleEmailSubmit)}
+      onSubmit={form.handleSubmit(onSubmit)}
       className="max-w-[470.61px] w-full flex flex-col gap-10"
     >
       <div className="flex items-center gap-3">
@@ -41,8 +29,9 @@ export default function ForgotPasswordForm() {
         <Input
           label="Email"
           placeholder="Enter your email"
-          {...emailForm.register('email')}
-          error={emailForm.formState.errors.email?.message}
+          {...form.register('email')}
+          error={form.formState.errors.email?.message}
+          isRequired
         />
 
         <Button

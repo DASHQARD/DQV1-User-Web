@@ -46,38 +46,19 @@ export default function BranchManagers() {
   }, [query, isCorporateSwitchedToVendor, vendorIdFromUrl])
 
   const { useGetBranchManagerInvitationsService } = vendorQueries()
-  const {
-    useGetCorporateSuperAdminVendorBranchManagersService,
-    useGetCorporateBranchManagerInvitationsService,
-  } = corporateQueries()
+  const { useGetCorporateBranchManagerInvitationsService } = corporateQueries()
 
   const { data: vendorInvitationsResponse, isLoading: isLoadingVendorInvitations } =
-    useGetBranchManagerInvitationsService(apiQuery, { skip: isCorporateSuperAdmin })
+    useGetBranchManagerInvitationsService(isCorporateSuperAdmin ? undefined : apiQuery)
 
-  const {
-    data: corporateSuperAdminVendorBranchManagersResponse,
-    isLoading: isLoadingVendorScoped,
-  } = useGetCorporateSuperAdminVendorBranchManagersService(
-    vendorIdFromUrl ?? null,
-    isCorporateSwitchedToVendor ? apiQuery : undefined,
-  )
+  const { data: corporateInvitationsResponse, isLoading: isLoadingCorporateInvitations } =
+    useGetCorporateBranchManagerInvitationsService(isCorporateSuperAdmin ? apiQuery : undefined)
 
-  const { data: corporateInvitationsAllResponse, isLoading: isLoadingCorporateInvitationsAll } =
-    useGetCorporateBranchManagerInvitationsService(
-      isCorporateSuperAdmin && !vendorIdFromUrl ? apiQuery : undefined,
-      { skip: !!vendorIdFromUrl },
-    )
-
-  const corporateInvitationsResponse = isCorporateSwitchedToVendor
-    ? corporateSuperAdminVendorBranchManagersResponse
-    : corporateInvitationsAllResponse
   const invitationsResponse = isCorporateSuperAdmin
     ? corporateInvitationsResponse
     : vendorInvitationsResponse
   const isLoadingInvitations = isCorporateSuperAdmin
-    ? isCorporateSwitchedToVendor
-      ? isLoadingVendorScoped
-      : isLoadingCorporateInvitationsAll
+    ? isLoadingCorporateInvitations
     : isLoadingVendorInvitations
 
   const inviteModal = usePersistedModalState({
@@ -86,13 +67,7 @@ export default function BranchManagers() {
 
   const invitations = useMemo(() => {
     if (!invitationsResponse) return []
-    const list = Array.isArray(invitationsResponse?.data) ? invitationsResponse.data : []
-    return list.map((row: any) => ({
-      ...row,
-      branch_manager_email: row.branch_manager_email ?? row.email,
-      branch_manager_name: row.branch_manager_name ?? row.fullname,
-      branch_manager_phone: row.branch_manager_phone ?? row.phonenumber,
-    }))
+    return Array.isArray(invitationsResponse?.data) ? invitationsResponse.data : []
   }, [invitationsResponse])
 
   const pagination = invitationsResponse?.pagination

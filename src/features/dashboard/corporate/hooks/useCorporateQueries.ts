@@ -33,7 +33,6 @@ import {
   getCardsByVendorIdForCorporate,
   getCorporateRedemptions,
   getCorporateRedemptionsByVendorId,
-  getCorporateSuperAdminVendorBranchManagers,
   getCorporateBranchManagerInvitations,
   getCorporateBranchManagerInvitationById,
 } from '../services'
@@ -330,25 +329,7 @@ export function corporateQueries() {
     })
   }
 
-  function useGetCorporateSuperAdminVendorBranchManagersService(
-    vendorId: string | null | undefined,
-    params?: Record<string, any>,
-  ) {
-    const { user } = useAuthStore()
-    const userType = (user as any)?.user_type
-    const isCorporateSuperAdmin = userType === 'corporate super admin'
-
-    return useQuery({
-      queryKey: ['corporate-super-admin-vendor-branch-managers', vendorId, params],
-      queryFn: () => getCorporateSuperAdminVendorBranchManagers(vendorId!, params),
-      enabled: isCorporateSuperAdmin && !!vendorId,
-    })
-  }
-
-  function useGetCorporateBranchManagerInvitationsService(
-    params?: Record<string, any>,
-    options?: { skip?: boolean },
-  ) {
+  function useGetCorporateBranchManagerInvitationsService(params?: Record<string, any>) {
     const { user } = useAuthStore()
     const userType = (user as any)?.user_type
     const isCorporateSuperAdmin = userType === 'corporate super admin'
@@ -356,7 +337,7 @@ export function corporateQueries() {
     return useQuery({
       queryKey: ['corporate-branch-manager-invitations', params],
       queryFn: () => getCorporateBranchManagerInvitations(params),
-      enabled: isCorporateSuperAdmin && !options?.skip,
+      enabled: isCorporateSuperAdmin,
     })
   }
 
@@ -430,7 +411,6 @@ export function corporateQueries() {
     useGetCorporatePaymentByIdService,
     useGetCorporateRedemptionsService,
     useGetCorporateRedemptionsByVendorIdService,
-    useGetCorporateSuperAdminVendorBranchManagersService,
     useGetCorporateBranchManagerInvitationsService,
     useGetCorporateBranchManagerInvitationByIdService,
   }

@@ -9,24 +9,18 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { AcceptCorporateAdminInvitationFormSchema } from '@/utils/schemas'
 import { corporateMutations } from '@/features/dashboard/corporate'
 import { useToast } from '@/hooks'
+import PasswordRequirementsChecklist from '../PasswordRequirementsChecklist'
 
 export default function InviteCorporateAdminForm() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
   const { error } = useToast()
-  const SPECIAL_CHARACTERS = '!@#$%^&*()'
 
   const form = useForm<z.infer<typeof AcceptCorporateAdminInvitationFormSchema>>({
     resolver: zodResolver(AcceptCorporateAdminInvitationFormSchema),
   })
   const { useAcceptCorporateAdminInvitationService } = corporateMutations()
   const acceptCorporateAdminInvitationMutation = useAcceptCorporateAdminInvitationService()
-
-  const password = form.watch('password') || ''
-  const hasMinLength = password.length >= 8
-  const hasNumber = /\d/.test(password)
-  const hasUppercase = /[A-Z]/.test(password)
-  const hasSpecialChar = /[!@#$%^&*()]/.test(password)
 
   const handleSubmit = (data: z.infer<typeof AcceptCorporateAdminInvitationFormSchema>) => {
     if (!token) {
@@ -69,50 +63,7 @@ export default function InviteCorporateAdminForm() {
             type="password"
             error={form.formState.errors.password?.message}
           />
-          <section className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-gray-500">
-              <div
-                className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold ${
-                  hasMinLength ? 'bg-primary-400 text-white' : 'bg-gray-300 text-gray-600'
-                }`}
-              >
-                {hasMinLength ? '✓' : '✗'}
-              </div>
-              <p className="text-xs leading-[18px]">Minimum 8 characters</p>
-            </div>
-            <div className="flex items-center gap-2 text-gray-500">
-              <div
-                className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold ${
-                  hasNumber ? 'bg-primary-400 text-white' : 'bg-gray-300 text-gray-600'
-                }`}
-              >
-                {hasNumber ? '✓' : '✗'}
-              </div>
-              <p className="text-xs leading-[18px]">One number</p>
-            </div>
-            <div className="flex items-center gap-2 text-gray-500">
-              <div
-                className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold ${
-                  hasUppercase ? 'bg-primary-400 text-white' : 'bg-gray-300 text-gray-600'
-                }`}
-              >
-                {hasUppercase ? '✓' : '✗'}
-              </div>
-              <p className="text-xs leading-[18px]">One Uppercase character</p>
-            </div>
-            <div className="flex items-center gap-2 text-gray-500">
-              <div
-                className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold ${
-                  hasSpecialChar ? 'bg-primary-400 text-white' : 'bg-gray-300 text-gray-600'
-                }`}
-              >
-                {hasSpecialChar ? '✓' : '✗'}
-              </div>
-              <p className="text-xs leading-[18px]">
-                One special character {`(${SPECIAL_CHARACTERS})`}
-              </p>
-            </div>
-          </section>
+          <PasswordRequirementsChecklist password={form.watch('password') || ''} />
         </div>
         <Input
           label="Confirm Password"

@@ -1,38 +1,11 @@
-import { useAuth } from '../hooks'
-import { Controller, useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { Controller } from 'react-hook-form'
 import { Button, Loader, OTPInput, ResendCode, Text } from '@/components'
-import { z } from 'zod'
-import { VerifyLoginOTPSchema } from '@/utils/schemas'
-import { useCountdown } from '@/hooks'
-import { ROUTES } from '@/utils/constants'
-import { useNavigate } from 'react-router-dom'
 import { Logo } from '@/assets/images'
-import { usePersistedModalState } from '@/hooks'
-import { MODAL_NAMES } from '@/utils/constants'
+import { useOtpLoginModal } from '../../hooks'
 
 export default function OtpLoginModal() {
-  const navigate = useNavigate()
-  const { useVerifyLoginOTPService, useResendRefreshTokenService } = useAuth()
-  const { mutate, isPending } = useVerifyLoginOTPService()
-  const { mutate: resendRefreshToken } = useResendRefreshTokenService()
-  const modal = usePersistedModalState<{ email?: string }>({
-    paramName: MODAL_NAMES.AUTH.ROOT,
-  })
-  const email = modal.modalData?.email
-  const form = useForm<z.infer<typeof VerifyLoginOTPSchema>>({
-    resolver: zodResolver(VerifyLoginOTPSchema),
-  })
-
-  const onSubmit = (data: z.infer<typeof VerifyLoginOTPSchema>) => {
-    mutate(data.otp)
-  }
-
-  const { resendOtp, formatCountdown, countdown } = useCountdown({
-    sendOtp: () => {
-      resendRefreshToken(email || '')
-    },
-  })
+  const { form, onSubmit, isPending, verifyOtp, resendOtp, formatCountdown, countdown, goToLogin } =
+    useOtpLoginModal()
 
   return (
     <form
@@ -40,7 +13,8 @@ export default function OtpLoginModal() {
       className="bg-white max-w-[540px] m-auto w-full h-fit p-[72px_40px] rounded-xl flex flex-col gap-6"
     >
       <button
-        onClick={() => navigate(ROUTES.IN_APP.AUTH.LOGIN)}
+        type="button"
+        onClick={goToLogin}
         className="flex justify-center max-w-[160px] mx-auto cursor-pointer"
       >
         <img src={Logo} alt="Logo" className="w-full h-auto" />
@@ -76,7 +50,7 @@ export default function OtpLoginModal() {
                   onChange={(value) => {
                     field.onChange(value)
                     if (value.length === 4) {
-                      mutate(value)
+                      verifyOtp(value)
                     }
                   }}
                 />

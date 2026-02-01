@@ -10,7 +10,6 @@ import { CreateVendorAccount } from '../corporate/modals'
 import { MODALS } from '@/utils/constants'
 import { usePersistedModalState, useUserProfile, usePresignedURL } from '@/hooks'
 import { useAuthStore } from '@/stores'
-import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 import { vendorQueries } from '../../vendor'
 
 export default function CorporateSidebar() {
@@ -23,19 +22,6 @@ export default function CorporateSidebar() {
 
   const { useGetAllVendorsDetailsService } = vendorQueries()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
-
-  const { useGetRequestsCorporateService } = corporateQueries()
-  const { data: requestsResponse } = useGetRequestsCorporateService({ limit: 100 })
-
-  const pendingRequestsCount = React.useMemo(() => {
-    if (!requestsResponse) return 0
-    const list = Array.isArray(requestsResponse)
-      ? requestsResponse
-      : Array.isArray(requestsResponse?.data)
-        ? requestsResponse.data
-        : []
-    return list.filter((r: any) => String(r?.status).toLowerCase() === 'pending').length
-  }, [requestsResponse])
 
   const allVendorsCreatedByCorporate = React.useMemo(() => {
     const vendorsData = allVendorsDetails
@@ -544,10 +530,14 @@ export default function CorporateSidebar() {
               .map((item) => ({
                 ...item,
                 disabled:
-                  (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.TRANSACTIONS ||
+                  ((item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.TRANSACTIONS ||
                     item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.AUDIT_LOGS ||
                     item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.RECIPIENTS) &&
-                  !canAccessRestrictedFeatures,
+                    !canAccessRestrictedFeatures) ||
+                  ((item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE ||
+                    item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS ||
+                    item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS) &&
+                    !isOnboardingComplete),
               }))
 
             // Don't render section if all items are filtered out
@@ -612,33 +602,22 @@ export default function CorporateSidebar() {
                                   !isActive(item.path) && 'hover:text-[#402D87]',
                                 )}
                               >
-                                <span className="relative inline-flex">
-                                  <Icon
-                                    icon={item.icon}
-                                    className={cn(
-                                      'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-                                      isActive(item.path) && 'text-[#402D87]',
-                                      !isActive(item.path) &&
-                                        'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
-                                    )}
-                                  />
-                                  {item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS &&
-                                    pendingRequestsCount > 0 && (
-                                      <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold px-1">
-                                        {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
-                                      </span>
-                                    )}
-                                </span>
+                                <Icon
+                                  icon={item.icon}
+                                  className={cn(
+                                    'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                                    isActive(item.path) && 'text-[#402D87]',
+                                    !isActive(item.path) &&
+                                      'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                                  )}
+                                />
                               </Link>
                             )}
                           </TooltipTrigger>
                           <TooltipContent side="right">
                             {isDisabled
                               ? `${item.label} - Complete onboarding and get approved to access`
-                              : item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS &&
-                                  pendingRequestsCount > 0
-                                ? `${item.label} (${pendingRequestsCount} pending)`
-                                : item.label}
+                              : item.label}
                           </TooltipContent>
                         </Tooltip>
                       ) : (
@@ -674,13 +653,7 @@ export default function CorporateSidebar() {
                                     'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
                                 )}
                               />
-                              <span className="flex-1">{item.label}</span>
-                              {item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS &&
-                                pendingRequestsCount > 0 && (
-                                  <span className="shrink-0 min-w-[20px] h-5 flex items-center justify-center rounded-full bg-amber-500 text-white text-xs font-semibold px-1.5">
-                                    {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
-                                  </span>
-                                )}
+                              <span>{item.label}</span>
                             </Link>
                           )}
                         </>

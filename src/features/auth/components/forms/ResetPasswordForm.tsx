@@ -1,39 +1,14 @@
-import { z } from 'zod'
-import { useLocation, useSearchParams } from 'react-router-dom'
-
 import { Input, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
-import { useAuth } from '../hooks/auth'
-import { ResetPasswordSchema } from '@/utils/schemas'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useResetPasswordForm } from '../../hooks'
 
 export default function ResetPasswordForm() {
-  const [searchParams] = useSearchParams()
-  const token = searchParams.get('vtoken')
-  const location = useLocation()
-
-  const { useResetPasswordService } = useAuth()
-  const { mutate, isPending } = useResetPasswordService()
-
-  const form = useForm<z.infer<typeof ResetPasswordSchema>>({
-    resolver: zodResolver(ResetPasswordSchema),
-  })
-
-  const handleSubmit = (data: z.infer<typeof ResetPasswordSchema>) => {
-    const payload = {
-      password: data.password,
-      token: token || '',
-    }
-    mutate(payload)
-  }
-
-  const email = (location.state as { email?: string })?.email
+  const { form, onSubmit, isPending, email } = useResetPasswordForm()
 
   return (
     <form
-      onSubmit={form.handleSubmit(handleSubmit)}
+      onSubmit={form.handleSubmit(onSubmit)}
       className="max-w-[470.61px] w-full flex flex-col gap-10"
     >
       <div className="flex items-center gap-3">
@@ -61,6 +36,7 @@ export default function ResetPasswordForm() {
         <Input
           label="New Password"
           placeholder="Enter your new password"
+          isRequired
           type="password"
           {...form.register('password')}
           error={form.formState.errors.password?.message}
@@ -68,6 +44,7 @@ export default function ResetPasswordForm() {
         <Input
           label="Confirm New Password"
           placeholder="Confirm your new password"
+          isRequired
           type="password"
           {...form.register('confirmPassword')}
           error={form.formState.errors.confirmPassword?.message}

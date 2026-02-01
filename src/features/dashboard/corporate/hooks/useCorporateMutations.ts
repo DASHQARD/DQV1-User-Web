@@ -25,7 +25,6 @@ import {
   addCorporateBranch,
   deleteCorporateBranch,
   createCorporateBranchManagerInvitation,
-  cancelCorporateBranchManagerInvitation,
   deleteCorporateBranchManagerInvitation,
   deleteCorporateVendorBranchManagerInvitation,
   updateCorporateBranchManagerInvitation,
@@ -518,30 +517,9 @@ export function corporateMutations() {
       onSuccess: (response: any) => {
         success(response?.message || 'Branch manager invitation sent successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitations'] })
-        queryClient.invalidateQueries({
-          queryKey: ['corporate-super-admin-vendor-branch-managers'],
-        })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to send branch manager invitation. Please try again.')
-      },
-    })
-  }
-
-  function useCancelCorporateBranchManagerInvitationService() {
-    const { success, error } = useToast()
-    const queryClient = useQueryClient()
-    return useMutation({
-      mutationFn: (id: number | string) => cancelCorporateBranchManagerInvitation(id),
-      onSuccess: (response: any) => {
-        success(response?.message || 'Branch manager invitation cancelled successfully')
-        queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitations'] })
-        queryClient.invalidateQueries({
-          queryKey: ['corporate-super-admin-vendor-branch-managers'],
-        })
-      },
-      onError: (err: any) => {
-        error(err?.message || 'Failed to cancel branch manager invitation. Please try again.')
       },
     })
   }
@@ -554,9 +532,6 @@ export function corporateMutations() {
       onSuccess: (response: any) => {
         success(response?.message || 'Branch manager invitation deleted successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitations'] })
-        queryClient.invalidateQueries({
-          queryKey: ['corporate-super-admin-vendor-branch-managers'],
-        })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to delete branch manager invitation. Please try again.')
@@ -572,9 +547,6 @@ export function corporateMutations() {
       onSuccess: (response: any) => {
         success(response?.message || 'Branch manager invitation deleted successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitations'] })
-        queryClient.invalidateQueries({
-          queryKey: ['corporate-super-admin-vendor-branch-managers'],
-        })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to delete branch manager invitation. Please try again.')
@@ -600,9 +572,6 @@ export function corporateMutations() {
       onSuccess: (response: any, { id }) => {
         success(response?.message || 'Branch manager invitation updated successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitations'] })
-        queryClient.invalidateQueries({
-          queryKey: ['corporate-super-admin-vendor-branch-managers'],
-        })
         queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitation', id] })
       },
       onError: (err: any) => {
@@ -629,9 +598,6 @@ export function corporateMutations() {
       onSuccess: (response: any) => {
         success(response?.message || 'Branch manager invitation updated successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-branch-manager-invitations'] })
-        queryClient.invalidateQueries({
-          queryKey: ['corporate-super-admin-vendor-branch-managers'],
-        })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to update branch manager invitation. Please try again.')
@@ -700,7 +666,6 @@ export function corporateMutations() {
     useAddCorporateBranchService,
     useDeleteCorporateBranchService,
     useCreateCorporateBranchManagerInvitationService,
-    useCancelCorporateBranchManagerInvitationService,
     useDeleteCorporateBranchManagerInvitationService,
     useDeleteCorporateVendorBranchManagerInvitationService,
     useUpdateCorporateBranchManagerInvitationService,

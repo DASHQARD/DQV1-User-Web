@@ -167,6 +167,7 @@ export const MODAL_NAMES = {
   },
   AUTH: {
     ROOT: 'auth-modal',
+    EMAIL_SENT: 'auth-email-sent',
     LOGOUT: 'logout',
   },
   ROLE: {
@@ -250,3 +251,5 @@ export const MODAL_NAMES = {
     REJECT_DAILY_LIMIT: 'reject-daily-limit',
   },
 }
+
+export const PASSWORD_SPECIAL_CHARACTERS = '!@#$%^&*()'

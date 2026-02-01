@@ -162,14 +162,3 @@ export const updateBranchManagerDetails = async (
 ): Promise<any> => {
   return await patchMethod(`/vendors/branch-manager/update-details`, data)
 }
-
-/** POST /vendors/co-admin/invite — when the user type is a vendor (invite co-admin) */
-export const inviteCoAdmin = async (data: {
-  email: string
-  first_name: string
-  last_name: string
-  phone_number: string
-  role: string
-}): Promise<any> => {
-  return await postMethod(`/vendors/co-admin/invite`, data)
-}

@@ -2,56 +2,13 @@ import { Input, Modal, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { MODAL_NAMES, ROUTES } from '@/utils/constants'
-import { Link, useSearchParams } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { LoginSchema } from '@/utils/schemas'
-import { z } from 'zod'
-import { useAuth } from '../hooks/auth'
-import { OtpLoginModal } from '.'
-import { usePersistedModalState } from '@/hooks'
+import { Link } from 'react-router-dom'
+import OtpLoginModal from '../modals/OtpLoginModal'
+import { useLoginForm } from '../../hooks'
 
 export default function LoginForm() {
-  const { useLoginMutation, useVerifyEmailMutation } = useAuth()
-  const { mutate, isPending } = useLoginMutation()
-  const { mutate: verifyEmail, isPending: isVerifyEmailPending } = useVerifyEmailMutation()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const token = searchParams.get('vtoken')
-  const modal = usePersistedModalState<{ email?: string }>({
-    paramName: MODAL_NAMES.AUTH.ROOT,
-  })
+  const { form, onSubmit, isPending, modal } = useLoginForm()
 
-  const form = useForm<z.infer<typeof LoginSchema>>({
-    resolver: zodResolver(LoginSchema),
-  })
-  const onSubmit = (data: z.infer<typeof LoginSchema>) => {
-    const payload = {
-      email: data.email,
-      password: data.password,
-    }
-    if (token) {
-      verifyEmail(token, {
-        onSuccess: () => {
-          // Remove vtoken from URL
-          const newSearchParams = new URLSearchParams(searchParams)
-          newSearchParams.delete('vtoken')
-          setSearchParams(newSearchParams, { replace: true })
-
-          mutate(payload, {
-            onSuccess: () => {
-              modal.openModal(MODAL_NAMES.AUTH.ROOT, { email: payload.email })
-            },
-          })
-        },
-      })
-    } else {
-      mutate(payload, {
-        onSuccess: () => {
-          modal.openModal(MODAL_NAMES.AUTH.ROOT, { email: payload.email })
-        },
-      })
-    }
-  }
   return (
     <>
       <section className="wrapper">
@@ -89,7 +46,7 @@ export default function LoginForm() {
 
             <Button
               disabled={!form.formState.isValid || isPending}
-              loading={isPending || isVerifyEmailPending}
+              loading={isPending}
               type="submit"
               variant="secondary"
               className="w-full"

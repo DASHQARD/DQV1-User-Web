@@ -169,17 +169,10 @@ export function vendorQueries() {
     })
   }
 
-  function useGetBranchManagerInvitationsService(
-    query?: GetBranchManagerInvitationsQuery,
-    options?: { skip?: boolean },
-  ) {
-    const { user } = useAuthStore()
-    const isCorporateSuperAdmin = (user as any)?.user_type === 'corporate super admin'
-
+  function useGetBranchManagerInvitationsService(query?: GetBranchManagerInvitationsQuery) {
     return useQuery({
       queryKey: ['branch-manager-invitations', query],
       queryFn: () => getBranchManagerInvitations(query),
-      enabled: !options?.skip && !isCorporateSuperAdmin,
     })
   }
 
