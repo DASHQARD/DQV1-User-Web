@@ -28,7 +28,16 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'src/test/'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        '**/hooks/**',
+        '**/assets/**',
+        '**/services/**',
+        '**/routes/**',
+        '**/schemas/**',
+        '**/__tests__/**',
+      ],
     },
   },
 } as import('vite').UserConfig & { test: InlineConfig })

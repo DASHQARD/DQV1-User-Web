@@ -12,7 +12,7 @@ vi.mock('@/features/dashboard/hooks', () => ({
     isLoading: false,
     handleNextPage: vi.fn(),
     handleSetAfter: vi.fn(),
-    estimatedTotal: 0,
+    estimatedTotal: 1,
     clearUnassigned: vi.fn(),
     isClearingUnassigned: false,
   }),
@@ -29,8 +29,8 @@ describe('Recipients (corporate)', () => {
   })
 
   it('renders All recipients tab', () => {
-    const { getByText } = renderWithProviders(<Recipients />)
-    expect(getByText(/all recipients/i)).toBeInTheDocument()
+    const { getAllByText } = renderWithProviders(<Recipients />)
+    expect(getAllByText(/all recipients/i).length).toBeGreaterThan(0)
   })
 
   it('renders Add Recipient button', () => {
@@ -38,8 +38,8 @@ describe('Recipients (corporate)', () => {
     expect(getByRole('button', { name: /add recipient/i })).toBeInTheDocument()
   })
 
-  it('renders Clear unassigned button', () => {
+  it('renders Clear All Recipients button when estimatedTotal > 0', () => {
     const { getByRole } = renderWithProviders(<Recipients />)
-    expect(getByRole('button', { name: /clear unassigned/i })).toBeInTheDocument()
+    expect(getByRole('button', { name: /clear all recipients/i })).toBeInTheDocument()
   })
 })

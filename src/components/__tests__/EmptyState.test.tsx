@@ -6,7 +6,7 @@ describe('EmptyState', () => {
   it('renders title and description', () => {
     const { getByText } = renderWithProviders(
       <EmptyState
-        image="/placeholder.png"
+        image="https://example.com/placeholder.png"
         title="No data"
         description="There is nothing here yet."
       />,
