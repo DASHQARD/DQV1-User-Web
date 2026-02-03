@@ -55,7 +55,8 @@ describe('OTPInput', () => {
     renderWithProviders(<OTPInput value="123456" onChange={onChange} secure />)
     const inputs = screen.getAllByRole('textbox')
     inputs.forEach((input) => {
-      expect(input.value === '' || input.value === '*').toBe(true)
+      const el = input as HTMLInputElement
+      expect(el.value === '' || el.value === '*').toBe(true)
     })
   })
 

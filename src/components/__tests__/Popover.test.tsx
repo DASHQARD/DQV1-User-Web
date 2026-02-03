@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen } from '@/test/test-utils'
-import { Popover, PopoverTrigger, PopoverContent } from '../Popover/Popover'
+import { Popover, PopoverTrigger, PopoverContent } from '../PopOver'
 
 describe('Popover', () => {
   it('renders trigger and shows content when opened', async () => {
