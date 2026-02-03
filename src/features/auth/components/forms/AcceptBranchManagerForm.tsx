@@ -43,6 +43,7 @@ export default function AcceptBranchManagerForm() {
       <section className="flex flex-col gap-4">
         <Input
           label="Password"
+          required
           placeholder="Enter your password"
           type="password"
           {...form.register('password')}
@@ -51,6 +52,7 @@ export default function AcceptBranchManagerForm() {
 
         <Input
           label="Confirm Password"
+          required
           placeholder="Confirm your password"
           type="password"
           {...form.register('confirm_password')}

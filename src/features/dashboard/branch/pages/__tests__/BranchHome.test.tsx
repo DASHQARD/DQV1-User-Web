@@ -13,7 +13,7 @@ vi.mock('@/features/dashboard/components', () => ({
   CompleteVendorWidget: () => null,
 }))
 
-vi.mock('@/features/dashboard/components/branch', () => ({
+vi.mock('@/features/dashboard/branch/metricCards', () => ({
   MetricsCard: ({ label, value }: { label: string; value: string }) => (
     <div data-testid="metrics-card">
       {label}: {value}

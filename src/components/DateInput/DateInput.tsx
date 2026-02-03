@@ -14,7 +14,7 @@ type Props = Readonly<
     error?: string
     disabled?: boolean
     dateFormat?: string
-  } & ReactDatePickerCustomHeaderProps
+  } & Partial<ReactDatePickerCustomHeaderProps>
 >
 export function DateInput(props: Props) {
   const {

@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.38% </span>
+                <span class="strong">4.76% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/59</span>
+                <span class='fraction'>2/42</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.38% </span>
+                <span class="strong">4.76% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/59</span>
+                <span class='fraction'>2/42</span>
             </div>
         
             
@@ -116,64 +116,18 @@
 <a name='L51'></a><a href='#L51'>51</a>
 <a name='L52'></a><a href='#L52'>52</a>
 <a name='L53'></a><a href='#L53'>53</a>
-<a name='L54'></a><a href='#L54'>54</a>
-<a name='L55'></a><a href='#L55'>55</a>
-<a name='L56'></a><a href='#L56'>56</a>
-<a name='L57'></a><a href='#L57'>57</a>
-<a name='L58'></a><a href='#L58'>58</a>
-<a name='L59'></a><a href='#L59'>59</a>
-<a name='L60'></a><a href='#L60'>60</a>
-<a name='L61'></a><a href='#L61'>61</a>
-<a name='L62'></a><a href='#L62'>62</a>
-<a name='L63'></a><a href='#L63'>63</a>
-<a name='L64'></a><a href='#L64'>64</a>
-<a name='L65'></a><a href='#L65'>65</a>
-<a name='L66'></a><a href='#L66'>66</a>
-<a name='L67'></a><a href='#L67'>67</a>
-<a name='L68'></a><a href='#L68'>68</a>
-<a name='L69'></a><a href='#L69'>69</a>
-<a name='L70'></a><a href='#L70'>70</a>
-<a name='L71'></a><a href='#L71'>71</a>
-<a name='L72'></a><a href='#L72'>72</a>
-<a name='L73'></a><a href='#L73'>73</a>
-<a name='L74'></a><a href='#L74'>74</a>
-<a name='L75'></a><a href='#L75'>75</a>
-<a name='L76'></a><a href='#L76'>76</a>
-<a name='L77'></a><a href='#L77'>77</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L54'></a><a href='#L54'>54</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -216,40 +170,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Modal, Text, Button } from '@/components'
-import { usePersistedModalState } from '@/hooks'
-import { MODALS } from '@/utils/constants'
-import { useVendorMutations } from '@/features'
 import { Icon } from '@/libs'
+import { useCancelBranchManagerInvitationModal } from '@/features/dashboard/vendor/hooks'
 &nbsp;
 export <span class="fstat-no" title="function not covered" >function CancelBranchManagerInvitationModal() {</span>
-<span class="cstat-no" title="statement not covered" >  const modal = usePersistedModalState&lt;any&gt;({</span>
-<span class="cstat-no" title="statement not covered" >    paramName: MODALS.BRANCH_MANAGER_INVITATION.PARAM_NAME,</span>
-<span class="cstat-no" title="statement not covered" >  })</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >  const invitation = modal.modalData</span>
-<span class="cstat-no" title="statement not covered" >  const { useCancelBranchManagerInvitationService } = useVendorMutations()</span>
-<span class="cstat-no" title="statement not covered" >  const cancelMutation = useCancelBranchManagerInvitationService()</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >  const handleCancel = () =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const invitationId = invitation?.id</span>
-<span class="cstat-no" title="statement not covered" >    if (!invitationId) return</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    cancelMutation.mutate(Number(invitationId), {</span>
-<span class="cstat-no" title="statement not covered" >      onSuccess: () =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        modal.closeModal()</span>
-<span class="cstat-no" title="statement not covered" >      },</span>
-<span class="cstat-no" title="statement not covered" >    })</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" >  const { invitation, modal, handleCancel, isCancelling, isOpen, invitationEmailLabel } =</span>
+<span class="cstat-no" title="statement not covered" >    useCancelBranchManagerInvitationModal()</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  if (!invitation) return null</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;Modal</span>
-<span class="cstat-no" title="statement not covered" >      isOpen={modal.isModalOpen(MODALS.BRANCH_MANAGER_INVITATION.CHILDREN.CANCEL)}</span>
-<span class="cstat-no" title="statement not covered" >      setIsOpen={modal.closeModal}</span>
-<span class="cstat-no" title="statement not covered" >      panelClass="!max-w-md"</span>
-<span class="cstat-no" title="statement not covered" >      position="center"</span>
-    &gt;
+<span class="cstat-no" title="statement not covered" >    &lt;Modal isOpen={isOpen} setIsOpen={modal.closeModal} panelClass="!max-w-md" position="center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;div className="p-6 space-y-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="flex flex-col gap-4 items-center justify-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100"&gt;</span>
@@ -260,8 +191,8 @@ export <span class="fstat-no" title="function not covered" >function CancelBranc
               Cancel Invitation
 <span class="cstat-no" title="statement not covered" >            &lt;/Text&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;p className="text-sm text-gray-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              Are you sure you want to cancel the invitation for {invitation.branch_manager_email}?</span>
-              This action cannot be undone.
+<span class="cstat-no" title="statement not covered" >              Are you sure you want to cancel the invitation for {invitationEmailLabel}? This action</span>
+              cannot be undone.
 <span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
@@ -272,7 +203,7 @@ export <span class="fstat-no" title="function not covered" >function CancelBranc
 <span class="cstat-no" title="statement not covered" >            variant="outline"</span>
 <span class="cstat-no" title="statement not covered" >            onClick={modal.closeModal}</span>
 <span class="cstat-no" title="statement not covered" >            className="flex-1 rounded-full"</span>
-<span class="cstat-no" title="statement not covered" >            disabled={cancelMutation.isPending}</span>
+<span class="cstat-no" title="statement not covered" >            disabled={isCancelling}</span>
 <span class="cstat-no" title="statement not covered" >          &gt;</span>
             No, Keep It
 <span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
@@ -281,8 +212,8 @@ export <span class="fstat-no" title="function not covered" >function CancelBranc
 <span class="cstat-no" title="statement not covered" >            variant="danger"</span>
 <span class="cstat-no" title="statement not covered" >            onClick={handleCancel}</span>
 <span class="cstat-no" title="statement not covered" >            className="flex-1 rounded-full"</span>
-<span class="cstat-no" title="statement not covered" >            disabled={cancelMutation.isPending}</span>
-<span class="cstat-no" title="statement not covered" >            loading={cancelMutation.isPending}</span>
+<span class="cstat-no" title="statement not covered" >            disabled={isCancelling}</span>
+<span class="cstat-no" title="statement not covered" >            loading={isCancelling}</span>
 <span class="cstat-no" title="statement not covered" >          &gt;</span>
             Yes, Cancel
 <span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
@@ -298,7 +229,7 @@ export <span class="fstat-no" title="function not covered" >function CancelBranc
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-02-02T10:40:23.497Z
+                at 2026-02-03T16:04:17.549Z
             </div>
         <script src="../../../../../../../prettify.js"></script>
         <script>
