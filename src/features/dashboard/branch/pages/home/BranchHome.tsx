@@ -8,7 +8,7 @@ import { EmptyStateImage } from '@/assets/images'
 import LoaderGif from '@/assets/gifs/loader.gif'
 import { StatusCell } from '@/components'
 import { CompleteVendorWidget } from '@/features/dashboard/components'
-import { MetricsCard } from '@/features/dashboard/components/branch'
+import { MetricsCard } from '@/features/dashboard/branch'
 import { useBranchHome } from '@/features/dashboard/branch'
 
 export default function BranchHome() {
