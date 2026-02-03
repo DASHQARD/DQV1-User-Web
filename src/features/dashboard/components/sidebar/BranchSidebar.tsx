@@ -1,111 +1,26 @@
 import React from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { BRANCH_NAV_ITEMS, ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
 import { Text, Tooltip, TooltipTrigger, TooltipContent, Avatar, Tag } from '@/components'
-import { usePresignedURL } from '@/hooks'
-import { useAuthStore } from '@/stores'
-import { branchQueries } from '@/features/dashboard/branch'
+import { useBranchSidebar } from '@/features/dashboard/branch'
 
 export default function BranchSidebar() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { logout } = useAuthStore()
-  const [isCollapsed, setIsCollapsed] = React.useState(false)
-
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
-
-  const { useGetBranchInfoService } = branchQueries()
-  const { data: branchInfoData } = useGetBranchInfoService()
-
-  // Support both wrapped ({ data: {...} }) and flat ({ branch, ... }) response shapes
-  const branchInfo = (branchInfoData as any)?.data ?? branchInfoData
-  const branch = branchInfo?.branch
-  const branchManager = branchInfo?.branch_manager
-  const paymentDetails = branchInfo?.payment_details
-  const businessDetails = branchInfo?.business_details
-
-  const branchName = branch?.branch_name ?? null
-  const branchManagerName = branch?.branch_manager_name ?? branchManager?.fullname ?? null
-  const branchLocation = branch?.branch_location ?? null
-
-  // Check if branch manager onboarding is complete (from branch info: manager details + payment)
-  const isOnboardingComplete = React.useMemo(() => {
-    const hasManagerDetails =
-      Boolean(branchManager?.fullname) &&
-      Boolean(branchManager?.email) &&
-      Boolean(branchManager?.phonenumber)
-    const hasPayment = Boolean(paymentDetails?.momo_number ?? paymentDetails?.id)
-    return hasManagerDetails && hasPayment
-  }, [branchManager, paymentDetails])
-
-  // Discovery score: branch manager details (50%) + payment details (50%)
-  const discoveryScore = React.useMemo(() => {
-    const hasManagerDetails =
-      Boolean(branchManager?.fullname) &&
-      Boolean(branchManager?.email) &&
-      Boolean(branchManager?.phonenumber)
-    const hasPayment = Boolean(paymentDetails?.momo_number ?? paymentDetails?.id)
-    const steps = [hasManagerDetails, hasPayment]
-    const completedCount = steps.filter(Boolean).length
-    return Math.round((completedCount / steps.length) * 100)
-  }, [branchManager, paymentDetails])
-
-  // Fetch logo presigned URL from branch info business_details
-  React.useEffect(() => {
-    const logoKey = businessDetails?.logo
-    if (!logoKey) {
-      setLogoUrl(null)
-      return
-    }
-
-    let cancelled = false
-
-    const loadLogo = async () => {
-      try {
-        const result = await fetchPresignedURL(logoKey)
-        if (cancelled) return
-        const url =
-          typeof result === 'string' ? result : ((result as { url?: string })?.url ?? null)
-        setLogoUrl(url)
-      } catch {
-        if (!cancelled) {
-          setLogoUrl(null)
-        }
-      }
-    }
-
-    loadLogo()
-
-    return () => {
-      cancelled = true
-    }
-  }, [businessDetails?.logo, fetchPresignedURL])
-
-  const isActive = (path: string) => {
-    if (path === '/dashboard') {
-      return location.pathname === path
-    }
-    if (location.pathname === path) {
-      return true
-    }
-    // For vendor home, only match exact path or if we're at the root dashboard
-    if (path === ROUTES.IN_APP.DASHBOARD.VENDOR.HOME) {
-      return location.pathname === path || location.pathname === '/dashboard/vendor'
-    }
-    // For other paths, check if pathname starts with the path
-    if (location.pathname.startsWith(path + '/')) {
-      return true
-    }
-    return false
-  }
-
-  const addAccountParam = (path: string): string => {
-    const separator = path?.includes('?') ? '&' : '?'
-    return `${path}${separator}account=vendor`
-  }
+  const {
+    navigate,
+    logout,
+    isCollapsed,
+    setIsCollapsed,
+    logoUrl,
+    branchName,
+    branchManagerName,
+    branchLocation,
+    discoveryScore,
+    canAccessExperienceAndRedemptions,
+    isActive,
+    addAccountParam,
+  } = useBranchSidebar()
 
   return (
     <aside
@@ -118,7 +33,7 @@ export default function BranchSidebar() {
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center gap-3 flex-1 justify-between w-full">
           {!isCollapsed && (
-            <Link to={ROUTES.IN_APP.DASHBOARD.VENDOR.HOME} className="shrink-0">
+            <Link to={addAccountParam(ROUTES.IN_APP.DASHBOARD.BRANCH.HOME)} className="shrink-0">
               <Avatar size="sm" src={logoUrl} name={branchName || 'Branch'} />
             </Link>
           )}
@@ -238,11 +153,11 @@ export default function BranchSidebar() {
                 </li>
               )}
               {section.items.map((item) => {
-                // Disable Experience and Redemptions if onboarding is not complete
+                // Disable Experience and Redemptions until onboarding is complete or branch is approved
                 const isRestrictedItem =
-                  item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.EXPERIENCE ||
-                  item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.REDEMPTIONS
-                const isDisabled = isRestrictedItem && !isOnboardingComplete
+                  item.path === ROUTES.IN_APP.DASHBOARD.BRANCH.EXPERIENCE ||
+                  item.path === ROUTES.IN_APP.DASHBOARD.BRANCH.REDEMPTIONS
+                const isDisabled = isRestrictedItem && !canAccessExperienceAndRedemptions
 
                 // Special handling for Log Out
                 if (item.path === 'logout') {

@@ -1,31 +1,10 @@
-import { useEffect } from 'react'
-import { Outlet, useLocation } from 'react-router'
+import { Outlet } from 'react-router'
 import { Sidebar } from '../components'
-import { ROUTES } from '@/utils/constants'
 import { Navbar } from '@/components'
+import { useDashboardLayout } from './useDashboardLayout'
 
 export default function DashboardLayout() {
-  const location = useLocation()
-
-  useEffect(() => {
-    if (location.pathname === ROUTES.IN_APP.DASHBOARD.HOME) {
-      // Check if user navigated from within dashboard (not from login)
-      const previousPath = sessionStorage.getItem('previousDashboardPath')
-      const isNavigatingWithinDashboard = previousPath && previousPath.startsWith('/dashboard')
-
-      if (isNavigatingWithinDashboard) {
-        // User manually navigated to dashboard - allow them to see it
-        sessionStorage.setItem('dashboardManuallyAccessed', 'true')
-        sessionStorage.removeItem('complianceRedirectDone')
-      }
-
-      // Update previous path
-      sessionStorage.setItem('previousDashboardPath', location.pathname)
-    } else if (location.pathname.startsWith('/dashboard')) {
-      // Track any dashboard navigation
-      sessionStorage.setItem('previousDashboardPath', location.pathname)
-    }
-  }, [location.pathname])
+  useDashboardLayout()
 
   return (
     <div className="no-print relative flex overflow-hidden h-screen">

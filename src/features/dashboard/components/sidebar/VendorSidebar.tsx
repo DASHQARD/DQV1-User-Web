@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { VENDOR_NAV_ITEMS, ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
@@ -8,282 +8,38 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { PaymentChangeNotifications } from '../corporate/notifications/PaymentChangeNotifications'
 import { ExperienceApprovalNotifications } from '../corporate/notifications/ExperienceApprovalNotifications'
 import { CreateVendorAccount } from '../corporate/modals'
-import { useUserProfile, usePresignedURL } from '@/hooks'
-import { useAuthStore } from '@/stores'
-import { vendorQueries } from '@/features'
+import { useVendorSidebar } from '@/features/dashboard/vendor/hooks'
 
 export default function VendorSidebar() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const { logout, user } = useAuthStore()
-  const [isCollapsed, setIsCollapsed] = React.useState(false)
-  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
-
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
-
-  const userType = (user as any)?.user_type || userProfileData?.user_type
-  const isVendor = userType === 'vendor'
-
-  // Get display name - always show "Vendor" when on vendor dashboard
-  const displayName = React.useMemo(() => {
-    return 'Vendor'
-  }, [])
-
-  const { useBranchesService, useGetAllVendorsDetailsService, useGetRequestsVendorService } =
-    vendorQueries()
-  const { data: branches } = useBranchesService()
-  const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
-  const { data: requestsResponse } = useGetRequestsVendorService({ limit: 100 })
-
-  // Pending requests count for sidebar badge
-  const pendingRequestsCount = React.useMemo(() => {
-    if (!requestsResponse) return 0
-    const list = Array.isArray(requestsResponse)
-      ? requestsResponse
-      : Array.isArray(requestsResponse?.data)
-        ? requestsResponse.data
-        : []
-    return list.filter((r: any) => String(r?.status).toLowerCase() === 'pending').length
-  }, [requestsResponse])
-
-  // Handle branches data structure (array or wrapped response)
-  const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
-
-  // Calculate discovery score based on onboarding progress
-  const discoveryScore = React.useMemo(() => {
-    const progress = userProfileData?.onboarding_progress
-    if (!progress) return 0
-
-    // For vendors: count as 3 steps like CompleteVendorWidget
-    // 1. Profile & ID (personal_details + upload_id combined)
-    // 2. Business Details & Docs (business_details + business_documents combined)
-    // 3. Branches (actual branches exist, not just the flag)
-    const hasProfileAndID = progress.personal_details_completed && progress.upload_id_completed
-    const hasBusinessDetailsAndDocs =
-      progress.business_details_completed && progress.business_documents_completed
-    const hasBranches = branchesArray.length > 0
-
-    const completedCount =
-      (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0) + (hasBranches ? 1 : 0)
-    const totalCount = 3
-    return Math.round((completedCount / totalCount) * 100)
-  }, [userProfileData?.onboarding_progress, branchesArray.length])
-
-  // Get vendors created by this corporate user
-  const vendorsCreatedByCorporate = React.useMemo(() => {
-    const vendorsData = Array.isArray(allVendorsDetails)
-      ? allVendorsDetails
-      : allVendorsDetails?.data || []
-    return vendorsData.filter(
-      (vendor: any) =>
-        vendor.corporate_user_id === userProfileData?.id &&
-        vendor.approval_status === 'auto_approved',
-    )
-  }, [allVendorsDetails, userProfileData?.id])
-
-  // Check if user can access corporate workspace
-  // Show corporate account if user has corporate_id or if they have vendors created (meaning they have a corporate account)
-  const canAccessCorporate = React.useMemo(() => {
-    // Check if user type allows corporate access
-    if (userType === 'corporate_vendor' || userType === 'corporate super admin') {
-      return true
-    }
-    // Check if user has corporate_id (meaning they have a corporate account)
-    if (userProfileData?.corporate_id) {
-      return true
-    }
-    // Check if user has created vendors (meaning they came from corporate side)
-    if (vendorsCreatedByCorporate && vendorsCreatedByCorporate.length > 0) {
-      return true
-    }
-    return false
-  }, [userType, userProfileData?.corporate_id, vendorsCreatedByCorporate])
-
-  // State for vendor logo URLs
-  const [vendorLogoUrls, setVendorLogoUrls] = React.useState<Record<number, string>>({})
-
-  // Fetch vendor logo presigned URLs
-  React.useEffect(() => {
-    if (vendorsCreatedByCorporate.length === 0) return
-
-    const fetchLogos = async () => {
-      const logoPromises = vendorsCreatedByCorporate.map(async (vendor: any) => {
-        if (!vendor.vendor_logo) return null
-        try {
-          const url = await fetchPresignedURL(vendor.vendor_logo)
-          return { vendorId: vendor.vendor_id, url }
-        } catch (error) {
-          throw new Error(`Failed to fetch logo for vendor ${vendor.vendor_id}: ${error}`)
-        }
-      })
-
-      const results = await Promise.all(logoPromises)
-      const logoMap: Record<number, string> = {}
-      results.forEach((result) => {
-        if (result) {
-          logoMap[result.vendorId] = result.url
-        }
-      })
-      setVendorLogoUrls(logoMap)
-    }
-
-    fetchLogos()
-  }, [vendorsCreatedByCorporate, fetchPresignedURL])
-
-  // Fetch corporate logo presigned URL
-  React.useEffect(() => {
-    const logoDocument = userProfileData?.business_documents?.find(
-      (doc: any) => doc.type === 'logo',
-    )
-
-    if (!logoDocument?.file_url) {
-      setLogoUrl(null)
-      return
-    }
-
-    let cancelled = false
-
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logoDocument.file_url)
-        if (!cancelled) {
-          setLogoUrl(url)
-        }
-      } catch (error) {
-        console.error('Failed to fetch logo presigned URL', error)
-        if (!cancelled) {
-          setLogoUrl(null)
-        }
-      }
-    }
-
-    loadLogo()
-
-    return () => {
-      cancelled = true
-    }
-  }, [userProfileData?.business_documents, fetchPresignedURL])
-
-  // Get corporate business details
-  const corporateBusiness = userProfileData?.business_details?.[0]
-  const corporateName = corporateBusiness?.name || 'Corporate Account'
-  const corporateId = userProfileData?.corporate_id_from_business || ''
-
-  // Get current vendor from URL params
-  const currentVendorId = searchParams.get('vendor_id')
-  const currentVendor = React.useMemo(() => {
-    if (!currentVendorId || vendorsCreatedByCorporate.length === 0) return null
-    return vendorsCreatedByCorporate.find(
-      (vendor: any) =>
-        String(vendor.vendor_id) === currentVendorId || String(vendor.id) === currentVendorId,
-    )
-  }, [currentVendorId, vendorsCreatedByCorporate])
-
-  // Filter out current vendor from the list of vendors to switch to
-  const vendorsToSwitchTo = React.useMemo(() => {
-    if (!currentVendorId) return vendorsCreatedByCorporate
-    return vendorsCreatedByCorporate.filter(
-      (vendor: any) =>
-        String(vendor.vendor_id) !== currentVendorId && String(vendor.id) !== currentVendorId,
-    )
-  }, [vendorsCreatedByCorporate, currentVendorId])
-
-  // Get current vendor information
-  const vendorName = React.useMemo(() => {
-    return (
-      currentVendor?.vendor_name ||
-      currentVendor?.business_name ||
-      userProfileData?.business_details?.[0]?.name ||
-      'Vendor Account'
-    )
-  }, [currentVendor, userProfileData?.business_details])
-  const vendorGvid = currentVendor?.gvid || ''
-  const [currentVendorLogoUrl, setCurrentVendorLogoUrl] = React.useState<string | null>(null)
-
-  // Fetch current vendor logo presigned URL
-  React.useEffect(() => {
-    // First try to get logo from currentVendor (when switching between vendor accounts)
-    // Otherwise, get it from userProfileData business_documents (for current vendor account)
-    const logoSource = currentVendor?.vendor_logo
-      ? currentVendor.vendor_logo
-      : userProfileData?.business_documents?.find((doc: any) => doc.type === 'logo')?.file_url
-
-    if (!logoSource) {
-      setCurrentVendorLogoUrl(null)
-      return
-    }
-
-    let cancelled = false
-
-    const loadVendorLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logoSource)
-        if (!cancelled) {
-          setCurrentVendorLogoUrl(url)
-        }
-      } catch (error) {
-        console.error('Failed to fetch vendor logo presigned URL', error)
-        if (!cancelled) {
-          setCurrentVendorLogoUrl(null)
-        }
-      }
-    }
-
-    loadVendorLogo()
-
-    return () => {
-      cancelled = true
-    }
-  }, [currentVendor?.vendor_logo, userProfileData?.business_documents, fetchPresignedURL])
-
-  // Branches state
-  const [isBranchesExpanded, setIsBranchesExpanded] = React.useState(false)
-
-  const isActive = (path: string) => {
-    if (path === '/dashboard') {
-      return location.pathname === path
-    }
-    if (location.pathname === path) {
-      return true
-    }
-    // For vendor home, only match exact path or if we're at the root dashboard
-    if (path === ROUTES.IN_APP.DASHBOARD.VENDOR.HOME) {
-      return location.pathname === path || location.pathname === '/dashboard/vendor'
-    }
-    // For branches, check if we're on a branch details page
-    if (path === ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES) {
-      return location.pathname.startsWith(path + '/') || location.pathname === path
-    }
-    // For other paths, check if pathname starts with the path
-    if (location.pathname.startsWith(path + '/')) {
-      if (path === ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ROOT) {
-        return !location.pathname.startsWith(ROUTES.IN_APP.DASHBOARD.COMPLIANCE.ADD_BRANCH)
-      }
-      return true
-    }
-    return false
-  }
-
-  // Check if a specific branch is active
-  const isBranchActive = (branchId: string) => {
-    return location.pathname === `${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}/${branchId}`
-  }
-
-  // Auto-expand branches if we're on a branch details page
-  React.useEffect(() => {
-    if (location.pathname.startsWith(ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES + '/')) {
-      setIsBranchesExpanded(true)
-    }
-  }, [location.pathname])
-
-  const addAccountParam = (path: string): string => {
-    const separator = path?.includes('?') ? '&' : '?'
-    return `${path}${separator}account=vendor`
-  }
+  const {
+    navigate,
+    logout,
+    isCollapsed,
+    setIsCollapsed,
+    isPopoverOpen,
+    setIsPopoverOpen,
+    logoUrl,
+    currentVendorLogoUrl,
+    vendorLogoUrls,
+    isVendor,
+    displayName,
+    corporateName,
+    corporateId,
+    currentVendorId,
+    vendorsToSwitchTo,
+    vendorName,
+    vendorGvid,
+    branchesArray,
+    discoveryScore,
+    canAccessCorporate,
+    pendingRequestsCount,
+    isBranchesExpanded,
+    setIsBranchesExpanded,
+    isActive,
+    isBranchActive,
+    addAccountParam,
+    handleSwitchToVendor,
+  } = useVendorSidebar()
 
   const accountMenuContent = (
     <>
@@ -352,34 +108,31 @@ export default function VendorSidebar() {
             {/* List of vendor accounts */}
             {vendorsToSwitchTo && vendorsToSwitchTo.length > 0 && (
               <div className="mb-3 space-y-1 max-h-[200px] overflow-y-auto">
-                {vendorsToSwitchTo.map((vendor: any) => (
-                  <button
-                    key={vendor.vendor_id || vendor.id}
-                    onClick={() => {
-                      setIsPopoverOpen(false)
-                      const vendorId = vendor.vendor_id || vendor.id
-                      navigate(
-                        `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor${vendorId ? `&vendor_id=${vendorId}` : ''}`,
-                      )
-                    }}
-                    className="flex items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors"
-                  >
-                    <Avatar
-                      size="sm"
-                      src={vendorLogoUrls[vendor.vendor_id]}
-                      name={vendor.vendor_name || vendor.business_name}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <Text variant="span" weight="semibold" className="block text-sm truncate">
-                        {vendor.vendor_name || vendor.business_name}
-                      </Text>
-                      <Text variant="span" className="block text-xs text-gray-500 truncate">
-                        {vendor.gvid || `ID: ${vendor.vendor_id || vendor.id}`}
-                      </Text>
-                    </div>
-                    <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
-                  </button>
-                ))}
+                {vendorsToSwitchTo.map((vendor: any) => {
+                  const vendorId = vendor.vendor_id || vendor.id
+                  return (
+                    <button
+                      key={vendorId}
+                      onClick={() => handleSwitchToVendor(vendorId)}
+                      className="flex items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors"
+                    >
+                      <Avatar
+                        size="sm"
+                        src={vendorLogoUrls[vendorId]}
+                        name={vendor.vendor_name || vendor.business_name}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <Text variant="span" weight="semibold" className="block text-sm truncate">
+                          {vendor.vendor_name || vendor.business_name}
+                        </Text>
+                        <Text variant="span" className="block text-xs text-gray-500 truncate">
+                          {vendor.gvid || `ID: ${vendor.vendor_id || vendor.id}`}
+                        </Text>
+                      </div>
+                      <Icon icon="bi:chevron-right" className="text-gray-400 text-sm shrink-0" />
+                    </button>
+                  )
+                })}
               </div>
             )}
 
@@ -614,7 +367,7 @@ export default function VendorSidebar() {
                               ) : (
                                 branchesArray.map((branch: any) => {
                                   const branchId = branch.id || branch.branch_id
-                                  const vendorId = currentVendorId || userProfileData?.vendor_id
+                                  const vendorId = currentVendorId
                                   const branchPath = `${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}/${branchId}`
                                   // Build query params
                                   const queryParams = new URLSearchParams()

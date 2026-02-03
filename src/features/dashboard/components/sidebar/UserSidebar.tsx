@@ -1,102 +1,27 @@
 import React from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { USER_NAV_ITEMS, ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
 import { Text, Tooltip, TooltipTrigger, TooltipContent, ImageUpload } from '@/components'
-import { useAuthStore } from '@/stores'
 import Logo from '@/assets/images/logo-placeholder.png'
-import { useUserProfile, useUploadFiles, usePresignedURL } from '@/hooks'
-import { useAuth } from '@/features/auth'
+import { useUserSidebar } from '@/features/dashboard/hooks'
 
 export default function UserSidebar() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { logout } = useAuthStore()
-  const [isCollapsed, setIsCollapsed] = React.useState(false)
-
-  const { useGetUserProfileService, useUpdateUserAvatarService } = useUserProfile()
-  const { useLogoutService } = useAuth()
-  const { mutateAsync: logoutMutation, isPending: isLoggingOut } = useLogoutService()
-  const { data: userProfileData } = useGetUserProfileService()
-  const { mutateAsync: updateAvatar, isPending: isUploadingImage } = useUpdateUserAvatarService()
-  const { mutateAsync: uploadFiles } = useUploadFiles()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-
-  // State for avatar upload
-  const [file, setFile] = React.useState<File | null>(null)
-  const [imageUrl, setImageUrl] = React.useState<{ imageUrl: string | null } | null>(null)
-
-  // Fetch current avatar from user profile
-  React.useEffect(() => {
-    if (!userProfileData?.avatar) {
-      setImageUrl(null)
-      return
-    }
-
-    let cancelled = false
-    const loadAvatar = async () => {
-      try {
-        const url = await fetchPresignedURL(userProfileData.avatar!)
-        if (!cancelled) {
-          setImageUrl({
-            imageUrl: typeof url === 'string' ? url : (url as any)?.url || url,
-          })
-        }
-      } catch (error) {
-        console.error('Failed to fetch avatar', error)
-        if (!cancelled) {
-          setImageUrl(null)
-        }
-      }
-    }
-    loadAvatar()
-    return () => {
-      cancelled = true
-    }
-  }, [userProfileData?.avatar, fetchPresignedURL])
-
-  // Handle image upload
-  const handleImageUpload = async (selectedFile: File) => {
-    try {
-      const uploadedFiles = await uploadFiles([selectedFile])
-      if (uploadedFiles && uploadedFiles.length > 0) {
-        const fileUrl = (uploadedFiles[0] as any).file_url || (uploadedFiles[0] as any).file_key
-        // Update avatar with file_url
-        await updateAvatar({ file_url: fileUrl })
-        // Reset file state after successful upload
-        setFile(null)
-      }
-    } catch (error: any) {
-      console.error('Failed to upload avatar:', error)
-    }
-  }
-
-  const isActive = (path: string) => {
-    if (path === '/dashboard') {
-      return location.pathname === path
-    }
-    if (location.pathname === path) {
-      return true
-    }
-    if (location.pathname.startsWith(path + '/')) {
-      return true
-    }
-    return false
-  }
-
-  function handleLogout() {
-    logoutMutation(undefined, {
-      onSuccess: () => {
-        logout()
-        navigate(ROUTES.IN_APP.AUTH.LOGIN)
-      },
-      onError: () => {
-        logout()
-        navigate(ROUTES.IN_APP.AUTH.LOGIN)
-      },
-    })
-  }
+  const {
+    navigate,
+    isCollapsed,
+    setIsCollapsed,
+    userProfileData,
+    file,
+    setFile,
+    imageUrl,
+    handleImageUpload,
+    isUploadingImage,
+    isActive,
+    handleLogout,
+    isLoggingOut,
+  } = useUserSidebar()
 
   return (
     <aside

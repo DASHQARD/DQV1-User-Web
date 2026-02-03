@@ -1,102 +1,19 @@
-import React from 'react'
-import { useSearchParams } from 'react-router'
-import { Controller, useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { Controller } from 'react-hook-form'
 import { Button, Modal, Input, BasePhoneInput, Text } from '@/components'
-import { usePersistedModalState, useCountriesData, useUserProfile } from '@/hooks'
-import { MODALS } from '@/utils/constants'
 import { Icon } from '@/libs'
-import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
-
-const UpdateBranchManagerInvitationSchema = z.object({
-  branch_manager_name: z.string().min(1, 'Name is required'),
-  branch_manager_email: z.string().email('Invalid email address'),
-  branch_manager_phone: z.string().min(1, 'Phone number is required'),
-})
-
-type UpdateBranchManagerInvitationFormData = z.infer<typeof UpdateBranchManagerInvitationSchema>
+import { useUpdateBranchManagerInvitationModal } from '@/features/dashboard/vendor/hooks'
 
 export function UpdateBranchManagerInvitationModal() {
-  const [searchParams] = useSearchParams()
-  const vendorIdFromUrl = searchParams.get('vendor_id')
-
-  const modal = usePersistedModalState<any>({
-    paramName: MODALS.BRANCH_MANAGER_INVITATION.PARAM_NAME,
-  })
-
-  const invitation = modal.modalData
-  const { countries: phoneCountries } = useCountriesData()
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const userType = userProfileData?.user_type
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
-
-  const form = useForm<UpdateBranchManagerInvitationFormData>({
-    resolver: zodResolver(UpdateBranchManagerInvitationSchema),
-    defaultValues: {
-      branch_manager_name: invitation?.branch_manager_name || '',
-      branch_manager_email: invitation?.branch_manager_email || '',
-      branch_manager_phone: invitation?.branch_manager_phone || '',
-    },
-  })
-
-  React.useEffect(() => {
-    if (invitation) {
-      form.reset({
-        branch_manager_name: invitation.branch_manager_name || '',
-        branch_manager_email: invitation.branch_manager_email || '',
-        branch_manager_phone: invitation.branch_manager_phone || '',
-      })
-    }
-  }, [invitation, form])
-
-  const handleCloseModal = React.useCallback(() => {
-    modal.closeModal()
-    form.reset()
-  }, [modal, form])
-
   const {
-    useUpdateCorporateBranchManagerInvitationService,
-    useUpdateCorporateVendorBranchManagerInvitationService,
-  } = corporateMutations()
-  const updateCorporateMutation = useUpdateCorporateBranchManagerInvitationService()
-  const updateCorporateVendorMutation = useUpdateCorporateVendorBranchManagerInvitationService()
-
-  const isUpdating = updateCorporateMutation.isPending || updateCorporateVendorMutation.isPending
-
-  const onSubmit = async (data: UpdateBranchManagerInvitationFormData) => {
-    if (!invitation?.id) return
-
-    const payload = {
-      id: Number(invitation.id),
-      data: {
-        branch_manager_name: data.branch_manager_name,
-        branch_manager_email: data.branch_manager_email,
-        branch_manager_phone: data.branch_manager_phone,
-      },
-    }
-
-    if (isCorporateSuperAdmin && vendorIdFromUrl) {
-      updateCorporateVendorMutation.mutate(payload, {
-        onSuccess: () => {
-          handleCloseModal()
-        },
-      })
-    } else if (isCorporateSuperAdmin) {
-      updateCorporateMutation.mutate(payload, {
-        onSuccess: () => {
-          handleCloseModal()
-        },
-      })
-    } else {
-      updateCorporateMutation.mutate(payload, {
-        onSuccess: () => {
-          handleCloseModal()
-        },
-      })
-    }
-  }
+    invitation,
+    form,
+    phoneCountries,
+    handleCloseModal,
+    onSubmit,
+    isUpdating,
+    isOpen,
+    invitationEmailLabel,
+  } = useUpdateBranchManagerInvitationModal()
 
   if (!invitation) return null
 
@@ -104,7 +21,7 @@ export function UpdateBranchManagerInvitationModal() {
     <Modal
       position="center"
       title="Update Branch Manager Invitation"
-      isOpen={modal.isModalOpen(MODALS.BRANCH_MANAGER_INVITATION.CHILDREN.UPDATE)}
+      isOpen={isOpen}
       setIsOpen={handleCloseModal}
       panelClass="!w-[500px] max-w-[90vw]"
     >
@@ -117,9 +34,7 @@ export function UpdateBranchManagerInvitationModal() {
             <Text variant="h3" className="font-semibold">
               Update Invitation
             </Text>
-            <p className="text-sm text-gray-600">
-              Update the details for {invitation.branch_manager_email || 'this invitation'}
-            </p>
+            <p className="text-sm text-gray-600">Update the details for {invitationEmailLabel}</p>
           </div>
         </div>
 
@@ -145,25 +60,25 @@ export function UpdateBranchManagerInvitationModal() {
             <Controller
               control={form.control}
               name="branch_manager_phone"
-              render={({ field: { onChange, value } }) => {
-                return (
-                  <BasePhoneInput
-                    placeholder="Enter number eg. 5512345678"
-                    options={phoneCountries}
-                    maxLength={9}
-                    handleChange={onChange}
-                    selectedVal={value}
-                    label="Phone Number"
-                    error={form.formState.errors.branch_manager_phone?.message}
-                    disabled={isUpdating}
-                  />
-                )
-              }}
+              render={({ field: { onChange, value } }) => (
+                <BasePhoneInput
+                  placeholder="Enter number eg. 5512345678"
+                  options={phoneCountries}
+                  maxLength={9}
+                  handleChange={onChange}
+                  selectedVal={value}
+                  label="Phone Number"
+                  error={form.formState.errors.branch_manager_phone?.message}
+                  disabled={isUpdating}
+                  hint={
+                    <>
+                      Please enter your number in the format:{' '}
+                      <span className="font-medium">5512345678</span>
+                    </>
+                  }
+                />
+              )}
             />
-            <p className="text-xs text-gray-500">
-              Please enter your number in the format:{' '}
-              <span className="font-medium">5512345678</span>
-            </p>
           </div>
         </div>
 

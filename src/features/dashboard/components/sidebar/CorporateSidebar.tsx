@@ -8,7 +8,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { PaymentChangeNotifications } from '../corporate/notifications/PaymentChangeNotifications'
 import { CreateVendorAccount } from '../corporate/modals'
 import { MODALS } from '@/utils/constants'
-import { useCorporateSidebar } from './useCorporateSidebar'
+import { useCorporateSidebar } from '@/features/dashboard/corporate/hooks'
 
 export default function CorporateSidebar() {
   const {

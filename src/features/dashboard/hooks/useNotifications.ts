@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
-import { approvePaymentChange, rejectPaymentChange } from '../services/notifications'
+import { approvePaymentChange, rejectPaymentChange } from '../corporate/services/notifications'
 
 export function useApprovePaymentChange() {
   const queryClient = useQueryClient()

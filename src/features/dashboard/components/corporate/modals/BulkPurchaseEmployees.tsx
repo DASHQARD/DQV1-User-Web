@@ -8,8 +8,8 @@ import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
 import { formatCurrency } from '@/utils/format'
-import { useBulkPurchaseEmployeesModal } from './useBulkPurchaseEmployeesModal'
-import type { RecipientRow } from '@/types'
+import { useBulkPurchaseEmployeesModal } from '@/features/dashboard/components/corporate/modals/useBulkPurchaseEmployeesModal'
+import type { RecipientRow, CardRecipientAssignment } from '@/types'
 
 export function BulkPurchaseEmployees() {
   const modal = usePersistedModalState({
@@ -78,7 +78,26 @@ export function BulkPurchaseEmployeesModal() {
     createDashGoMutation,
     createDashProMutation,
     addToCartMutation,
+    hasExistingRecipients,
+    existingRecipientsList,
+    existingRecipientsLoading,
+    choiceMade,
+    handleReplaceAll,
+    handleAddToRecipients,
+    handleProceedToSelectCards,
+    deleteUnassignedBulkMutation,
   } = useBulkPurchaseEmployeesModal()
+
+  const stepLabels = hasExistingRecipients
+    ? [
+        { step: 0, label: 'Choose' },
+        { step: 1, label: 'Upload' },
+        { step: 2, label: 'Select Cards' },
+      ]
+    : [
+        { step: 1, label: 'Upload' },
+        { step: 2, label: 'Select Cards' },
+      ]
 
   return (
     <Modal
@@ -91,7 +110,7 @@ export function BulkPurchaseEmployeesModal() {
       <div className="p-6 space-y-6 flex flex-col min-h-full">
         {/* Step Indicator */}
         <div className="flex items-center justify-between mb-6">
-          {[1, 2].map((s) => (
+          {stepLabels.map(({ step: s, label }, idx) => (
             <React.Fragment key={s}>
               <div className="flex items-center">
                 <div
@@ -99,13 +118,11 @@ export function BulkPurchaseEmployeesModal() {
                     step >= s ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
                   }`}
                 >
-                  {s}
+                  {idx + 1}
                 </div>
-                <span className="ml-2 text-sm font-medium">
-                  {s === 1 ? 'Upload' : 'Select Cards'}
-                </span>
+                <span className="ml-2 text-sm font-medium">{label}</span>
               </div>
-              {s < 2 && (
+              {idx < stepLabels.length - 1 && (
                 <div
                   className={`flex-1 h-0.5 mx-4 ${step > s ? 'bg-primary-600' : 'bg-gray-200'}`}
                 />
@@ -114,15 +131,86 @@ export function BulkPurchaseEmployeesModal() {
           ))}
         </div>
 
-        {/* Step 1: Upload Recipients */}
-        {step === 1 && (
+        {/* Checking for recipients (avoid showing Upload until we know) */}
+        {step === 1 && !hasExistingRecipients && existingRecipientsLoading && (
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <Text variant="p" className="text-sm text-gray-600">
+              Checking for existing recipients...
+            </Text>
+            <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {/* Step 0: Existing recipients — Replace all or Add to */}
+        {step === 0 && hasExistingRecipients && (
+          <div className="space-y-6">
+            <Text variant="p" className="text-sm text-gray-600">
+              You have {existingRecipientsList.length} existing recipient(s). Do you want to replace
+              all recipients or add to the recipients?
+            </Text>
+            {existingRecipientsLoading ? (
+              <Text variant="span" className="text-sm text-gray-500">
+                Loading recipients...
+              </Text>
+            ) : (
+              <div className="max-h-[240px] overflow-y-auto border border-gray-200 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                        Recipient Name
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Email</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Phone</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {existingRecipientsList.map((r: RecipientRow) => (
+                      <tr key={r.id} className="border-t border-gray-200">
+                        <td className="px-4 py-2">{r.name}</td>
+                        <td className="px-4 py-2">{r.email}</td>
+                        <td className="px-4 py-2">{r.phone}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+              <Button variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleReplaceAll}
+                disabled={deleteUnassignedBulkMutation.isPending}
+                loading={deleteUnassignedBulkMutation.isPending}
+              >
+                Replace all recipients
+              </Button>
+              <Button variant="secondary" onClick={handleAddToRecipients}>
+                Add to the recipients
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 1: Upload Recipients (only when not loading recipients) */}
+        {step === 1 && !existingRecipientsLoading && (
           <div className="space-y-6">
             <div className="space-y-2">
-              <Text variant="p" className="text-sm text-gray-600">
-                Upload an Excel file with recipient details (first name, last name, email, phone
-                number, message). After uploading, you'll be able to assign gift cards to each
-                recipient.
-              </Text>
+              {choiceMade === 'add' ? (
+                <Text variant="p" className="text-sm text-gray-600">
+                  You have {uploadedRecipients.length} recipient(s). Upload an Excel file to add
+                  more (optional), or proceed to select cards.
+                </Text>
+              ) : (
+                <Text variant="p" className="text-sm text-gray-600">
+                  Upload an Excel file with recipient details (first name, last name, email, phone
+                  number, message). After uploading, you'll be able to assign gift cards to each
+                  recipient.
+                </Text>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
@@ -368,7 +456,8 @@ export function BulkPurchaseEmployeesModal() {
                         Select Recipients for DashPro
                       </Text>
                       <Button variant="outline" size="small" onClick={handleSelectAllRecipients}>
-                        {selectedRecipients.size === uploadedRecipients.filter((r) => r.id).length
+                        {selectedRecipients.size ===
+                        uploadedRecipients.filter((r: RecipientRow) => r.id).length
                           ? 'Deselect All'
                           : 'Select All'}
                       </Button>
@@ -381,14 +470,14 @@ export function BulkPurchaseEmployeesModal() {
                             <th className="px-4 py-3 text-left font-semibold text-gray-700 w-12">
                               <Checkbox
                                 checked={
-                                  uploadedRecipients.filter((r) => r.id).length > 0 &&
+                                  uploadedRecipients.filter((r: RecipientRow) => r.id).length > 0 &&
                                   selectedRecipients.size ===
-                                    uploadedRecipients.filter((r) => r.id).length
+                                    uploadedRecipients.filter((r: RecipientRow) => r.id).length
                                 }
                                 indeterminate={
                                   selectedRecipients.size > 0 &&
                                   selectedRecipients.size <
-                                    uploadedRecipients.filter((r) => r.id).length
+                                    uploadedRecipients.filter((r: RecipientRow) => r.id).length
                                 }
                                 onChange={handleSelectAllRecipients}
                               />
@@ -408,7 +497,7 @@ export function BulkPurchaseEmployeesModal() {
                           </tr>
                         </thead>
                         <tbody>
-                          {uploadedRecipients.map((recipient) => {
+                          {uploadedRecipients.map((recipient: RecipientRow) => {
                             if (!recipient.id) return null
                             const isChecked = selectedRecipients.has(recipient.id)
 
@@ -452,8 +541,9 @@ export function BulkPurchaseEmployeesModal() {
 
                     <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
                       <Text variant="span" className="text-sm text-gray-700">
-                        {selectedRecipients.size} of {uploadedRecipients.filter((r) => r.id).length}{' '}
-                        recipients selected
+                        {selectedRecipients.size} of{' '}
+                        {uploadedRecipients.filter((r: RecipientRow) => r.id).length} recipients
+                        selected
                       </Text>
                       <Button
                         variant="secondary"
@@ -478,10 +568,17 @@ export function BulkPurchaseEmployeesModal() {
                       Assignment Summary
                     </Text>
                     <div className="space-y-2">
-                      {Object.entries(cardRecipientAssignments).map(([key, assignment]) => {
+                      {(
+                        Object.entries(cardRecipientAssignments) as [
+                          string,
+                          CardRecipientAssignment,
+                        ][]
+                      ).map(([key, assignment]) => {
                         // Get recipient details from uploadedRecipients
                         const assignedRecipients = assignment.recipientIds
-                          .map((id) => uploadedRecipients.find((r) => r.id === id))
+                          .map((id: number) =>
+                            uploadedRecipients.find((r: RecipientRow) => r.id === id),
+                          )
                           .filter(Boolean) as RecipientRow[]
 
                         return (
@@ -502,7 +599,7 @@ export function BulkPurchaseEmployeesModal() {
                               </Text>
                               {/* Show recipient names and emails */}
                               <div className="mt-2 space-y-1">
-                                {assignedRecipients.map((recipient) => (
+                                {assignedRecipients.map((recipient: RecipientRow) => (
                                   <div key={recipient.id} className="text-sm text-gray-700">
                                     <Text variant="span" className="font-medium">
                                       {recipient.name}
@@ -518,11 +615,13 @@ export function BulkPurchaseEmployeesModal() {
                               variant="outline"
                               size="small"
                               onClick={() => {
-                                setCardRecipientAssignments((prev) => {
-                                  const newAssignments = { ...prev }
-                                  delete newAssignments[key]
-                                  return newAssignments
-                                })
+                                setCardRecipientAssignments(
+                                  (prev: Record<string, CardRecipientAssignment>) => {
+                                    const newAssignments = { ...prev }
+                                    delete newAssignments[key]
+                                    return newAssignments
+                                  },
+                                )
                               }}
                             >
                               Remove
@@ -543,8 +642,10 @@ export function BulkPurchaseEmployeesModal() {
                       </Text>
                       <Text variant="span" weight="bold" className="text-lg text-primary-600">
                         {formatCurrency(
-                          Object.values(cardRecipientAssignments).reduce(
-                            (sum, assignment) =>
+                          (
+                            Object.values(cardRecipientAssignments) as CardRecipientAssignment[]
+                          ).reduce(
+                            (sum: number, assignment: CardRecipientAssignment) =>
                               sum + (assignment.cardPrice || 0) * assignment.recipientIds.length,
                             0,
                           ),
@@ -774,7 +875,8 @@ export function BulkPurchaseEmployeesModal() {
                               : 'this Card'}
                       </Text>
                       <Button variant="outline" size="small" onClick={handleSelectAllRecipients}>
-                        {selectedRecipients.size === uploadedRecipients.filter((r) => r.id).length
+                        {selectedRecipients.size ===
+                        uploadedRecipients.filter((r: RecipientRow) => r.id).length
                           ? 'Deselect All'
                           : 'Select All'}
                       </Button>
@@ -787,14 +889,14 @@ export function BulkPurchaseEmployeesModal() {
                             <th className="px-4 py-3 text-left font-semibold text-gray-700 w-12">
                               <Checkbox
                                 checked={
-                                  uploadedRecipients.filter((r) => r.id).length > 0 &&
+                                  uploadedRecipients.filter((r: RecipientRow) => r.id).length > 0 &&
                                   selectedRecipients.size ===
-                                    uploadedRecipients.filter((r) => r.id).length
+                                    uploadedRecipients.filter((r: RecipientRow) => r.id).length
                                 }
                                 indeterminate={
                                   selectedRecipients.size > 0 &&
                                   selectedRecipients.size <
-                                    uploadedRecipients.filter((r) => r.id).length
+                                    uploadedRecipients.filter((r: RecipientRow) => r.id).length
                                 }
                                 onChange={handleSelectAllRecipients}
                               />
@@ -814,7 +916,7 @@ export function BulkPurchaseEmployeesModal() {
                           </tr>
                         </thead>
                         <tbody>
-                          {uploadedRecipients.map((recipient) => {
+                          {uploadedRecipients.map((recipient: RecipientRow) => {
                             if (!recipient.id) return null
                             const isChecked = selectedRecipients.has(recipient.id)
 
@@ -887,10 +989,17 @@ export function BulkPurchaseEmployeesModal() {
                       Assignment Summary
                     </Text>
                     <div className="space-y-2">
-                      {Object.entries(cardRecipientAssignments).map(([key, assignment]) => {
+                      {(
+                        Object.entries(cardRecipientAssignments) as [
+                          string,
+                          CardRecipientAssignment,
+                        ][]
+                      ).map(([key, assignment]) => {
                         // Get recipient details from uploadedRecipients
                         const assignedRecipients = assignment.recipientIds
-                          .map((id) => uploadedRecipients.find((r) => r.id === id))
+                          .map((id: number) =>
+                            uploadedRecipients.find((r: RecipientRow) => r.id === id),
+                          )
                           .filter(Boolean) as RecipientRow[]
 
                         return (
@@ -911,7 +1020,7 @@ export function BulkPurchaseEmployeesModal() {
                               </Text>
                               {/* Show recipient names and emails */}
                               <div className="mt-2 space-y-1">
-                                {assignedRecipients.map((recipient) => (
+                                {assignedRecipients.map((recipient: RecipientRow) => (
                                   <div key={recipient.id} className="text-sm text-gray-700 flex">
                                     <Text variant="span" className="font-medium">
                                       {recipient.name}
@@ -927,11 +1036,13 @@ export function BulkPurchaseEmployeesModal() {
                               variant="outline"
                               size="small"
                               onClick={() => {
-                                setCardRecipientAssignments((prev) => {
-                                  const newAssignments = { ...prev }
-                                  delete newAssignments[key]
-                                  return newAssignments
-                                })
+                                setCardRecipientAssignments(
+                                  (prev: Record<string, CardRecipientAssignment>) => {
+                                    const newAssignments = { ...prev }
+                                    delete newAssignments[key]
+                                    return newAssignments
+                                  },
+                                )
                               }}
                             >
                               Remove
@@ -952,8 +1063,10 @@ export function BulkPurchaseEmployeesModal() {
                       </Text>
                       <Text variant="span" weight="bold" className="text-lg text-primary-600">
                         {formatCurrency(
-                          Object.values(cardRecipientAssignments).reduce(
-                            (sum, assignment) =>
+                          (
+                            Object.values(cardRecipientAssignments) as CardRecipientAssignment[]
+                          ).reduce(
+                            (sum: number, assignment: CardRecipientAssignment) =>
                               sum + (assignment.cardPrice || 0) * assignment.recipientIds.length,
                             0,
                           ),
@@ -999,19 +1112,24 @@ export function BulkPurchaseEmployeesModal() {
           </div>
         )}
 
-        {/* Action Buttons - Bottom of Modal */}
-        {step === 1 && (
+        {/* Action Buttons - Bottom of Modal (hide while checking for recipients) */}
+        {step === 1 && !existingRecipientsLoading && (
           <div className="flex gap-4 justify-end pt-4 border-t border-gray-200 mt-auto">
             <Button variant="outline" onClick={handleClose}>
               Cancel
             </Button>
+            {choiceMade === 'add' && (
+              <Button variant="outline" onClick={handleProceedToSelectCards}>
+                Proceed to select cards
+              </Button>
+            )}
             <Button
               variant="secondary"
               onClick={handleUpload}
               disabled={!file || uploadMutation.isPending}
               loading={uploadMutation.isPending}
             >
-              Upload & Continue
+              {choiceMade === 'add' ? 'Upload & Add more' : 'Upload & Continue'}
             </Button>
           </div>
         )}

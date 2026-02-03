@@ -1,7 +1,7 @@
 import { Modal, Text, Button, Combobox } from '@/components'
 import { Icon, cn } from '@/libs'
 import { getStatusVariant } from '@/utils/helpers/common'
-import { useUpdateBranchStatusModal } from './useUpdateBranchStatusModal'
+import { useUpdateBranchStatusModal } from '@/features/dashboard/vendor/hooks'
 
 export function UpdateBranchStatusModal() {
   const {

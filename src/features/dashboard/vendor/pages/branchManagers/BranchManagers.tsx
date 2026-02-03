@@ -37,7 +37,7 @@ export default function BranchManagers() {
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between">
           <Text variant="h2" weight="semibold" className="text-primary-900">
-            Branch Managers
+            Branch Managers Invitations
           </Text>
           {isCorporateSuperAdmin && (
             <Button

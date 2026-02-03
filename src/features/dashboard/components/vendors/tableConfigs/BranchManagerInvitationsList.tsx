@@ -6,11 +6,13 @@ import { BranchManagerInvitationActionCell } from './BranchManagerInvitationActi
 export const branchManagerInvitationsListColumns = [
   {
     header: 'Email',
-    accessorKey: 'branch_manager_email',
+    accessorFn: (row: any) => row.branch_manager_email ?? row.email,
+    cell: ({ getValue }: any) => getValue() ?? '-',
   },
   {
     header: 'Name',
-    accessorKey: 'branch_manager_name',
+    accessorFn: (row: any) => row.branch_manager_name ?? row.fullname,
+    cell: ({ getValue }: any) => getValue() ?? '-',
   },
   {
     header: 'Branch',
@@ -37,11 +39,11 @@ export const branchManagerInvitationsListColumns = [
 export const branchManagerInvitationsListCsvHeaders: Array<CsvHeader> = [
   {
     name: 'Email',
-    accessor: 'branch_manager_email',
+    accessor: ['branch_manager_email', 'email'],
   },
   {
     name: 'Name',
-    accessor: 'branch_manager_name',
+    accessor: ['branch_manager_name', 'full_name'],
   },
   {
     name: 'Branch',

@@ -1,6 +1,6 @@
 import { Modal, Text, Button } from '@/components'
 import { Icon } from '@/libs'
-import { useDeleteBranchModal } from './useDeleteBranchModal'
+import { useDeleteBranchModal } from '@/features/dashboard/vendor/hooks'
 
 export function DeleteBranchModal() {
   const { branch, modal, handleDeleteBranch, isDeletingBranch, isOpen } = useDeleteBranchModal()

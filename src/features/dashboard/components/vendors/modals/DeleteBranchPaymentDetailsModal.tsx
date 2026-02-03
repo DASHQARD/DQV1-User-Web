@@ -1,6 +1,6 @@
 import { Modal, Text, Button } from '@/components'
 import { Icon } from '@/libs'
-import { useDeleteBranchPaymentDetailsModal } from './useDeleteBranchPaymentDetailsModal'
+import { useDeleteBranchPaymentDetailsModal } from '@/features/dashboard/vendor/hooks'
 
 export function DeleteBranchPaymentDetailsModal() {
   const { branch, handleDelete, handleCancel, isDeletingPaymentDetails, isOpen } =

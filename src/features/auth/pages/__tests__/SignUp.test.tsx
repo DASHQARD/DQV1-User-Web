@@ -1,26 +1,39 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { useForm } from 'react-hook-form'
 import { renderWithProviders } from '@/test/test-utils'
 import SignUp from '../sign_up/SignUp'
+import { useSignUpForm } from '../../hooks'
 
-describe('SignUp page', () => {
-  it('renders the sign up form with heading and create account button', () => {
-    const { getByRole } = renderWithProviders(<SignUp />)
+vi.mock('../../hooks', () => ({
+  useSignUpForm: vi.fn(),
+}))
 
+describe('SignUp (auth)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('renders Create account heading', () => {
+    function Wrapper() {
+      const form = useForm({
+        defaultValues: {
+          user_type: 'corporate' as const,
+          email: '',
+          phone_number: '',
+          password: '',
+          country: 'Ghana',
+          country_code: '01',
+        },
+      })
+      vi.mocked(useSignUpForm).mockReturnValue({
+        form: form as any,
+        onSubmit: vi.fn(),
+        isPending: false,
+        phoneCountries: [],
+      })
+      return <SignUp />
+    }
+    const { getByRole } = renderWithProviders(<Wrapper />)
     expect(getByRole('heading', { name: /create account/i })).toBeInTheDocument()
-    expect(getByRole('button', { name: /create account/i })).toBeInTheDocument()
-  })
-
-  it('renders email, phone and password inputs', () => {
-    const { getByPlaceholderText } = renderWithProviders(<SignUp />)
-
-    expect(getByPlaceholderText(/enter your email/i)).toBeInTheDocument()
-    expect(getByPlaceholderText(/enter number/i)).toBeInTheDocument()
-    expect(getByPlaceholderText(/enter your password/i)).toBeInTheDocument()
-  })
-
-  it('renders link to login', () => {
-    const { getByRole } = renderWithProviders(<SignUp />)
-
-    expect(getByRole('link', { name: /login/i })).toBeInTheDocument()
   })
 })

@@ -1,92 +1,19 @@
-import React from 'react'
-import { useSearchParams } from 'react-router'
-import { Controller, useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { Controller } from 'react-hook-form'
 import { Button, Modal, Input, BasePhoneInput, Text, Combobox } from '@/components'
-import { usePersistedModalState, useCountriesData, useUserProfile } from '@/hooks'
-import { MODALS } from '@/utils/constants'
 import { Icon } from '@/libs'
-import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
-import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
-
-const InviteBranchManagerSchema = z.object({
-  branch_id: z.union([z.string().min(1, 'Branch is required'), z.number().positive()]),
-  branch_manager_name: z.string().min(1, 'Name is required'),
-  branch_manager_email: z.string().email('Invalid email address'),
-  branch_manager_phone: z.string().min(1, 'Phone number is required'),
-})
-
-type InviteBranchManagerFormData = z.infer<typeof InviteBranchManagerSchema>
+import { useInviteBranchManagerModal } from '@/features/dashboard/vendor/hooks'
 
 export function InviteBranchManagerModal() {
-  const [searchParams] = useSearchParams()
-  const vendorIdFromUrl = searchParams.get('vendor_id')
-
-  const modal = usePersistedModalState<any>({
-    paramName: MODALS.BRANCH_MANAGER_INVITATION.PARAM_NAME,
-  })
-
-  const { countries: phoneCountries } = useCountriesData()
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const userType = userProfileData?.user_type
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
-
-  const { useGetCorporateBranchesListService, useGetCorporateBranchesByVendorIdService } =
-    corporateQueries()
-  const { data: corporateBranchesList } = useGetCorporateBranchesListService()
-  const { data: corporateBranchesByVendor } =
-    useGetCorporateBranchesByVendorIdService(vendorIdFromUrl)
-
-  const branchesArray = React.useMemo(() => {
-    const raw = vendorIdFromUrl ? corporateBranchesByVendor : corporateBranchesList
-    if (!raw) return []
-    return Array.isArray(raw) ? raw : raw?.data || []
-  }, [vendorIdFromUrl, corporateBranchesByVendor, corporateBranchesList])
-
-  const branchOptions = React.useMemo(
-    () =>
-      branchesArray.map((b: any) => ({
-        label: b.branch_name || `Branch ${b.id ?? b.branch_id}`,
-        value: String(b.id ?? b.branch_id),
-      })),
-    [branchesArray],
-  )
-
-  const form = useForm<InviteBranchManagerFormData>({
-    resolver: zodResolver(InviteBranchManagerSchema),
-    defaultValues: {
-      branch_id: '',
-      branch_manager_name: '',
-      branch_manager_email: '',
-      branch_manager_phone: '',
-    },
-  })
-
-  const handleCloseModal = React.useCallback(() => {
-    modal.closeModal()
-    form.reset()
-  }, [modal, form])
-
-  const { useCreateCorporateBranchManagerInvitationService } = corporateMutations()
-  const createMutation = useCreateCorporateBranchManagerInvitationService()
-
-  const onSubmit = (data: InviteBranchManagerFormData) => {
-    createMutation.mutate(
-      {
-        branch_id: Number(data.branch_id),
-        branch_manager_name: data.branch_manager_name,
-        branch_manager_email: data.branch_manager_email,
-        branch_manager_phone: data.branch_manager_phone,
-      },
-      {
-        onSuccess: () => {
-          handleCloseModal()
-        },
-      },
-    )
-  }
+  const {
+    form,
+    phoneCountries,
+    branchOptions,
+    handleCloseModal,
+    onSubmit,
+    isPending,
+    isOpen,
+    isCorporateSuperAdmin,
+  } = useInviteBranchManagerModal()
 
   if (!isCorporateSuperAdmin) return null
 
@@ -94,7 +21,7 @@ export function InviteBranchManagerModal() {
     <Modal
       position="center"
       title="Invite Branch Manager"
-      isOpen={modal.isModalOpen(MODALS.BRANCH_MANAGER_INVITATION.CHILDREN.CREATE)}
+      isOpen={isOpen}
       setIsOpen={handleCloseModal}
       panelClass="!w-[500px] max-w-[90vw]"
     >
@@ -126,7 +53,7 @@ export function InviteBranchManagerModal() {
                 onChange={field.onChange}
                 error={error?.message}
                 placeholder="Select branch"
-                isDisabled={createMutation.isPending}
+                isDisabled={isPending}
               />
             )}
           />
@@ -136,7 +63,7 @@ export function InviteBranchManagerModal() {
             placeholder="Enter full name"
             {...form.register('branch_manager_name')}
             error={form.formState.errors.branch_manager_name?.message}
-            disabled={createMutation.isPending}
+            disabled={isPending}
           />
 
           <Input
@@ -145,7 +72,7 @@ export function InviteBranchManagerModal() {
             placeholder="Enter email address"
             {...form.register('branch_manager_email')}
             error={form.formState.errors.branch_manager_email?.message}
-            disabled={createMutation.isPending}
+            disabled={isPending}
           />
 
           <Controller
@@ -160,7 +87,7 @@ export function InviteBranchManagerModal() {
                 selectedVal={value}
                 label="Phone Number"
                 error={form.formState.errors.branch_manager_phone?.message}
-                disabled={createMutation.isPending}
+                disabled={isPending}
                 hint={
                   <>
                     Please enter your number in the format:{' '}
@@ -173,21 +100,11 @@ export function InviteBranchManagerModal() {
         </div>
 
         <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCloseModal}
-            disabled={createMutation.isPending}
-          >
+          <Button type="button" variant="outline" onClick={handleCloseModal} disabled={isPending}>
             Cancel
           </Button>
-          <Button
-            variant="secondary"
-            type="submit"
-            disabled={createMutation.isPending}
-            loading={createMutation.isPending}
-          >
-            {createMutation.isPending ? 'Sending...' : 'Send Invitation'}
+          <Button variant="secondary" type="submit" disabled={isPending} loading={isPending}>
+            {isPending ? 'Sending...' : 'Send Invitation'}
           </Button>
         </div>
       </form>

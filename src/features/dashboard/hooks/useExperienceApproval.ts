@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
-import { approveExperience, rejectExperience } from '../services/experienceApproval'
+import { approveExperience, rejectExperience } from '../corporate/services/experienceApproval'
 
 export function useApproveExperience() {
   const queryClient = useQueryClient()

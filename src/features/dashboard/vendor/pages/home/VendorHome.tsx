@@ -12,7 +12,7 @@ import { useUserProfile } from '@/hooks'
 import { vendorQueries } from '@/features'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 // import { useRedemptionQueries } from '@/features/dashboard/hooks'
-import BranchHome from '../branches/BranchHome'
+import { BranchHome } from '@/features/dashboard/branch'
 
 export default function VendorHome() {
   const [searchParams] = useSearchParams()
