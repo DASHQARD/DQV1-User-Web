@@ -18,7 +18,12 @@ export function generateCsv(options: generateCsvParams) {
       headers
         .map((h: CsvHeader) => {
           const transform = h.transform ?? String
-          return `"${transform(h.accessor ? getTarget(row, h.accessor) : row)}"`
+          const value = h.accessor
+            ? Array.isArray(h.accessor)
+              ? (h.accessor.map((key) => getTarget(row, key)).find((v) => v != null) ?? '')
+              : getTarget(row, h.accessor)
+            : row
+          return `"${transform(value)}"`
         })
         .join(separator),
     )

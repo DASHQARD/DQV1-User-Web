@@ -42,7 +42,7 @@ export function Modal(props: Props) {
 
           {/* CENTER */}
           {position === 'center' ? (
-            <Dialog.Content asChild>
+            <Dialog.Content asChild aria-describedby={undefined}>
               <motion.div className="modal-content pointer-events-none! fixed inset-0 z-200 grid min-h-full items-center justify-center overflow-y-auto py-10 focus:outline-none">
                 <motion.div
                   initial={{ scale: 0.7, opacity: 0 }}
@@ -62,6 +62,9 @@ export function Modal(props: Props) {
                     e.stopPropagation()
                   }}
                 >
+                  <Dialog.Title asChild>
+                    <span className="sr-only">{props.title ?? 'Dialog'}</span>
+                  </Dialog.Title>
                   {showClose ? (
                     <Dialog.Close asChild>
                       <button
@@ -80,7 +83,7 @@ export function Modal(props: Props) {
 
           {/* SIDE */}
           {position === 'side' ? (
-            <Dialog.Content asChild>
+            <Dialog.Content asChild aria-describedby={undefined}>
               <motion.div
                 className="modal-content pointer-events-none! fixed inset-0 z-200 grid min-h-full items-center justify-center overflow-y-auto py-10 focus:outline-none"
                 initial={{ x: 600 }}
@@ -129,7 +132,11 @@ export function Modal(props: Props) {
                         <Icon icon="ic:round-close" />
                       </button>
                     </div>
-                  ) : null}
+                  ) : (
+                    <Dialog.Title asChild>
+                      <span className="sr-only">Dialog</span>
+                    </Dialog.Title>
+                  )}
                   <Dialog.Description asChild>
                     <div className={cn('overflow-y-auto py-6')}>{children}</div>
                   </Dialog.Description>

@@ -5,7 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Text, Loader, Button, Input, Combobox } from '@/components'
 import { Icon } from '@/libs'
-import { ROUTES } from '@/utils/constants'
+import { ROUTES, ID_TYPE_OPTIONS } from '@/utils/constants'
+import { PersonalInformationSchema } from '@/utils/schemas/settings'
 import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
 import { usePaymentInfoService } from '@/features/dashboard/hooks'
 import { useUserProfile } from '@/hooks'
@@ -15,24 +16,7 @@ import { BackgroundCardImage } from '@/assets/images'
 import type { PaymentInfoData } from '@/types/user'
 import type { OnboardingData } from '@/types/auth/auth'
 
-// Schema for personal information form
-const PersonalInformationSchema = z.object({
-  full_name: z.string().min(1, 'Full name is required'),
-  street_address: z.string().min(1, 'Street address is required'),
-  dob: z.string().min(1, 'Date of birth is required'),
-  id_type: z.string().min(1, 'ID type is required'),
-  id_number: z.string().min(1, 'ID number is required'),
-})
-
 type PersonalInformationFormData = z.infer<typeof PersonalInformationSchema>
-
-const ID_TYPE_OPTIONS = [
-  { value: 'passport', label: 'Passport' },
-  { value: 'national_id', label: 'National ID' },
-  { value: 'drivers_license', label: "Driver's License" },
-  { value: 'voters_id', label: "Voter's ID" },
-  { value: 'ghana_card', label: 'Ghana Card' },
-]
 
 export default function UserDashboard() {
   const navigate = useNavigate()
@@ -277,7 +261,7 @@ export default function UserDashboard() {
                     render={({ field, fieldState: { error } }) => (
                       <Combobox
                         placeholder="Select ID type"
-                        options={ID_TYPE_OPTIONS}
+                        options={[...ID_TYPE_OPTIONS]}
                         value={field.value}
                         onChange={(e: { target: { value: string } }) => {
                           field.onChange(e.target.value)

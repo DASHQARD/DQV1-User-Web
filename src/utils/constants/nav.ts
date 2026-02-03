@@ -169,14 +169,14 @@ export const BRANCH_NAV_ITEMS = [
   {
     section: 'Overview',
     items: [
-      { path: ROUTES.IN_APP.DASHBOARD.VENDOR.HOME, label: 'Dashboard', icon: 'bi:speedometer2' },
+      { path: ROUTES.IN_APP.DASHBOARD.BRANCH.HOME, label: 'Dashboard', icon: 'bi:speedometer2' },
     ],
   },
   {
     section: 'Experience',
     items: [
       {
-        path: ROUTES.IN_APP.DASHBOARD.VENDOR.EXPERIENCE,
+        path: ROUTES.IN_APP.DASHBOARD.BRANCH.EXPERIENCE,
         label: 'My Experience',
         icon: 'bi:briefcase-fill',
       },
@@ -186,7 +186,7 @@ export const BRANCH_NAV_ITEMS = [
     section: 'Redemptions',
     items: [
       {
-        path: ROUTES.IN_APP.DASHBOARD.VENDOR.REDEMPTIONS,
+        path: ROUTES.IN_APP.DASHBOARD.BRANCH.REDEMPTIONS,
         label: 'Redemptions',
         icon: 'bi:arrow-left-right',
       },
@@ -196,7 +196,7 @@ export const BRANCH_NAV_ITEMS = [
     section: 'Payments',
     items: [
       {
-        path: ROUTES.IN_APP.DASHBOARD.VENDOR.PAYMENT_DETAILS,
+        path: ROUTES.IN_APP.DASHBOARD.BRANCH.PAYMENT_DETAILS,
         label: 'Payment Details',
         icon: 'bi:credit-card',
       },

@@ -7,7 +7,7 @@ import {
   useVendorRequestDetails,
   type RequestInfoRow,
   type UseVendorRequestDetailsReturn,
-} from './useVendorRequestDetails'
+} from '@/features/dashboard/vendor/hooks'
 
 export function VendorRequestDetails() {
   const { modal, isPending, requestInfo, data, openApproveModal, openRejectModal } =

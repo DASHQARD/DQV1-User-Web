@@ -130,7 +130,7 @@ export type generateCsvParams = {
 
 export type CsvHeader = {
   name: string
-  accessor: string
+  accessor: string | string[]
   transform?: (v: any) => string
 }
 

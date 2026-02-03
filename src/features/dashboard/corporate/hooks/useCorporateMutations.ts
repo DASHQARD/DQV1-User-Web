@@ -7,6 +7,7 @@ import {
   inviteVendorAdmin,
   addRecipient,
   deleteRecipient,
+  deleteUnassignedBulkRecipients,
   uploadBulkRecipients,
   assignRecipientToCart,
   assignCardToRecipients,
@@ -230,6 +231,21 @@ export function corporateMutations() {
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to upload recipients. Please try again.')
+      },
+    })
+  }
+
+  function useDeleteUnassignedBulkRecipientsService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: deleteUnassignedBulkRecipients,
+      onSuccess: (response: any) => {
+        success(response?.message || 'Unassigned recipients cleared successfully')
+        queryClient.invalidateQueries({ queryKey: ['all-corporate-recipients'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to clear unassigned recipients. Please try again.')
       },
     })
   }
@@ -717,6 +733,7 @@ export function corporateMutations() {
     useCreateVendorService,
     useAddRecipientService,
     useDeleteRecipientService,
+    useDeleteUnassignedBulkRecipientsService,
     useUploadBulkRecipientsService,
     useAssignRecipientService,
     useAssignCardToRecipientsService,

@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { useReducerSpread } from '@/hooks'
 import { usePersistedModalState } from '@/hooks'
 import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
-import { corporateQueries } from '../../corporate/hooks'
+import { corporateMutations, corporateQueries } from '../../corporate/hooks'
 
 export function useCorporateRecipients() {
   const [query, setQuery] = useReducerSpread(DEFAULT_QUERY)
@@ -10,6 +10,9 @@ export function useCorporateRecipients() {
     paramName: MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_RECIPIENT,
   })
   const { useGetAllRecipientsService } = corporateQueries()
+  const { useDeleteUnassignedBulkRecipientsService } = corporateMutations()
+  const { mutate: clearUnassigned, isPending: isClearingUnassigned } =
+    useDeleteUnassignedBulkRecipientsService()
 
   const params = useMemo(() => {
     const apiParams: Record<string, any> = {
@@ -60,5 +63,7 @@ export function useCorporateRecipients() {
     handleNextPage,
     handleSetAfter,
     estimatedTotal,
+    clearUnassigned,
+    isClearingUnassigned,
   }
 }

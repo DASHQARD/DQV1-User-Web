@@ -40,13 +40,14 @@ export const createBranchExperience = async (payload: CreateExperienceData) => {
   return await postMethod(`${commonManagerUrl}/branch`, payload)
 }
 
+/** Response from GET /api/v1/branches/info (branch dashboard only; do not use users/info for branches) */
 export interface BranchInfoResponse {
   status: string
   statusCode: number
   message: string
   data: {
     branch: {
-      id: number
+      id: string
       user_id: number
       vendor_id: number
       gvid: string
@@ -58,9 +59,8 @@ export interface BranchInfoResponse {
       branch_code: string
       branch_type: string
       is_single_branch: boolean
-      parent_branch_id: number
+      parent_branch_id: string | null
       status: string
-      branch_manager_user_id: number
       created_at: string
       updated_at: string
     }
@@ -69,22 +69,22 @@ export interface BranchInfoResponse {
       email: string
       phonenumber: string
       fullname: string
-      default_payment_option: string
+      default_payment_option: string | null
     }
     payment_details: {
       id: number
       user_id: number
-      created_at: string
-      updated_at: string
-      momo_number: string
-      provider: string
-      account_number: string
-      account_holder_name: string
-      bank_name: string
-      bank_branch: string
-      swift_code: string
-      sort_code: string
-    }
+      momo_number?: string
+      account_number?: string
+      account_holder_name?: string
+      bank_name?: string
+      bank_branch?: string
+      swift_code?: string
+      sort_code?: string
+      provider?: string
+      created_at?: string
+      updated_at?: string
+    } | null
     business_details: {
       id: number
       user_id: number

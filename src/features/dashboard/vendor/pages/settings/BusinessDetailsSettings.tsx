@@ -1,84 +1,21 @@
-import React from 'react'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Button, Input, CreatableCombobox } from '@/components'
-import { useVendorMutations } from '../../hooks/useVendorMutations'
-import { useUserProfile, useCountriesData } from '@/hooks'
-import { BasePhoneInput } from '@/components'
-
-const UpdateBusinessDetailsSchema = z.object({
-  id: z.number(),
-  name: z.string().min(1, 'Business name is required'),
-  type: z.string().min(1, 'Business type is required'),
-  phone: z.string().min(1, 'Phone number is required'),
-  email: z.string().email('Invalid email address'),
-  street_address: z.string().min(1, 'Street address is required'),
-  digital_address: z.string().optional().default(''),
-  registration_number: z.string().min(1, 'Registration number is required'),
-})
+import { Controller } from 'react-hook-form'
+import { Button, Input, CreatableCombobox, BasePhoneInput } from '@/components'
+import { useBusinessDetailsSettingsForm, type FormValues } from '@/features/dashboard/vendor/hooks'
 
 export function BusinessDetailsSettings() {
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const { useUpdateBusinessDetailsService } = useVendorMutations()
-  const { mutateAsync: updateBusinessDetails, isPending } = useUpdateBusinessDetailsService()
-  const { countries: phoneCountries } = useCountriesData()
+  const { form, phoneCountries, businessTypeOptions, onSubmit, isPending, isApproved } =
+    useBusinessDetailsSettingsForm()
 
-  // Check if user status is approved or verified - if so, disable all inputs
-  const isApproved =
-    userProfileData?.status === 'approved' || userProfileData?.status === 'verified'
-
-  type FormData = z.input<typeof UpdateBusinessDetailsSchema>
-  const form = useForm<FormData>({
-    resolver: zodResolver(UpdateBusinessDetailsSchema),
-    defaultValues: {
-      id: 0,
-      name: '',
-      type: '',
-      phone: '',
-      email: '',
-      street_address: '',
-      digital_address: '',
-      registration_number: '',
-    },
-  })
-
-  React.useEffect(() => {
-    if (userProfileData?.business_details?.[0]) {
-      const business = userProfileData.business_details[0]
-      form.reset({
-        id: business.id,
-        name: business.name || '',
-        type: business.type || '',
-        phone: business.phone || '',
-        email: business.email || '',
-        street_address: business.street_address || '',
-        digital_address: business.digital_address || '',
-        registration_number: business.registration_number || '',
-      })
-    }
-  }, [userProfileData, form])
-
-  const onSubmit = async (data: FormData) => {
-    try {
-      const payload = {
-        ...data,
-        digital_address: data.digital_address || '',
-      } as z.output<typeof UpdateBusinessDetailsSchema>
-      await updateBusinessDetails(payload)
-    } catch (error) {
-      console.error('Failed to update business details:', error)
-    }
-  }
+  const handleSubmit = form.handleSubmit((data: FormValues) => onSubmit(data))
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-8">
         <div className="md:col-span-2">
           <Input
             label="Business Name"
-            placeholder="Enter business name"
+            isRequired
+            placeholder="Provide your business name"
             {...form.register('name')}
             error={form.formState.errors.name?.message}
             disabled={isApproved}
@@ -91,15 +28,11 @@ export function BusinessDetailsSettings() {
             render={({ field, fieldState: { error } }) => (
               <CreatableCombobox
                 label="Business Type"
-                options={[
-                  { label: 'LLC', value: 'llc' },
-                  { label: 'Sole Proprietor', value: 'sole_proprietor' },
-                  { label: 'Partnership', value: 'partnership' },
-                  { label: 'Corporation', value: 'corporation' },
-                ]}
+                options={[...businessTypeOptions]}
                 value={field.value}
-                onChange={(e: any) => {
-                  const value = e?.target?.value || e?.value || ''
+                onChange={(e: unknown) => {
+                  const ev = e as { target?: { value?: string }; value?: string }
+                  const value = ev?.target?.value ?? ev?.value ?? ''
                   field.onChange(value)
                 }}
                 error={error?.message}
@@ -115,29 +48,33 @@ export function BusinessDetailsSettings() {
             control={form.control}
             name="phone"
             render={({ field: { onChange, value } }) => {
-              // Ensure value is always a string
               const phoneValue = value || ''
               return (
                 <BasePhoneInput
                   placeholder="Enter number eg. 5512345678"
                   options={phoneCountries}
-                  maxLength={9}
+                  maxLength={14}
                   handleChange={onChange}
+                  isRequired
                   selectedVal={phoneValue}
                   label="Phone Number"
                   error={form.formState.errors.phone?.message}
                   disabled={isApproved}
+                  hint={
+                    <>
+                      Please enter your number in the format:{' '}
+                      <span className="font-medium">5512345678</span>
+                    </>
+                  }
                 />
               )
             }}
           />
-          <p className="text-xs text-gray-500">
-            Please enter your number in the format: <span className="font-medium">5512345678</span>
-          </p>
         </div>
 
         <Input
           label="Email"
+          isRequired
           type="email"
           placeholder="Enter email address"
           {...form.register('email')}
@@ -147,6 +84,7 @@ export function BusinessDetailsSettings() {
 
         <Input
           label="Street Address"
+          isRequired
           placeholder="Enter street address"
           {...form.register('street_address')}
           error={form.formState.errors.street_address?.message}
@@ -155,6 +93,7 @@ export function BusinessDetailsSettings() {
 
         <Input
           label="Digital Address"
+          isRequired
           placeholder="Enter digital address (optional)"
           {...form.register('digital_address')}
           error={form.formState.errors.digital_address?.message}
@@ -163,6 +102,7 @@ export function BusinessDetailsSettings() {
 
         <Input
           label="Registration Number"
+          isRequired
           placeholder="Enter registration number"
           {...form.register('registration_number')}
           error={form.formState.errors.registration_number?.message}

@@ -1,3 +1,6 @@
 export * from './useVendorMutations'
 export * from './useVendorQueries'
+export * from './useVendorSidebar'
+export * from './modals'
+export * from './settings'
 export { useVendorMutations as vendorMutations } from './useVendorMutations'

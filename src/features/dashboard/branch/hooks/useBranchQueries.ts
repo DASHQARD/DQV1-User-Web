@@ -5,13 +5,17 @@ import {
   getSingleBranchExperience,
   getBranchInfo,
 } from '../services'
-import { useUserProfile } from '@/hooks'
+import { useAuthStore } from '@/stores'
 
 export function branchQueries() {
+  function useIsBranchUser() {
+    const user = useAuthStore((s) => s.user)
+    const userType = (user as { user_type?: string } | null)?.user_type
+    return userType === 'branch'
+  }
+
   function useGetBranchExperiencesService(params?: Record<string, any>) {
-    const { useGetUserProfileService } = useUserProfile()
-    const { data: userProfileData } = useGetUserProfileService()
-    const isBranch = userProfileData?.user_type === 'branch'
+    const isBranch = useIsBranchUser()
     return useQuery({
       queryKey: ['branch-experiences', params],
       queryFn: () => getBranchExperiences(params),
@@ -20,9 +24,7 @@ export function branchQueries() {
   }
 
   function useGetSingleBranchExperienceService(id: string) {
-    const { useGetUserProfileService } = useUserProfile()
-    const { data: userProfileData } = useGetUserProfileService()
-    const isBranch = userProfileData?.user_type === 'branch'
+    const isBranch = useIsBranchUser()
     return useQuery({
       queryKey: ['single-branch-experience', id],
       queryFn: () => getSingleBranchExperience(id),
@@ -31,9 +33,7 @@ export function branchQueries() {
   }
 
   function useGetBranchRedemptionsService() {
-    const { useGetUserProfileService } = useUserProfile()
-    const { data: userProfileData } = useGetUserProfileService()
-    const isBranch = userProfileData?.user_type === 'branch'
+    const isBranch = useIsBranchUser()
     return useQuery({
       queryKey: ['branch-redemptions'],
       queryFn: () => getBranchRedemptions(),
@@ -42,9 +42,7 @@ export function branchQueries() {
   }
 
   function useGetBranchInfoService() {
-    const { useGetUserProfileService } = useUserProfile()
-    const { data: userProfileData } = useGetUserProfileService()
-    const isBranch = userProfileData?.user_type === 'branch'
+    const isBranch = useIsBranchUser()
     return useQuery({
       queryKey: ['branch-info'],
       queryFn: () => getBranchInfo(),

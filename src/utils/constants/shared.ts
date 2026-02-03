@@ -55,6 +55,12 @@ export const ROUTES = {
         },
         SETTINGS: '/dashboard/vendor/settings',
       },
+      BRANCH: {
+        HOME: '/dashboard/vendor',
+        EXPERIENCE: '/dashboard/vendor/experience',
+        REDEMPTIONS: '/dashboard/vendor/redemptions',
+        PAYMENT_DETAILS: '/dashboard/vendor/payment-details',
+      },
       SETTINGS: {
         ROOT: '/dashboard/settings',
         PERSONAL_INFORMATION: '/dashboard/settings/personal-information',

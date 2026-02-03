@@ -191,6 +191,11 @@ export const uploadBulkRecipients = async (file: File): Promise<any> => {
   return await postMethod(`/carts/upload-bulk-recipients`, formData)
 }
 
+/** DELETE /carts/bulk-recipients — delete all recipients that have been uploaded but not yet assigned to any cart items (clears unassigned bulk-uploaded recipients for the authenticated user) */
+export const deleteUnassignedBulkRecipients = async (): Promise<any> => {
+  return await deleteMethod(`/carts/bulk-recipients`)
+}
+
 export const assignRecipientToCart = async (data: AssignRecipientPayload): Promise<any> => {
   return await postMethod(`/carts/assign-recipient`, data)
 }
@@ -512,6 +517,9 @@ export const updateCorporateBranchManagerInvitation = async (
   return await putMethod(`/branches/corporate/branch-manager-invitations/${id}`, data)
 }
 
+export * from './bulkGiftCards'
+export * from './experienceApproval'
+export * from './notifications'
 export {
   getVendorInvitations,
   cancelVendorInvitation,

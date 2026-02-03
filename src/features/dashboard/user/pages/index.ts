@@ -1,3 +1,5 @@
 export * from './home'
 export * from './redemptions'
 export * from './orders'
+export * from './my-cards'
+export * from './settings'

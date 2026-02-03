@@ -10,7 +10,7 @@ import {
   Redeem,
   Settings,
   UploadID,
-} from '../../pages'
+} from '../../shared'
 import { CorporateHome } from '../pages'
 import { Purchase } from '../pages/purchase'
 import { Transactions } from '../pages/transactions'

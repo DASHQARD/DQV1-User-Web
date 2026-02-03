@@ -332,8 +332,10 @@ export function useAuth() {
           response.user.user_type === 'corporate'
         ) {
           navigate(`${ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME}?account=corporate`)
-        } else if (response.user.user_type === 'vendor' || response.user.user_type === 'branch') {
+        } else if (response.user.user_type === 'vendor') {
           navigate(`${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor`)
+        } else if (response.user.user_type === 'branch') {
+          navigate(`${ROUTES.IN_APP.DASHBOARD.BRANCH.HOME}?account=branch`)
         } else {
           navigate(`${ROUTES.IN_APP.DASHBOARD.HOME}?account=user`)
         }

@@ -15,7 +15,7 @@ import {
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
 import { getStatusVariant } from '@/utils/helpers/common'
-import { useBranchDetailsModal } from './useBranchDetailsModal'
+import { useBranchDetailsModal } from '@/features/dashboard/vendor/hooks'
 
 export function BranchDetailsModal() {
   const {

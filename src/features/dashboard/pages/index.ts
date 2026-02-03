@@ -1,7 +1,0 @@
-export * from './redeem'
-export * from './settings'
-export * from './transactions'
-export * from './business_details'
-export * from './business_identification_cards'
-export * from './onboarding'
-export * from './my-cards'
