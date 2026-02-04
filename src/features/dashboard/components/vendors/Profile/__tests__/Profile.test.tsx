@@ -17,13 +17,19 @@ describe('VendorProfile (Profile)', () => {
     })
 
     it('renders tier as number', () => {
-      renderWithProviders(<Profile name="Vendor" tier={2} status="pending" />)
+      renderWithProviders(
+        <Profile name="Vendor" tier={2} status="pending">
+          {null}
+        </Profile>,
+      )
       expect(screen.getByText(/Tier 2/i)).toBeInTheDocument()
     })
 
     it('applies custom className', () => {
       const { container } = renderWithProviders(
-        <Profile name="X" tier="1" status="active" className="custom-class" />,
+        <Profile name="X" tier="1" status="active" className="custom-class">
+          {null}
+        </Profile>,
       )
       const section = container.querySelector('section.custom-class')
       expect(section).toBeInTheDocument()
@@ -34,6 +40,7 @@ describe('VendorProfile (Profile)', () => {
     it('renders title, amount and children', () => {
       renderWithProviders(
         <PaymentInformation
+          name="Balance"
           iconName="bi:wallet2"
           iconBgColor="bg-blue-500"
           title="Balance"
@@ -51,12 +58,15 @@ describe('VendorProfile (Profile)', () => {
     it('renders image with alt from title', () => {
       renderWithProviders(
         <PaymentInformation
+          name="Wallet"
           iconName="bi:wallet2"
           iconBgColor="bg-blue-500"
           title="Wallet"
           amount="₦0"
           image="/wallet.png"
-        />,
+        >
+          {null}
+        </PaymentInformation>,
       )
       const img = document.querySelector('img[alt="Wallet"]')
       expect(img).toBeInTheDocument()

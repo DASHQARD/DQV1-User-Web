@@ -25,8 +25,8 @@ vi.mock('../../hooks/website/usePublicCatalogQueries', () => ({
     usePublicVendorsService: () => ({ data: [] }),
   }),
 }))
-vi.mock('../../components', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../components')>()
+vi.mock('@/features/website/components', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/website/components')>()
   return {
     ...actual,
     CardItems: () => <div data-testid="card-items">CardItems</div>,
