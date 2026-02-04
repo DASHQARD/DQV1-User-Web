@@ -12,9 +12,7 @@ describe('AboutUs (website)', () => {
 
   it('renders main heading', () => {
     renderWithProviders(<AboutUs />)
-    expect(
-      screen.getByText('Transforming Digital Gifting in Ghana'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Transforming Digital Gifting in Ghana')).toBeInTheDocument()
   })
 
   it('renders stats: Happy Customers, Gift Cards Sent, Uptime', () => {

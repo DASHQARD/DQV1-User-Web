@@ -36,9 +36,7 @@ describe('Checkout (website)', () => {
   it('shows empty state when cart has no pending items', () => {
     renderWithProviders(<Checkout />)
     expect(screen.getByText('Your cart is empty')).toBeInTheDocument()
-    expect(
-      screen.getByText('Add items to your cart to proceed to checkout'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Add items to your cart to proceed to checkout')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Browse Gift Cards/i })).toBeInTheDocument()
   })
 })
