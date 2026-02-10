@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { DeleteAdminInvitiationAction } from '../DeleteAdminInvitiationAction'
-import { MODALS } from '@/utils/constants'
 
 let isDeleteInvitationOpen = false
 vi.mock('@/hooks', () => ({

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { BrowseCardsModal } from '../BrowseCardsModal'
-import { MODALS } from '@/utils/constants'
 
 let isBrowseCardsOpen = false
 vi.mock('@/hooks', async (importOriginal) => {

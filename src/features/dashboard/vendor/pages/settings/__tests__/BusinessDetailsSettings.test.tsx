@@ -7,26 +7,26 @@ vi.mock('@/features/dashboard/vendor/hooks', async () => {
   return {
     useBusinessDetailsSettingsForm: () => {
       const form = useForm({
-      defaultValues: {
-        id: 0,
-        name: '',
-        type: '',
-        phone: '',
-        email: '',
-        street_address: '',
-        digital_address: '',
-        registration_number: '',
-      },
-    })
-    return {
-      form,
-      phoneCountries: [],
-      businessTypeOptions: [{ label: 'Retail', value: 'retail' }],
-      onSubmit: vi.fn(),
-      isPending: false,
-      isApproved: false,
-    }
-  },
+        defaultValues: {
+          id: 0,
+          name: '',
+          type: '',
+          phone: '',
+          email: '',
+          street_address: '',
+          digital_address: '',
+          registration_number: '',
+        },
+      })
+      return {
+        form,
+        phoneCountries: [],
+        businessTypeOptions: [{ label: 'Retail', value: 'retail' }],
+        onSubmit: vi.fn(),
+        isPending: false,
+        isApproved: false,
+      }
+    },
   }
 })
 

@@ -11,7 +11,8 @@ const mockUseGetRequestsCorporateSuperAdminVendorService = vi.fn()
 vi.mock('@/features/dashboard/corporate', () => ({
   corporateQueries: () => ({
     useGetRequestsCorporateService: mockUseGetRequestsCorporateService,
-    useGetRequestsCorporateSuperAdminVendorService: mockUseGetRequestsCorporateSuperAdminVendorService,
+    useGetRequestsCorporateSuperAdminVendorService:
+      mockUseGetRequestsCorporateSuperAdminVendorService,
   }),
 }))
 

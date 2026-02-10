@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { ApproveAction } from '../ApproveAction'
-import { MODALS } from '@/utils/constants'
 
 const mockCloseModal = vi.fn()
 let isApproveOpen = false
@@ -26,9 +25,7 @@ describe('ApproveAction (corporate modal)', () => {
     isApproveOpen = true
     renderWithProviders(<ApproveAction />)
     expect(screen.getByText('Approve Request')).toBeInTheDocument()
-    expect(
-      screen.getByText(/Are you sure you want to approve this request\?/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Are you sure you want to approve this request\?/i)).toBeInTheDocument()
   })
 
   it('renders Cancel and Approve buttons', () => {

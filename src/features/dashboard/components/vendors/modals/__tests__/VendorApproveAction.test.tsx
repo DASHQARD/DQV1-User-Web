@@ -47,9 +47,7 @@ describe('VendorApproveAction', () => {
 
   it('renders confirmation message', () => {
     renderWithProviders(<VendorApproveAction />)
-    expect(
-      screen.getByText(/are you sure you want to approve this request/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/are you sure you want to approve this request/i)).toBeInTheDocument()
   })
 
   it('renders Cancel and Approve buttons', () => {

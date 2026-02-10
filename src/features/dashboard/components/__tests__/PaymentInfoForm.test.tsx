@@ -66,6 +66,9 @@ describe('PaymentInfoForm', () => {
     })
     renderWithProviders(<PaymentInfoForm />)
     expect(screen.getByText('Bank Account Details')).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Bank Account' })).toHaveAttribute('data-state', 'checked')
+    expect(screen.getByRole('radio', { name: 'Bank Account' })).toHaveAttribute(
+      'data-state',
+      'checked',
+    )
   })
 })

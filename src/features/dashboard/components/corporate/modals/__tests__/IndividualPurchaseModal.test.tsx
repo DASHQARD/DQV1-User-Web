@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { IndividualPurchaseModal } from '../IndividualPurchaseModal'
-import { MODALS } from '@/utils/constants'
 
 let isIndividualPurchaseOpen = false
 vi.mock('@/hooks', async (importOriginal) => {

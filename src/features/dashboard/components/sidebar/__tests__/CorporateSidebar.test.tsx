@@ -6,7 +6,12 @@ import CorporateSidebar from '../CorporateSidebar'
 const mockSetIsCollapsed = vi.fn()
 vi.mock('@/features/dashboard/corporate/hooks', () => ({
   useCorporateSidebar: () => ({
-    user: { user_type: 'corporate_super_admin', business_details: [{ name: 'Acme Corp' }], corporate_id: 'C001', corporate_id_from_business: 'C001' },
+    user: {
+      user_type: 'corporate_super_admin',
+      business_details: [{ name: 'Acme Corp' }],
+      corporate_id: 'C001',
+      corporate_id_from_business: 'C001',
+    },
     allVendorsCreatedByCorporate: [],
     hasVendorsPendingVerification: false,
     pendingRequestsCount: 0,

@@ -24,7 +24,13 @@ export function useCorporateHome() {
       : ((allVendorsDetails as { data?: unknown[] })?.data ?? [])
     return vendorsData.filter(
       (v: { corporate_user_id?: number }) => v.corporate_user_id === userProfileData?.id,
-    ) as Array<{ id?: number; vendor_name?: string; business_name?: string; approval_status?: string; status?: string }>
+    ) as Array<{
+      id?: number
+      vendor_name?: string
+      business_name?: string
+      approval_status?: string
+      status?: string
+    }>
   }, [allVendorsDetails, userProfileData?.id])
 
   const addAccountParam = (path: string): string => {
@@ -107,8 +113,11 @@ export function useCorporateHome() {
   }
 
   /** For UX: 'incomplete' | 'pending_approval' | 'full_access' to drive status banner messaging */
-  const accountStatusBanner: 'incomplete' | 'pending_approval' | 'full_access' =
-    !isComplete ? 'incomplete' : !isApprovedOrVerified ? 'pending_approval' : 'full_access'
+  const accountStatusBanner: 'incomplete' | 'pending_approval' | 'full_access' = !isComplete
+    ? 'incomplete'
+    : !isApprovedOrVerified
+      ? 'pending_approval'
+      : 'full_access'
 
   return {
     metrics,

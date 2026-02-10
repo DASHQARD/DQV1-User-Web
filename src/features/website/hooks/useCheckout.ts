@@ -108,8 +108,7 @@ export function useCheckout() {
   }, [activeCartItems])
 
   const totalAmount = useMemo(
-    () =>
-      activeCartItems.reduce((sum, cart) => sum + parseFloat(cart.total_amount || '0'), 0),
+    () => activeCartItems.reduce((sum, cart) => sum + parseFloat(cart.total_amount || '0'), 0),
     [activeCartItems],
   )
   const serviceFee = Math.max(SERVICE_FEE_MIN, totalAmount * SERVICE_FEE_RATE)
@@ -119,7 +118,8 @@ export function useCheckout() {
 
   const itemsMissingRecipients = useMemo(() => {
     return displayCartItems.filter((item) => {
-      const key = item.cart_item_id != null ? `${item.cart_item_id}-${item.quantity_index ?? 0}` : ''
+      const key =
+        item.cart_item_id != null ? `${item.cart_item_id}-${item.quantity_index ?? 0}` : ''
       const count = key ? (recipientsByCartItem[key]?.length ?? 0) : 0
       return count < 1
     })

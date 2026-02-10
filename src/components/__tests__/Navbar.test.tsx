@@ -155,7 +155,9 @@ describe('Navbar', () => {
       expect(mobileSearchBtn).toHaveTextContent('Search')
       await user.click(mobileSearchBtn!)
       expect(mockNavigate).toHaveBeenCalledWith(ROUTES.IN_APP.DASHQARDS)
-      expect(container.querySelector('.lg\\:hidden.border-t.border-gray-200.bg-white')).not.toBeInTheDocument()
+      expect(
+        container.querySelector('.lg\\:hidden.border-t.border-gray-200.bg-white'),
+      ).not.toBeInTheDocument()
     })
   })
 
@@ -323,12 +325,8 @@ describe('Navbar', () => {
       expect(mockNavigate).toHaveBeenCalledWith(
         expect.stringContaining(`${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}/99`),
       )
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/account=vendor(&|$)/),
-      )
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/branch_id=99/),
-      )
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/account=vendor(&|$)/))
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/branch_id=99/))
     })
 
     it('shows vendor logo when business_documents has logo', async () => {

@@ -24,7 +24,10 @@ vi.mock('@/hooks', async (importOriginal) => {
 
 vi.mock('@/features/dashboard/hooks', () => ({
   useRedemptionQueries: () => ({
-    useGetVendorRedemptionsService: () => ({ data: { data: [], pagination: {} }, isLoading: false }),
+    useGetVendorRedemptionsService: () => ({
+      data: { data: [], pagination: {} },
+      isLoading: false,
+    }),
   }),
 }))
 

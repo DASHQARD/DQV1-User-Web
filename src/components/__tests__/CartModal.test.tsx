@@ -32,7 +32,9 @@ const mockCartItem = {
   total_amount: '100',
   total_quantity: 1,
   type: 'dashx',
-  items: [{ product: 'Test Card', total_amount: '100', total_quantity: 1, images: [], cart_item_id: 1 }],
+  items: [
+    { product: 'Test Card', total_amount: '100', total_quantity: 1, images: [], cart_item_id: 1 },
+  ],
   cart_status: 'active',
 }
 

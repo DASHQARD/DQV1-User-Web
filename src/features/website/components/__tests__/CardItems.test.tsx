@@ -38,9 +38,7 @@ describe('CardItems', () => {
   })
 
   it('renders Quick Add button', () => {
-    renderWithProviders(
-      <CardItems product="Test" price={50} currency="GHS" type="dashx" />,
-    )
+    renderWithProviders(<CardItems product="Test" price={50} currency="GHS" type="dashx" />)
     expect(screen.getAllByRole('button', { name: /Quick Add/i }).length).toBeGreaterThan(0)
   })
 })

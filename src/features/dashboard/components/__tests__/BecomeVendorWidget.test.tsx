@@ -28,14 +28,18 @@ describe('BecomeVendorWidget', () => {
   it('renders collapsed state with title', () => {
     renderWithProviders(<BecomeVendorWidget />)
     expect(screen.getByText('Complete your onboarding process')).toBeInTheDocument()
-    expect(screen.getByText(/Finish your profile to activate your corporate account/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Finish your profile to activate your corporate account/),
+    ).toBeInTheDocument()
   })
 
   it('expands when header is clicked', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BecomeVendorWidget />)
     await user.click(screen.getByRole('button', { name: /complete your onboarding/i }))
-    expect(screen.getByText(/Finish all 3 steps to activate your corporate account/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Finish all 3 steps to activate your corporate account/),
+    ).toBeInTheDocument()
     expect(screen.getByText('Progress')).toBeInTheDocument()
   })
 
@@ -43,7 +47,9 @@ describe('BecomeVendorWidget', () => {
     const user = userEvent.setup()
     renderWithProviders(<BecomeVendorWidget />)
     await user.click(screen.getByRole('button', { name: /complete your onboarding/i }))
-    expect(screen.getAllByText(/Profile Information & Identity Documents/).length).toBeGreaterThanOrEqual(1)
+    expect(
+      screen.getAllByText(/Profile Information & Identity Documents/).length,
+    ).toBeGreaterThanOrEqual(1)
     expect(screen.getByText(/Business Details & Documentation/)).toBeInTheDocument()
     expect(screen.getByText(/Create Your First Branch/)).toBeInTheDocument()
   })

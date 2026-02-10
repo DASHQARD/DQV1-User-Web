@@ -18,10 +18,7 @@ vi.mock('@/hooks', async (importOriginal) => {
     useUserProfile: () => ({
       useGetUserProfileService: () => ({ data: stableUser }),
     }),
-    useReducerSpread: () => [
-      { limit: 10 },
-      vi.fn(),
-    ],
+    useReducerSpread: () => [{ limit: 10 }, vi.fn()],
   }
 })
 

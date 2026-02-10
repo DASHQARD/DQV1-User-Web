@@ -6,11 +6,21 @@ import SidebarWrapper from '../Sidebar'
 
 vi.mock('@/stores', () => ({ useAuthStore: vi.fn() }))
 
-vi.mock('../sidebar/BranchSidebar', () => ({ default: () => <div data-testid="branch-sidebar">Branch</div> }))
-vi.mock('../sidebar/CorporateSidebar', () => ({ default: () => <div data-testid="corporate-sidebar">Corporate</div> }))
-vi.mock('../sidebar/CorporateVendorSidebar', () => ({ default: () => <div data-testid="corporate-vendor-sidebar">CorporateVendor</div> }))
-vi.mock('../sidebar/VendorSidebar', () => ({ default: () => <div data-testid="vendor-sidebar">Vendor</div> }))
-vi.mock('../sidebar/UserSidebar', () => ({ default: () => <div data-testid="user-sidebar">User</div> }))
+vi.mock('../sidebar/BranchSidebar', () => ({
+  default: () => <div data-testid="branch-sidebar">Branch</div>,
+}))
+vi.mock('../sidebar/CorporateSidebar', () => ({
+  default: () => <div data-testid="corporate-sidebar">Corporate</div>,
+}))
+vi.mock('../sidebar/CorporateVendorSidebar', () => ({
+  default: () => <div data-testid="corporate-vendor-sidebar">CorporateVendor</div>,
+}))
+vi.mock('../sidebar/VendorSidebar', () => ({
+  default: () => <div data-testid="vendor-sidebar">Vendor</div>,
+}))
+vi.mock('../sidebar/UserSidebar', () => ({
+  default: () => <div data-testid="user-sidebar">User</div>,
+}))
 
 describe('Sidebar (wrapper)', () => {
   beforeEach(() => {

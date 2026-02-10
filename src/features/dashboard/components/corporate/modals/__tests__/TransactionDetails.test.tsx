@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { TransactionDetails } from '../TransactionDetails'
-import { MODALS } from '@/utils/constants'
 
 let isTransactionViewOpen = false
 vi.mock('@/hooks', () => ({

@@ -53,12 +53,9 @@ export function DashQardsFilters({
   isPriceRangeActive,
   clearAllFilters,
 }: DashQardsFiltersProps) {
-  const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
-    cardSelection: true,
-    search: true,
-    vendors: true,
-    priceRange: true,
-  })
+  const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>(
+    () => Object.fromEntries(SECTION_KEYS.map((k) => [k, true])) as Record<SectionKey, boolean>,
+  )
 
   const toggleSection = (key: SectionKey) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))
@@ -190,9 +187,7 @@ export function DashQardsFilters({
                 <input
                   type="text"
                   value={query.search || ''}
-                  onChange={(e) =>
-                    setQuery({ ...query, search: e.target.value || undefined })
-                  }
+                  onChange={(e) => setQuery({ ...query, search: e.target.value || undefined })}
                   placeholder="Search cards, vendors..."
                   className="w-full pl-10 pr-3 py-2.5 border-2 border-[#e6e6e6] rounded-md text-sm font-medium bg-white transition-colors focus:outline-none focus:border-primary-500 placeholder:text-[#aaa]"
                 />
@@ -209,9 +204,7 @@ export function DashQardsFilters({
           </div>
 
           {/* Vendors Filter */}
-          <div
-            className={`border-t border-[#e8e8e8] ${openSections.vendors ? 'px-6 pb-5' : ''}`}
-          >
+          <div className={`border-t border-[#e8e8e8] ${openSections.vendors ? 'px-6 pb-5' : ''}`}>
             <button
               type="button"
               onClick={() => toggleSection('vendors')}
@@ -242,9 +235,7 @@ export function DashQardsFilters({
               <div>
                 <div className="max-h-[200px] overflow-y-auto space-y-2">
                   {vendors.length === 0 ? (
-                    <p className="text-sm text-grey-500 text-center py-4">
-                      No vendors available
-                    </p>
+                    <p className="text-sm text-grey-500 text-center py-4">No vendors available</p>
                   ) : (
                     vendors.map((vendor) => {
                       const vendorIdStr = vendor.vendor_id?.toString() || ''
@@ -276,8 +267,7 @@ export function DashQardsFilters({
                                 const newIds = currentIds.filter((id) => id !== vendorIdStr)
                                 setQuery({
                                   ...query,
-                                  vendor_ids:
-                                    newIds.length > 0 ? newIds.join(',') : undefined,
+                                  vendor_ids: newIds.length > 0 ? newIds.join(',') : undefined,
                                 })
                               }
                             }}

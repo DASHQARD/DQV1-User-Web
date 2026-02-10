@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { renderWithProviders, screen } from '@/test/test-utils'
+import { renderWithProviders } from '@/test/test-utils'
 import { PaymentChangeNotifications } from '../PaymentChangeNotifications'
 
 describe('PaymentChangeNotifications', () => {

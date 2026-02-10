@@ -38,7 +38,9 @@ describe('CompleteVendorWidget', () => {
   it('renders collapsed vendor onboarding prompt', () => {
     renderWithProviders(<CompleteVendorWidget />)
     expect(screen.getByText(/complete your vendor onboarding/i)).toBeInTheDocument()
-    expect(screen.getByText(/finish your profile to activate your vendor account/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/finish your profile to activate your vendor account/i),
+    ).toBeInTheDocument()
   })
 
   it('expands when header is clicked', async () => {
@@ -58,5 +60,4 @@ describe('CompleteVendorWidget', () => {
     await user.click(continueBtn)
     expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('account=vendor'))
   })
-
 })

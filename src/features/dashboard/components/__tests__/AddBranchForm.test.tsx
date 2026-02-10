@@ -18,7 +18,9 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 const mockCloseModal = vi.fn()
 const mockIsModalOpen = vi.fn().mockReturnValue(false)
-const mockUseGetUserProfileService = vi.fn().mockReturnValue({ data: { branches: [] }, isLoading: false })
+const mockUseGetUserProfileService = vi
+  .fn()
+  .mockReturnValue({ data: { branches: [] }, isLoading: false })
 vi.mock('@/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/hooks')>()
   return {

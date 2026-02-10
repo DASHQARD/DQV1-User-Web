@@ -51,7 +51,11 @@ describe('RecentExperiences', () => {
       type: 'dashx',
     }))
     renderWithProviders(
-      <RecentExperiences experiences={experiences} isLoading={false} addAccountParam={addAccountParam} />,
+      <RecentExperiences
+        experiences={experiences}
+        isLoading={false}
+        addAccountParam={addAccountParam}
+      />,
     )
     expect(screen.getByRole('link', { name: /view all 7 experiences/i })).toBeInTheDocument()
   })

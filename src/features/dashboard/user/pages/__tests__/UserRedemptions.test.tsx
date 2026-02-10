@@ -4,7 +4,10 @@ import UserRedemptions from '../redemptions/UserRedemptions'
 
 vi.mock('@/features/dashboard/hooks', () => ({
   useRedemptionQueries: () => ({
-    useGetUserRedemptionsService: () => ({ data: { data: [], pagination: undefined }, isLoading: false }),
+    useGetUserRedemptionsService: () => ({
+      data: { data: [], pagination: undefined },
+      isLoading: false,
+    }),
   }),
 }))
 

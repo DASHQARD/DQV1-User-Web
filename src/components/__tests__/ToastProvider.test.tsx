@@ -9,7 +9,11 @@ function ToastTrigger() {
   const { success, error, info } = useToast()
   return (
     <div>
-      <button type="button" onClick={() => success('Success message')} data-testid="trigger-success">
+      <button
+        type="button"
+        onClick={() => success('Success message')}
+        data-testid="trigger-success"
+      >
         Success
       </button>
       <button

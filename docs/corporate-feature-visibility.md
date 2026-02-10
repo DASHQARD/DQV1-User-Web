@@ -55,11 +55,11 @@ Makes it explicit that approval is a separate step after onboarding.
 
 ## Summary
 
-| User state              | What they see                                                                 |
-|-----------------------------------------------------------------------------------------|
-| Profile incomplete      | Status banner (complete profile); sidebar items disabled with tooltip; Create vendor account disabled with inline reason; widget explains “after approval” access. |
-| Profile complete, pending approval | Status banner (under review); same disabled sidebar items and Create vendor account + tooltips/inline text. |
-| Approved                | No banner; all corporate features enabled.                                    |
-| Bulk gifting            | Optional: “Coming soon” badge or short copy where the feature is shown.       |
+| User state                         | What they see                                                                                                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Profile incomplete                 | Status banner (complete profile); sidebar items disabled with tooltip; Create vendor account disabled with inline reason; widget explains “after approval” access. |
+| Profile complete, pending approval | Status banner (under review); same disabled sidebar items and Create vendor account + tooltips/inline text.                                                        |
+| Approved                           | No banner; all corporate features enabled.                                                                                                                         |
+| Bulk gifting                       | Optional: “Coming soon” badge or short copy where the feature is shown.                                                                                            |
 
 This gives a single, consistent story: **complete profile → get approved → full access**, and explains why “Create vendor account” or other features are sometimes unavailable.

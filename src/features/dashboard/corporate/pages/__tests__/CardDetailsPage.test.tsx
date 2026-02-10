@@ -17,7 +17,12 @@ vi.mock('../cards/useCorporateCardDetailsPage', () => ({
     handlePreviousPage: vi.fn(),
     handlePageSizeChange: vi.fn(),
     getCardBackground: vi.fn(),
-    CARD_DISPLAY_NAMES: { dashx: 'DashX', dashgo: 'DashGo', dashpro: 'DashPro', dashpass: 'DashPass' },
+    CARD_DISPLAY_NAMES: {
+      dashx: 'DashX',
+      dashgo: 'DashGo',
+      dashpro: 'DashPro',
+      dashpass: 'DashPass',
+    },
     cardImageUrls: {},
     handleRedeemClick: vi.fn(),
     showVendorModal: false,

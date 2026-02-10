@@ -19,9 +19,7 @@ describe('UploadID (dashboard shared)', () => {
 
   it('renders Profile Information heading', () => {
     renderWithProviders(<UploadID />)
-    expect(
-      screen.getByRole('heading', { name: /profile information/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /profile information/i })).toBeInTheDocument()
   })
 
   it('renders UserUploadIDForm', () => {

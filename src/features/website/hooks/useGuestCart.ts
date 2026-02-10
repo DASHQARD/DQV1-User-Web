@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores'
 import { getGuestCartItems, deleteCartItemRecipient, updateCartItem } from '../services/cart'
@@ -17,12 +17,13 @@ export function useGuestCart(query?: Record<string, any>) {
     enabled: isGuestAuth,
   })
 
-  console.log('guestCartQuery', guestCartQuery)
-
-  const cartItems = guestCartQuery.data ?? []
+  const cartItems = useMemo(
+    () => (Array.isArray(guestCartQuery.data) ? guestCartQuery.data : []),
+    [guestCartQuery.data],
+  )
 
   useEffect(() => {
-    if (!isGuestAuth || !Array.isArray(cartItems) || cartItems.length === 0) return
+    if (!isGuestAuth || cartItems.length === 0) return
     const firstCartId = cartItems[0]?.cart_id
     if (typeof firstCartId === 'number' && getGuestCartId() == null) {
       setGuestCartId(firstCartId)
