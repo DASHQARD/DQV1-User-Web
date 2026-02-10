@@ -1,303 +1,32 @@
-import React from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Loader, Button, Text, DocumentViewer } from '@/components'
 import { ROUTES } from '@/utils/constants/shared'
 import { Icon } from '@/libs'
 import { formatCurrency } from '@/utils/format'
-import { usePublicCatalogQueries } from '../../hooks/website'
-import { useCart } from '../../hooks/useCart'
-import { useCartStore } from '@/stores/cart'
-import { usePresignedURL } from '@/hooks'
-import DashxBg from '@/assets/svgs/Dashx_bg.svg'
-import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/images/dashpass_bg.png'
-import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
+import { useCardDetails } from '../../hooks'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
 
 export default function CardDetails() {
-  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { usePublicCardsService, usePublicVendorsService } = usePublicCatalogQueries()
-  const { data: cardsResponse, isLoading } = usePublicCardsService()
-  const { addToCartAsync, isAdding } = useCart()
-  const { openCart } = useCartStore()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-
-  // Find card by ID - handle both string and number comparison
-  const card = React.useMemo(() => {
-    if (!cardsResponse || !id) return null
-    const cards = Array.isArray(cardsResponse) ? cardsResponse : []
-    return (
-      cards.find((c: any) => c.card_id?.toString() === id || (c as any).id?.toString() === id) ||
-      null
-    )
-  }, [cardsResponse, id])
-
-  // Fetch vendor details to get branch information for redemption
-  const { data: vendorDetailsResponse } = usePublicVendorsService(
-    card?.vendor_id
-      ? {
-          vendor_id: String(card.vendor_id),
-        }
-      : undefined,
-  )
-
-  // Extract redemption branches from vendor details
-  const redemptionBranches = React.useMemo(() => {
-    if (!vendorDetailsResponse || !card) return []
-
-    // Handle both array response and wrapped response
-    const vendors = Array.isArray(vendorDetailsResponse)
-      ? vendorDetailsResponse
-      : (vendorDetailsResponse as any)?.data || []
-
-    // Find the vendor that matches the card's vendor_id
-    const vendor = vendors.find((v: any) => String(v.vendor_id || v.id) === String(card.vendor_id))
-
-    if (!vendor?.branches_with_cards) {
-      // If no branches found but card has branch info, use that
-      if ((card as any).branch_name) {
-        return [
-          {
-            branch_name: (card as any).branch_name,
-            branch_location: (card as any).branch_location || '',
-          },
-        ]
-      }
-      return []
-    }
-
-    // Find branches that have this card
-    const branches: Array<{ branch_name: string; branch_location: string }> = []
-    vendor.branches_with_cards.forEach((branch: any) => {
-      if (branch.cards && Array.isArray(branch.cards)) {
-        const hasCard = branch.cards.some(
-          (c: any) =>
-            (c.card_id || c.id)?.toString() === (card.card_id || (card as any).id)?.toString(),
-        )
-        if (hasCard && branch.branch_name) {
-          branches.push({
-            branch_name: branch.branch_name,
-            branch_location: branch.branch_location || '',
-          })
-        }
-      }
-    })
-
-    // If no branches found but card has branch info, use that
-    if (branches.length === 0 && (card as any).branch_name) {
-      branches.push({
-        branch_name: (card as any).branch_name,
-        branch_location: (card as any).branch_location || '',
-      })
-    }
-
-    return branches
-  }, [vendorDetailsResponse, card])
-
-  // Fetch presigned URLs for images and terms
-  const [imageUrls, setImageUrls] = React.useState<Record<number | string, string>>({})
-  const [termsUrls, setTermsUrls] = React.useState<Record<number | string, string>>({})
-  const [isLoadingImages, setIsLoadingImages] = React.useState(false)
-  const [isLoadingTerms, setIsLoadingTerms] = React.useState(false)
-
-  // Document viewer state
-  const [selectedDocument, setSelectedDocument] = React.useState<{
-    url: string
-    name: string
-  } | null>(null)
-
-  // Image viewer state
-  const [imageIndex, setImageIndex] = React.useState(-1)
-
-  React.useEffect(() => {
-    if (!card) {
-      setImageUrls({})
-      setTermsUrls({})
-      setIsLoadingImages(false)
-      setIsLoadingTerms(false)
-      return
-    }
-
-    let cancelled = false
-
-    // Fetch image URLs
-    if (card.images && card.images.length > 0) {
-      setIsLoadingImages(true)
-
-      const fetchImageUrls = async () => {
-        try {
-          const imagePromises = card.images.map(async (image: any, index: number) => {
-            try {
-              const response = await fetchPresignedURL(image.file_url)
-              // Handle both string response and object with url property
-              const url =
-                typeof response === 'string' ? response : (response as any)?.url || response
-              return { key: image.id || image.file_name || index, url }
-            } catch (error) {
-              console.error('Failed to fetch presigned URL for image:', error)
-              return { key: image.id || image.file_name || index, url: null }
-            }
-          })
-
-          const results = await Promise.all(imagePromises)
-          if (!cancelled) {
-            const urlMap: Record<number | string, string> = {}
-            results.forEach((result) => {
-              if (result.url) {
-                urlMap[result.key] = result.url
-              }
-            })
-            setImageUrls(urlMap)
-            setIsLoadingImages(false)
-          }
-        } catch (error) {
-          console.error('Failed to fetch image URLs:', error)
-          if (!cancelled) {
-            setIsLoadingImages(false)
-          }
-        }
-      }
-
-      fetchImageUrls()
-    } else {
-      setImageUrls({})
-      setIsLoadingImages(false)
-    }
-
-    // Fetch terms URLs
-    if (card.terms_and_conditions && card.terms_and_conditions.length > 0) {
-      setIsLoadingTerms(true)
-
-      const fetchTermsUrls = async () => {
-        try {
-          const termsPromises = card.terms_and_conditions.map(async (term: any, index: number) => {
-            try {
-              const response = await fetchPresignedURL(term.file_url)
-              // Handle both string response and object with url property
-              const url =
-                typeof response === 'string' ? response : (response as any)?.url || response
-              return { key: term.id || term.file_name || index, url }
-            } catch (error) {
-              console.error('Failed to fetch presigned URL for term:', error)
-              return { key: term.id || term.file_name || index, url: null }
-            }
-          })
-
-          const results = await Promise.all(termsPromises)
-          if (!cancelled) {
-            const urlMap: Record<number | string, string> = {}
-            results.forEach((result) => {
-              if (result.url) {
-                urlMap[result.key] = result.url
-              }
-            })
-            setTermsUrls(urlMap)
-            setIsLoadingTerms(false)
-          }
-        } catch (error) {
-          console.error('Failed to fetch terms URLs:', error)
-          if (!cancelled) {
-            setIsLoadingTerms(false)
-          }
-        }
-      }
-
-      fetchTermsUrls()
-    } else {
-      setTermsUrls({})
-      setIsLoadingTerms(false)
-    }
-
-    return () => {
-      cancelled = true
-    }
-  }, [card, fetchPresignedURL])
-
-  // Get card background based on type
-  const getCardBackground = React.useCallback(() => {
-    if (!card?.type) return DashxBg
-    const normalizedType = card.type.toLowerCase()
-    switch (normalizedType) {
-      case 'dashx':
-        return DashxBg
-      case 'dashpro':
-        return DashproBg
-      case 'dashpass':
-        return DashpassBg
-      case 'dashgo':
-        return DashGoBg
-      default:
-        return DashxBg
-    }
-  }, [card?.type])
-
-  // Get card type display name
-  const getCardTypeName = React.useCallback(() => {
-    if (!card?.type) return 'DASHQARD'
-    const normalizedType = card.type.toLowerCase()
-    switch (normalizedType) {
-      case 'dashx':
-        return 'DASHX'
-      case 'dashpro':
-        return 'DASHPRO'
-      case 'dashpass':
-        return 'DASHPASS'
-      case 'dashgo':
-        return 'DASHGO'
-      default:
-        return 'DASHQARD'
-    }
-  }, [card?.type])
-
-  const handleAddToCart = async () => {
-    if (!card || !id) return
-
-    await addToCartAsync({
-      card_id: card.card_id || (card as any).id,
-      quantity: 1,
-    } as any)
-    openCart()
-  }
-
-  // Generate QR code for the card
-  const qrCodeUrl = card
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${card.product}-${card.card_id || (card as any).id}`)}&bgcolor=FFFFFF&color=402D87&margin=10`
-    : ''
-
-  // Get image URL from presigned URLs or fallback
-  const getImageUrl = React.useCallback(
-    (image: any, index: number) => {
-      const key = image.id || image.file_name || index
-      // Use presigned URL if available
-      if (imageUrls[key]) {
-        return imageUrls[key]
-      }
-      // Fallback: if file_url is already a full URL, use it
-      if (image.file_url?.startsWith('http://') || image.file_url?.startsWith('https://')) {
-        return image.file_url
-      }
-      // Fallback: if it's a base64 data URL, use it
-      if (image.file_url?.startsWith('data:')) {
-        return image.file_url
-      }
-      return ''
-    },
-    [imageUrls],
-  )
-
-  // Prepare images for lightbox
-  const lightboxImages = React.useMemo(() => {
-    if (!card?.images) return []
-    return card.images.map((image: any, index: number) => {
-      const imageUrl = getImageUrl(image, index)
-      return {
-        src: imageUrl,
-        alt: `${card.product} image ${index + 1}`,
-      }
-    })
-  }, [card?.images, card?.product, getImageUrl])
+  const {
+    card,
+    isLoading,
+    redemptionBranches,
+    isLoadingImages,
+    isLoadingTerms,
+    selectedDocument,
+    setSelectedDocument,
+    imageIndex,
+    setImageIndex,
+    getCardTypeName,
+    handleAddToCart,
+    isAdding,
+    lightboxImages,
+    displayPrice,
+    cardBackground,
+    termsUrls,
+  } = useCardDetails()
 
   if (isLoading) {
     return (
@@ -323,9 +52,6 @@ export default function CardDetails() {
       </div>
     )
   }
-
-  const displayPrice = parseFloat(card.price) || 0
-  const cardBackground = getCardBackground()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -434,21 +160,15 @@ export default function CardDetails() {
                   </div>
 
                   {/* Bottom Section */}
-                  <div className="flex items-end justify-between">
-                    {/* Left: Vendor Name */}
-                    {card.vendor_name && (
+                  {card.vendor_name && (
+                    <div className="flex items-end">
                       <div className="bg-white/10 backdrop-blur-md rounded-full px-4 py-2 border border-white/20">
                         <span className="font-bold text-lg tracking-wide uppercase">
                           {card.vendor_name}
                         </span>
                       </div>
-                    )}
-
-                    {/* Right: QR Code */}
-                    <div className="p-3 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 shadow-lg">
-                      <img src={qrCodeUrl} alt="QR Code" className="w-20 h-20" />
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -467,7 +187,7 @@ export default function CardDetails() {
                 </div>
                 <div className="grid grid-cols-4 gap-3">
                   {card.images.slice(0, 4).map((image: any, index: number) => {
-                    const imageUrl = getImageUrl(image, index)
+                    const imageUrl = lightboxImages[index]?.src ?? ''
                     return (
                       <button
                         key={image.id || image.file_name || index}
@@ -689,7 +409,7 @@ export default function CardDetails() {
               <Button
                 variant="secondary"
                 onClick={() => navigate(ROUTES.IN_APP.REDEEM)}
-                className="w-full bg-white text-primary-600 hover:bg-gray-100 font-bold py-3 rounded-xl shadow-lg border-0"
+                className="w-full text-primary-600 font-bold py-3 rounded-xl shadow-lg border-0"
               >
                 <Icon icon="bi:arrow-right-circle" className="mr-2 text-lg" />
                 Redeem Your Card

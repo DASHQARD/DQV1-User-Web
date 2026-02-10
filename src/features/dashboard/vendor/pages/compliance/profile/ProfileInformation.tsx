@@ -1,5 +1,6 @@
 import { Text } from '@/components'
 import { OnboardingForm } from '@/features/auth'
+import { OnboardingSuccessModal } from '@/features/dashboard/components/corporate/modals'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 
@@ -26,6 +27,7 @@ export default function ProfileInformation() {
       <div className="bg-white border border-[#CDD3D3] rounded-xl p-8">
         <OnboardingForm />
       </div>
+      <OnboardingSuccessModal />
     </section>
   )
 }

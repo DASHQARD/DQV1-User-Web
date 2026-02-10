@@ -1,3 +1,6 @@
+/** localStorage key for guest email (collected during guest OTP flow, used later) */
+export const GUEST_EMAIL_STORAGE_KEY = 'dashqard-guest-email'
+
 export const ROUTES = {
   IN_APP: {
     DASHQARDS: '/dashqards',

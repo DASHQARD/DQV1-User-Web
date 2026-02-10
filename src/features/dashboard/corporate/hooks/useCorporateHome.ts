@@ -1,7 +1,9 @@
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { useUserProfile } from '@/hooks'
-import { ROUTES } from '@/utils/constants'
+import { vendorQueries } from '@/features/dashboard/vendor'
+import { useUserProfile, usePersistedModalState } from '@/hooks'
+import { ROUTES, MODALS } from '@/utils/constants'
 
 import { useDashboardMetrics } from './useDashboardMetrics'
 
@@ -10,6 +12,26 @@ export function useCorporateHome() {
   const navigate = useNavigate()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
+  const { useGetAllVendorsDetailsService } = vendorQueries()
+  const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
+  const vendorAccountModal = usePersistedModalState<{ user?: unknown }>({
+    paramName: MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_VENDOR_ACCOUNT,
+  })
+
+  const myVendorAccounts = useMemo(() => {
+    const vendorsData = Array.isArray(allVendorsDetails)
+      ? allVendorsDetails
+      : ((allVendorsDetails as { data?: unknown[] })?.data ?? [])
+    return vendorsData.filter(
+      (v: { corporate_user_id?: number }) => v.corporate_user_id === userProfileData?.id,
+    ) as Array<{
+      id?: number
+      vendor_name?: string
+      business_name?: string
+      approval_status?: string
+      status?: string
+    }>
+  }, [allVendorsDetails, userProfileData?.id])
 
   const addAccountParam = (path: string): string => {
     const separator = path?.includes('?') ? '&' : '?'
@@ -84,6 +106,19 @@ export function useCorporateHome() {
     navigate(addAccountParam(ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS))
   }
 
+  const openCreateVendorAccount = () => {
+    vendorAccountModal.openModal(MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_VENDOR_ACCOUNT, {
+      user: userProfileData,
+    })
+  }
+
+  /** For UX: 'incomplete' | 'pending_approval' | 'full_access' to drive status banner messaging */
+  const accountStatusBanner: 'incomplete' | 'pending_approval' | 'full_access' = !isComplete
+    ? 'incomplete'
+    : !isApprovedOrVerified
+      ? 'pending_approval'
+      : 'full_access'
+
   return {
     metrics,
     formatCurrency,
@@ -100,9 +135,13 @@ export function useCorporateHome() {
     isComplete,
     isPendingAndKYCComplete,
     canAccessRestrictedFeatures,
+    accountStatusBanner,
+    userStatus,
     handleContinue,
     getNextStepName,
     navigateToProfileStep,
     navigateToBusinessStep,
+    openCreateVendorAccount,
+    myVendorAccounts,
   }
 }

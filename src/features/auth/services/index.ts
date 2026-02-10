@@ -4,6 +4,9 @@ import type {
   BusinessDetailsData,
   ChangePasswordData,
   CreateAccountData,
+  GuestOtpRequestData,
+  GuestOtpVerifyData,
+  GuestTokenRefreshData,
   LoginData,
   OnboardingData,
   UploadBusinessIDData,
@@ -99,6 +102,21 @@ const getCountriesCode = async (country_code: string) => {
   return await getList(`/countries/code/${country_code}`)
 }
 
+const guestAuthOtpRequest = async (data: GuestOtpRequestData) => {
+  const response = await axiosClient.post('/guest-auth/otp/request', data)
+  return response.data
+}
+
+const guestAuthOtpVerify = async (data: GuestOtpVerifyData) => {
+  const response = await axiosClient.post('/guest-auth/otp/verify', data)
+  return response.data
+}
+
+const guestAuthTokenRefresh = async (data: GuestTokenRefreshData) => {
+  const response = await axiosClient.post('/guest-auth/token/refresh', data)
+  return response.data
+}
+
 const businessDetailsWithDocuments = async (data: BusinessDetailsWithDocumentsData) => {
   return await postMethod(`${commonUrl}/business-details-with-documents`, data)
 }
@@ -125,4 +143,7 @@ export {
   resendRefreshToken,
   businessDetailsWithDocuments,
   getCountriesCode,
+  guestAuthOtpRequest,
+  guestAuthOtpVerify,
+  guestAuthTokenRefresh,
 }

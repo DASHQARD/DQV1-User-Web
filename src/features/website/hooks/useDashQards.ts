@@ -1,0 +1,172 @@
+import { useState, useMemo, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+import type { PublicCardResponse } from '@/types/responses'
+
+import { usePublicCatalog } from './website'
+import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
+
+export type DashQardsTabId = 'dashx' | 'dashpro' | 'dashpass' | 'dashgo'
+
+export interface DashQardsVendor {
+  id: number | string
+  vendor_id?: number
+  name: string
+}
+
+/** Shape of /api/v1/vendors/all/details response */
+interface VendorsApiResponse {
+  data?: Array<{
+    vendor_id?: number
+    id?: number
+    business_name?: string
+    vendor_name?: string
+    branch_name?: string
+    branches_with_cards?: Array<{ cards?: unknown[] }>
+  }>
+}
+
+const SORT_ACTIONS = [
+  { label: 'Popular', value: 'popular' },
+  { label: 'Newest', value: 'newest' },
+] as const
+
+export function useDashQards() {
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState<DashQardsTabId>('dashx')
+  const { publicCards, query, setQuery, cardTabs, priceRanges } = usePublicCatalog()
+  const { usePublicVendorsService } = usePublicCatalogQueries()
+  const { data: vendorsResponse } = usePublicVendorsService({ limit: 100 })
+
+  const vendors = useMemo((): DashQardsVendor[] => {
+    if (!vendorsResponse) return []
+    // API can return { data: [...] } or the client may unwrap to the array
+    const raw = Array.isArray(vendorsResponse)
+      ? vendorsResponse
+      : ((vendorsResponse as VendorsApiResponse)?.data ?? [])
+    const list = Array.isArray(raw) ? raw : []
+    return list
+      .filter(
+        (v) =>
+          (v.branches_with_cards?.length ?? 0) > 0 &&
+          (v.branches_with_cards ?? []).some((b) => (b.cards?.length ?? 0) > 0),
+      )
+      .map((v) => ({
+        id: v.vendor_id ?? v.id ?? 0,
+        vendor_id: v.vendor_id,
+        name: v.business_name || v.vendor_name || 'Unknown Vendor',
+      }))
+  }, [vendorsResponse])
+
+  const sortBy = query.sort_by || 'popular'
+
+  const allCards = useMemo((): PublicCardResponse[] => {
+    if (!publicCards) return []
+    const cards = Array.isArray(publicCards)
+      ? publicCards
+      : Array.isArray((publicCards as { data?: unknown[] })?.data)
+        ? (publicCards as { data: unknown[] }).data
+        : []
+    return cards as PublicCardResponse[]
+  }, [publicCards])
+
+  const filteredQardsAll = useMemo(() => {
+    return allCards.filter((card) => {
+      const cardType = card.type?.toLowerCase()
+      if (cardType !== activeTab) return false
+      const cardPrice = parseFloat(String(card.price)) || 0
+      if (query.min_price) {
+        const minPrice = parseFloat(query.min_price)
+        if (!isNaN(minPrice) && cardPrice < minPrice) return false
+      }
+      if (query.max_price) {
+        const maxPrice = parseFloat(query.max_price)
+        if (!isNaN(maxPrice) && cardPrice > maxPrice) return false
+      }
+      return true
+    })
+  }, [allCards, activeTab, query.min_price, query.max_price])
+
+  const sortedQards = filteredQardsAll
+
+  const getCardTypeCount = useCallback(
+    (typeId: string) => {
+      if (typeId === 'dashpro' || typeId === 'dashgo') return 1
+      return allCards.filter((card) => card.type?.toLowerCase() === typeId).length
+    },
+    [allCards],
+  )
+
+  const setPriceRange = useCallback(
+    (min: number | null | undefined, max: number | null | undefined) => {
+      setQuery({
+        ...query,
+        min_price: min != null ? String(min) : undefined,
+        max_price: max != null ? String(max) : undefined,
+      })
+    },
+    [setQuery, query],
+  )
+
+  const isPriceRangeActive = useCallback(
+    (min: number | null, max: number | null) => {
+      const currentMin = query.min_price ? parseFloat(query.min_price) : null
+      const currentMax = query.max_price ? parseFloat(query.max_price) : null
+      if (min === null && max === null) return currentMin === null && currentMax === null
+      if (min !== null && max !== null) return currentMin === min && currentMax === max
+      if (min !== null && max === null) return currentMin === min && currentMax === null
+      return false
+    },
+    [query.min_price, query.max_price],
+  )
+
+  const clearAllFilters = useCallback(() => {
+    setQuery({
+      ...query,
+      min_price: '',
+      max_price: '',
+      search: '',
+      vendor_ids: '',
+      sort_by: '',
+    })
+  }, [setQuery, query])
+
+  const onGetCard = useCallback(
+    (card: PublicCardResponse) => {
+      if (card.card_id) navigate(`/card/${card.card_id}`)
+    },
+    [navigate],
+  )
+
+  const currentSortLabel = useMemo(() => {
+    const action = SORT_ACTIONS.find((a) => a.value === sortBy)
+    return action?.label ?? 'Sort by'
+  }, [sortBy])
+
+  const setSortBy = useCallback(
+    (value: string) => {
+      setQuery({ ...query, sort_by: value })
+    },
+    [setQuery, query],
+  )
+
+  return {
+    activeTab,
+    setActiveTab,
+    query,
+    setQuery,
+    cardTabs,
+    priceRanges,
+    vendors,
+    filteredQardsAll,
+    sortedQards,
+    getCardTypeCount,
+    setPriceRange,
+    isPriceRangeActive,
+    clearAllFilters,
+    onGetCard,
+    sortActions: SORT_ACTIONS,
+    currentSortLabel,
+    setSortBy,
+  }
+}

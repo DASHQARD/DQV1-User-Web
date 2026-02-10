@@ -8,7 +8,9 @@ export type CartItem = {
   imageUrl: string
   price?: number
   quantity: number
-  type?: 'dashx' | 'dashpro' | 'dashgo'
+  type?: 'dashx' | 'dashpro' | 'dashgo' | 'dashpass'
+  /** Set for guest cart items so they can be synced to API on login */
+  card_id?: number
 }
 
 type CartState = {

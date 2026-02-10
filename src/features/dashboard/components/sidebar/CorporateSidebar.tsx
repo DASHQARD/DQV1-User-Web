@@ -173,10 +173,7 @@ export default function CorporateSidebar() {
                                 className="text-gray-400 text-sm shrink-0"
                               />
                             ) : (
-                              <Icon
-                                icon="bi:lock-fill"
-                                className="text-amber-500 text-sm shrink-0"
-                              />
+                              <Icon icon="bi:lock-fill" className="text-sm shrink-0" />
                             )}
                           </div>
                         </TooltipTrigger>
@@ -198,43 +195,50 @@ export default function CorporateSidebar() {
                 </div>
               )}
 
-              <button
-                onClick={() => {
-                  if (canAccessRestrictedFeatures) {
-                    setIsPopoverOpen(false)
-                    vendorAccountModal.openModal(
-                      MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_VENDOR_ACCOUNT,
-                      {
-                        user,
-                      },
-                    )
-                  }
-                }}
-                disabled={!canAccessRestrictedFeatures}
-                className={cn(
-                  'flex items-center gap-2 text-sm transition-colors mb-3 w-full text-left',
-                  canAccessRestrictedFeatures
-                    ? 'text-gray-700 hover:text-gray-900'
-                    : 'text-gray-400 cursor-not-allowed opacity-50',
-                )}
-              >
-                <Icon icon="bi:plus-circle" className="text-lg" />
-                <span>Create a vendor account</span>
+              <div className="mb-3">
+                <button
+                  onClick={() => {
+                    if (canAccessRestrictedFeatures) {
+                      setIsPopoverOpen(false)
+                      vendorAccountModal.openModal(
+                        MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_VENDOR_ACCOUNT,
+                        {
+                          user,
+                        },
+                      )
+                    }
+                  }}
+                  disabled={!canAccessRestrictedFeatures}
+                  className={cn(
+                    'flex items-center gap-2 text-sm transition-colors w-full text-left',
+                    canAccessRestrictedFeatures
+                      ? 'text-gray-700 hover:text-gray-900'
+                      : 'text-gray-400 cursor-not-allowed opacity-50',
+                  )}
+                >
+                  <Icon icon="bi:plus-circle" className="text-lg" />
+                  <span>Create a vendor account</span>
+                  {!canAccessRestrictedFeatures && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Icon icon="bi:info-circle" className="text-xs text-gray-400 ml-auto" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Complete onboarding and get approved to create vendor accounts
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </button>
                 {!canAccessRestrictedFeatures && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Icon icon="bi:info-circle" className="text-xs text-gray-400 ml-auto" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Complete onboarding and get approved to create vendor accounts
-                    </TooltipContent>
-                  </Tooltip>
+                  <p className="text-xs text-gray-500 mt-1 pl-7">
+                    Complete onboarding and get approved to unlock
+                  </p>
                 )}
-              </button>
+              </div>
             </div>
 
             {/* Footer Actions */}
-            <div className="border-t border-gray-200 py-2">
+            {/* <div className="border-t border-gray-200 py-2">
               <button
                 onClick={() => setIsPopoverOpen(false)}
                 className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors w-full text-left"
@@ -242,7 +246,7 @@ export default function CorporateSidebar() {
                 <Icon icon="bi:question-circle" className="text-lg text-[#677084]" />
                 <span>Help</span>
               </button>
-            </div>
+            </div> */}
           </PopoverContent>
         </Popover>
         <CreateVendorAccount />
@@ -461,7 +465,7 @@ export default function CorporateSidebar() {
                           </TooltipTrigger>
                           <TooltipContent side="right">
                             {isDisabled
-                              ? `${item.label} - Complete onboarding and get approved to access`
+                              ? `${item.label} — Complete onboarding and get approved to access this section`
                               : item.label}
                             {item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS &&
                               pendingRequestsCount > 0 &&
@@ -471,17 +475,25 @@ export default function CorporateSidebar() {
                       ) : (
                         <>
                           {isDisabled ? (
-                            <div
-                              className={cn(
-                                'flex items-center gap-3.5 text-gray-400 font-medium text-sm py-3 px-4 w-full rounded-[10px] relative z-2 cursor-not-allowed',
-                              )}
-                            >
-                              <Icon
-                                icon={item.icon}
-                                className="w-5 h-5 text-base flex items-center justify-center shrink-0 text-gray-400"
-                              />
-                              <span>{item.label}</span>
-                            </div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className={cn(
+                                    'flex items-center gap-3.5 text-gray-400 font-medium text-sm py-3 px-4 w-full rounded-[10px] relative z-2 cursor-not-allowed',
+                                  )}
+                                >
+                                  <Icon
+                                    icon={item.icon}
+                                    className="w-5 h-5 text-base flex items-center justify-center shrink-0 text-gray-400"
+                                  />
+                                  <span>{item.label}</span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="right">
+                                {item.label} — Complete onboarding and get approved to access this
+                                section
+                              </TooltipContent>
+                            </Tooltip>
                           ) : (
                             <Link
                               to={addAccountParam(item.path)}

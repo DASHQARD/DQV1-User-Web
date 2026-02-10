@@ -2,7 +2,11 @@ import { Text, Button } from '@/components'
 import { Icon } from '@/libs'
 import { StarImage } from '@/assets/images'
 import { cn } from '@/libs'
-import { RecentTransactions, CompleteCorporateWidget } from '@/features/dashboard/components'
+import {
+  RecentTransactions,
+  CompleteCorporateWidget,
+  CorporateAccountStatusBanner,
+} from '@/features/dashboard/components'
 import { useCorporateHome } from '../../hooks/useCorporateHome'
 
 export default function CorporateHome() {
@@ -16,8 +20,9 @@ export default function CorporateHome() {
     totalCount,
     progressPercentage,
     isComplete,
-    isPendingAndKYCComplete,
+    // isPendingAndKYCComplete,
     canAccessRestrictedFeatures,
+    accountStatusBanner,
     handleContinue,
     getNextStepName,
     navigateToProfileStep,
@@ -28,8 +33,11 @@ export default function CorporateHome() {
     <div className="bg-[#f8f9fa] rounded-xl overflow-hidden min-h-[600px]">
       <section className="py-8 px-6 flex flex-col gap-6">
         <Text variant="h2" weight="bold" className="text-gray-900 text-3xl">
-          Dashboard Overview
+          Dashboard
         </Text>
+
+        {/* Account status banner – explains why some features are locked or coming soon */}
+        <CorporateAccountStatusBanner status={accountStatusBanner} />
 
         {/* Onboarding Steps Section - Only show if not complete */}
         {!isComplete && (
@@ -209,7 +217,7 @@ export default function CorporateHome() {
         )}
 
         {/* Pending Approval Message - Show when status is pending and KYC is complete */}
-        {isPendingAndKYCComplete && (
+        {/* {isPendingAndKYCComplete && (
           <div className="bg-linear-to-br from-blue-50 via-white to-indigo-50 border border-blue-200 rounded-2xl shadow-lg p-6 sm:p-8">
             <div className="flex items-start gap-4">
               <div className="w-16 h-16 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-md shrink-0">
@@ -241,7 +249,7 @@ export default function CorporateHome() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Metrics Cards */}
         {!isLoading && (

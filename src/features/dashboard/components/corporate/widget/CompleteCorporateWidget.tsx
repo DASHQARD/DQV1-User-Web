@@ -93,7 +93,8 @@ export default function CompleteCorporateWidget() {
                     Complete your corporate onboarding process
                   </Text>
                   <Text variant="span" className="text-gray-600">
-                    Finish all 2 steps to activate your corporate account.
+                    Finish all 2 steps to activate your corporate account. After approval you’ll get
+                    access to purchases, vendor accounts, and more.
                   </Text>
                 </section>
                 <button

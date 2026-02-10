@@ -1,4 +1,5 @@
 import { Hero } from '@/components'
+import { FloatingFeedbackButton } from '@/components/floatingFeedbackButton'
 import { Contact, FeaturedCards, PartnerVendors } from '../../components'
 
 export default function LandingPage() {
@@ -8,6 +9,7 @@ export default function LandingPage() {
       <FeaturedCards />
       <PartnerVendors />
       <Contact />
+      <FloatingFeedbackButton />
     </div>
   )
 }

@@ -182,15 +182,6 @@ export function useCorporateSidebar() {
       ) {
         return false
       }
-      if (
-        item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||
-        item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE ||
-        item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS ||
-        item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.VENDOR_INVITATIONS ||
-        item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ALL_VENDORS
-      ) {
-        return isApprovedOrVerified
-      }
       return true
     })
 
@@ -207,6 +198,11 @@ export function useCorporateSidebar() {
           item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.VENDOR_INVITATIONS ||
           item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ALL_VENDORS) &&
           !isOnboardingComplete) ||
+        ((item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE ||
+          item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS ||
+          item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.VENDOR_INVITATIONS ||
+          item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.ALL_VENDORS) &&
+          !canAccessRestrictedFeatures) ||
         (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS && isStatusPending),
     }))
   }

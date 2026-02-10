@@ -42,20 +42,22 @@ const isTokenValid = (token: string | null): boolean => {
   }
 }
 
-// Refresh token function
+// Refresh token function (uses auth/refresh-token or guest-auth/token/refresh based on isGuestAuth)
 const refreshAccessToken = async (): Promise<string | null> => {
-  const refreshTokenValue = useAuthStore.getState().getRefreshToken()
+  const state = useAuthStore.getState()
+  const refreshTokenValue = state.getRefreshToken()
+  const isGuestAuth = state.isGuestAuth
   if (!refreshTokenValue) {
     throw new Error('No refresh token available')
   }
 
-  try {
-    // Use axios directly to avoid interceptor loop
-    const response = await axios.post(`${ENV_VARS.API_BASE_URL}/api/v1/auth/refresh-token`, {
-      refresh_token: refreshTokenValue,
-    })
+  const url = isGuestAuth
+    ? `${ENV_VARS.API_BASE_URL}/api/v1/guest-auth/token/refresh`
+    : `${ENV_VARS.API_BASE_URL}/api/v1/auth/refresh-token`
+  const body = { refresh_token: refreshTokenValue }
 
-    // Handle different response structures
+  try {
+    const response = await axios.post(url, body)
     const responseData = response?.data?.data || response?.data || response
     const accessToken =
       responseData?.accessToken ||
@@ -70,15 +72,13 @@ const refreshAccessToken = async (): Promise<string | null> => {
       throw new Error('Unable to refresh access token')
     }
 
-    // Update tokens in store
     useAuthStore.getState().authenticate({
       token: accessToken,
       refreshToken: newRefreshToken || refreshTokenValue,
+      isGuestAuth,
     })
-
     return accessToken
   } catch (error) {
-    // Refresh failed, logout user
     const reset = useAuthStore.getState().reset
     reset()
     if (!window.location.pathname.includes('auth')) {
@@ -129,8 +129,11 @@ instance.interceptors.response.use(
 
     // Handle 401 Unauthorized errors
     if (status === 401 && !window.location.pathname.includes('auth')) {
-      // Skip refresh for refresh token endpoint to avoid infinite loop
-      if (originalRequest?.url?.includes('/auth/refresh-token')) {
+      // Skip refresh for refresh token endpoints to avoid infinite loop
+      if (
+        originalRequest?.url?.includes('/auth/refresh-token') ||
+        originalRequest?.url?.includes('/guest-auth/token/refresh')
+      ) {
         const reset = useAuthStore.getState().reset
         reset()
         window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN

@@ -1,6 +1,8 @@
 export * from './modals'
 export * from './tableConfigs'
 export * from './forms'
+export { CorporateAccountStatusBanner } from './CorporateAccountStatusBanner'
+export type { CorporateAccountStatus } from './CorporateAccountStatusBanner'
 export { default as RecentAuditLogs } from './RecentAuditLogs'
 export { default as RecentRequests } from './RecentRequests'
 export { default as RecentTransactions } from './RecentTransactions'

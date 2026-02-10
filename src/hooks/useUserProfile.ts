@@ -5,11 +5,12 @@ import { useAuthStore } from '@/stores/auth'
 
 export function useUserProfile() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   function useGetUserProfileService() {
     return useQuery({
       queryKey: ['user-profile'],
       queryFn: getUserProfile,
-      enabled: !!isAuthenticated,
+      enabled: !!isAuthenticated && !isGuestAuth,
     })
   }
 

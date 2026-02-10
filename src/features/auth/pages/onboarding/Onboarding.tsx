@@ -4,6 +4,7 @@ import { ROUTES } from '@/utils/constants'
 import LogoWhite from '@/assets/svgs/logo-white.svg?react'
 import CreateAccountMan from '@/assets/images/create-account-man.png'
 import { OnboardingForm } from '../../components'
+import { OnboardingSuccessModal } from '@/features/dashboard/components/corporate/modals'
 
 export default function Onboarding() {
   return (
@@ -24,6 +25,7 @@ export default function Onboarding() {
 
       <div className="flex-1 flex items-center justify-center">
         <OnboardingForm />
+        <OnboardingSuccessModal />
       </div>
     </div>
   )

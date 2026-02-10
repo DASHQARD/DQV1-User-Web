@@ -12,6 +12,19 @@ export type LoginData = {
   password: string
 }
 
+export type GuestOtpRequestData = {
+  guest_phone: string
+}
+
+export type GuestOtpVerifyData = {
+  otp: string
+  guest_phone?: string
+}
+
+export type GuestTokenRefreshData = {
+  refresh_token: string
+}
+
 export type OnboardingData = {
   full_name: string
   street_address: string

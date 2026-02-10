@@ -22,6 +22,7 @@ vi.mock('@/features/dashboard/corporate/hooks/useCorporateHome', () => ({
     getNextStepName: () => 'Profile Information & ID Upload',
     navigateToProfileStep: vi.fn(),
     navigateToBusinessStep: vi.fn(),
+    openCreateVendorAccount: vi.fn(),
   }),
 }))
 

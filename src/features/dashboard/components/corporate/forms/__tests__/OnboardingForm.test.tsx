@@ -18,8 +18,6 @@ vi.mock('../hooks/useOnboardingForm', () => ({
     },
     frontOfIdentification: null,
     backOfIdentification: null,
-    showSuccessModal: false,
-    setShowSuccessModal: vi.fn(),
     isPassport: false,
     isNationalId: true,
     needsOnlyFront: false,

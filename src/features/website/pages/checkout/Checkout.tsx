@@ -1,371 +1,41 @@
-import React, { useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { Button, Loader, Modal, EmptyState, Input } from '@/components'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import FileUploader from '@/components/FileUploader/FileUploader'
-import { useCart } from '../../hooks/useCart'
-import type { CartListResponse } from '@/types/responses'
-import { usePersistedModalState, useToast } from '@/hooks'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import DashxBg from '@/assets/svgs/Dashx_bg.svg'
-import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/images/dashpass_bg.png'
-import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
-import { ENV_VARS, MODAL_NAMES } from '@/utils/constants'
-import { bulkAssignRecipients } from '@/features/dashboard/services'
-import { useUserProfile } from '@/hooks'
-import { usePayments } from '../../hooks'
+import { useCheckout, type CheckoutFlattenedCartItem } from '@/features/website/hooks/useCheckout'
 import { formatCurrency } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
 
-// Schema for user information form
-const UserInfoSchema = z.object({
-  full_name: z.string().min(1, 'Full name is required'),
-  email: z.string().email('Please enter a valid email address'),
-  phone_number: z.string().min(1, 'Phone number is required'),
-})
-
-type UserInfoFormData = z.infer<typeof UserInfoSchema>
-
 export default function Checkout() {
   const navigate = useNavigate()
-  const toast = useToast()
-  const queryClient = useQueryClient()
-  const { cartItems, isLoading: isLoadingCart } = useCart()
-
-  // Filter out paid carts - only show pending carts
-  const pendingCartItems = useMemo(() => {
-    if (!Array.isArray(cartItems)) return []
-    return cartItems.filter(
-      (cart: CartListResponse) => cart.cart_status?.toLowerCase() === 'pending',
-    )
-  }, [cartItems])
-
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-
-  const { useCheckoutService } = usePayments()
-  const { mutateAsync: checkoutMutation, isPending: isCheckingOut } = useCheckoutService()
-  const [isBulkModalOpen, setIsBulkModalOpen] = React.useState(false)
-  const [isMissingRecipientsModalOpen, setIsMissingRecipientsModalOpen] = React.useState(false)
-  const [bulkFile, setBulkFile] = React.useState<File | null>(null)
-  const modal = usePersistedModalState({
-    paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
-  })
-
-  // Form for user information if profile is incomplete
-  const userInfoForm = useForm<UserInfoFormData>({
-    resolver: zodResolver(UserInfoSchema),
-    defaultValues: {
-      full_name: userProfileData?.fullname || '',
-      email: userProfileData?.email || '',
-      phone_number: userProfileData?.phonenumber || '',
-    },
-  })
-
-  // Update form when userProfileData changes
-  React.useEffect(() => {
-    if (userProfileData) {
-      userInfoForm.reset({
-        full_name: userProfileData?.fullname || '',
-        email: userProfileData?.email || '',
-        phone_number: userProfileData?.phonenumber || '',
-      })
-    }
-  }, [userProfileData, userInfoForm])
-
-  // Flatten cart items from nested structure
-  // Recipients are now included directly in the cart items from /carts endpoint
-  type FlattenedCartItem = {
-    cart_id: number
-    card_id: number
-    product: string
-    vendor_name?: string
-    type: string
-    currency: string
-    price: string
-    amount: string
-    images?: Array<{ file_url: string; file_name: string }>
-    cart_item_id?: number
-    total_quantity?: number
-    quantity_index?: number // Track which quantity unit this is (0-indexed)
-    recipients?: Array<{
-      recipient_id?: number
-      email: string
-      phone: string
-      message: string
-      name?: string
-      amount?: string | number
-      quantity?: number
-      assigned_at?: string
-    }>
-  }
-
-  const displayCartItems = useMemo(() => {
-    if (!Array.isArray(pendingCartItems)) return []
-
-    const flattened: FlattenedCartItem[] = []
-
-    pendingCartItems.forEach((cart: CartListResponse) => {
-      // Each cart has an items array
-      if (cart.items && Array.isArray(cart.items)) {
-        cart.items.forEach((item: any) => {
-          const totalQuantity = item.total_quantity || 1
-          const totalAmount = parseFloat(item.total_amount?.toString() || '0')
-          const perItemAmount = totalAmount / totalQuantity
-          const recipients = item.recipients || []
-
-          // Create separate entries for each quantity unit
-          for (let i = 0; i < totalQuantity; i++) {
-            // For now, show all recipients on each entry
-            // In the future, we can distribute recipients based on quantity_index
-            const itemRecipients = recipients.map((recipient: any) => ({
-              recipient_id: recipient.recipient_id,
-              email: recipient.email,
-              phone: recipient.phone,
-              message: recipient.message || '',
-              name: recipient.name,
-              amount: recipient.amount,
-              quantity: recipient.quantity,
-              assigned_at: recipient.assigned_at,
-            }))
-
-            flattened.push({
-              cart_id: cart.cart_id,
-              card_id: item.card_id,
-              product: item.product,
-              vendor_name: undefined, // May not be in nested structure
-              type: item.type || 'dashx',
-              currency: 'GHS', // Default, adjust if available
-              price: perItemAmount.toString(),
-              amount: perItemAmount.toString(),
-              images: item.images || [],
-              cart_item_id: item.cart_item_id,
-              total_quantity: 1, // Each entry represents 1 unit
-              quantity_index: i, // Track which quantity unit this is (0-indexed)
-              recipients: itemRecipients, // Recipients for this specific unit
-            })
-          }
-        })
-      }
-    })
-
-    return flattened
-  }, [pendingCartItems])
-
-  // Calculate total amount from cart totals
-  const totalAmount = useMemo(() => {
-    if (!Array.isArray(pendingCartItems)) return 0
-    return pendingCartItems.reduce(
-      (sum: number, cart: CartListResponse) => sum + parseFloat(cart.total_amount || '0'),
-      0,
-    )
-  }, [pendingCartItems])
-
-  // Calculate service fee (5%)
-  const serviceFee = useMemo(() => totalAmount * 0.05, [totalAmount])
-
-  // Calculate total amount due (total + service fee)
-  const amountDue = useMemo(() => totalAmount + serviceFee, [totalAmount, serviceFee])
-
-  // Get user information for checkout - use form data if profile is incomplete
-  const userInfo = useMemo(() => {
-    const profile = userProfileData as any
-    const formData = userInfoForm.getValues()
-
-    // Check if profile has complete information
-    const hasCompleteProfile = profile?.fullname && profile?.email && profile?.phonenumber
-
-    return {
-      user_id: profile?.id || 0,
-      full_name: hasCompleteProfile ? profile.fullname : formData.full_name,
-      email: hasCompleteProfile ? profile.email : formData.email,
-      phone_number: hasCompleteProfile ? profile.phonenumber : formData.phone_number,
-    }
-  }, [userProfileData, userInfoForm])
-
-  // Check if user information is incomplete
-  const isUserInfoIncomplete = useMemo(() => {
-    const profile = userProfileData as any
-    return !profile?.fullname || !profile?.email || !profile?.phonenumber
-  }, [userProfileData])
-
-  // Handle checkout
-  const handleCheckout = async () => {
-    if (!Array.isArray(pendingCartItems) || pendingCartItems.length === 0) {
-      toast.error('No items in cart')
-      return
-    }
-
-    // Validate form if user info is incomplete
-    if (isUserInfoIncomplete) {
-      const isValid = await userInfoForm.trigger()
-      if (!isValid) {
-        toast.error('Please complete all required fields')
-        return
-      }
-    }
-
-    // Validate user information
-    if (!userInfo.user_id || !userInfo.full_name || !userInfo.email || !userInfo.phone_number) {
-      toast.error('Please complete your profile information before checkout')
-      return
-    }
-
-    // Validate recipients - check if all items have recipients assigned
-    if (!allRecipientsAssigned) {
-      setIsMissingRecipientsModalOpen(true)
-      return
-    }
-
-    // Use the first cart's ID (or you might want to handle multiple carts differently)
-    const firstCart = pendingCartItems[0]
-    const payload = {
-      cart_id: firstCart.cart_id,
-      full_name: userInfo.full_name,
-      email: userInfo.email,
-      phone_number: userInfo.phone_number,
-      amount_due: amountDue,
-      user_id: userInfo.user_id,
-    }
-
-    await checkoutMutation(payload)
-  }
-
-  // Bulk assign mutation
-  const bulkAssignMutation = useMutation({
-    mutationFn: bulkAssignRecipients,
-    onSuccess: () => {
-      toast.success('Bulk assignment completed successfully')
-      queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-      setIsBulkModalOpen(false)
-      setBulkFile(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to bulk assign recipients')
-    },
-  })
-
-  // Get card background based on type
-  const getCardBackground = useCallback((type: string) => {
-    const normalizedType = type?.toLowerCase().trim()
-    switch (normalizedType) {
-      case 'dashx':
-        return DashxBg
-      case 'dashpro':
-        return DashproBg
-      case 'dashpass':
-        return DashpassBg
-      case 'dashgo':
-        return DashgoBg
-      default:
-        return DashxBg
-    }
-  }, [])
-
-  // Construct full image URL from file_url
-  const getImageUrl = useCallback((fileUrl: string | undefined) => {
-    if (!fileUrl) return ''
-
-    // If it's already a full URL or base64, return as-is
-    if (
-      fileUrl.startsWith('http://') ||
-      fileUrl.startsWith('https://') ||
-      fileUrl.startsWith('data:')
-    ) {
-      return fileUrl
-    }
-
-    // Construct full URL from API base URL
-    // Remove /api/v1 from base URL if present, then add /uploads/ path
-    let baseUrl = ENV_VARS.API_BASE_URL
-    if (baseUrl.endsWith('/api/v1')) {
-      baseUrl = baseUrl.replace('/api/v1', '')
-    }
-    return `${baseUrl}/uploads/${fileUrl}`
-  }, [])
-
-  // Group recipients by cart_item_id and quantity_index
-  const recipientsByCartItem = useMemo(() => {
-    const grouped: Record<string, any[]> = {}
-
-    displayCartItems.forEach((item: FlattenedCartItem) => {
-      if (item.cart_item_id && item.recipients && item.recipients.length > 0) {
-        // Create unique key using cart_item_id and quantity_index
-        const key = `${item.cart_item_id}-${item.quantity_index ?? 0}`
-        // Calculate per-recipient amount: amount is already per-item since we divided it
-        const perRecipientAmount = parseFloat(item.amount || '0')
-
-        grouped[key] = item.recipients.map((recipient, index) => ({
-          id: recipient.recipient_id || `${key}-${index}`, // Use recipient_id if available, otherwise generate unique ID
-          recipient_id: recipient.recipient_id,
-          name: recipient.name || recipient.email?.split('@')[0] || 'Recipient',
-          email: recipient.email,
-          phone: recipient.phone,
-          message: recipient.message || '',
-          amount: parseFloat(recipient.amount?.toString() || perRecipientAmount.toString() || '0'),
-          quantity: recipient.quantity || 1,
-          cart_id: item.cart_id,
-          cart_item_id: item.cart_item_id,
-          assigned_at: recipient.assigned_at,
-        }))
-      }
-    })
-
-    return grouped
-  }, [displayCartItems])
-
-  // Check if all cart items have recipients assigned
-  const itemsMissingRecipients = useMemo(() => {
-    const missing: FlattenedCartItem[] = []
-
-    displayCartItems.forEach((item: FlattenedCartItem) => {
-      if (!item.cart_item_id) return
-
-      const key = `${item.cart_item_id}-${item.quantity_index ?? 0}`
-      const itemRecipients = recipientsByCartItem[key] || []
-      const requiredQuantity = item.total_quantity || 1
-
-      if (itemRecipients.length < requiredQuantity) {
-        missing.push(item)
-      }
-    })
-
-    return missing
-  }, [displayCartItems, recipientsByCartItem])
-
-  const allRecipientsAssigned = itemsMissingRecipients.length === 0
-
-  const handleBulkUpload = useCallback(() => {
-    if (!bulkFile) {
-      toast.error('Please select a file first')
-      return
-    }
-
-    bulkAssignMutation.mutate(bulkFile)
-  }, [bulkFile, bulkAssignMutation, toast])
-
-  // Get card type display name
-  const getCardTypeName = useCallback((type: string | undefined) => {
-    const normalizedType = type?.toLowerCase().trim()
-    switch (normalizedType) {
-      case 'dashx':
-        return 'DASHX'
-      case 'dashpro':
-        return 'DASHPRO'
-      case 'dashgo':
-        return 'DASHGO'
-      case 'dashpass':
-        return 'DASHPASS'
-      default:
-        return type?.toUpperCase() || 'DASHQARD'
-    }
-  }, [])
+  const {
+    isLoadingCart,
+    pendingCartItems,
+    displayCartItems,
+    totalAmount,
+    serviceFee,
+    amountDue,
+    userInfoForm,
+    isUserInfoIncomplete,
+    recipientsByCartItem,
+    itemsMissingRecipients,
+    handleCheckout,
+    bulkAssignMutation,
+    handleBulkUpload,
+    getCardBackground,
+    getImageUrl,
+    getCardTypeName,
+    openAssignModal,
+    openAssignModalFromMissing,
+    isCheckingOut,
+    isBulkModalOpen,
+    setIsBulkModalOpen,
+    isMissingRecipientsModalOpen,
+    setIsMissingRecipientsModalOpen,
+    bulkFile,
+    setBulkFile,
+  } = useCheckout()
 
   if (isLoadingCart) {
     return (
@@ -403,16 +73,13 @@ export default function Checkout() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="wrapper py-8">
-        {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
           <p className="text-gray-600">Review your order and complete your purchase</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-4">
-            {/* User Information Section */}
             {isUserInfoIncomplete && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
@@ -430,7 +97,6 @@ export default function Checkout() {
                         className="w-full"
                       />
                     </div>
-
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">
                         Phone Number <span className="text-red-500">*</span>
@@ -444,7 +110,6 @@ export default function Checkout() {
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-gray-700">
                       Email Address <span className="text-red-500">*</span>
@@ -461,26 +126,21 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* Order Items Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Order Items</h2>
               </div>
-
               <div className="divide-y divide-gray-200">
                 {displayCartItems
-                  ?.filter((item: FlattenedCartItem) => item.cart_item_id)
-                  .map((item: FlattenedCartItem) => {
+                  ?.filter((item: CheckoutFlattenedCartItem) => item.cart_item_id)
+                  .map((item: CheckoutFlattenedCartItem) => {
                     const cardBackground = getCardBackground(item.type || '')
                     const displayPrice = parseFloat(item.amount || '0')
-
-                    // Get recipients from cart item (recipients are now included in cart response)
                     const key = item.cart_item_id
                       ? `${item.cart_item_id}-${item.quantity_index ?? 0}`
                       : ''
                     const itemRecipients =
                       key && recipientsByCartItem[key] ? recipientsByCartItem[key] : []
-
                     const hasRecipients = itemRecipients.length > 0
                     const cardImageUrl = item.images?.[0]?.file_url
                       ? getImageUrl(item.images[0].file_url)
@@ -492,7 +152,6 @@ export default function Checkout() {
                         className="p-6"
                       >
                         <div className="flex gap-4">
-                          {/* Card Preview */}
                           <div className="w-24 h-16 shrink-0 rounded-md overflow-hidden bg-gray-200 relative">
                             <img
                               src={cardBackground}
@@ -511,8 +170,6 @@ export default function Checkout() {
                               />
                             )}
                           </div>
-
-                          {/* Item Details */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
@@ -536,8 +193,6 @@ export default function Checkout() {
                                 </p>
                               </div>
                             </div>
-
-                            {/* Recipients List */}
                             {itemRecipients.length > 0 && (
                               <div className="mt-4 pt-4 border-t border-gray-100">
                                 <div className="space-y-2">
@@ -560,30 +215,10 @@ export default function Checkout() {
                                 </div>
                               </div>
                             )}
-
-                            {/* Assign Recipient Button */}
                             <div className="mt-4">
-                              {/* Only show button if quantity allows more recipients */}
                               {itemRecipients.length < (item.total_quantity || 1) && (
                                 <Button
-                                  onClick={() => {
-                                    if (!item.cart_item_id) {
-                                      toast.error('Cart item ID is required')
-                                      return
-                                    }
-                                    // Calculate per-recipient amount: total_amount / total_quantity
-                                    const totalAmount = parseFloat(item.amount || '0')
-                                    const totalQuantity = item.total_quantity || 1
-                                    const perRecipientAmount = totalAmount / totalQuantity
-
-                                    modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
-                                      cart_item_id: item.cart_item_id,
-                                      cardType: item.type,
-                                      cardProduct: item.product,
-                                      cardCurrency: item.currency || 'GHS',
-                                      amount: perRecipientAmount,
-                                    })
-                                  }}
+                                  onClick={() => openAssignModal(item)}
                                   variant="outline"
                                   size="small"
                                   className="w-full sm:w-auto"
@@ -594,7 +229,6 @@ export default function Checkout() {
                                     : 'Assign Recipient'}
                                 </Button>
                               )}
-                              {/* Show message when all recipients have been assigned */}
                               {itemRecipients.length >= (item.total_quantity || 1) && (
                                 <div className="text-sm text-gray-500 italic">
                                   Maximum recipients reached (quantity: {item.total_quantity || 1})
@@ -610,11 +244,9 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Order Summary Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
-
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal ({displayCartItems.length} items)</span>
@@ -633,7 +265,6 @@ export default function Checkout() {
                   </div>
                 </div>
               </div>
-
               <Button
                 variant="secondary"
                 className="w-full"
@@ -648,10 +279,8 @@ export default function Checkout() {
         </div>
       </div>
 
-      {/* Assign Recipient Modal */}
       <PurchaseModal />
 
-      {/* Bulk Assign Modal */}
       <Modal
         isOpen={isBulkModalOpen}
         setIsOpen={setIsBulkModalOpen}
@@ -663,14 +292,12 @@ export default function Checkout() {
             Upload a file containing recipient information. The file should be in CSV or Excel
             format with columns: name, email, phone, message, quantity, amount.
           </p>
-
           <FileUploader
             label="Upload Recipients File"
             accept=".csv,.xlsx,.xls"
             value={bulkFile}
             onChange={setBulkFile}
           />
-
           <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
             <Button
               variant="outline"
@@ -693,7 +320,6 @@ export default function Checkout() {
         </div>
       </Modal>
 
-      {/* Missing Recipients Modal */}
       <Modal
         isOpen={isMissingRecipientsModalOpen}
         setIsOpen={setIsMissingRecipientsModalOpen}
@@ -717,17 +343,15 @@ export default function Checkout() {
               </p>
             </div>
           </div>
-
           <div className="border border-gray-200 rounded-lg overflow-hidden">
             <div className="max-h-[300px] overflow-y-auto">
               <div className="divide-y divide-gray-200">
-                {itemsMissingRecipients.map((item: FlattenedCartItem) => {
+                {itemsMissingRecipients.map((item: CheckoutFlattenedCartItem) => {
                   const key = item.cart_item_id
                     ? `${item.cart_item_id}-${item.quantity_index ?? 0}`
                     : ''
                   const itemRecipients = key ? recipientsByCartItem[key] || [] : []
                   const requiredQuantity = item.total_quantity || 1
-
                   return (
                     <div key={item.cart_item_id} className="p-4 hover:bg-gray-50">
                       <div className="flex items-start justify-between gap-4">
@@ -753,25 +377,7 @@ export default function Checkout() {
                         <Button
                           variant="outline"
                           size="small"
-                          onClick={() => {
-                            if (!item.cart_item_id) {
-                              toast.error('Cart item ID is required')
-                              return
-                            }
-                            setIsMissingRecipientsModalOpen(false)
-                            // Calculate per-recipient amount: total_amount / total_quantity
-                            const totalAmount = parseFloat(item.amount || '0')
-                            const totalQuantity = item.total_quantity || 1
-                            const perRecipientAmount = totalAmount / totalQuantity
-
-                            modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
-                              cart_item_id: item.cart_item_id,
-                              cardType: item.type,
-                              cardProduct: item.product,
-                              cardCurrency: item.currency || 'GHS',
-                              amount: perRecipientAmount,
-                            })
-                          }}
+                          onClick={() => openAssignModalFromMissing(item)}
                         >
                           <Icon icon="bi:person-plus" className="mr-1.5" />
                           {itemRecipients.length > 0 ? 'Add Recipients' : 'Assign Recipients'}
@@ -783,7 +389,6 @@ export default function Checkout() {
               </div>
             </div>
           </div>
-
           <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
             <Button variant="outline" onClick={() => setIsMissingRecipientsModalOpen(false)}>
               Close
