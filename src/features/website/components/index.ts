@@ -1,6 +1,7 @@
 export * from './ContactUs'
 export * from './CardItems'
 export * from './FeaturedCards'
+export * from './GuestAddToCartModal'
 export * from './PartnerVendors'
 export * from './VendorItems'
 export * from './DashProPurchase'

@@ -1,14 +1,11 @@
-import { useState, useMemo, useCallback } from 'react'
 import { Button, Dropdown, Text } from '@/components'
 import { Icon } from '@/libs'
-import { useNavigate } from 'react-router-dom'
 import DashXImage from '@/assets/images/DashX.png'
 import DashGoImage from '@/assets/images/DashGo.png'
 import DashProImage from '@/assets/images/DashPro.png'
 import { CardItems, DashProPurchase, DashGoPurchase } from '../../components'
-import type { PublicCardResponse } from '@/types/responses'
-import { usePublicCatalog } from '../../hooks/website'
-import { usePublicCatalogQueries } from '../../hooks/website/usePublicCatalogQueries'
+import { useDashQards } from '../../hooks'
+import { DashQardsFilters } from './DashQardsFilters'
 
 const heroImages = {
   pro: DashProImage,
@@ -17,175 +14,25 @@ const heroImages = {
 }
 
 export default function DashQards() {
-  const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<'dashx' | 'dashpro' | 'dashpass' | 'dashgo'>('dashx')
-  const { publicCards, query, setQuery, cardTabs, priceRanges } = usePublicCatalog()
-  const { usePublicVendorsService } = usePublicCatalogQueries()
-  const { data: vendorsResponse } = usePublicVendorsService({ limit: 100 })
-
-  // Extract vendors from response - API returns { data: [...], pagination }
-  const vendors = useMemo(() => {
-    if (!vendorsResponse) return []
-    const raw = Array.isArray(vendorsResponse)
-      ? vendorsResponse
-      : (vendorsResponse as any)?.data || []
-    const list = Array.isArray(raw) ? raw : []
-    return list
-      .filter(
-        (v: any) =>
-          v.branches_with_cards?.length > 0 &&
-          v.branches_with_cards.some((b: any) => b.cards?.length > 0),
-      )
-      .map((vendor: any) => ({
-        id: vendor.vendor_id ?? vendor.id,
-        vendor_id: vendor.vendor_id,
-        name: vendor.business_name || vendor.vendor_name || vendor.branch_name || 'Unknown Vendor',
-      }))
-  }, [vendorsResponse])
-
-  // Use query.sort_by for sorting, default to 'popular'
-  const sortBy = query.sort_by || 'popular'
-
-  // Get all cards from response
-  const allCards = useMemo(() => {
-    if (!publicCards) {
-      return []
-    }
-    // Handle both array and object with data property
-    const cards = Array.isArray(publicCards)
-      ? publicCards
-      : Array.isArray((publicCards as any)?.data)
-        ? (publicCards as any).data
-        : []
-    return cards as unknown as PublicCardResponse[]
-  }, [publicCards])
-
-  // Filter cards based on active tab and price range (backend handles other filtering)
-  const filteredQardsAll = useMemo(() => {
-    return allCards.filter((card) => {
-      // Filter by card type (activeTab) - client-side only
-      const cardType = card.type?.toLowerCase()
-      if (activeTab === 'dashx') {
-        // DashX shows both DashX and DashPass
-        if (cardType !== 'dashx' && cardType !== 'dashpass') {
-          return false
-        }
-      } else if (cardType !== activeTab) {
-        // For other tabs, show only matching type
-        return false
-      }
-
-      // Filter by price range - client-side fallback if backend doesn't filter
-      const cardPrice = parseFloat(card.price) || 0
-      if (query.min_price) {
-        const minPrice = parseFloat(query.min_price)
-        if (!isNaN(minPrice) && cardPrice < minPrice) {
-          return false
-        }
-      }
-      if (query.max_price) {
-        const maxPrice = parseFloat(query.max_price)
-        if (!isNaN(maxPrice) && cardPrice > maxPrice) {
-          return false
-        }
-      }
-
-      return true
-    })
-  }, [allCards, activeTab, query.min_price, query.max_price])
-
-  // Backend handles sorting, so use filtered cards directly
-  const sortedQards = filteredQardsAll
-
-  // Get card count by type
-  const getCardTypeCount = useCallback(
-    (typeId: string) => {
-      if (typeId === 'dashpro' || typeId === 'dashgo') {
-        return 1
-      }
-      return allCards.filter((card) => {
-        const cardType = card.type?.toLowerCase()
-        // Count only cards of the specific type
-        return cardType === typeId
-      }).length
-    },
-    [allCards],
-  )
-
-  // Set price range helper
-  const setPriceRange = useCallback(
-    (min: number | null | undefined, max: number | null | undefined) => {
-      setQuery({
-        ...query,
-        min_price: min !== null && min !== undefined ? min.toString() : undefined,
-        max_price: max !== null && max !== undefined ? max.toString() : undefined,
-      })
-    },
-    [setQuery, query],
-  )
-
-  // Check if price range is active
-  const isPriceRangeActive = useCallback(
-    (min: number | null, max: number | null) => {
-      const currentMin = query.min_price ? parseFloat(query.min_price) : null
-      const currentMax = query.max_price ? parseFloat(query.max_price) : null
-
-      if (min === null && max === null) {
-        return currentMin === null && currentMax === null
-      }
-
-      if (min !== null && max !== null) {
-        return currentMin === min && currentMax === max
-      }
-
-      if (min !== null && max === null) {
-        return currentMin === min && currentMax === null
-      }
-
-      return false
-    },
-    [query.min_price, query.max_price],
-  )
-
-  // Clear all filters
-  const clearAllFilters = useCallback(() => {
-    setQuery({
-      ...query,
-      min_price: '',
-      max_price: '',
-      search: '',
-      vendor_ids: '',
-      sort_by: '',
-    })
-  }, [setQuery, query])
-
-  // Navigate to card details
-  const onGetCard = useCallback(
-    (card: PublicCardResponse) => {
-      if (card.card_id) {
-        navigate(`/card/${card.card_id}`)
-      }
-    },
-    [navigate],
-  )
-
-  const actions = useMemo(
-    () => [
-      { label: 'Popular', value: 'popular' },
-      { label: 'Newest', value: 'newest' },
-    ],
-    [],
-  )
-
-  // Get the current sort label
-  const currentSortLabel = useMemo(() => {
-    const actions = [
-      { label: 'Newest', value: 'newest' },
-      { label: 'Popular', value: 'popular' },
-    ]
-    const action = actions.find((a) => a.value === sortBy)
-    return action?.label || 'Sort by'
-  }, [sortBy])
+  const {
+    activeTab,
+    setActiveTab,
+    query,
+    setQuery,
+    cardTabs,
+    priceRanges,
+    vendors,
+    filteredQardsAll,
+    sortedQards,
+    getCardTypeCount,
+    setPriceRange,
+    isPriceRangeActive,
+    clearAllFilters,
+    onGetCard,
+    sortActions,
+    currentSortLabel,
+    setSortBy,
+  } = useDashQards()
 
   return (
     <div className="min-h-screen bg-white">
@@ -231,306 +78,20 @@ export default function DashQards() {
         <div className="wrapper">
           {/* E-commerce Layout */}
           <div className="flex gap-8 items-start max-md:flex-col max-md:gap-6">
-            {/* Filter Sidebar */}
-            <aside className="bg-white border border-[#e6e6e6] rounded-xl sticky top-[120px] w-[280px] h-[calc(100vh-140px)] overflow-y-auto shrink-0 max-lg:w-[260px] max-md:static max-md:w-full max-md:h-auto max-md:max-h-none max-md:overflow-y-visible">
-              {/* Filter Header */}
-              <div className="flex justify-between items-start p-6 pb-4 border-b border-[#e6e6e6]">
-                <div className="flex-1">
-                  <h3 className="text-xl font-extrabold text-[#212529] mb-1">Filter Results</h3>
-                  <p className="text-sm text-grey-500 font-medium">
-                    {filteredQardsAll.length} cards available
-                  </p>
-                </div>
-              </div>
-
-              {/* Card Type Selection */}
-              <div className="border-b border-[#f0f0f0] last:border-b-0">
-                <div className="flex justify-between items-center p-5 pb-3 cursor-pointer transition-colors hover:bg-primary-500/5">
-                  <h4 className="text-[13px] font-bold text-[#212529] uppercase tracking-wider">
-                    Card Selection
-                  </h4>
-                  <button className="w-7 h-7 flex items-center justify-center text-grey-500 rounded-full transition-all hover:bg-primary-500/10 hover:text-primary-500">
-                    <Icon icon="bi:chevron-down" className="size-3.5" />
-                  </button>
-                </div>
-                <div className="px-6 pb-5">
-                  <div className="grid gap-2">
-                    {cardTabs.map((tab) => (
-                      <label
-                        key={tab.id}
-                        className={`flex items-center justify-between p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                          activeTab === tab.id
-                            ? 'border-primary-500 bg-primary-500/5'
-                            : 'border-[#e6e6e6] bg-white hover:border-primary-500/30 hover:bg-primary-500/2'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          value={tab.id}
-                          checked={activeTab === tab.id}
-                          onChange={() => {
-                            if (
-                              tab.id === 'dashx' ||
-                              tab.id === 'dashpro' ||
-                              tab.id === 'dashpass' ||
-                              tab.id === 'dashgo'
-                            ) {
-                              setActiveTab(tab.id)
-                            }
-                          }}
-                          className="hidden"
-                        />
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-[15px] font-semibold text-[#212529]">
-                            {tab.label}
-                          </span>
-                          <span
-                            className={`px-2 py-1 rounded-xl text-xs font-semibold min-w-[24px] text-center transition-all ${
-                              activeTab === tab.id
-                                ? 'bg-primary-500 text-white'
-                                : 'bg-[#f0f0f0] text-grey-500'
-                            }`}
-                          >
-                            {getCardTypeCount(tab.id)}
-                          </span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Filter Options */}
-              <div className="border-b border-[#f0f0f0] last:border-b-0">
-                <div className="flex justify-between items-center p-5 pb-3 cursor-pointer transition-colors hover:bg-primary-500/5">
-                  <h4 className="text-[13px] font-bold text-[#212529] uppercase tracking-wider">
-                    Filter Options
-                  </h4>
-                  <button className="w-7 h-7 flex items-center justify-center text-grey-500 rounded-full transition-all hover:bg-primary-500/10 hover:text-primary-500">
-                    <Icon icon="bi:chevron-down" className="size-3.5" />
-                  </button>
-                </div>
-                <div>
-                  {/* Search Filter */}
-                  <div className="px-6 pb-5 border-t border-[#f0f0f0]">
-                    <div className="flex justify-between items-center mb-3 p-1.5 -mx-2 rounded-md cursor-pointer transition-colors hover:bg-primary-500/5">
-                      <h5 className="text-[15px] font-semibold text-[#212529]">Search</h5>
-                      <div className="flex items-center gap-2">
-                        {query.search && (
-                          <span className="text-xs text-[#28a745] font-semibold bg-[#d4edda] px-2 py-0.5 rounded-xl">
-                            Active
-                          </span>
-                        )}
-                        <button className="w-6 h-6 flex items-center justify-center text-grey-500 rounded-full transition-all hover:bg-primary-500/10 hover:text-primary-500">
-                          <Icon icon="bi:chevron-down" className="size-3" />
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="relative">
-                        <Icon
-                          icon="bi:search"
-                          className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-grey-500 pointer-events-none"
-                        />
-                        <input
-                          type="text"
-                          value={query.search || ''}
-                          onChange={(e) =>
-                            setQuery({ ...query, search: e.target.value || undefined })
-                          }
-                          placeholder="Search cards, vendors..."
-                          className="w-full pl-10 pr-3 py-2.5 border-2 border-[#e6e6e6] rounded-md text-sm font-medium bg-white transition-colors focus:outline-none focus:border-primary-500 placeholder:text-[#aaa]"
-                        />
-                        {query.search && (
-                          <button
-                            onClick={() => setQuery({ ...query, search: undefined })}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-grey-500 hover:text-primary-500 transition-colors"
-                          >
-                            <Icon icon="bi:x" className="size-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Vendors Filter */}
-                  <div className="px-6 pb-5 border-t border-[#f0f0f0]">
-                    <div className="flex justify-between items-center mb-3 p-1.5 -mx-2 rounded-md cursor-pointer transition-colors hover:bg-primary-500/5">
-                      <h5 className="text-[15px] font-semibold text-[#212529]">Vendors</h5>
-                      <div className="flex items-center gap-2">
-                        {query.vendor_ids && (
-                          <span className="text-xs text-[#28a745] font-semibold bg-[#d4edda] px-2 py-0.5 rounded-xl">
-                            Active
-                          </span>
-                        )}
-                        <button className="w-6 h-6 flex items-center justify-center text-grey-500 rounded-full transition-all hover:bg-primary-500/10 hover:text-primary-500">
-                          <Icon icon="bi:chevron-down" className="size-3" />
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="max-h-[200px] overflow-y-auto space-y-2">
-                        {vendors.length === 0 ? (
-                          <p className="text-sm text-grey-500 text-center py-4">
-                            No vendors available
-                          </p>
-                        ) : (
-                          vendors.map((vendor: any) => {
-                            const vendorIdStr = vendor.vendor_id?.toString() || ''
-                            const currentIds =
-                              query.vendor_ids
-                                ?.split(',')
-                                ?.map((id: string) => id.trim())
-                                ?.filter(Boolean) || []
-                            const isSelected = currentIds.includes(vendorIdStr)
-                            return (
-                              <label
-                                key={vendor.id ?? vendor.vendor_id}
-                                className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${
-                                  isSelected
-                                    ? 'bg-primary-500/10 border-2 border-primary-500'
-                                    : 'bg-white border-2 border-[#e6e6e6] hover:border-primary-500/30 hover:bg-primary-500/5'
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setQuery({
-                                        ...query,
-                                        vendor_ids: [...currentIds, vendorIdStr].join(','),
-                                      })
-                                    } else {
-                                      const newIds = currentIds.filter((id) => id !== vendorIdStr)
-                                      setQuery({
-                                        ...query,
-                                        vendor_ids:
-                                          newIds.length > 0 ? newIds.join(',') : undefined,
-                                      })
-                                    }
-                                  }}
-                                  className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500 cursor-pointer"
-                                />
-                                <span className="text-sm font-medium text-[#212529] flex-1 truncate">
-                                  {vendor.name}
-                                </span>
-                              </label>
-                            )
-                          })
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Price Range Filter */}
-                  <div className="px-6 pb-5 border-t border-[#f0f0f0]">
-                    <div className="flex justify-between items-center mb-3 p-1.5 -mx-2 rounded-md cursor-pointer transition-colors hover:bg-primary-500/5">
-                      <h5 className="text-[15px] font-semibold text-[#212529]">Price Range</h5>
-                      <div className="flex items-center gap-2">
-                        {(query.min_price || query.max_price) && (
-                          <span className="text-xs text-[#28a745] font-semibold bg-[#d4edda] px-2 py-0.5 rounded-xl">
-                            Active
-                          </span>
-                        )}
-                        <button className="w-6 h-6 flex items-center justify-center text-grey-500 rounded-full transition-all hover:bg-primary-500/10 hover:text-primary-500">
-                          <Icon icon="bi:chevron-down" className="size-3" />
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-end gap-3 mb-4">
-                        <div className="flex-1">
-                          <label className="block text-xs font-semibold text-grey-500 mb-1 uppercase tracking-wider">
-                            Minimum
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-grey-500 pointer-events-none">
-                              ₵
-                            </span>
-                            <input
-                              type="number"
-                              value={query.min_price || ''}
-                              onChange={(e) =>
-                                setQuery({ ...query, min_price: e.target.value || undefined })
-                              }
-                              placeholder="0"
-                              min="0"
-                              className="w-full pl-7 pr-3 py-2.5 border-2 border-[#e6e6e6] rounded-md text-sm font-medium bg-white transition-colors focus:outline-none focus:border-primary-500 placeholder:text-[#aaa]"
-                            />
-                          </div>
-                        </div>
-                        <div className="w-5 h-0.5 bg-[#ddd] mb-3.5 rounded"></div>
-                        <div className="flex-1">
-                          <label className="block text-xs font-semibold text-grey-500 mb-1 uppercase tracking-wider">
-                            Maximum
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-grey-500 pointer-events-none">
-                              ₵
-                            </span>
-                            <input
-                              type="number"
-                              value={query.max_price || ''}
-                              onChange={(e) =>
-                                setQuery({ ...query, max_price: e.target.value || undefined })
-                              }
-                              placeholder="1000"
-                              min="0"
-                              className="w-full pl-7 pr-3 py-2.5 border-2 border-[#e6e6e6] rounded-md text-sm font-medium bg-white transition-colors focus:outline-none focus:border-primary-500 placeholder:text-[#aaa]"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold text-grey-500 mb-2 uppercase tracking-wider">
-                          Quick Select:
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {priceRanges.map((range) => (
-                            <button
-                              key={range.label}
-                              onClick={() => setPriceRange(range.min, range.max)}
-                              className={`px-3 py-1.5 border rounded-2xl text-xs font-semibold cursor-pointer transition-all ${
-                                isPriceRangeActive(range.min, range.max)
-                                  ? 'bg-primary-500 text-white border-primary-500 -translate-y-px'
-                                  : 'bg-white text-grey-500 border-[#e6e6e6] hover:bg-primary-500 hover:text-white hover:border-primary-500 hover:-translate-y-px'
-                              }`}
-                            >
-                              {range.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Filter Footer */}
-              <div className="p-4 border-t border-[#e6e6e6] bg-[#f8f9fa]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] text-grey-500 font-medium">
-                    {(() => {
-                      const activeFilters = [
-                        query.min_price,
-                        query.max_price,
-                        query.search,
-                        query.vendor_ids,
-                      ].filter(Boolean).length
-                      return `${activeFilters} filter${activeFilters !== 1 ? 's' : ''} active`
-                    })()}
-                  </span>
-                  <button
-                    onClick={clearAllFilters}
-                    className="flex items-center gap-1.5 text-xs text-grey-500 bg-white border border-[#ddd] cursor-pointer font-semibold px-3 py-1.5 rounded-2xl transition-all hover:bg-grey-500 hover:text-white hover:border-grey-500"
-                  >
-                    <Icon icon="bi:arrow-counterclockwise" className="size-3" />
-                    Reset All
-                  </button>
-                </div>
-              </div>
-            </aside>
+            <DashQardsFilters
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              query={query}
+              setQuery={setQuery}
+              cardTabs={cardTabs}
+              priceRanges={priceRanges}
+              vendors={vendors}
+              cardsCount={filteredQardsAll.length}
+              getCardTypeCount={getCardTypeCount}
+              setPriceRange={setPriceRange}
+              isPriceRangeActive={isPriceRangeActive}
+              clearAllFilters={clearAllFilters}
+            />
 
             {/* Products Main */}
             <main className="flex flex-col gap-4 flex-1 min-w-0">
@@ -550,9 +111,9 @@ export default function DashQards() {
                   <Dropdown
                     contentClassName=""
                     align="start"
-                    actions={actions.map((action) => ({
+                    actions={sortActions.map((action) => ({
                       label: action.label,
-                      onClickFn: () => setQuery({ ...query, sort_by: action.value }),
+                      onClickFn: () => setSortBy(action.value),
                     }))}
                   >
                     <Button
@@ -610,7 +171,7 @@ export default function DashQards() {
                           const selectedVendorIds = query.vendor_ids
                             .split(',')
                             .map((id) => id.trim())
-                          const selectedVendors = vendors.filter((v: any) =>
+                          const selectedVendors = vendors.filter((v) =>
                             selectedVendorIds.includes(v.vendor_id?.toString() || ''),
                           )
                           if (selectedVendors.length === 1) {

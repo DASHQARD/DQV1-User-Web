@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { jwtDecode } from 'jwt-decode'
 
-import { refreshToken as refreshTokenRequest } from '@/features/auth/services'
+import {
+  refreshToken as refreshTokenRequest,
+  guestAuthTokenRefresh,
+} from '@/features/auth/services'
 import { useAuthStore } from '@/stores'
 import { useToast } from './useToast'
 
@@ -13,6 +16,7 @@ const REFRESH_THRESHOLD_MS = 60_000 // refresh 1 minute before expiry
 export function useAutoRefreshToken() {
   const token = useAuthStore((state) => state.token)
   const refreshToken = useAuthStore((state) => state.refreshToken)
+  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const authenticate = useAuthStore((state) => state.authenticate)
   const logout = useAuthStore((state) => state.logout)
   const toast = useToast()
@@ -37,9 +41,14 @@ export function useAutoRefreshToken() {
 
     const runRefresh = async (activeRefreshToken: string) => {
       try {
-        const response = await refreshTokenRequest(activeRefreshToken)
-        const nextAccessToken = response?.data?.tokens?.accessToken
-        const nextRefreshToken = response?.data?.tokens?.refreshToken
+        const response = isGuestAuth
+          ? await guestAuthTokenRefresh({ refresh_token: activeRefreshToken })
+          : await refreshTokenRequest(activeRefreshToken)
+        const data = response?.data ?? response
+        const nextAccessToken =
+          data?.tokens?.accessToken ?? data?.accessToken ?? data?.data?.accessToken
+        const nextRefreshToken =
+          data?.tokens?.refreshToken ?? data?.refreshToken ?? data?.data?.refreshToken
 
         if (!nextAccessToken) {
           throw new Error('Unable to refresh access token')
@@ -47,7 +56,8 @@ export function useAutoRefreshToken() {
 
         authenticate({
           token: nextAccessToken,
-          refreshToken: nextRefreshToken,
+          refreshToken: nextRefreshToken ?? activeRefreshToken,
+          isGuestAuth,
         })
       } catch (error) {
         console.error('Failed to refresh token', error)
@@ -89,5 +99,5 @@ export function useAutoRefreshToken() {
         window.clearTimeout(timeoutId)
       }
     }
-  }, [token, refreshToken, authenticate, logout, toast])
+  }, [token, refreshToken, isGuestAuth, authenticate, logout, toast])
 }

@@ -152,12 +152,12 @@ export default function Footer() {
               </div>
               <div className="flex flex-col gap-1 min-w-0">
                 <p className="text-xs font-medium text-white/60">Email</p>
-                <Link
-                  to="mailto:support@dashqard.com"
+                <a
+                  href="mailto:support@dashqard.com"
                   className="text-xs md:text-sm font-medium text-white hover:text-yellow-500 transition-colors hover:underline break-all"
                 >
                   support@dashqard.com
-                </Link>
+                </a>
               </div>
             </li>
             <li className="flex items-start gap-2 md:items-center">
@@ -175,14 +175,14 @@ export default function Footer() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium text-white/60">Purchase Line (WhatsApp)</p>
-                <Link
-                  to="https://wa.me/233542022245"
+                <a
+                  href="https://wa.me/233542022245"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs md:text-sm font-medium text-white hover:text-yellow-500 transition-colors hover:underline break-all"
                 >
                   +233 56 608 0362
-                </Link>
+                </a>
               </div>
             </li>
           </ul>

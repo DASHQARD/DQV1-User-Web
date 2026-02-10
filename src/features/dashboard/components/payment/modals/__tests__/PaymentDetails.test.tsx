@@ -1,22 +1,49 @@
 import { describe, it, expect, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { PaymentDetails } from '../PaymentDetails'
+import { MODALS } from '@/utils/constants'
 
+const mockCloseModal = vi.fn()
 vi.mock('@/hooks', () => ({
   usePersistedModalState: () => ({
     openModal: vi.fn(),
-    closeModal: vi.fn(),
-    isModalOpen: () => true,
+    closeModal: mockCloseModal,
+    isModalOpen: (name: string) => name === MODALS.PAYMENT.VIEW,
+    modalData: {
+      status: 'completed',
+      type: 'purchase',
+      receipt_number: 'RCP-001',
+      amount: 100,
+      currency: 'GHS',
+      trans_id: 'TXN-001',
+      user_name: 'Test User',
+      user_type: 'corporate',
+      created_at: '2025-01-15T10:00:00Z',
+      updated_at: '2025-01-15T10:00:00Z',
+    },
   }),
 }))
 
-// PaymentDetails likely expects modal to be open and receives payment data via context or props - check component
-// If it only renders when isModalOpen and has data, we may need to provide minimal data
 describe('PaymentDetails (payment modal)', () => {
-  it('renders modal content when open', () => {
+  it('renders modal with title when open', () => {
     renderWithProviders(<PaymentDetails />)
-    // Modal may render title or placeholder when open with no data
-    const title = screen.queryByText(/payment details/i) ?? screen.queryByText(/card/i)
-    expect(title !== null || document.body.querySelector('[role="dialog"]')).toBe(true)
+    expect(screen.getByText('Payment Details')).toBeInTheDocument()
+  })
+
+  it('renders Payment Information and detail rows', () => {
+    renderWithProviders(<PaymentDetails />)
+    expect(screen.getByText('Payment Information')).toBeInTheDocument()
+    expect(screen.getByText('Status')).toBeInTheDocument()
+    expect(screen.getByText('Receipt Number')).toBeInTheDocument()
+    expect(screen.getByText('TXN-001')).toBeInTheDocument()
+    expect(screen.getByText('Test User')).toBeInTheDocument()
+  })
+
+  it('Close button calls closeModal', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<PaymentDetails />)
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(mockCloseModal).toHaveBeenCalled()
   })
 })

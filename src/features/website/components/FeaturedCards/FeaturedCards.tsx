@@ -1,37 +1,13 @@
-import { useState, useMemo } from 'react'
 import { CardItems } from '../CardItems'
 import { useNavigate } from 'react-router-dom'
 import { Loader, Text, EmptyState } from '@/components'
-import { usePublicCatalog } from '../../hooks/website'
+import { useFeaturedCards } from '../../hooks/website'
 import { cn } from '@/libs'
 import EmptyStateImage from '@/assets/images/empty-state.png'
 
-type TabType = 'dashx' | 'dashpass'
-
 export const FeaturedCards = () => {
   const navigate = useNavigate()
-  const { publicCards, isLoading } = usePublicCatalog()
-  const [activeTab, setActiveTab] = useState<TabType>('dashx')
-
-  // Tab options
-  const tabOptions = [
-    { value: 'dashx', label: 'DashX' },
-    { value: 'dashpass', label: 'DashPass' },
-  ]
-
-  // Filter cards based on active tab and limit to 4
-  const filteredCards = useMemo(() => {
-    if (!publicCards) return []
-    const normalizedTargetType = activeTab.toLowerCase()
-
-    return publicCards
-      .filter((card: any) => {
-        const cardType = card.type?.toString().toLowerCase().trim() || ''
-
-        return cardType === normalizedTargetType
-      })
-      .slice(0, 4)
-  }, [publicCards, activeTab])
+  const { activeTab, setActiveTab, tabOptions, filteredCards, isLoading } = useFeaturedCards()
 
   return (
     <section className="py-8 md:py-12">
@@ -56,7 +32,7 @@ export const FeaturedCards = () => {
             {tabOptions.map((tab) => (
               <button
                 key={tab.value}
-                onClick={() => setActiveTab(tab.value as TabType)}
+                onClick={() => setActiveTab(tab.value)}
                 className={cn(
                   'px-4 md:px-6 py-2 text-sm md:text-base font-medium rounded-md transition-all whitespace-nowrap',
                   activeTab === tab.value

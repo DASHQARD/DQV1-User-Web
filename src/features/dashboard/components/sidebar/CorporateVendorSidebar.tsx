@@ -241,7 +241,7 @@ export default function CorporateVendorSidebar() {
           </div>
 
           {/* Footer Actions */}
-          <div className="border-t border-gray-200 py-2">
+          {/* <div className="border-t border-gray-200 py-2">
             <button
               onClick={() => setIsPopoverOpen(false)}
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors w-full text-left"
@@ -249,7 +249,7 @@ export default function CorporateVendorSidebar() {
               <Icon icon="bi:question-circle" className="text-lg text-[#677084]" />
               <span>Help</span>
             </button>
-          </div>
+          </div> */}
         </PopoverContent>
       </Popover>
       <CreateVendorAccount />

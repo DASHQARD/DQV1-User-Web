@@ -5,10 +5,38 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks'
-import { useUserProfile, useUploadFiles, usePresignedURL, useToast } from '@/hooks'
+import {
+  useUserProfile,
+  useUploadFiles,
+  usePresignedURL,
+  useToast,
+  usePersistedModalState,
+} from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { ProfileAndIdentitySchema } from '@/utils/schemas'
-import { ROUTES } from '@/utils/constants'
+import { MODALS } from '@/utils/constants'
+
+function getAgeFromDateOfBirth(dobString: string): number | null {
+  if (!dobString || typeof dobString !== 'string') return null
+  const trimmed = dobString.trim()
+  let birth: Date
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    birth = new Date(trimmed + 'T12:00:00')
+  } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
+    const [a, b, year] = trimmed.split('/').map(Number)
+    const month = Math.min(a, b) - 1
+    const day = Math.max(a, b)
+    birth = new Date(year, month, day)
+  } else {
+    birth = new Date(trimmed)
+  }
+  if (Number.isNaN(birth.getTime())) return null
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
 
 const dynamicSchema = (() => {
   const baseSchema = ProfileAndIdentitySchema.omit({ back_id: true }).extend({
@@ -18,20 +46,33 @@ const dynamicSchema = (() => {
       .optional(),
   })
 
-  return baseSchema.superRefine((data, ctx) => {
-    if (data.id_type === 'passport' || data.id_type === 'national_id') {
-      if (!data.front_id) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            data.id_type === 'passport'
-              ? 'Passport page is required'
-              : 'Front ID photo is required',
-          path: ['front_id'],
-        })
+  return baseSchema
+    .superRefine((data, ctx) => {
+      if (data.id_type === 'passport' || data.id_type === 'national_id') {
+        if (!data.front_id) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+              data.id_type === 'passport'
+                ? 'Passport page is required'
+                : 'Front ID photo is required',
+            path: ['front_id'],
+          })
+        }
       }
-    }
-  })
+    })
+    .superRefine((data, ctx) => {
+      if (data.dob) {
+        const age = getAgeFromDateOfBirth(data.dob)
+        if (age !== null && age < 18) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'You must be at least 18 years old',
+            path: ['dob'],
+          })
+        }
+      }
+    })
 })()
 
 export type OnboardingFormData = z.infer<typeof dynamicSchema>
@@ -42,7 +83,6 @@ export function useOnboardingForm() {
   const userType = (user as { user_type?: string })?.user_type
   const isBranchManager = userType === 'branch'
   const isCorporateAdmin = userType === 'corporate admin'
-  const isVendor = userType === 'vendor'
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData, isLoading } = useGetUserProfileService()
   const toast = useToast()
@@ -55,7 +95,9 @@ export function useOnboardingForm() {
 
   const [frontOfIdentification, setFrontOfIdentification] = useState<string | null>(null)
   const [backOfIdentification, setBackOfIdentification] = useState<string | null>(null)
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const successModal = usePersistedModalState({
+    paramName: MODALS.ONBOARDING.PARAM_NAME,
+  })
 
   const form = useForm<OnboardingFormData>({
     resolver: zodResolver(dynamicSchema),
@@ -163,7 +205,7 @@ export function useOnboardingForm() {
 
       await submitPersonalDetailsWithID(onboardingPayload, {
         onSuccess: () => {
-          setShowSuccessModal(true)
+          successModal.openModal(MODALS.ONBOARDING.SUCCESS)
         },
       })
     } catch (error: unknown) {
@@ -172,16 +214,6 @@ export function useOnboardingForm() {
           ? String((error as { message: unknown }).message)
           : 'Failed to save. Please try again.'
       toast.error(message)
-    }
-  }
-
-  const handleSuccessContinue = () => {
-    setShowSuccessModal(false)
-    if (isBranchManager || isVendor || isCorporateAdmin) {
-      navigate(-1)
-    } else {
-      const businessDetailsUrl = `${ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS}?account=corporate`
-      navigate(businessDetailsUrl)
     }
   }
 
@@ -201,8 +233,6 @@ export function useOnboardingForm() {
     form,
     frontOfIdentification,
     backOfIdentification,
-    showSuccessModal,
-    setShowSuccessModal,
     isPassport,
     isNationalId,
     needsOnlyFront,
@@ -211,7 +241,6 @@ export function useOnboardingForm() {
     isFetchingPresignedURL,
     userProfileData,
     onSubmit,
-    handleSuccessContinue,
     handleDiscard,
     dobMaxDate,
     submitButtonLabel,

@@ -149,3 +149,33 @@ body {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
+
+/* Floating feedback button animations */
+@keyframes feedback-btn-pulse {
+  0%,
+  100% {
+    box-shadow: 0 4px 20px rgba(233, 30, 99, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(233, 30, 99, 0.4), 0 0 0 15px rgba(233, 30, 99, 0.2);
+  }
+}
+
+@keyframes feedback-modal-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.feedback-btn-pulse {
+  animation: feedback-btn-pulse 2s ease-in-out infinite;
+}
+
+.feedback-modal-animate {
+  animation: feedback-modal-slide-in 0.3s ease-out;
+}

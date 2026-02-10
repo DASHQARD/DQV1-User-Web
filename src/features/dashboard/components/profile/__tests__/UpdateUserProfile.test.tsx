@@ -2,13 +2,20 @@ import { describe, it, expect, vi } from 'vitest'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import UpdateUserProfile from '../UpdateUserProfile'
 
-vi.mock('@/hooks', () => ({
-  useUserProfile: () => ({
-    useGetUserProfileService: () => ({
-      data: { fullname: 'Jane Doe', email: 'jane@example.com', dob: '1990-01-01' },
+vi.mock('@/hooks', () => {
+  const stableProfileData = {
+    fullname: 'Jane Doe',
+    email: 'jane@example.com',
+    dob: '1990-01-01',
+  }
+  return {
+    useUserProfile: () => ({
+      useGetUserProfileService: () => ({
+        data: stableProfileData,
+      }),
     }),
-  }),
-}))
+  }
+})
 
 vi.mock('@/features/dashboard/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/features/dashboard/hooks')>()

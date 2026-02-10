@@ -1,8 +1,7 @@
 import { Controller } from 'react-hook-form'
-import { Combobox, Input, Text, FileUploader, Loader, Modal } from '@/components'
+import { Combobox, Input, Text, FileUploader, Loader, Modal, DateInput } from '@/components'
 import { Button } from '@/components/Button'
 import { cn } from '@/libs'
-import { SuccessImage } from '@/assets/images'
 import { useOnboardingForm } from '../hooks/useOnboardingForm'
 
 export default function OnboardingForm() {
@@ -10,8 +9,6 @@ export default function OnboardingForm() {
     form,
     frontOfIdentification,
     backOfIdentification,
-    showSuccessModal,
-    setShowSuccessModal,
     isPassport,
     isNationalId,
     needsOnlyFront,
@@ -20,7 +17,6 @@ export default function OnboardingForm() {
     isFetchingPresignedURL,
     userProfileData,
     onSubmit,
-    handleSuccessContinue,
     handleDiscard,
     dobMaxDate,
     submitButtonLabel,
@@ -57,15 +53,47 @@ export default function OnboardingForm() {
             {...form.register('last_name')}
             error={form.formState.errors.last_name?.message}
           />
-          <Input
-            type="date"
-            label="Date of Birth"
-            isRequired
-            placeholder="Enter your date of birth"
-            className="col-span-full"
-            max={dobMaxDate}
-            {...form.register('dob')}
-            error={form.formState.errors.dob?.message}
+          <Controller
+            name="dob"
+            control={form.control}
+            render={({ field }) => {
+              const dobError = form.formState.errors.dob?.message
+              const normalizedValue = (() => {
+                if (!field.value || !field.value.trim()) return undefined
+                const d = new Date(field.value.trim() + 'T12:00:00')
+                if (Number.isNaN(d.getTime())) return undefined
+                return d
+              })()
+              return (
+                <div className="col-span-full">
+                  <DateInput
+                    label="Date of Birth *"
+                    id="dob"
+                    placeholder="Select or type date (dd/mm/yyyy)"
+                    dateFormat="dd/MM/yyyy"
+                    value={normalizedValue}
+                    maxDate={new Date(dobMaxDate + 'T12:00:00')}
+                    strictParsing
+                    onChange={(date: Date | null) => {
+                      if (!date) {
+                        field.onChange('')
+                        requestAnimationFrame(() => form.trigger('dob'))
+                        return
+                      }
+                      const y = date.getFullYear()
+                      const fixedDate =
+                        y >= 0 && y <= 99
+                          ? new Date(y <= 50 ? 2000 + y : 1900 + y, date.getMonth(), date.getDate())
+                          : date
+                      const next = fixedDate.toISOString().split('T')[0]
+                      field.onChange(next)
+                      requestAnimationFrame(() => form.trigger('dob'))
+                    }}
+                    error={dobError}
+                  />
+                </div>
+              )
+            }}
           />
 
           <Input
@@ -115,7 +143,7 @@ export default function OnboardingForm() {
                 ? 'Upload a picture of your passport page'
                 : isNationalId
                   ? 'Upload a picture of the front of your National ID'
-                  : 'Upload pictures of your identification (front and back)'}
+                  : 'Upload pictures of your identification (front only)'}
             </Text>
           </div>
 
@@ -200,7 +228,7 @@ export default function OnboardingForm() {
                 )}
               />
 
-              {!needsOnlyFront && (
+              {/* {!needsOnlyFront && (
                 <Controller
                   control={form.control}
                   name="back_id"
@@ -214,7 +242,7 @@ export default function OnboardingForm() {
                     />
                   )}
                 />
-              )}
+              )} */}
             </section>
           )}
         </section>
@@ -235,7 +263,6 @@ export default function OnboardingForm() {
         </Button>
       </div>
 
-      {/* Loading Modal */}
       <Modal
         isOpen={form.formState.isSubmitting}
         setIsOpen={() => {}}
@@ -247,27 +274,6 @@ export default function OnboardingForm() {
           <Text as="p" className="text-base font-medium text-gray-700">
             Submitting...
           </Text>
-        </div>
-      </Modal>
-
-      {/* Success Modal */}
-      <Modal isOpen={showSuccessModal} setIsOpen={setShowSuccessModal} panelClass="max-w-md p-8">
-        <div className="flex flex-col items-center text-center">
-          <img src={SuccessImage} alt="Success" className="w-24 h-24 object-contain mb-4" />
-          <Text as="h2" className="text-xl font-bold text-gray-900 mb-2">
-            Profile updated successfully!
-          </Text>
-          <Text className="text-sm text-gray-600 mb-6">
-            Your identification details have been saved.
-          </Text>
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full"
-            onClick={handleSuccessContinue}
-          >
-            Continue
-          </Button>
         </div>
       </Modal>
     </form>

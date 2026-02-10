@@ -1,8 +1,22 @@
 import { deleteMethod, getList, getMethod, postMethod, patchMethod } from '@/services/requests'
-import type { AddToCartPayload, CartItemResponse, CartListResponse } from '@/types/responses'
+import type {
+  AddToCartPayload,
+  CartItemResponse,
+  CartListResponse,
+  GuestAddCardPayload,
+  GuestAddCardResponse,
+  GuestCartApiResponse,
+} from '@/types/responses'
 
 export const addToCart = async (data: AddToCartPayload): Promise<any> => {
   return await postMethod('/carts', data)
+}
+
+/** Add a card to a guest cart. Omit cart_id when adding the first item. */
+export const addGuestCard = async (data: GuestAddCardPayload): Promise<GuestAddCardResponse> => {
+  const res = await postMethod('/guest-carts/add-card', data)
+  const body = res?.data ?? res
+  return body as GuestAddCardResponse
 }
 
 export const createDashGoAndAssign = async (data: {
@@ -34,6 +48,36 @@ export const createDashProAndAssign = async (data: {
 
 export const getCartItems = async (query?: Record<string, any>): Promise<CartListResponse[]> => {
   return await getList('/carts', query)
+}
+
+/** GET /guest-carts/items. Normalizes to CartListResponse[] for consistency with user cart. */
+export const getGuestCartItems = async (
+  query?: Record<string, any>,
+): Promise<CartListResponse[]> => {
+  const res = await getList<GuestCartApiResponse>('/guest-carts/items', query)
+  const payload = (res as { data?: GuestCartApiResponse })?.data ?? res
+  if (!payload?.cart || !Array.isArray(payload.items)) return []
+  const { cart, items } = payload
+  const normalized: CartListResponse = {
+    cart_id: cart.id,
+    cart_status: cart.status,
+    cart_created_at: cart.created_at,
+    cart_updated_at: cart.updated_at,
+    item_count: String(items.length),
+    total_amount: cart.total_amount,
+    user_id: 0,
+    items: items.map((row) => ({
+      card_id: row.card?.id ?? row.cart_item?.card_id,
+      cart_item_id: row.cart_item_id,
+      product: row.card?.product ?? '',
+      type: row.card?.type ?? 'dashx',
+      total_amount: row.cart_item?.total_amount ?? row.card?.price ?? '0',
+      total_quantity: row.cart_item?.total_quantity ?? 1,
+      images: row.card?.images ?? [],
+      recipients: row.recipients ?? [],
+    })) as unknown as CartListResponse['items'],
+  }
+  return [normalized]
 }
 
 export const getCartItem = async (id: number): Promise<CartItemResponse> => {

@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { Combobox } from '../Combobox/Combobox'
 
@@ -6,6 +7,14 @@ const defaultOptions = [
   { label: 'Option A', value: 'a' },
   { label: 'Option B', value: 'b' },
 ]
+
+beforeEach(() => {
+  global.ResizeObserver = vi.fn().mockImplementation(() => ({
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+  }))
+})
 
 describe('Combobox', () => {
   it('renders with label when label prop is provided', () => {
@@ -59,5 +68,16 @@ describe('Combobox', () => {
     )
     const wrapper = container.querySelector('.custom-wrapper')
     expect(wrapper).toBeInTheDocument()
+  })
+
+  it('calls onChange when option is selected', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    renderWithProviders(<Combobox options={defaultOptions} onChange={onChange} />)
+    const combobox = screen.getByRole('combobox')
+    await user.click(combobox)
+    const option = await screen.findByRole('option', { name: 'Option A' })
+    await user.click(option)
+    expect(onChange).toHaveBeenCalled()
   })
 })

@@ -196,6 +196,55 @@ export type AddToCartPayload = {
   quantity: number
 }
 
+/** Payload for POST /guest-carts/add-card. cart_id is optional when adding the first item. */
+export type GuestAddCardPayload = {
+  guest_name: string
+  guest_email: string
+  card_id: number
+  quantity: number
+  cart_id?: number
+}
+
+/** Response from POST /guest-carts/add-card; may include cart_id for subsequent adds. */
+export type GuestAddCardResponse = {
+  cart_id?: number
+  [key: string]: unknown
+}
+
+export type GuestCartApiResponse = {
+  cart: {
+    id: number
+    guest_phone: string
+    guest_name: string
+    guest_email: string
+    status: string
+    total_amount: string
+    created_at: string
+    updated_at: string
+  }
+  items: Array<{
+    cart_item_id: number
+    cart_item: {
+      id: number
+      guest_cart_id: number
+      card_id: number
+      total_quantity: number
+      total_amount: string
+      created_at: string
+      updated_at: string
+    }
+    card: {
+      id: number
+      product: string
+      type: string
+      price: string
+      currency: string
+      images?: Array<{ id: number; file_url: string; file_name: string }>
+    }
+    recipients: unknown[]
+  }>
+}
+
 export type AssignRecipientPayload = {
   assign_to_self: boolean
   cart_item_id: number

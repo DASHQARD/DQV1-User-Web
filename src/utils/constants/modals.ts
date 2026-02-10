@@ -144,4 +144,8 @@ export const MODALS = {
       PROFILE: 'profile',
     },
   },
+  ONBOARDING: {
+    PARAM_NAME: 'onboarding',
+    SUCCESS: 'success',
+  },
 }

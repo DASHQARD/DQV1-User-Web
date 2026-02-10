@@ -10,16 +10,20 @@ import {
 import type { AddToCartPayload } from '@/types/responses'
 import { useToast } from '@/hooks'
 
+/** Logged-in user cart only. For guest cart use useGuestCart(). */
 export function useCart(query?: Record<string, any>) {
   const queryClient = useQueryClient()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const { success, error: toastError } = useToast()
 
   const cartItemsQuery = useQuery({
-    queryKey: ['cart-items', query],
+    queryKey: ['cart-items', 'user', query],
     queryFn: () => getCartItems(query),
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isGuestAuth,
   })
+
+  const cartItems = cartItemsQuery.data ?? []
 
   const addToCartMutation = useMutation({
     mutationFn: (data: AddToCartPayload) => addToCart(data),
@@ -67,7 +71,7 @@ export function useCart(query?: Record<string, any>) {
   })
 
   return {
-    cartItems: cartItemsQuery.data || [],
+    cartItems,
     isLoading: cartItemsQuery.isLoading,
     isFetching: cartItemsQuery.isFetching,
     addToCart: addToCartMutation.mutate,

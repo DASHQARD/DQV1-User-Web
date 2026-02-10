@@ -38,4 +38,14 @@ describe('Pagination', () => {
     await user.click(screen.getByRole('button', { name: /next/i }))
     expect(onNextPage).toHaveBeenCalled()
   })
+
+  it('calls onPreviousPage when Prev is clicked and onPreviousPage provided', async () => {
+    const user = userEvent.setup()
+    const onPreviousPage = vi.fn()
+    renderWithProviders(
+      <Pagination limit={10} total={25} currentPage={2} hasPreviousPage onPreviousPage={onPreviousPage} />,
+    )
+    await user.click(screen.getByRole('button', { name: /prev/i }))
+    expect(onPreviousPage).toHaveBeenCalled()
+  })
 })

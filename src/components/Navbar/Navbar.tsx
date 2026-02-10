@@ -9,6 +9,7 @@ import { useAuthStore, useCartStore } from '@/stores'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { Modal } from '@/components'
 import { CartPopoverContent } from '@/components/CartModal'
+import { GuestAddToCartModal } from '@/features/website/components/GuestAddToCartModal'
 import { useUserProfile, usePresignedURL } from '@/hooks'
 import { vendorQueries } from '@/features'
 import { branchQueries } from '@/features/dashboard/branch'
@@ -454,6 +455,7 @@ export default function Navbar() {
               >
                 <CartPopoverContent />
               </Modal>
+              <GuestAddToCartModal />
 
               {/* Account Button */}
               {isAuthenticated ? (

@@ -61,4 +61,10 @@ describe('FileUploader', () => {
     await user.click(screen.getByRole('button', { name: 'Delete file' }))
     expect(onChange).toHaveBeenCalledWith(null)
   })
+
+  it('passes accept to input when accept prop is provided', () => {
+    renderWithProviders(<FileUploader onChange={() => {}} accept=".pdf,.doc" />)
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    expect(input).toHaveAttribute('accept', '.pdf,.doc')
+  })
 })

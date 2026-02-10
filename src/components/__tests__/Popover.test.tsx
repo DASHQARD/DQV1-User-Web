@@ -1,7 +1,15 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { Popover, PopoverTrigger, PopoverContent } from '../PopOver'
+
+beforeEach(() => {
+  global.ResizeObserver = vi.fn().mockImplementation(() => ({
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+  }))
+})
 
 describe('Popover', () => {
   it('renders trigger and shows content when opened', async () => {

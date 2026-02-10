@@ -1,4 +1,5 @@
 export { default as CreateBranch } from './CreateBranch'
+export { OnboardingSuccessModal } from './OnboardingSuccessModal'
 export { BulkPurchaseEmployees, BulkPurchaseEmployeesModal } from './BulkPurchaseEmployees'
 export { BulkUploadBranches } from './BulkUploadBranches'
 export { CreateVendorAccount } from './CreateVendorAccount'

@@ -1,4 +1,5 @@
 import { OnboardingForm } from '@/features/auth'
+import { OnboardingSuccessModal } from '@/features/dashboard/components/corporate/modals'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
 import {
@@ -30,6 +31,7 @@ export default function ProfileInformation() {
       <div className="bg-white rounded-xl p-6">
         <OnboardingForm />
       </div>
+      <OnboardingSuccessModal />
     </section>
   )
 }

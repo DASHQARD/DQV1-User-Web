@@ -1,121 +1,32 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useCartStore } from '@/stores/cart'
-import { useCart } from '@/features/website/hooks/useCart'
+import type { CartListResponse } from '@/types/responses'
+
 import { Icon } from '@/libs'
 import { EmptyState, Loader, Text } from '@/components'
-import type { CartListResponse } from '@/types/responses'
-import DashxBg from '@/assets/svgs/Dashx_bg.svg'
-import DashproBg from '@/assets/svgs/dashpro_bg.svg'
-import DashpassBg from '@/assets/images/dashpass_bg.png'
-import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
-import { ENV_VARS } from '@/utils/constants'
 import { formatCurrency } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
+import { useCartModal } from '@/features/website/hooks/useCartModal'
 
 export default function CartPopoverContent() {
-  const navigate = useNavigate()
-  const { closeCart } = useCartStore()
-  const { cartItems, isLoading, deleteCartItemAsync, updateCartItem, isUpdating } = useCart()
-  const [deletingItemId, setDeletingItemId] = useState<number | null>(null)
-
-  // Filter out paid carts
-  const activeCartItems = useMemo(() => {
-    if (!Array.isArray(cartItems)) return []
-    return cartItems.filter((cart: CartListResponse) => cart.cart_status?.toLowerCase() !== 'paid')
-  }, [cartItems])
-
-  const handleCheckout = () => {
-    closeCart()
-    navigate('/checkout')
-  }
-
-  const handleRemoveItem = async (cartItemId: number) => {
-    setDeletingItemId(cartItemId)
-    try {
-      await deleteCartItemAsync(cartItemId)
-    } catch (error) {
-      console.error('Failed to delete item', error)
-      setDeletingItemId(null)
-    } finally {
-      // Keep the deleting state briefly to allow animation
-      setTimeout(() => {
-        setDeletingItemId(null)
-      }, 200)
-    }
-  }
-
-  // Construct full image URL from file_url
-  const getImageUrl = (fileUrl: string | undefined) => {
-    if (!fileUrl) return ''
-
-    // If it's already a full URL, return as-is
-    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-      return fileUrl
-    }
-
-    // Construct full URL from API base URL
-    // Remove /api/v1 from base URL if present, then add /uploads/ path
-    let baseUrl = ENV_VARS.API_BASE_URL
-    if (baseUrl.endsWith('/api/v1')) {
-      baseUrl = baseUrl.replace('/api/v1', '')
-    }
-    return `${baseUrl}/uploads/${fileUrl}`
-  }
-
-  // Get card background based on type
-  const getCardBackground = (type: string) => {
-    const normalizedType = type?.toLowerCase()
-    switch (normalizedType) {
-      case 'dashx':
-        return DashxBg
-      case 'dashpro':
-        return DashproBg
-      case 'dashpass':
-        return DashpassBg
-      case 'dashgo':
-        return DashgoBg
-      default:
-        return DashxBg
-    }
-  }
-
-  // Get card type display name
-  const getCardTypeName = (type: string | undefined) => {
-    if (!type || !type.trim()) return 'DASHQARD'
-    const normalizedType = type.toLowerCase().trim()
-    switch (normalizedType) {
-      case 'dashx':
-        return 'DASHX'
-      case 'dashpro':
-        return 'DASHPRO'
-      case 'dashpass':
-        return 'DASHPASS'
-      case 'dashgo':
-        return 'DASHGO'
-      default:
-        // If type doesn't match, try to return uppercase version of the type
-        // This handles cases like 'DashX' -> 'DASHX'
-        return type.toUpperCase().trim()
-    }
-  }
-
-  const subtotal = activeCartItems.reduce((total: number, cart: CartListResponse) => {
-    const amount = parseFloat(cart.total_amount || '0')
-    return total + amount
-  }, 0)
-
-  // Calculate total items - check if activeCartItems is empty or has no items
-  const totalItems = activeCartItems.reduce((total, cart) => {
-    if (!cart.items) return total
-    const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
-    return total + itemsArray.length
-  }, 0)
+  const {
+    closeCart,
+    navigate,
+    activeCartItems,
+    isLoading,
+    totalItems,
+    subtotal,
+    updateCartItem,
+    isUpdating,
+    deletingItemId,
+    handleCheckout,
+    handleRemoveItem,
+    getCardBackground,
+    getImageUrl,
+    getCardTypeName,
+  } = useCartModal()
 
   return (
     <div className="flex flex-col w-[393px] max-h-[70vh]">
       <div className="py-6 px-4 border-b border-gray-200 shrink-0 flex flex-col gap-4">
-        {/* <h2 className="text-2xl font-bold text-gray-900">Add to Cart</h2> */}
         <p className="text-xs">
           Subtotal: <span className="font-bold">{formatCurrency(subtotal)}</span>
         </p>
