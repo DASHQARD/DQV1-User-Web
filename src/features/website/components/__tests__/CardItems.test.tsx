@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderWithProviders, screen } from '@/test/test-utils'
+import type { FeaturedCardProps } from '@/types'
 import { CardItems } from '../CardItems'
 
 vi.mock('@/features/website/hooks/useCardItem', () => ({
@@ -26,11 +27,13 @@ describe('CardItems', () => {
   it('renders card product and price', () => {
     renderWithProviders(
       <CardItems
-        product="Test Card"
-        price={100}
-        currency="GHS"
-        type="dashx"
-        vendor_name="Vendor Co"
+        {...({
+          product: 'Test Card',
+          price: '100',
+          currency: 'GHS',
+          type: 'dashx',
+          vendor_name: 'Vendor Co',
+        } as FeaturedCardProps)}
       />,
     )
     expect(screen.getByText('Test Card')).toBeInTheDocument()
@@ -38,7 +41,11 @@ describe('CardItems', () => {
   })
 
   it('renders Quick Add button', () => {
-    renderWithProviders(<CardItems product="Test" price={50} currency="GHS" type="dashx" />)
+    renderWithProviders(
+      <CardItems
+        {...({ product: 'Test', price: '50', currency: 'GHS', type: 'dashx' } as FeaturedCardProps)}
+      />,
+    )
     expect(screen.getAllByRole('button', { name: /Quick Add/i }).length).toBeGreaterThan(0)
   })
 })

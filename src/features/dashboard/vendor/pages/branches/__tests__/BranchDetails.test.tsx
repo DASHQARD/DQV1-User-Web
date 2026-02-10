@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { BranchDetails } from '../BranchDetails'
@@ -31,7 +31,9 @@ function defaultMockReturn() {
 
 describe('BranchDetails (vendor branches)', () => {
   beforeEach(() => {
-    vi.mocked(useBranchDetails).mockReturnValue(defaultMockReturn())
+    vi.mocked(useBranchDetails).mockReturnValue(
+      defaultMockReturn() as unknown as ReturnType<typeof useBranchDetails>,
+    )
   })
 
   it('shows loading state when isLoading is true', () => {
