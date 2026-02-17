@@ -126,6 +126,10 @@ export function useCheckout() {
   }, [displayCartItems, recipientsByCartItem])
 
   const handleCheckout = useCallback(() => {
+    if (itemsMissingRecipients.length > 0) {
+      setIsMissingRecipientsModalOpen(true)
+      return
+    }
     const firstCart = activeCartItems[0]
     if (!firstCart) return
     const values = userInfoForm.getValues()
@@ -137,7 +141,7 @@ export function useCheckout() {
       amount_due: amountDue,
       user_id: 0,
     } as any)
-  }, [activeCartItems, amountDue, userInfoForm, checkoutMutation])
+  }, [activeCartItems, amountDue, userInfoForm, checkoutMutation, itemsMissingRecipients.length])
 
   const bulkAssignMutation = useMutation({
     mutationFn: (file: File) => bulkAssignRecipients(file),

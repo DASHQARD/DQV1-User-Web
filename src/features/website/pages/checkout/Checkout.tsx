@@ -35,6 +35,7 @@ export default function Checkout() {
     setIsMissingRecipientsModalOpen,
     bulkFile,
     setBulkFile,
+    allRecipientsAssigned,
   } = useCheckout()
 
   if (isLoadingCart) {
@@ -265,12 +266,17 @@ export default function Checkout() {
                   </div>
                 </div>
               </div>
+              {!allRecipientsAssigned && (
+                <p className="text-sm text-amber-600 mb-3">
+                  Assign recipients to all gift cards before completing your purchase.
+                </p>
+              )}
               <Button
                 variant="secondary"
                 className="w-full"
                 onClick={handleCheckout}
                 loading={isCheckingOut}
-                disabled={isCheckingOut}
+                disabled={isCheckingOut || !allRecipientsAssigned}
               >
                 {isCheckingOut ? 'Processing...' : 'Complete Purchase'}
               </Button>

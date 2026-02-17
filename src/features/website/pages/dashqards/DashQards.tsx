@@ -28,7 +28,6 @@ export default function DashQards() {
     setPriceRange,
     isPriceRangeActive,
     clearAllFilters,
-    onGetCard,
     sortActions,
     currentSortLabel,
     setSortBy,
@@ -248,7 +247,6 @@ export default function DashQards() {
                             type={card.type || cardData.card_type || 'dashx'}
                             updated_at={card.updated_at || card.created_at || ''}
                             vendor_id={card.vendor_id || cardData.vendor_id || 0}
-                            onGetQard={() => onGetCard(card)}
                           />
                         )
                       })}

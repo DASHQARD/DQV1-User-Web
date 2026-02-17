@@ -579,7 +579,7 @@ export default function UserDashboard() {
               </Text>
             </button>
             <button
-              onClick={() => navigate(ROUTES.IN_APP.DASHBOARD.REDEEM)}
+              onClick={() => navigate(ROUTES.IN_APP.REDEEM)}
               className="flex flex-col items-center justify-center p-4 bg-linear-to-br from-green-50 to-green-100 rounded-lg hover:shadow-md transition-shadow"
             >
               <Icon icon="bi:arrow-repeat" className="text-green-600 text-2xl mb-2" />

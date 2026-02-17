@@ -49,10 +49,6 @@ export function useCardItem(props: CardItemHookProps) {
 
   const handleQuickAdd = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
-    if (onGetQard) {
-      onGetQard()
-      return
-    }
     if (!card_id) {
       console.error('Card ID is required to add item to cart')
       return
@@ -66,6 +62,10 @@ export function useCardItem(props: CardItemHookProps) {
         type,
         currency,
       })
+      return
+    }
+    if (onGetQard) {
+      onGetQard()
       return
     }
     try {
