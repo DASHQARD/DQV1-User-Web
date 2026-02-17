@@ -154,8 +154,10 @@ export function useViewBag() {
   }, [])
 
   const confirmDeleteRecipient = useCallback(() => {
-    if (recipientToDelete?.id != null) {
-      deleteRecipientMutation.mutate(recipientToDelete.id, {
+    const rawId = recipientToDelete?.id ?? recipientToDelete?.recipient_id
+    const recipientId = rawId != null ? Number(rawId) : null
+    if (recipientId != null && !Number.isNaN(recipientId)) {
+      deleteRecipientMutation.mutate(recipientId, {
         onSettled: () => {
           setIsDeleteModalOpen(false)
           setRecipientToDelete(null)
