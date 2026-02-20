@@ -507,7 +507,7 @@ export default function CardDetails() {
                   disabled={isAdding}
                   loading={isAdding}
                   variant="secondary"
-                  className="flex-1 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold py-4 px-8 rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300 border-0"
+                  className="flex-1 min-h-12 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold py-4 px-8 rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300 border-0"
                 >
                   <Icon icon="bi:cart-plus" className="size-6 mr-2" />
                   Add to Cart
@@ -515,7 +515,7 @@ export default function CardDetails() {
                 <Button
                   onClick={() => navigate(ROUTES.IN_APP.DASHQARDS)}
                   variant="outline"
-                  className="flex-1 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-bold py-4 px-8 rounded-xl transition-all duration-300"
+                  className="flex-1 min-h-12 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-bold py-4 px-8 rounded-xl transition-all duration-300"
                 >
                   <Icon icon="bi:arrow-left" className="size-6 mr-2" />
                   Back to Cards
