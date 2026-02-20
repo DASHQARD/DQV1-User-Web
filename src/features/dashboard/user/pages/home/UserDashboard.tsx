@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Text, Loader, Button, Input, Combobox } from '@/components'
+import { Text, Loader, Button, Input, Combobox, DateInput } from '@/components'
 import { Icon } from '@/libs'
 import { ROUTES, ID_TYPE_OPTIONS } from '@/utils/constants'
 import { PersonalInformationSchema } from '@/utils/schemas/settings'
@@ -62,6 +62,12 @@ export default function UserDashboard() {
       })
     }
   }, [user, onboardingForm])
+
+  const dobMaxDate = useMemo(() => {
+    const today = new Date()
+    const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
+    return maxDate.toISOString().split('T')[0]
+  }, [])
 
   const handleOnboardingSubmit = (data: PersonalInformationFormData) => {
     const payload: OnboardingData = {
@@ -237,18 +243,52 @@ export default function UserDashboard() {
                   />
                 </div>
 
-                <div>
-                  <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                    <Icon icon="bi:calendar-event" className="size-4 mr-2 text-primary-600" />
-                    Date of Birth <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="date"
-                    placeholder="Select your date of birth"
-                    {...onboardingForm.register('dob')}
-                    error={onboardingForm.formState.errors.dob?.message}
-                  />
-                </div>
+                <Controller
+                  name="dob"
+                  control={onboardingForm.control}
+                  render={({ field }) => {
+                    const dobError = onboardingForm.formState.errors.dob?.message
+                    const normalizedValue = (() => {
+                      if (!field.value || !field.value.trim()) return undefined
+                      const d = new Date(field.value.trim() + 'T12:00:00')
+                      if (Number.isNaN(d.getTime())) return undefined
+                      return d
+                    })()
+                    return (
+                      <div>
+                        <DateInput
+                          label="Date of Birth *"
+                          id="dob"
+                          placeholder="Select or type date (dd/mm/yyyy)"
+                          dateFormat="dd/MM/yyyy"
+                          value={normalizedValue}
+                          maxDate={new Date(dobMaxDate + 'T12:00:00')}
+                          strictParsing
+                          onChange={(date: Date | null) => {
+                            if (!date) {
+                              field.onChange('')
+                              requestAnimationFrame(() => onboardingForm.trigger('dob'))
+                              return
+                            }
+                            const y = date.getFullYear()
+                            const fixedDate =
+                              y >= 0 && y <= 99
+                                ? new Date(
+                                    y <= 50 ? 2000 + y : 1900 + y,
+                                    date.getMonth(),
+                                    date.getDate(),
+                                  )
+                                : date
+                            const next = fixedDate.toISOString().split('T')[0]
+                            field.onChange(next)
+                            requestAnimationFrame(() => onboardingForm.trigger('dob'))
+                          }}
+                          error={dobError}
+                        />
+                      </div>
+                    )
+                  }}
+                />
 
                 <div>
                   <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">

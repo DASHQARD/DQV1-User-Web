@@ -1,6 +1,16 @@
+import { useMemo } from 'react'
 import { Controller } from 'react-hook-form'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Button, Text, Input, Checkbox, FileUploader, Combobox, BasePhoneInput } from '@/components'
+import {
+  Button,
+  Text,
+  Input,
+  Checkbox,
+  FileUploader,
+  Combobox,
+  BasePhoneInput,
+  DateInput,
+} from '@/components'
 import { Icon } from '@/libs'
 import type { VendorProfileFormProps } from '@/types'
 import { useVendorProfileForm } from './useVendorProfileForm'
@@ -8,6 +18,11 @@ import { useVendorProfileForm } from './useVendorProfileForm'
 export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorProfileFormProps) {
   const { form, countries, checkboxProfileSameAsCorporate, isSubmitDisabled } =
     useVendorProfileForm(corporateUser)
+  const dobMaxDate = useMemo(() => {
+    const today = new Date()
+    const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
+    return maxDate.toISOString().split('T')[0]
+  }, [])
 
   return (
     <AnimatePresence>
@@ -109,15 +124,54 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
               disabled={checkboxProfileSameAsCorporate}
             />
 
-            <Input
-              type="date"
-              label="Date of Birth"
-              isRequired
-              placeholder="Enter your date of birth"
-              className="col-span-full"
-              {...form.register('dob')}
-              error={form.formState.errors.dob?.message}
-              disabled={checkboxProfileSameAsCorporate}
+            <Controller
+              name="dob"
+              control={form.control}
+              render={({ field }) => {
+                const dobError = form.formState.errors.dob?.message
+                const normalizedValue = (() => {
+                  if (!field.value || !field.value.trim()) return undefined
+                  const d = new Date(field.value.trim() + 'T12:00:00')
+                  if (Number.isNaN(d.getTime())) return undefined
+                  return d
+                })()
+                return (
+                  <div
+                    className={`col-span-full ${checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
+                    <DateInput
+                      label="Date of Birth"
+                      id="dob"
+                      placeholder="Select or type date (dd/mm/yyyy)"
+                      dateFormat="dd/MM/yyyy"
+                      value={normalizedValue}
+                      maxDate={new Date(dobMaxDate + 'T12:00:00')}
+                      strictParsing
+                      disabled={checkboxProfileSameAsCorporate}
+                      onChange={(date: Date | null) => {
+                        if (!date) {
+                          field.onChange('')
+                          requestAnimationFrame(() => form.trigger('dob'))
+                          return
+                        }
+                        const y = date.getFullYear()
+                        const fixedDate =
+                          y >= 0 && y <= 99
+                            ? new Date(
+                                y <= 50 ? 2000 + y : 1900 + y,
+                                date.getMonth(),
+                                date.getDate(),
+                              )
+                            : date
+                        const next = fixedDate.toISOString().split('T')[0]
+                        field.onChange(next)
+                        requestAnimationFrame(() => form.trigger('dob'))
+                      }}
+                      error={typeof dobError === 'string' ? dobError : undefined}
+                    />
+                  </div>
+                )
+              }}
             />
             <Input
               label="Street Address"

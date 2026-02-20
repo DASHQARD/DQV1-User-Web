@@ -1,9 +1,9 @@
-import { Button, Input } from '@/components'
+import React, { useMemo } from 'react'
+import { Controller, useForm } from 'react-hook-form'
+import { Button, Input, DateInput } from '@/components'
 import { useUserProfile } from '@/hooks'
 import { UpdateUserInfoSchema } from '@/utils/schemas'
 import { zodResolver } from '@hookform/resolvers/zod'
-import React from 'react'
-import { useForm } from 'react-hook-form'
 import { useUserInfo } from '../../hooks'
 import { z } from 'zod'
 
@@ -24,6 +24,12 @@ export default function UpdateUserProfile() {
       })
     }
   }, [userProfileData, form])
+
+  const dobMaxDate = useMemo(() => {
+    const today = new Date()
+    const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
+    return maxDate.toISOString().split('T')[0]
+  }, [])
 
   const onSubmit = (data: z.infer<typeof UpdateUserInfoSchema>) => {
     const payload = {
@@ -56,12 +62,45 @@ export default function UpdateUserProfile() {
           innerClassName="pr-12"
         />
 
-        <Input
-          type="date"
-          {...form.register('dob')}
-          placeholder="Enter your date of birth"
-          className="w-full"
-          error={form.formState.errors.dob?.message}
+        <Controller
+          name="dob"
+          control={form.control}
+          render={({ field }) => {
+            const dobError = form.formState.errors.dob?.message
+            const normalizedValue = (() => {
+              if (!field.value || !field.value.trim()) return undefined
+              const d = new Date(field.value.trim() + 'T12:00:00')
+              if (Number.isNaN(d.getTime())) return undefined
+              return d
+            })()
+            return (
+              <DateInput
+                label="Date of Birth"
+                id="dob"
+                placeholder="Select or type date (dd/mm/yyyy)"
+                dateFormat="dd/MM/yyyy"
+                value={normalizedValue}
+                maxDate={new Date(dobMaxDate + 'T12:00:00')}
+                strictParsing
+                onChange={(date: Date | null) => {
+                  if (!date) {
+                    field.onChange('')
+                    requestAnimationFrame(() => form.trigger('dob'))
+                    return
+                  }
+                  const y = date.getFullYear()
+                  const fixedDate =
+                    y >= 0 && y <= 99
+                      ? new Date(y <= 50 ? 2000 + y : 1900 + y, date.getMonth(), date.getDate())
+                      : date
+                  const next = fixedDate.toISOString().split('T')[0]
+                  field.onChange(next)
+                  requestAnimationFrame(() => form.trigger('dob'))
+                }}
+                error={dobError}
+              />
+            )
+          }}
         />
       </div>
       <div className="flex gap-2 py-4 border-t border-gray-200">
