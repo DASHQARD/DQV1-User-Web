@@ -502,24 +502,32 @@ export default function CardDetails() {
             {/* Action Buttons - Sticky on scroll */}
             <div className="sticky bottom-0 pt-6 pb-4 bg-gradient-to-t from-white via-white to-transparent mt-8 border-t border-gray-200">
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button
+                <button
+                  type="button"
                   onClick={handleAddToCart}
                   disabled={isAdding}
-                  loading={isAdding}
-                  variant="secondary"
-                  className="flex-1 min-h-12 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold py-4 px-8 rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300 border-0"
+                  className="flex-1 flex items-center justify-center gap-2 min-h-[52px] bg-primary-500 hover:bg-primary-600 text-white font-bold py-4 px-8 rounded-xl border-0 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
                 >
-                  <Icon icon="bi:cart-plus" className="size-6 mr-2" />
-                  Add to Cart
-                </Button>
-                <Button
+                  {isAdding ? (
+                    <>
+                      <Icon icon="mdi:loading" className="size-6 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Icon icon="bi:cart-plus" className="size-6" />
+                      Add to Cart
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
                   onClick={() => navigate(ROUTES.IN_APP.DASHQARDS)}
-                  variant="outline"
-                  className="flex-1 min-h-12 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-bold py-4 px-8 rounded-xl transition-all duration-300"
+                  className="flex-1 flex items-center justify-center gap-2 h-[52px] bg-white border-2 border-gray-300 text-gray-700 font-bold py-4 px-8 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-colors cursor-pointer"
                 >
-                  <Icon icon="bi:arrow-left" className="size-6 mr-2" />
+                  <Icon icon="bi:arrow-left" className="size-6" />
                   Back to Cards
-                </Button>
+                </button>
               </div>
             </div>
           </div>
