@@ -40,6 +40,7 @@ export const ROUTES = {
       VENDOR: {
         HOME: '/dashboard/vendor',
         EXPERIENCE: '/dashboard/vendor/experience',
+        EXPERIENCE_OVERVIEW: '/dashboard/vendor/experience/overview',
         BRANCHES: '/dashboard/vendor/branches',
         REDEMPTIONS: '/dashboard/vendor/redemptions',
         REQUESTS: '/dashboard/vendor/requests',
@@ -61,6 +62,7 @@ export const ROUTES = {
       BRANCH: {
         HOME: '/dashboard/vendor',
         EXPERIENCE: '/dashboard/vendor/experience',
+        EXPERIENCE_OVERVIEW: '/dashboard/vendor/experience/overview',
         REDEMPTIONS: '/dashboard/vendor/redemptions',
         PAYMENT_DETAILS: '/dashboard/vendor/payment-details',
       },

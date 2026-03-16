@@ -2,13 +2,13 @@ import { Input, Modal, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { MODAL_NAMES, ROUTES } from '@/utils/constants'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import OtpLoginModal from '../modals/OtpLoginModal'
 import { useLoginForm } from '../../hooks'
 
 export default function LoginForm() {
   const { form, onSubmit, isPending, modal } = useLoginForm()
-
+  const navigate = useNavigate()
   return (
     <>
       <section className="wrapper">
@@ -17,9 +17,12 @@ export default function LoginForm() {
           className="max-w-[470.61px] w-full flex flex-col gap-10 mx-auto"
         >
           <div className="flex items-center gap-3">
-            <div className="bg-primary-500 rounded-full p-2 h-10 w-10 flex items-center justify-center">
+            <button
+              onClick={() => navigate(ROUTES.IN_APP.HOME)}
+              className="bg-primary-500 rounded-full p-2 h-10 w-10 flex items-center justify-center"
+            >
               <Icon icon="bi:shop-window" className="size-5 text-white" />
-            </div>
+            </button>
             <div>
               <Text as="h2" className="text-2xl font-bold">
                 Welcome Back

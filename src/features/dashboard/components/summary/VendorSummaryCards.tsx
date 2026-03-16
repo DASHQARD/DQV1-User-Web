@@ -1,16 +1,21 @@
 import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 
-import DashXIllustration from '@/assets/svgs/Dashx_bg.svg'
-import DashPassIllustration from '@/assets/images/dashpass_bg.png'
-import { CustomIcon, Dropdown, Text, Loader } from '@/components'
+import { Text, Loader } from '@/components'
 import { Icon } from '@/libs'
-import { cn } from '@/libs/clsx'
 import { ROUTES } from '@/utils/constants'
 import { vendorQueries } from '@/features'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 import { useAuthStore } from '@/stores'
 import { useUserProfile } from '@/hooks'
+
+/** Card type background colors (from brand assets: Dashx_bg, dashpro_bg, dashpass, dashgo_bg) */
+const CARD_TYPE_BG: Record<string, string> = {
+  dashx: '#402D87',
+  dashpass: '#1e40af',
+  dashpro: '#2d1a72',
+  dashgo: '#ED186A',
+}
 
 export default function VendorSummaryCards() {
   const navigate = useNavigate()
@@ -95,21 +100,17 @@ export default function VendorSummaryCards() {
     () => [
       {
         id: 'dashx',
+        type: 'dashx',
         title: 'DashX Gift Cards',
         value: metrics.DashX,
         totalGiftCards: metrics.DashX,
-        IconName: 'hugeicons:money-bag-01',
-        IconBg: 'bg-[#402D87]/[60%] group-hover:bg-[#402D87]',
-        image: DashXIllustration,
       },
       {
         id: 'dashpass',
+        type: 'dashpass',
         title: 'DashPass Gift Cards',
         value: metrics.DashPass,
         totalGiftCards: metrics.DashPass,
-        IconName: 'hugeicons:money-bag-01',
-        IconBg: 'bg-[#402D87]/[60%] group-hover:bg-[#402D87]',
-        image: DashPassIllustration,
       },
     ],
     [metrics],
@@ -137,75 +138,49 @@ export default function VendorSummaryCards() {
   return (
     <>
       <div className="flex flex-col gap-4">
-        <Text variant="h6" weight="normal" className="text-gray-400">
+        {/* <Text variant="h6" weight="normal" className="text-gray-400">
           {isBranchManager ? 'Branch Gift Cards' : 'Vendor Gift Cards'}
-        </Text>
+        </Text> */}
 
-        <section className="grid grid-cols-2 lg:grid-cols-2 gap-4">
-          {CARD_INFO.map((card) => (
-            <div
-              id={card.title}
-              key={card.id}
-              className={cn(
-                'flex relative rounded-xl pt-[18px] pb-6 pl-6 pr-4 border border-gray-100 items-center justify-between group bg-white w-full overflow-hidden',
-              )}
-            >
-              <div className="flex items-start justify-between w-full">
-                <div className="flex-1 flex flex-col gap-3">
-                  <section className="flex items-center gap-2 justify-between">
-                    <div
-                      className={cn(
-                        'w-10 h-10 rounded-full flex items-center justify-center',
-                        card.IconBg,
-                      )}
-                    >
-                      <Icon icon={card.IconName} className="w-5 h-5 text-white" />
-                    </div>
-                    <Dropdown
-                      actions={[
-                        {
-                          label: 'View All',
-                          onClickFn: () =>
-                            navigate(addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.EXPERIENCE)),
-                        },
-                      ]}
-                    >
-                      <button
-                        type="button"
-                        className="btn rounded-lg no-print"
-                        aria-label="View actions"
-                      >
-                        <CustomIcon name="MoreVertical" width={24} height={24} />
-                      </button>
-                    </Dropdown>
-                  </section>
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {CARD_INFO.map((card) => {
+            const bgColor = CARD_TYPE_BG[card.type] ?? CARD_TYPE_BG.dashx
+            return (
+              <div
+                id={card.title}
+                key={card.id}
+                className="relative flex flex-col rounded-xl p-4 w-full overflow-hidden shadow-md"
+                style={{ backgroundColor: bgColor }}
+              >
+                <div className="absolute top-0 right-0 w-12 h-12 rounded-full opacity-10 bg-white" />
+                <div className="absolute bottom-0 left-0 w-10 h-10 rounded-full opacity-10 bg-white" />
 
+                <div className="flex flex-col gap-2 min-w-0">
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <Text variant="span" weight="medium" className="text-gray-800">
-                        {card.title}
-                      </Text>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs text-gray-500">
-                        Total {card.totalGiftCards}{' '}
-                        {card.totalGiftCards === 1 ? 'Gift Card' : 'Gift Cards'}
-                      </p>
-                      <p className="text-gray-800 text-xs">{card.value}</p>
-                    </div>
+                    <Text variant="span" className="text-white/90 text-xs">
+                      Total {card.title}
+                    </Text>
+                    <p className="text-xl font-bold text-white tracking-tight">
+                      {card.value.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="mt-2 flex items-center justify-end gap-1.5">
+                    <span className="text-white/90 text-xs">View All</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate(addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.EXPERIENCE))
+                      }
+                      aria-label="View all experiences"
+                      className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-900 hover:bg-white/90 transition-colors no-print"
+                    >
+                      <Icon icon="bi:arrow-right-short" className="text-base" />
+                    </button>
                   </div>
                 </div>
-
-                <div className="pointer-events-none absolute -bottom-5 -right-5 h-[110px] w-[120px] overflow-hidden opacity-60 transition-opacity duration-300 group-hover:opacity-100">
-                  <img
-                    src={card.image}
-                    alt="wallet illustration"
-                    className="h-full w-full object-contain"
-                  />
-                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </section>
       </div>
     </>

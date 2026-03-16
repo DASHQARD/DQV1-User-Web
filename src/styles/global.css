@@ -36,6 +36,10 @@
   --color-error: var(--color-error);
 }
 
+@view-transition {
+  navigation: auto;
+}
+
 :root {
   --color-primary-500: #402d87;
   --color-primary-400: #66579f;

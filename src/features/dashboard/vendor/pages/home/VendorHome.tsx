@@ -251,7 +251,7 @@ export default function VendorHome() {
         <VendorSummaryCards />
 
         {/* Quick Actions */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <section className="grid grid-cols-1 gap-6">
           {/* <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
             <div className="p-6 pb-0 flex justify-between items-center mb-5">
               <h5 className="text-lg font-semibold text-[#495057] m-0 flex items-center">

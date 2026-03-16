@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from 'react'
+import React, { useMemo, useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -10,10 +10,17 @@ import { usePersistedModalState } from '@/hooks'
 import { useUserProfile } from '@/hooks'
 import { MODAL_NAMES } from '@/utils/constants'
 import { bulkAssignRecipients } from '@/features/dashboard/services'
-import { UserInfoSchema, type UserInfoFormData } from '@/utils/schemas/checkout'
+import {
+  UserInfoSchema,
+  PaymentMethodSchema,
+  type UserInfoFormData,
+  type PaymentMethodFormData,
+} from '@/utils/schemas/checkout'
 import { getCardBackground, getImageUrl, getCardTypeName } from '@/utils/cardDisplay'
 import type { CartListResponse } from '@/types/responses'
 import type { FlattenedCartItem } from '@/types'
+import type { CheckoutPayloadBase } from '@/types/responses'
+import { CHECKOUT_GATEWAY } from '@/features/website/utils/paymentConstants'
 
 const SERVICE_FEE_MIN = 5.78
 const SERVICE_FEE_RATE = 0.05
@@ -34,8 +41,11 @@ export function useCheckout() {
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { useCheckoutService } = usePayments()
+  const { useCheckoutService, usePaymentProviderConfig } = usePayments()
   const { mutateAsync: checkoutMutation, isPending: isCheckingOut } = useCheckoutService()
+  const { data: paymentProviderConfig } = usePaymentProviderConfig()
+
+  const checkoutGateway = (paymentProviderConfig?.checkout_gateway ?? '').toLowerCase()
 
   const userInfoForm = useForm<UserInfoFormData>({
     resolver: zodResolver(UserInfoSchema),
@@ -46,9 +56,33 @@ export function useCheckout() {
     },
   })
 
+  React.useEffect(() => {
+    if (userProfileData) {
+      userInfoForm.reset({
+        full_name: userProfileData?.fullname ?? '',
+        email: userProfileData?.email ?? '',
+        phone_number: userProfileData?.phonenumber ?? '',
+      })
+    }
+  }, [userProfileData, userInfoForm])
+
+  type PaymentMethodFormValues = Omit<PaymentMethodFormData, 'expiry_month' | 'expiry_year'> & {
+    expiry_month?: unknown
+    expiry_year?: unknown
+  }
+
+  const paymentForm = useForm<PaymentMethodFormValues>({
+    resolver: zodResolver(PaymentMethodSchema),
+    defaultValues: {
+      payment_method_type: 'mobile_money',
+    },
+  })
+
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
   const [isMissingRecipientsModalOpen, setIsMissingRecipientsModalOpen] = useState(false)
   const [bulkFile, setBulkFile] = useState<File | null>(null)
+  const [kowriCheckoutData, setKowriCheckoutData] = useState<any | null>(null)
+  const [isKowriPromptModalOpen, setIsKowriPromptModalOpen] = useState(false)
 
   const modal = usePersistedModalState({
     paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
@@ -125,23 +159,115 @@ export function useCheckout() {
     })
   }, [displayCartItems, recipientsByCartItem])
 
-  const handleCheckout = useCallback(() => {
+  const handleCheckout = useCallback(async () => {
+    console.log('itemsMissingRecipients', itemsMissingRecipients)
     if (itemsMissingRecipients.length > 0) {
       setIsMissingRecipientsModalOpen(true)
       return
     }
+    const contactValid = await userInfoForm.trigger()
+    if (!contactValid) return
+
     const firstCart = activeCartItems[0]
     if (!firstCart) return
-    const values = userInfoForm.getValues()
-    checkoutMutation({
+
+    const userValues = userInfoForm.getValues()
+    console.log('userValues', userValues)
+    const base: CheckoutPayloadBase = {
       cart_id: firstCart.cart_id,
-      full_name: values.full_name,
-      email: values.email,
-      phone_number: values.phone_number,
+      full_name: userValues.full_name,
+      email: userValues.email,
+      phone_number: userValues.phone_number,
       amount_due: amountDue,
-      user_id: 0,
-    } as any)
-  }, [activeCartItems, amountDue, userInfoForm, checkoutMutation, itemsMissingRecipients.length])
+    }
+    console.log('base', base)
+
+    const gateway = checkoutGateway
+    console.log('gateway', gateway)
+
+    if (gateway === CHECKOUT_GATEWAY.PAYSTACK || !gateway) {
+      await checkoutMutation(base)
+      return
+    }
+
+    const paymentValues = paymentForm.getValues()
+    const paymentMethod = paymentValues.payment_method_type ?? 'mobile_money'
+    const phone = userValues.phone_number ?? ''
+
+    if (gateway === CHECKOUT_GATEWAY.EGNANOW) {
+      if (paymentMethod === 'mobile_money') {
+        const valid = await paymentForm.trigger('paypartner_code')
+        if (!valid) return
+        const paypartner = paymentValues.paypartner_code
+        if (!paypartner) return
+        await checkoutMutation({
+          ...base,
+          payment_method_type: 'mobile_money',
+          msisdn: phone,
+          paypartner_code: paypartner,
+        })
+        return
+      }
+      if (paymentMethod === 'card') {
+        const valid = await paymentForm.trigger([
+          'card_number',
+          'expiry_month',
+          'expiry_year',
+          'cvv',
+        ])
+        if (!valid) return
+        const { card_number, expiry_month, expiry_year, cvv } = paymentForm.getValues()
+        if (!card_number || expiry_month == null || expiry_year == null || !cvv) return
+        await checkoutMutation({
+          ...base,
+          payment_method_type: 'card',
+          card_number,
+          expiry_month: Number(expiry_month),
+          expiry_year: Number(expiry_year),
+          cvv,
+        })
+        return
+      }
+    }
+
+    if (gateway === CHECKOUT_GATEWAY.KOWRI) {
+      if (paymentMethod === 'mobile_money') {
+        const valid = await paymentForm.trigger('kowri_provider')
+        if (!valid) return
+        const kowriProvider = paymentValues.kowri_provider
+        if (!kowriProvider) return
+        const response = await checkoutMutation({
+          ...base,
+          payment_method_type: 'mobile_money',
+          msisdn: phone,
+          kowri_provider: kowriProvider,
+        })
+        if (
+          response?.data &&
+          typeof response.data === 'object' &&
+          String(response.data.payment_gateway || '').toLowerCase() === 'kowri'
+        ) {
+          setKowriCheckoutData(response.data)
+          setIsKowriPromptModalOpen(true)
+        }
+        return
+      }
+      if (paymentMethod === 'card') {
+        await checkoutMutation({ ...base, payment_method_type: 'card' })
+        return
+      }
+    }
+
+    await checkoutMutation(base)
+  }, [
+    activeCartItems,
+    amountDue,
+    userInfoForm,
+    paymentForm,
+    checkoutGateway,
+    checkoutMutation,
+    itemsMissingRecipients,
+  ])
 
   const bulkAssignMutation = useMutation({
     mutationFn: (file: File) => bulkAssignRecipients(file),
@@ -192,6 +318,9 @@ export function useCheckout() {
     amountDue,
     userInfoForm,
     userInfo: userInfoForm.watch(),
+    paymentForm,
+    paymentMethod: paymentForm.watch(),
+    checkoutGateway,
     isUserInfoIncomplete,
     recipientsByCartItem,
     itemsMissingRecipients,
@@ -211,5 +340,8 @@ export function useCheckout() {
     setIsMissingRecipientsModalOpen,
     bulkFile,
     setBulkFile,
+    kowriCheckoutData,
+    isKowriPromptModalOpen,
+    setIsKowriPromptModalOpen,
   }
 }
