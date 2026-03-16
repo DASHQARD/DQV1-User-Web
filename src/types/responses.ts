@@ -430,14 +430,52 @@ export type VendorCards = {
   vendor_name: string
 }
 
-export type CheckoutPayload = {
+/** Base fields required by all checkout gateways */
+export type CheckoutPayloadBase = {
   cart_id: number
   full_name: string
   email: string
   phone_number: string
   amount_due: number
-  user_id: number
 }
+
+/** Paystack: base only */
+export type CheckoutPayloadPaystack = CheckoutPayloadBase
+
+/** Egnanow mobile money */
+export type CheckoutPayloadEgnanowMobile = CheckoutPayloadBase & {
+  payment_method_type: 'mobile_money'
+  msisdn: string
+  paypartner_code: 'MTNGH' | 'ATGH' | 'TCELGH'
+}
+
+/** Egnanow card */
+export type CheckoutPayloadEgnanowCard = CheckoutPayloadBase & {
+  payment_method_type: 'card'
+  card_number: string
+  expiry_month: number
+  expiry_year: number
+  cvv: string
+}
+
+/** Kowri mobile money */
+export type CheckoutPayloadKowriMobile = CheckoutPayloadBase & {
+  payment_method_type: 'mobile_money'
+  msisdn: string
+  kowri_provider: 'MTN_MONEY' | 'AIRTELTIGO_MONEY' | 'VODAFONE_CASH'
+}
+
+/** Kowri card */
+export type CheckoutPayloadKowriCard = CheckoutPayloadBase & {
+  payment_method_type: 'card'
+}
+
+export type CheckoutPayload =
+  | CheckoutPayloadPaystack
+  | CheckoutPayloadEgnanowMobile
+  | CheckoutPayloadEgnanowCard
+  | CheckoutPayloadKowriMobile
+  | CheckoutPayloadKowriCard
 
 export type CheckoutResponse = {
   status: string

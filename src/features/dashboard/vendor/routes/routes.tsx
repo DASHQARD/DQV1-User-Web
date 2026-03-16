@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 
 import { VendorHome } from '../pages/home'
 import ExperiencePage from '../pages/experience'
+import ExperienceOverview from '../pages/experience/ExperienceOverview'
 import { BranchDetails } from '../pages/branches'
 import { Redemptions } from '../pages/redemptions'
 import { Requests } from '../pages/requests'
@@ -23,7 +24,17 @@ export const vendorRoutes: RouteObject[] = [
   },
   {
     path: 'experience',
-    element: <ExperiencePage />,
+    element: <Outlet />,
+    children: [
+      {
+        index: true,
+        element: <ExperiencePage />,
+      },
+      {
+        path: 'overview',
+        element: <ExperienceOverview />,
+      },
+    ],
   },
   {
     path: 'branches',
