@@ -47,6 +47,9 @@ export function useCheckout() {
 
   const checkoutGateway = (paymentProviderConfig?.checkout_gateway ?? '').toLowerCase()
 
+  const isPersonalDetailsCompleted =
+    (userProfileData as any)?.onboarding_progress?.personal_details_completed === true
+
   const userInfoForm = useForm<UserInfoFormData>({
     resolver: zodResolver(UserInfoSchema),
     defaultValues: {
@@ -175,10 +178,10 @@ export function useCheckout() {
     console.log('userValues', userValues)
     const base: CheckoutPayloadBase = {
       cart_id: firstCart.cart_id,
-      full_name: userValues.full_name,
+      full_name: 'Abeeku Djokoto',
       email: userValues.email,
       phone_number: userValues.phone_number,
-      amount_due: amountDue,
+      amount_due: 10,
     }
     console.log('base', base)
 
@@ -321,6 +324,7 @@ export function useCheckout() {
     paymentForm,
     paymentMethod: paymentForm.watch(),
     checkoutGateway,
+    isPersonalDetailsCompleted,
     isUserInfoIncomplete,
     recipientsByCartItem,
     itemsMissingRecipients,
