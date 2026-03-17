@@ -13,6 +13,8 @@ export const PaymentMethodSchema = z.object({
   paypartner_code: z.enum(['MTNGH', 'ATGH', 'TCELGH']).optional(),
   /** For Kowri mobile: MTN_MONEY | AIRTELTIGO_MONEY | VODAFONE_CASH */
   kowri_provider: z.enum(['MTN_MONEY', 'AIRTELTIGO_MONEY', 'VODAFONE_CASH']).optional(),
+  /** For card payments */
+  card_name: z.string().optional(),
   /** For Egnanow card */
   card_number: z.string().optional(),
   expiry_month: z.coerce.number().min(1).max(12).optional(),

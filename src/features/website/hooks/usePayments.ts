@@ -12,7 +12,14 @@ export function usePayments() {
       onSuccess: (data: any) => {
         console.log('data', data)
         if (typeof data?.data === 'string') {
+          // e.g. Paystack returns a redirect URL string
           window.open(data.data, '_blank', 'noopener,noreferrer')
+        } else if (data?.data && typeof data.data === 'object') {
+          const redirectUrl = (data.data as any).redirect_url
+          if (typeof redirectUrl === 'string' && redirectUrl.length > 0) {
+            // e.g. Kowri card payments return a redirect_url field
+            window.open(redirectUrl, '_blank', 'noopener,noreferrer')
+          }
         }
         queryClient.invalidateQueries({ queryKey: ['cart-items'] })
         queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })

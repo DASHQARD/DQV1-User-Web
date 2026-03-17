@@ -34,6 +34,7 @@ export default function Checkout() {
     paymentForm,
     paymentMethod,
     checkoutGateway,
+    isPersonalDetailsCompleted,
     recipientsByCartItem,
     itemsMissingRecipients,
     handleCheckout,
@@ -106,54 +107,56 @@ export default function Checkout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
-              {showPaymentMethodSection && (
-                <p className="text-sm text-gray-500 mb-4">
-                  Your phone number is used for mobile money payments when you select that option.
-                </p>
-              )}
-              <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="text"
-                      {...userInfoForm.register('full_name')}
-                      error={userInfoForm.formState.errors.full_name?.message}
-                      placeholder="John Doe"
-                      className="w-full"
-                    />
+            {!isPersonalDetailsCompleted && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
+                {showPaymentMethodSection && (
+                  <p className="text-sm text-gray-500 mb-4">
+                    Your phone number is used for mobile money payments when you select that option.
+                  </p>
+                )}
+                <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        {...userInfoForm.register('full_name')}
+                        error={userInfoForm.formState.errors.full_name?.message}
+                        placeholder="John Doe"
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Phone Number <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="tel"
+                        {...userInfoForm.register('phone_number')}
+                        error={userInfoForm.formState.errors.phone_number?.message}
+                        placeholder="024 123 4567"
+                        className="w-full"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                      Phone Number <span className="text-red-500">*</span>
+                      Email Address <span className="text-red-500">*</span>
                     </label>
                     <Input
-                      type="tel"
-                      {...userInfoForm.register('phone_number')}
-                      error={userInfoForm.formState.errors.phone_number?.message}
-                      placeholder="024 123 4567"
+                      type="email"
+                      {...userInfoForm.register('email')}
+                      error={userInfoForm.formState.errors.email?.message}
+                      placeholder="john@example.com"
                       className="w-full"
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                    Email Address <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="email"
-                    {...userInfoForm.register('email')}
-                    error={userInfoForm.formState.errors.email?.message}
-                    placeholder="john@example.com"
-                    className="w-full"
-                  />
-                </div>
-              </form>
-            </div>
+                </form>
+              </div>
+            )}
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
@@ -271,6 +274,160 @@ export default function Checkout() {
                   })}
               </div>
             </div>
+
+            {showPaymentMethodSection && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Payment method</h3>
+                <div className="flex gap-2 p-1 bg-gray-100 rounded-lg mb-4">
+                  <button
+                    type="button"
+                    onClick={() => paymentForm.setValue('payment_method_type', 'mobile_money')}
+                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                      isMobileMoney
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Mobile Money
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => paymentForm.setValue('payment_method_type', 'card')}
+                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                      isCard
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Card
+                  </button>
+                </div>
+
+                {isMobileMoney && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Mobile network <span className="text-red-500">*</span>
+                      </label>
+                      <Controller
+                        name={isEgnanow ? 'paypartner_code' : 'kowri_provider'}
+                        control={paymentForm.control}
+                        rules={{ required: 'Please select your mobile network' }}
+                        render={({ field }) => (
+                          <select
+                            {...field}
+                            value={field.value ?? ''}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value ? (e.target.value as typeof field.value) : '',
+                              )
+                            }
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                            aria-required
+                          >
+                            <option value="">Select your network</option>
+                            {(isEgnanow ? EGNANOW_NETWORK_OPTIONS : KOWRI_NETWORK_OPTIONS).map(
+                              (opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        )}
+                      />
+                      {(paymentForm.formState.errors.paypartner_code?.message ||
+                        paymentForm.formState.errors.kowri_provider?.message) && (
+                        <p className="text-sm text-red-600">
+                          {paymentForm.formState.errors.paypartner_code?.message ??
+                            paymentForm.formState.errors.kowri_provider?.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">
+                        Phone number (for payment) <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="tel"
+                        {...userInfoForm.register('phone_number')}
+                        error={userInfoForm.formState.errors.phone_number?.message}
+                        placeholder="024 123 4567"
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {isCard && (
+                  <div className="space-y-3 pt-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">
+                        Name on card
+                      </label>
+                      <Input
+                        {...paymentForm.register('card_name')}
+                        placeholder="Name as it appears on the card"
+                        error={paymentForm.formState.errors.card_name?.message}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">
+                        Card number
+                      </label>
+                      <Input
+                        {...paymentForm.register('card_number')}
+                        placeholder="4111 1111 1111 1111"
+                        error={paymentForm.formState.errors.card_number?.message}
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                          Expiry month
+                        </label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={12}
+                          placeholder="MM"
+                          {...paymentForm.register('expiry_month')}
+                          error={paymentForm.formState.errors.expiry_month?.message}
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                          Expiry year
+                        </label>
+                        <Input
+                          type="number"
+                          min={2020}
+                          max={2040}
+                          placeholder="YYYY"
+                          {...paymentForm.register('expiry_year')}
+                          error={paymentForm.formState.errors.expiry_year?.message}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">CVV</label>
+                      <Input
+                        {...paymentForm.register('cvv')}
+                        placeholder="123"
+                        type="password"
+                        autoComplete="off"
+                        error={paymentForm.formState.errors.cvv?.message}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-1">
@@ -294,149 +451,6 @@ export default function Checkout() {
                   </div>
                 </div>
               </div>
-
-              {showPaymentMethodSection && (
-                <div className="mb-6 pb-6 border-b border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Payment method</h3>
-                  <div className="flex gap-2 p-1 bg-gray-100 rounded-lg mb-4">
-                    <button
-                      type="button"
-                      onClick={() => paymentForm.setValue('payment_method_type', 'mobile_money')}
-                      className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                        isMobileMoney
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Mobile Money
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => paymentForm.setValue('payment_method_type', 'card')}
-                      className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                        isCard
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Card
-                    </button>
-                  </div>
-
-                  {isMobileMoney && (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Mobile network <span className="text-red-500">*</span>
-                        </label>
-                        <Controller
-                          name={isEgnanow ? 'paypartner_code' : 'kowri_provider'}
-                          control={paymentForm.control}
-                          rules={{ required: 'Please select your mobile network' }}
-                          render={({ field }) => (
-                            <select
-                              {...field}
-                              value={field.value ?? ''}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value ? (e.target.value as typeof field.value) : '',
-                                )
-                              }
-                              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                              aria-required
-                            >
-                              <option value="">Select your network</option>
-                              {(isEgnanow ? EGNANOW_NETWORK_OPTIONS : KOWRI_NETWORK_OPTIONS).map(
-                                (opt) => (
-                                  <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </option>
-                                ),
-                              )}
-                            </select>
-                          )}
-                        />
-                        {(paymentForm.formState.errors.paypartner_code?.message ||
-                          paymentForm.formState.errors.kowri_provider?.message) && (
-                          <p className="text-sm text-red-600">
-                            {paymentForm.formState.errors.paypartner_code?.message ??
-                              paymentForm.formState.errors.kowri_provider?.message}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          Phone number (for payment) <span className="text-red-500">*</span>
-                        </label>
-                        <Input
-                          type="tel"
-                          {...userInfoForm.register('phone_number')}
-                          error={userInfoForm.formState.errors.phone_number?.message}
-                          placeholder="024 123 4567"
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {isCard && (
-                    <div className="space-y-3 pt-2">
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          Card number
-                        </label>
-                        <Input
-                          {...paymentForm.register('card_number')}
-                          placeholder="4111 1111 1111 1111"
-                          error={paymentForm.formState.errors.card_number?.message}
-                          className="w-full"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Expiry month
-                          </label>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={12}
-                            placeholder="MM"
-                            {...paymentForm.register('expiry_month')}
-                            error={paymentForm.formState.errors.expiry_month?.message}
-                            className="w-full"
-                          />
-                        </div>
-                        <div>
-                          <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Expiry year
-                          </label>
-                          <Input
-                            type="number"
-                            min={2020}
-                            max={2040}
-                            placeholder="YYYY"
-                            {...paymentForm.register('expiry_year')}
-                            error={paymentForm.formState.errors.expiry_year?.message}
-                            className="w-full"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">CVV</label>
-                        <Input
-                          {...paymentForm.register('cvv')}
-                          placeholder="123"
-                          type="password"
-                          autoComplete="off"
-                          error={paymentForm.formState.errors.cvv?.message}
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {!allRecipientsAssigned && (
                 <p className="text-sm text-amber-600 mb-3">
