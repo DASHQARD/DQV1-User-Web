@@ -1,3 +1,4 @@
+import { axiosClient } from '@/libs'
 import { deleteMethod, getList, getMethod, postMethod, patchMethod } from '@/services/requests'
 import type {
   AddToCartPayload,
@@ -7,6 +8,8 @@ import type {
   GuestAddCardResponse,
   GuestCartApiResponse,
   GuestAssignRecipientPayload,
+  GuestUpdateCartItemPayload,
+  GuestDeleteCartItemParams,
 } from '@/types/responses'
 
 export const addToCart = async (data: AddToCartPayload): Promise<any> => {
@@ -98,6 +101,19 @@ export const updateCartItem = async (data: {
   quantity: number
 }): Promise<any> => {
   return await patchMethod('/carts/items', data)
+}
+
+/** PATCH /guest-carts/items — update quantity of a guest cart item */
+export const updateGuestCartItem = async (data: GuestUpdateCartItemPayload): Promise<any> => {
+  return await patchMethod('/guest-carts/items', data)
+}
+
+/** DELETE /guest-carts/items — remove an item from the guest cart (query params) */
+export const deleteGuestCartItem = async (params: GuestDeleteCartItemParams): Promise<any> => {
+  const res = await axiosClient.delete('/guest-carts/items', {
+    params: { guest_phone: params.guest_phone, cart_item_id: params.cart_item_id },
+  })
+  return res
 }
 
 /** POST /guest-carts/recipients — assign a recipient to a guest cart item */
