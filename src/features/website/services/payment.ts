@@ -1,5 +1,5 @@
 import { getMethod, postMethod } from '@/services/requests'
-import type { CheckoutPayload } from '@/types'
+import type { CheckoutPayload, GuestCheckoutPayload } from '@/types'
 
 export interface PaymentProviderConfig {
   id: number
@@ -21,4 +21,8 @@ export const getPaymentProviderConfig = async (): Promise<PaymentProviderConfig>
 
 export const checkout = async (data: CheckoutPayload): Promise<any> => {
   return await postMethod('/payments/checkout', data)
+}
+
+export const guestCheckout = async (data: GuestCheckoutPayload): Promise<any> => {
+  return await postMethod('/payments/guest/checkout', data)
 }

@@ -1,15 +1,18 @@
 import { useEffect, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores'
-import { getGuestCartItems, deleteCartItemRecipient, updateCartItem } from '../services/cart'
+import { getGuestCartItems, updateGuestCartItem, deleteGuestCartItem } from '../services/cards'
 import { useToast } from '@/hooks'
 
 export function useGuestCart(query?: Record<string, any>) {
   const queryClient = useQueryClient()
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
+  const user = useAuthStore((state) => state.user)
   const getGuestCartId = useAuthStore((state) => state.getGuestCartId)
   const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
   const { success, error: toastError } = useToast()
+
+  const guestPhone = (user as any)?.guest_phone ?? ''
 
   const guestCartQuery = useQuery({
     queryKey: ['cart-items', 'guest', query],
@@ -31,7 +34,8 @@ export function useGuestCart(query?: Record<string, any>) {
   }, [isGuestAuth, cartItems, getGuestCartId, setGuestCartId])
 
   const deleteCartItemMutation = useMutation({
-    mutationFn: (cart_item_id: number) => deleteCartItemRecipient(cart_item_id),
+    mutationFn: (cart_item_id: number) =>
+      deleteGuestCartItem({ guest_phone: guestPhone, cart_item_id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart-items', 'guest'] })
     },
@@ -41,7 +45,12 @@ export function useGuestCart(query?: Record<string, any>) {
   })
 
   const updateCartItemMutation = useMutation({
-    mutationFn: (data: { cart_item_id: number; quantity: number }) => updateCartItem(data),
+    mutationFn: (data: { cart_item_id: number; quantity: number }) =>
+      updateGuestCartItem({
+        guest_phone: guestPhone,
+        cart_item_id: data.cart_item_id,
+        quantity: data.quantity,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart-items', 'guest'] })
       success('Cart updated')

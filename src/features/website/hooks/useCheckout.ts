@@ -19,8 +19,9 @@ import {
 import { getCardBackground, getImageUrl, getCardTypeName } from '@/utils/cardDisplay'
 import type { CartListResponse } from '@/types/responses'
 import type { FlattenedCartItem } from '@/types'
-import type { CheckoutPayloadBase } from '@/types/responses'
+import type { CheckoutPayloadBase, GuestCheckoutPayloadBase } from '@/types/responses'
 import { CHECKOUT_GATEWAY } from '@/features/website/utils/paymentConstants'
+import { GUEST_EMAIL_STORAGE_KEY } from '@/utils/constants'
 
 const SERVICE_FEE_MIN = 5.78
 const SERVICE_FEE_RATE = 0.05
@@ -41,8 +42,10 @@ export function useCheckout() {
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { useCheckoutService, usePaymentProviderConfig } = usePayments()
+  const { useCheckoutService, useGuestCheckoutService, usePaymentProviderConfig } = usePayments()
   const { mutateAsync: checkoutMutation, isPending: isCheckingOut } = useCheckoutService()
+  const { mutateAsync: guestCheckoutMutation, isPending: isGuestCheckingOut } =
+    useGuestCheckoutService()
   const { data: paymentProviderConfig } = usePaymentProviderConfig()
 
   const checkoutGateway = (paymentProviderConfig?.checkout_gateway ?? '').toLowerCase()
@@ -59,15 +62,28 @@ export function useCheckout() {
     },
   })
 
+  const user = useAuthStore((state) => state.user)
+
   React.useEffect(() => {
-    if (userProfileData) {
+    if (isGuestAuth) {
+      const guestEmail =
+        typeof localStorage !== 'undefined'
+          ? (localStorage.getItem(GUEST_EMAIL_STORAGE_KEY) ?? '')
+          : ''
+      const guestPhone = (user as any)?.guest_phone ?? ''
+      userInfoForm.reset({
+        full_name: '',
+        email: guestEmail,
+        phone_number: guestPhone,
+      })
+    } else if (userProfileData) {
       userInfoForm.reset({
         full_name: userProfileData?.fullname ?? '',
         email: userProfileData?.email ?? '',
         phone_number: userProfileData?.phonenumber ?? '',
       })
     }
-  }, [userProfileData, userInfoForm])
+  }, [isGuestAuth, user, userProfileData, userInfoForm])
 
   type PaymentMethodFormValues = Omit<PaymentMethodFormData, 'expiry_month' | 'expiry_year'> & {
     expiry_month?: unknown
@@ -163,7 +179,6 @@ export function useCheckout() {
   }, [displayCartItems, recipientsByCartItem])
 
   const handleCheckout = useCallback(async () => {
-    console.log('itemsMissingRecipients', itemsMissingRecipients)
     if (itemsMissingRecipients.length > 0) {
       setIsMissingRecipientsModalOpen(true)
       return
@@ -175,27 +190,105 @@ export function useCheckout() {
     if (!firstCart) return
 
     const userValues = userInfoForm.getValues()
-    console.log('userValues', userValues)
+    const gateway = checkoutGateway
+    const paymentValues = paymentForm.getValues()
+    const paymentMethod = paymentValues.payment_method_type ?? 'mobile_money'
+    const phone = userValues.phone_number ?? ''
+
+    if (isGuestAuth) {
+      const guestBase: GuestCheckoutPayloadBase = {
+        guest_cart_id: firstCart.cart_id,
+        full_name: userValues.full_name,
+        email: userValues.email,
+        phone_number: userValues.phone_number,
+        amount_due: amountDue,
+      }
+
+      if (gateway === CHECKOUT_GATEWAY.PAYSTACK || !gateway) {
+        await guestCheckoutMutation(guestBase)
+        return
+      }
+
+      if (gateway === CHECKOUT_GATEWAY.EGNANOW) {
+        if (paymentMethod === 'mobile_money') {
+          const valid = await paymentForm.trigger('paypartner_code')
+          if (!valid) return
+          const paypartner = paymentValues.paypartner_code
+          if (!paypartner) return
+          await guestCheckoutMutation({
+            ...guestBase,
+            payment_method_type: 'mobile_money',
+            msisdn: phone,
+            paypartner_code: paypartner,
+          })
+          return
+        }
+        if (paymentMethod === 'card') {
+          const valid = await paymentForm.trigger([
+            'card_number',
+            'expiry_month',
+            'expiry_year',
+            'cvv',
+          ])
+          if (!valid) return
+          const { card_number, expiry_month, expiry_year, cvv } = paymentForm.getValues()
+          if (!card_number || expiry_month == null || expiry_year == null || !cvv) return
+          await guestCheckoutMutation({
+            ...guestBase,
+            payment_method_type: 'card',
+            card_number,
+            expiry_month: Number(expiry_month),
+            expiry_year: Number(expiry_year),
+            cvv,
+          })
+          return
+        }
+      }
+
+      if (gateway === CHECKOUT_GATEWAY.KOWRI) {
+        if (paymentMethod === 'mobile_money') {
+          const valid = await paymentForm.trigger('kowri_provider')
+          if (!valid) return
+          const kowriProvider = paymentValues.kowri_provider
+          if (!kowriProvider) return
+          const response = await guestCheckoutMutation({
+            ...guestBase,
+            payment_method_type: 'mobile_money',
+            msisdn: phone,
+            kowri_provider: kowriProvider,
+          })
+          if (
+            response?.data &&
+            typeof response.data === 'object' &&
+            String(response.data.payment_gateway || '').toLowerCase() === 'kowri'
+          ) {
+            setKowriCheckoutData(response.data)
+            setIsKowriPromptModalOpen(true)
+          }
+          return
+        }
+        if (paymentMethod === 'card') {
+          await guestCheckoutMutation({ ...guestBase, payment_method_type: 'card' })
+          return
+        }
+      }
+
+      await guestCheckoutMutation(guestBase)
+      return
+    }
+
     const base: CheckoutPayloadBase = {
       cart_id: firstCart.cart_id,
       full_name: userValues.full_name,
-      email: userValues.email ?? '',
-      phone_number: userValues.phone_number ?? '',
-      amount_due: 1,
+      email: userValues.email,
+      phone_number: userValues.phone_number,
+      amount_due: amountDue,
     }
-    console.log('base', base)
-
-    const gateway = checkoutGateway
-    console.log('gateway', gateway)
 
     if (gateway === CHECKOUT_GATEWAY.PAYSTACK || !gateway) {
       await checkoutMutation(base)
       return
     }
-
-    const paymentValues = paymentForm.getValues()
-    const paymentMethod = paymentValues.payment_method_type ?? 'mobile_money'
-    const phone = userValues.phone_number ?? ''
 
     if (gateway === CHECKOUT_GATEWAY.EGNANOW) {
       if (paymentMethod === 'mobile_money') {
@@ -263,12 +356,14 @@ export function useCheckout() {
 
     await checkoutMutation(base)
   }, [
+    isGuestAuth,
     activeCartItems,
     amountDue,
     userInfoForm,
     paymentForm,
     checkoutGateway,
     checkoutMutation,
+    guestCheckoutMutation,
     itemsMissingRecipients,
   ])
 
@@ -337,7 +432,7 @@ export function useCheckout() {
     getCardTypeName,
     openAssignModal,
     openAssignModalFromMissing,
-    isCheckingOut,
+    isCheckingOut: isCheckingOut || isGuestCheckingOut,
     isBulkModalOpen,
     setIsBulkModalOpen,
     isMissingRecipientsModalOpen,
