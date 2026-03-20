@@ -61,6 +61,7 @@ export default function Checkout() {
   const showPaymentMethodSection =
     checkoutGateway === CHECKOUT_GATEWAY.EGNANOW || checkoutGateway === CHECKOUT_GATEWAY.KOWRI
   const isEgnanow = checkoutGateway === CHECKOUT_GATEWAY.EGNANOW
+  const isKowri = checkoutGateway === CHECKOUT_GATEWAY.KOWRI
   const isMobileMoney = paymentMethod?.payment_method_type === 'mobile_money'
   const isCard = paymentMethod?.payment_method_type === 'card'
 
@@ -359,7 +360,25 @@ export default function Checkout() {
                   </div>
                 )}
 
-                {isCard && (
+                {isCard && isKowri && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <div className="flex items-start gap-3">
+                      <Icon
+                        icon="bi:credit-card"
+                        className="size-5 text-blue-600 mt-0.5 shrink-0"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">Secure card payment</p>
+                        <p className="text-sm text-blue-700 mt-1">
+                          You will be redirected to a secure payment page to enter your card details
+                          and complete the transaction.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {isCard && isEgnanow && (
                   <div className="space-y-3 pt-2">
                     <div>
                       <label className="mb-1 block text-sm font-medium text-gray-700">
