@@ -487,14 +487,12 @@ export type CheckoutResponse = {
 
 /** Payload for PATCH /guest-carts/items */
 export type GuestUpdateCartItemPayload = {
-  guest_phone: string
   cart_item_id: number
   quantity: number
 }
 
 /** Query params for DELETE /guest-carts/items */
 export type GuestDeleteCartItemParams = {
-  guest_phone: string
   cart_item_id: number
 }
 

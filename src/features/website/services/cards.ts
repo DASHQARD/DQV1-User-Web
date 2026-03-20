@@ -111,7 +111,7 @@ export const updateGuestCartItem = async (data: GuestUpdateCartItemPayload): Pro
 /** DELETE /guest-carts/items — remove an item from the guest cart (query params) */
 export const deleteGuestCartItem = async (params: GuestDeleteCartItemParams): Promise<any> => {
   const res = await axiosClient.delete('/guest-carts/items', {
-    params: { guest_phone: params.guest_phone, cart_item_id: params.cart_item_id },
+    params: { cart_item_id: params.cart_item_id },
   })
   return res
 }
