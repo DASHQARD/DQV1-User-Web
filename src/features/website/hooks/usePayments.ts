@@ -1,6 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
-import { checkout, getPaymentProviderConfig } from '../services/payment'
+import { checkout, guestCheckout, getPaymentProviderConfig } from '../services/payment'
+
+function handleCheckoutSuccess(data: any, queryClient: ReturnType<typeof useQueryClient>) {
+  if (typeof data?.data === 'string') {
+    window.open(data.data, '_blank', 'noopener,noreferrer')
+  } else if (data?.data && typeof data.data === 'object') {
+    const redirectUrl = (data.data as any).redirect_url
+    if (typeof redirectUrl === 'string' && redirectUrl.length > 0) {
+      window.open(redirectUrl, '_blank', 'noopener,noreferrer')
+    }
+  }
+  queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+  queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
+}
 
 export function usePayments() {
   const toast = useToast()
@@ -10,19 +23,19 @@ export function usePayments() {
     return useMutation({
       mutationFn: checkout,
       onSuccess: (data: any) => {
-        console.log('data', data)
-        if (typeof data?.data === 'string') {
-          // e.g. Paystack returns a redirect URL string
-          window.open(data.data, '_blank', 'noopener,noreferrer')
-        } else if (data?.data && typeof data.data === 'object') {
-          const redirectUrl = (data.data as any).redirect_url
-          if (typeof redirectUrl === 'string' && redirectUrl.length > 0) {
-            // e.g. Kowri card payments return a redirect_url field
-            window.open(redirectUrl, '_blank', 'noopener,noreferrer')
-          }
-        }
-        queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-        queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
+        handleCheckoutSuccess(data, queryClient)
+      },
+      onError: (error: { status: number; message: string }) => {
+        toast.error(error.message || 'Checkout failed')
+      },
+    })
+  }
+
+  function useGuestCheckoutService() {
+    return useMutation({
+      mutationFn: guestCheckout,
+      onSuccess: (data: any) => {
+        handleCheckoutSuccess(data, queryClient)
       },
       onError: (error: { status: number; message: string }) => {
         toast.error(error.message || 'Checkout failed')
@@ -39,6 +52,7 @@ export function usePayments() {
 
   return {
     useCheckoutService,
+    useGuestCheckoutService,
     usePaymentProviderConfig,
   }
 }

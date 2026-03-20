@@ -13,8 +13,9 @@ import { AssignRecipientSchema } from '@/utils/schemas/cards'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input } from '../Input'
-import type { AssignRecipientPayload } from '@/types/responses'
+import type { AssignRecipientPayload, GuestAssignRecipientPayload } from '@/types/responses'
 import { usePersistedModalState, useUserProfile } from '@/hooks'
+import { useAuthStore } from '@/stores'
 import { MODAL_NAMES } from '@/utils/constants'
 
 const QRPlaceholder = () => {
@@ -45,8 +46,12 @@ export default function PurchaseModal() {
   const [isCardFlipped, setIsCardFlipped] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
   const [assignToSelf, setAssignToSelf] = React.useState(true)
-  const { useAssignRecipientService } = useRecipients()
+  const isGuestAuth = useAuthStore((s) => s.isGuestAuth)
+  const guestUser = useAuthStore((s) => s.user)
+  const { useAssignRecipientService, useAssignGuestRecipientService } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()
+  const assignGuestRecipientMutation = useAssignGuestRecipientService()
+  const activeMutation = isGuestAuth ? assignGuestRecipientMutation : assignRecipientMutation
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
@@ -183,16 +188,15 @@ export default function PurchaseModal() {
     userProfileData?.phonenumber,
   ])
 
-  // Close modal on successful assignment
   React.useEffect(() => {
-    if (assignRecipientMutation.isSuccess) {
+    if (activeMutation.isSuccess) {
       modal.closeModal()
       form.reset()
       setAssignToSelf(true)
-      assignRecipientMutation.reset()
+      activeMutation.reset()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted to avoid unnecessary re-runs
-  }, [assignRecipientMutation.isSuccess, assignRecipientMutation, modal])
+  }, [activeMutation.isSuccess, activeMutation, modal])
 
   const handleCloseModal = React.useCallback(() => {
     modal.closeModal()
@@ -201,10 +205,34 @@ export default function PurchaseModal() {
   }, [modal, form])
 
   const onSubmit = (data: z.infer<typeof AssignRecipientSchema>) => {
-    // Get the current cart_item_id from modal data to ensure it's the correct one
     const currentCartItemId = modal.modalData?.cart_item_id
     if (!currentCartItemId) {
       console.error('Cart item ID is required')
+      return
+    }
+
+    if (isGuestAuth) {
+      const guestPhone = (guestUser as any)?.guest_phone ?? ''
+      const guestPayload: GuestAssignRecipientPayload = {
+        guest_phone: guestPhone,
+        cart_item_id: currentCartItemId,
+        assign_to_self: data.assign_to_self,
+        amount: data.amount,
+        message: data.message || '',
+        quantity: 1,
+      }
+      if (!data.assign_to_self) {
+        if (data.name && data.name.trim().length > 0) {
+          guestPayload.recipient_name = data.name.trim()
+        }
+        if (data.email && data.email.trim().length > 0) {
+          guestPayload.recipient_email = data.email.trim()
+        }
+        if (data.phone && data.phone.trim().length > 0) {
+          guestPayload.recipient_phone = data.phone.trim()
+        }
+      }
+      assignGuestRecipientMutation.mutate(guestPayload)
       return
     }
 
@@ -216,14 +244,10 @@ export default function PurchaseModal() {
       message: data.message || '',
     }
 
-    // Only include name, email, phone if assign_to_self is false
-    // When assign_to_self is true, these fields are forbidden by the API
     if (!data.assign_to_self) {
-      // Name is required when not assigning to self
       if (data.name && data.name.trim().length > 0) {
         payload.name = data.name.trim()
       }
-      // Email and phone are optional
       if (data.email && data.email.trim().length > 0) {
         payload.email = data.email.trim()
       }
@@ -507,7 +531,7 @@ export default function PurchaseModal() {
           <Button
             type="submit"
             variant="secondary"
-            loading={form.formState.isSubmitting}
+            loading={form.formState.isSubmitting || activeMutation.isPending}
             className="md:w-auto"
           >
             Save Recipient
