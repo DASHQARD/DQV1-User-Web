@@ -178,10 +178,10 @@ export function useCheckout() {
     console.log('userValues', userValues)
     const base: CheckoutPayloadBase = {
       cart_id: firstCart.cart_id,
-      full_name: 'Abeeku Djokoto',
-      email: userValues.email,
-      phone_number: userValues.phone_number,
-      amount_due: 10,
+      full_name: userValues.full_name,
+      email: userValues.email ?? '',
+      phone_number: userValues.phone_number ?? '',
+      amount_due: 1,
     }
     console.log('base', base)
 
