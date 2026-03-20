@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { userRecipient } from '../../website/services'
 import { useToast } from '@/hooks'
 import { assignRecipient, createRecipient } from '../services'
+import { assignGuestRecipient } from '../../website/services/cards'
 
 export function useRecipients() {
   const toast = useToast()
@@ -33,7 +34,20 @@ export function useRecipients() {
         toast.success(response.message || 'Recipient assigned successfully')
         queryClient.invalidateQueries({ queryKey: ['user-recipients'] })
         queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-        // Invalidate all cart-recipients queries to refresh the checkout page
+        queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
+      },
+      onError: (error: { status: number; message: string }) => {
+        toast.error(error?.message || 'Failed to assign recipient. Please try again.')
+      },
+    })
+  }
+
+  function useAssignGuestRecipientService() {
+    return useMutation({
+      mutationFn: assignGuestRecipient,
+      onSuccess: (response: { status: string; message: string }) => {
+        toast.success(response.message || 'Recipient assigned successfully')
+        queryClient.invalidateQueries({ queryKey: ['cart-items'] })
         queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
       },
       onError: (error: { status: number; message: string }) => {
@@ -46,5 +60,6 @@ export function useRecipients() {
     useUserRecipientService,
     useCreateRecipientService,
     useAssignRecipientService,
+    useAssignGuestRecipientService,
   }
 }

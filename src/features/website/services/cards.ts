@@ -6,6 +6,7 @@ import type {
   GuestAddCardPayload,
   GuestAddCardResponse,
   GuestCartApiResponse,
+  GuestAssignRecipientPayload,
 } from '@/types/responses'
 
 export const addToCart = async (data: AddToCartPayload): Promise<any> => {
@@ -97,4 +98,12 @@ export const updateCartItem = async (data: {
   quantity: number
 }): Promise<any> => {
   return await patchMethod('/carts/items', data)
+}
+
+/** POST /guest-carts/recipients — assign a recipient to a guest cart item */
+export const assignGuestRecipient = async (
+  data: GuestAssignRecipientPayload,
+): Promise<{ status: string; message: string }> => {
+  const res = await postMethod('/guest-carts/recipients', data)
+  return res as unknown as { status: string; message: string }
 }

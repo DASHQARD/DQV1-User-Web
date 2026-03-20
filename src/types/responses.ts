@@ -485,6 +485,66 @@ export type CheckoutResponse = {
   url: string
 }
 
+/** Payload for POST /guest-carts/recipients */
+export type GuestAssignRecipientPayload = {
+  guest_phone: string
+  cart_item_id: number
+  assign_to_self: boolean
+  amount: number
+  recipient_name?: string
+  recipient_phone?: string
+  recipient_email?: string
+  message?: string
+  quantity?: number
+}
+
+/** Base fields for POST /payments/guest/checkout */
+export type GuestCheckoutPayloadBase = {
+  guest_cart_id: number
+  full_name: string
+  email: string
+  phone_number: string
+  amount_due: number
+}
+
+/** Guest Paystack checkout */
+export type GuestCheckoutPayloadPaystack = GuestCheckoutPayloadBase
+
+/** Guest Eganow mobile money */
+export type GuestCheckoutPayloadEgnanowMobile = GuestCheckoutPayloadBase & {
+  payment_method_type: 'mobile_money'
+  msisdn: string
+  paypartner_code: 'MTNGH' | 'ATGH' | 'TCELGH'
+}
+
+/** Guest Eganow card */
+export type GuestCheckoutPayloadEgnanowCard = GuestCheckoutPayloadBase & {
+  payment_method_type: 'card'
+  card_number: string
+  expiry_month: number
+  expiry_year: number
+  cvv: string
+}
+
+/** Guest Kowri mobile money */
+export type GuestCheckoutPayloadKowriMobile = GuestCheckoutPayloadBase & {
+  payment_method_type: 'mobile_money'
+  msisdn: string
+  kowri_provider: 'MTN_MONEY' | 'AIRTELTIGO_MONEY' | 'VODAFONE_CASH'
+}
+
+/** Guest Kowri card */
+export type GuestCheckoutPayloadKowriCard = GuestCheckoutPayloadBase & {
+  payment_method_type: 'card'
+}
+
+export type GuestCheckoutPayload =
+  | GuestCheckoutPayloadPaystack
+  | GuestCheckoutPayloadEgnanowMobile
+  | GuestCheckoutPayloadEgnanowCard
+  | GuestCheckoutPayloadKowriMobile
+  | GuestCheckoutPayloadKowriCard
+
 export type Customer = {
   id: number
   email: string
