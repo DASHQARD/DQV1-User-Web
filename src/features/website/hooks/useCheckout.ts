@@ -282,7 +282,7 @@ export function useCheckout() {
       full_name: userValues.full_name,
       email: userValues.email,
       phone_number: userValues.phone_number,
-      amount_due: amountDue,
+      amount_due: 1,
     }
 
     if (gateway === CHECKOUT_GATEWAY.PAYSTACK || !gateway) {
