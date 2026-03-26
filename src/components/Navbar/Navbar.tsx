@@ -590,7 +590,7 @@ export default function Navbar() {
                     key={item.label}
                     to={item.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 hover:text-primary-600 rounded-lg transition-colors"
+                    className="flex items-center gap-3 px-2 py-3 text-gray-700 font-medium hover:bg-gray-50 hover:text-primary-600 rounded-lg transition-colors"
                   >
                     <Icon icon="bi:chevron-right" className="text-lg text-gray-400" />
                     <span>{item.label}</span>

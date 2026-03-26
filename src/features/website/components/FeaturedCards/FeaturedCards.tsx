@@ -13,7 +13,7 @@ export const FeaturedCards = () => {
     <section className="py-8 md:py-12">
       <div className="wrapper flex flex-col gap-4 bg-white rounded-2xl">
         <div className="flex flex-col gap-4">
-          <div className="px-4 md:px-6 pt-4 md:pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="px-4 md:px-6 pt-4 md:pt-6 flex items-center justify-between gap-4">
             <Text variant="h3" weight="medium" className="text-gray-900">
               Featured Cards
             </Text>

@@ -1,4 +1,5 @@
-import { Button, Dropdown, Text } from '@/components'
+import { useMemo, useState } from 'react'
+import { Button, Dropdown, Modal, Text } from '@/components'
 import { Icon } from '@/libs'
 import DashXImage from '@/assets/images/DashX.png'
 import DashGoImage from '@/assets/images/DashGo.png'
@@ -14,6 +15,7 @@ const heroImages = {
 }
 
 export default function DashQards() {
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
   const {
     activeTab,
     setActiveTab,
@@ -33,6 +35,11 @@ export default function DashQards() {
     setSortBy,
   } = useDashQards()
 
+  const activeFiltersCount = useMemo(
+    () => [query.min_price, query.max_price, query.search, query.vendor_ids].filter(Boolean).length,
+    [query.min_price, query.max_price, query.search, query.vendor_ids],
+  )
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -50,7 +57,7 @@ export default function DashQards() {
                 DashX, DashGo, and DashPro gift cards — perfect for every moment and every budget.
               </p>
             </div>
-            <div className="relative h-[280px] max-md:h-[240px]" aria-label="Card brands">
+            <div className="relative h-[280px] max-md:hidden" aria-label="Card brands">
               {/* DashGo Card - Back (Pink/Orange, Leftmost) */}
               <div className="absolute top-8 right-0 w-[260px] aspect-16/10 rounded-[14px] overflow-hidden shadow-[0_18px_40px_rgba(0,0,0,0.35)] opacity-85 max-md:w-[220px] max-md:top-[20px] transform rotate-6">
                 <img src={heroImages.go} alt="DashGo card" className="w-full h-full object-cover" />
@@ -77,20 +84,22 @@ export default function DashQards() {
         <div className="wrapper">
           {/* E-commerce Layout */}
           <div className="flex gap-8 items-start max-md:flex-col max-md:gap-6">
-            <DashQardsFilters
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              query={query}
-              setQuery={setQuery}
-              cardTabs={cardTabs}
-              priceRanges={priceRanges}
-              vendors={vendors}
-              cardsCount={filteredQardsAll.length}
-              getCardTypeCount={getCardTypeCount}
-              setPriceRange={setPriceRange}
-              isPriceRangeActive={isPriceRangeActive}
-              clearAllFilters={clearAllFilters}
-            />
+            <div className="max-md:hidden">
+              <DashQardsFilters
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                query={query}
+                setQuery={setQuery}
+                cardTabs={cardTabs}
+                priceRanges={priceRanges}
+                vendors={vendors}
+                cardsCount={filteredQardsAll.length}
+                getCardTypeCount={getCardTypeCount}
+                setPriceRange={setPriceRange}
+                isPriceRangeActive={isPriceRangeActive}
+                clearAllFilters={clearAllFilters}
+              />
+            </div>
 
             {/* Products Main */}
             <main className="flex flex-col gap-4 flex-1 min-w-0">
@@ -103,28 +112,48 @@ export default function DashQards() {
                   <p className="py-2 opacity-0">check</p>
                 </div>
 
-                <div className="flex items-center gap-2 justify-end">
-                  <Text variant="p" weight="medium" className="text-[#212529]">
-                    Sort by:
-                  </Text>
-                  <Dropdown
-                    contentClassName=""
-                    align="start"
-                    actions={sortActions.map((action) => ({
-                      label: action.label,
-                      onClickFn: () => setSortBy(action.value),
-                    }))}
-                  >
+                <div className="flex items-center gap-2 justify-between max-md:flex-wrap">
+                  <div className="hidden max-md:flex">
                     <Button
                       variant="outline"
-                      icon="hugeicons:arrow-down-01"
-                      iconPosition="right"
                       size="medium"
-                      className="border border-[#e2e4ed] bg-white py-0 rounded-md w-fit text-xs text-[#7c8689] font-normal capitalize"
+                      className="border border-[#e2e4ed] bg-white rounded-md text-xs text-[#212529] font-medium"
+                      onClick={() => setIsMobileFiltersOpen(true)}
                     >
-                      {currentSortLabel}
+                      <span className="inline-flex items-center gap-2">
+                        <Icon icon="bi:funnel" className="size-4" />
+                        Filters
+                        {activeFiltersCount > 0 && (
+                          <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary-500 text-white text-[10px] font-semibold">
+                            {activeFiltersCount}
+                          </span>
+                        )}
+                      </span>
                     </Button>
-                  </Dropdown>
+                  </div>
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Text variant="p" weight="medium" className="text-[#212529]">
+                      Sort by:
+                    </Text>
+                    <Dropdown
+                      contentClassName=""
+                      align="start"
+                      actions={sortActions.map((action) => ({
+                        label: action.label,
+                        onClickFn: () => setSortBy(action.value),
+                      }))}
+                    >
+                      <Button
+                        variant="outline"
+                        icon="hugeicons:arrow-down-01"
+                        iconPosition="right"
+                        size="medium"
+                        className="border border-[#e2e4ed] bg-white py-0 rounded-md w-fit text-xs text-[#7c8689] font-normal capitalize"
+                      >
+                        {currentSortLabel}
+                      </Button>
+                    </Dropdown>
+                  </div>
                 </div>
               </section>
 
@@ -257,6 +286,38 @@ export default function DashQards() {
           </div>
         </div>
       </section>
+
+      <Modal
+        isOpen={isMobileFiltersOpen}
+        setIsOpen={setIsMobileFiltersOpen}
+        panelClass="max-w-[95vw] w-full"
+      >
+        <div className="p-3">
+          <DashQardsFilters
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            query={query}
+            setQuery={setQuery}
+            cardTabs={cardTabs}
+            priceRanges={priceRanges}
+            vendors={vendors}
+            cardsCount={filteredQardsAll.length}
+            getCardTypeCount={getCardTypeCount}
+            setPriceRange={setPriceRange}
+            isPriceRangeActive={isPriceRangeActive}
+            clearAllFilters={clearAllFilters}
+          />
+          <div className="pt-3">
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => setIsMobileFiltersOpen(false)}
+            >
+              Apply Filters
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

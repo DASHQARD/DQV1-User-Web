@@ -399,7 +399,7 @@ export default function DashGoPurchase() {
             </div>
             <Input
               type="number"
-              register={register('recipient_card_amount', { valueAsNumber: true })}
+              {...register('recipient_card_amount', { valueAsNumber: true })}
               error={errors.recipient_card_amount?.message}
               prefix="GHS"
               placeholder="Enter amount"

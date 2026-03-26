@@ -8,7 +8,11 @@ import { Modal, Button, Text, Input, OTPInput, BasePhoneInput } from '@/componen
 import { Icon } from '@/libs'
 import { useGuestAddToCartModalStore, useAuthStore } from '@/stores'
 import { useCartStore } from '@/stores/cart'
-import { guestAuthOtpRequest, guestAuthOtpVerify } from '@/features/auth/services'
+import {
+  guestAuthOtpRequest,
+  guestAuthOtpVerify,
+  guestAuthTokenRefresh,
+} from '@/features/auth/services'
 import { addGuestCard } from '@/features/website/services/cards'
 import { GUEST_EMAIL_STORAGE_KEY, ROUTES } from '@/utils/constants'
 import { useToast } from '@/hooks'
@@ -99,8 +103,17 @@ export default function GuestAddToCartModal() {
     setIsVerifyingOtp(true)
     try {
       const response = await guestAuthOtpVerify({ otp: data.otp })
-      const accessToken = response?.access_token
-      const refreshToken = response?.refresh_token
+      const verifyData = response?.data ?? response
+      const accessToken =
+        verifyData?.access_token ??
+        verifyData?.accessToken ??
+        verifyData?.tokens?.access_token ??
+        verifyData?.tokens?.accessToken
+      const refreshToken =
+        verifyData?.refresh_token ??
+        verifyData?.refreshToken ??
+        verifyData?.tokens?.refresh_token ??
+        verifyData?.tokens?.refreshToken
       if (!accessToken) {
         throw new Error('Invalid response from server')
       }
@@ -109,6 +122,40 @@ export default function GuestAddToCartModal() {
         refreshToken: refreshToken ?? null,
         isGuestAuth: true,
       })
+
+      // Immediately refresh guest token after login to align session lifecycle with backend.
+      if (refreshToken) {
+        try {
+          const refreshResponse = await guestAuthTokenRefresh({ refresh_token: refreshToken })
+          const refreshData = refreshResponse?.data ?? refreshResponse
+          const nextAccessToken =
+            refreshData?.tokens?.access_token ??
+            refreshData?.tokens?.accessToken ??
+            refreshData?.access_token ??
+            refreshData?.accessToken ??
+            refreshData?.data?.access_token ??
+            refreshData?.data?.accessToken
+          const nextRefreshToken =
+            refreshData?.tokens?.refresh_token ??
+            refreshData?.tokens?.refreshToken ??
+            refreshData?.refresh_token ??
+            refreshData?.refreshToken ??
+            refreshData?.data?.refresh_token ??
+            refreshData?.data?.refreshToken ??
+            refreshToken
+
+          if (nextAccessToken) {
+            authenticate({
+              token: nextAccessToken,
+              refreshToken: nextRefreshToken ?? refreshToken,
+              isGuestAuth: true,
+            })
+          }
+        } catch (refreshError) {
+          // Keep the verified session if immediate refresh fails; auto-refresh hook will retry later.
+          console.warn('Guest immediate token refresh failed', refreshError)
+        }
+      }
       const cartId = getGuestCartId() ?? undefined
       const addResult = await addGuestCard({
         guest_name: guestName,
@@ -145,23 +192,23 @@ export default function GuestAddToCartModal() {
             ? 'Continue as guest'
             : 'Verify your phone'
       }
-      panelClass="!max-w-md"
+      panelClass="!max-w-md max-md:!max-w-[94vw] max-md:!my-4 max-md:max-h-[calc(100dvh-2rem)] max-md:overflow-y-auto"
     >
-      <div className="px-6 py-6">
+      <div className="px-6 py-6 max-md:px-4 max-md:py-5">
         {step === 'choice' && (
           <>
-            <div className="text-center mb-8">
+            <div className="text-center mb-8 max-md:mb-6">
               <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-[#402D87] to-[#7950ed] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#402D87]/20">
                 <Icon icon="bi:bag-plus" className="text-2xl text-white" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">Add to cart</h3>
               <p className="text-sm text-gray-500">Choose how you’d like to continue</p>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-3 max-md:space-y-2.5">
               <button
                 type="button"
                 onClick={handleContinueAsGuest}
-                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-linear-to-br from-[#402D87]/10 to-[#7950ed]/10 hover:from-[#402D87]/15 hover:to-[#7950ed]/15 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#402D87]/50 focus-visible:ring-offset-2"
+                className="w-full flex items-center gap-4 p-4 max-md:p-3.5 rounded-xl border-2 border-transparent bg-linear-to-br from-[#402D87]/10 to-[#7950ed]/10 hover:from-[#402D87]/15 hover:to-[#7950ed]/15 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#402D87]/50 focus-visible:ring-offset-2"
               >
                 <div className="w-10 h-10 rounded-full bg-[#402D87]/20 flex items-center justify-center shrink-0">
                   <Icon icon="bi:person" className="text-lg text-[#402D87]" />
@@ -177,7 +224,7 @@ export default function GuestAddToCartModal() {
               <button
                 type="button"
                 onClick={handleSignIn}
-                className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+                className="w-full flex items-center gap-4 p-4 max-md:p-3.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
               >
                 <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
                   <Icon icon="bi:box-arrow-in-right" className="text-lg text-gray-600" />

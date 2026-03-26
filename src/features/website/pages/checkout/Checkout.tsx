@@ -249,7 +249,7 @@ export default function Checkout() {
                               </div>
                             )}
                             <div className="mt-4">
-                              {itemRecipients.length < (item.total_quantity || 1) && (
+                              {itemRecipients.length === 0 ? (
                                 <Button
                                   onClick={() => openAssignModal(item)}
                                   variant="outline"
@@ -257,16 +257,9 @@ export default function Checkout() {
                                   className="w-full sm:w-auto"
                                 >
                                   <Icon icon="bi:person-plus" className="mr-1.5" />
-                                  {itemRecipients.length > 0
-                                    ? 'Add Another Recipient'
-                                    : 'Assign Recipient'}
+                                  Assign Recipient
                                 </Button>
-                              )}
-                              {itemRecipients.length >= (item.total_quantity || 1) && (
-                                <div className="text-sm text-gray-500 italic">
-                                  Maximum recipients reached (quantity: {item.total_quantity || 1})
-                                </div>
-                              )}
+                              ) : null}
                             </div>
                           </div>
                         </div>

@@ -498,7 +498,7 @@ export type GuestDeleteCartItemParams = {
 
 /** Payload for POST /guest-carts/recipients */
 export type GuestAssignRecipientPayload = {
-  guest_phone: string
+  // guest_phone: string
   cart_item_id: number
   assign_to_self: boolean
   amount: number

@@ -121,6 +121,8 @@ export function useCheckout() {
       const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
       itemsArray.forEach((item: any) => {
         const qty = item.total_quantity || 1
+        const totalItemAmount = parseFloat(item.total_amount || '0')
+        const unitAmount = qty > 0 ? totalItemAmount / qty : totalItemAmount
         for (let i = 0; i < qty; i++) {
           flattened.push({
             cart_id: cart.cart_id,
@@ -129,8 +131,8 @@ export function useCheckout() {
             vendor_name: undefined,
             type: item.type || 'dashx',
             currency: 'GHS',
-            price: item.total_amount?.toString() || '0',
-            amount: item.total_amount?.toString() || '0',
+            price: unitAmount.toString(),
+            amount: unitAmount.toString(),
             images: item.images || [],
             cart_item_id: item.cart_item_id,
             total_quantity: qty,
@@ -282,7 +284,7 @@ export function useCheckout() {
       full_name: userValues.full_name,
       email: userValues.email,
       phone_number: userValues.phone_number,
-      amount_due: 1,
+      amount_due: amountDue,
     }
 
     if (gateway === CHECKOUT_GATEWAY.PAYSTACK || !gateway) {
@@ -385,9 +387,9 @@ export function useCheckout() {
   const openAssignModal = useCallback(
     (item: CheckoutFlattenedCartItem) => {
       if (!item.cart_item_id) return
-      const amount = parseFloat(item.amount || '0')
-      const totalQuantity = item.total_quantity || 1
-      const perRecipientAmount = totalQuantity > 0 ? amount / totalQuantity : amount
+      const perRecipientAmountRaw = parseFloat(item.amount || '0')
+      // DashPro amount input uses step=0.01; round to 2dp to avoid browser "nearest valid values" errors
+      const perRecipientAmount = Math.round(perRecipientAmountRaw * 100) / 100
       modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
         cart_item_id: item.cart_item_id,
         cardType: item.type,

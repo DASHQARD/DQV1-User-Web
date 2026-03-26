@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Button,
   Input,
@@ -9,6 +9,7 @@ import {
   Combobox,
   Loader,
   BasePhoneInput,
+  Modal,
 } from '@/components'
 import { Icon } from '@/libs'
 import { useAuthStore } from '@/stores'
@@ -29,6 +30,7 @@ import {
   useRateCard,
 } from '@/features/dashboard/hooks'
 import RedemptionOTPModal from '@/features/website/components/RedemptionOTPModal'
+import { ROUTES } from '@/utils/constants'
 
 type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
@@ -64,6 +66,7 @@ const formatCardTypeForAPI = (
 
 export default function RedemptionPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { isAuthenticated } = useAuthStore()
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { countries: phoneCountries } = useCountriesData()
@@ -97,7 +100,31 @@ export default function RedemptionPage() {
   const [isSubmittingRating, setIsSubmittingRating] = useState(false)
   const [showOTPModal, setShowOTPModal] = useState(false)
   const [isVerifyingOTP, setIsVerifyingOTP] = useState(false)
+  const [showActionChoiceModal, setShowActionChoiceModal] = useState(false)
   const toast = useToast()
+
+  useEffect(() => {
+    if (searchParams.get('redeem') === 'true') {
+      setShowActionChoiceModal(true)
+    }
+  }, [searchParams])
+
+  const clearRedeemQueryParam = () => {
+    const params = new URLSearchParams(searchParams)
+    params.delete('redeem')
+    setSearchParams(params, { replace: true })
+  }
+
+  const handleChooseRedeem = () => {
+    setShowActionChoiceModal(false)
+    clearRedeemQueryParam()
+  }
+
+  const handleChoosePurchase = () => {
+    setShowActionChoiceModal(false)
+    clearRedeemQueryParam()
+    navigate(ROUTES.IN_APP.DASHQARDS)
+  }
 
   // Get redemption queries hooks
   const {
@@ -2374,6 +2401,61 @@ export default function RedemptionPage() {
           isAuthenticated ? (user as any)?.phonenumber || (user as any)?.phone || '' : phoneNumber
         }
       />
+
+      <Modal isOpen={showActionChoiceModal} setIsOpen={setShowActionChoiceModal} panelClass="max-w-xl">
+        <div className="rounded-[20px] bg-white p-7 sm:p-8">
+          <div className="mx-auto mb-5 grid size-16 place-items-center rounded-full bg-linear-to-br from-[#22C55E] to-[#16A34A] text-white shadow-[0_10px_30px_rgba(34,197,94,0.3)]">
+            <Icon icon="bi:cursor-fill" className="size-7" />
+          </div>
+
+          <div className="text-center mb-6">
+            <h3 className="text-[30px] leading-tight font-bold text-[#0F172A]">Choose Your Next Step</h3>
+            <p className="mt-2 text-base text-[#475569]">
+              Continue with redemption or switch to gift card purchase.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handleChooseRedeem}
+              className="w-full rounded-2xl border border-[#C7D2FE] bg-linear-to-br from-[#EEF2FF] to-[#F8FAFC] p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#A5B4FC]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="grid size-10 place-items-center rounded-xl bg-[#4338CA] text-white">
+                  <Icon icon="bi:gift-fill" className="size-5" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-[#1E1B4B]">Redeem a card</p>
+                  <p className="text-sm text-[#4C1D95]/80">Use your existing card for redemption now.</p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleChoosePurchase}
+              className="w-full rounded-2xl border border-[#E2E8F0] bg-white p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#CBD5E1] hover:bg-[#F8FAFC]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="grid size-10 place-items-center rounded-xl bg-[#F59E0B] text-white">
+                  <Icon icon="bi:bag-check-fill" className="size-5" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-[#0F172A]">Make a purchase</p>
+                  <p className="text-sm text-[#475569]">Browse gift cards and buy a new one.</p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <div className="mt-5">
+            <Button variant="outline" className="w-full" onClick={() => setShowActionChoiceModal(false)}>
+              Maybe later
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Add CSS animations */}
       <style>{`

@@ -13,21 +13,6 @@ import { useCartStore } from '@/stores/cart'
 import { useUserProfile } from '@/hooks'
 import { useRecipients } from '@/features/dashboard/hooks'
 
-const QRPlaceholder = () => {
-  const pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
-
-  return (
-    <div className="grid grid-cols-5 gap-[3px] rounded-md border border-black/10 bg-white p-2">
-      {pattern.map((cell, index) => (
-        <span
-          key={`qr-cell-${index}`}
-          className={cell === 1 ? 'size-3 rounded-sm bg-black' : 'size-3 rounded-sm bg-white'}
-        />
-      ))}
-    </div>
-  )
-}
-
 export default function DashProPurchase() {
   const [isCardFlipped, setIsCardFlipped] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
@@ -50,7 +35,6 @@ export default function DashProPurchase() {
     register,
     handleSubmit,
     formState: { errors },
-    getValues,
     setValue,
   } = form
 
@@ -277,9 +261,7 @@ export default function DashProPurchase() {
                         <div className="p-4 text-lg font-semibold uppercase">
                           {displayedCardRecipient}
                         </div>
-                        <div className="flex items-end justify-end p-4">
-                          {amount && (assignToSelf || getValues('name')) ? <QRPlaceholder /> : null}
-                        </div>
+                        <div className="flex items-end justify-end p-4" />
                       </div>
                       {!isMobile && (
                         <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/70 px-3 py-1 text-[11px] uppercase text-white">

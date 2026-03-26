@@ -46,9 +46,19 @@ export function useAutoRefreshToken() {
           : await refreshTokenRequest(activeRefreshToken)
         const data = response?.data ?? response
         const nextAccessToken =
-          data?.tokens?.accessToken ?? data?.accessToken ?? data?.data?.accessToken
+          data?.tokens?.access_token ??
+          data?.tokens?.accessToken ??
+          data?.access_token ??
+          data?.accessToken ??
+          data?.data?.access_token ??
+          data?.data?.accessToken
         const nextRefreshToken =
-          data?.tokens?.refreshToken ?? data?.refreshToken ?? data?.data?.refreshToken
+          data?.tokens?.refresh_token ??
+          data?.tokens?.refreshToken ??
+          data?.refresh_token ??
+          data?.refreshToken ??
+          data?.data?.refresh_token ??
+          data?.data?.refreshToken
 
         if (!nextAccessToken) {
           throw new Error('Unable to refresh access token')

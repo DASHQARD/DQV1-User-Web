@@ -18,21 +18,6 @@ import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { MODAL_NAMES } from '@/utils/constants'
 
-const QRPlaceholder = () => {
-  const pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
-
-  return (
-    <div className="grid grid-cols-5 gap-[3px] rounded-md border border-black/10 bg-white p-2">
-      {pattern.map((cell, index) => (
-        <span
-          key={`qr-cell-${index}`}
-          className={cell === 1 ? 'size-3 rounded-sm bg-black' : 'size-3 rounded-sm bg-white'}
-        />
-      ))}
-    </div>
-  )
-}
-
 export default function PurchaseModal() {
   const modal = usePersistedModalState<{
     cart_item_id: number
@@ -47,7 +32,7 @@ export default function PurchaseModal() {
   const [isMobile, setIsMobile] = React.useState(false)
   const [assignToSelf, setAssignToSelf] = React.useState(true)
   const isGuestAuth = useAuthStore((s) => s.isGuestAuth)
-  const guestUser = useAuthStore((s) => s.user)
+  // const guestUser = useAuthStore((s) => s.user)
   const { useAssignRecipientService, useAssignGuestRecipientService } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()
   const assignGuestRecipientMutation = useAssignGuestRecipientService()
@@ -61,7 +46,9 @@ export default function PurchaseModal() {
   const cardType = modalData?.cardType || 'dashpro'
   const cardProduct = modalData?.cardProduct || ''
   const cardCurrency = modalData?.cardCurrency || 'GHS'
-  const initialAmount = modalData?.amount || 0
+  const initialAmountRaw = Number(modalData?.amount ?? 0)
+  // DashPro amount input uses step=0.01; round to 2dp to avoid browser step validation errors
+  const initialAmount = Math.round(initialAmountRaw * 100) / 100
 
   const form = useForm<z.infer<typeof AssignRecipientSchema>>({
     resolver: zodResolver(AssignRecipientSchema),
@@ -168,15 +155,15 @@ export default function PurchaseModal() {
         form.setValue('phone', userProfileData?.phonenumber || '')
         form.setValue('email', userProfileData?.email || '')
         form.setValue('message', '')
-        form.setValue('amount', modalData.amount || 0)
+        form.setValue('amount', initialAmount)
       } else {
         // Clear fields when not assigning to self
         form.setValue('name', '')
         form.setValue('phone', '')
         form.setValue('email', '')
       }
-      if (modalData.amount && !assignToSelf) {
-        form.setValue('amount', modalData.amount)
+      if (modalData.amount != null && !assignToSelf) {
+        form.setValue('amount', Math.round(Number(modalData.amount) * 100) / 100)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted to avoid unnecessary re-runs
@@ -212,9 +199,9 @@ export default function PurchaseModal() {
     }
 
     if (isGuestAuth) {
-      const guestPhone = (guestUser as any)?.guest_phone ?? ''
+      // const guestPhone = (guestUser as any)?.guest_phone ?? ''
       const guestPayload: GuestAssignRecipientPayload = {
-        guest_phone: guestPhone,
+        // guest_phone: guestPhone,
         cart_item_id: currentCartItemId,
         assign_to_self: data.assign_to_self,
         amount: data.amount,
@@ -318,11 +305,7 @@ export default function PurchaseModal() {
                       <div className="p-4 text-lg font-semibold uppercase">
                         {displayedCardRecipient}
                       </div>
-                      <div className="flex items-end justify-end p-4">
-                        {form.watch('amount') && (assignToSelf || form.watch('name')) ? (
-                          <QRPlaceholder />
-                        ) : null}
-                      </div>
+                      <div className="flex items-end justify-end p-4" />
                     </div>
                     {!isMobile && (
                       <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/70 px-3 py-1 text-[11px] uppercase text-white">
