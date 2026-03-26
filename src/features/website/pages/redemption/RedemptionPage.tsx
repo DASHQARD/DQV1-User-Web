@@ -2402,14 +2402,20 @@ export default function RedemptionPage() {
         }
       />
 
-      <Modal isOpen={showActionChoiceModal} setIsOpen={setShowActionChoiceModal} panelClass="max-w-xl">
+      <Modal
+        isOpen={showActionChoiceModal}
+        setIsOpen={setShowActionChoiceModal}
+        panelClass="max-w-xl"
+      >
         <div className="rounded-[20px] bg-white p-7 sm:p-8">
           <div className="mx-auto mb-5 grid size-16 place-items-center rounded-full bg-linear-to-br from-[#22C55E] to-[#16A34A] text-white shadow-[0_10px_30px_rgba(34,197,94,0.3)]">
             <Icon icon="bi:cursor-fill" className="size-7" />
           </div>
 
           <div className="text-center mb-6">
-            <h3 className="text-[30px] leading-tight font-bold text-[#0F172A]">Choose Your Next Step</h3>
+            <h3 className="text-[30px] leading-tight font-bold text-[#0F172A]">
+              Choose Your Next Step
+            </h3>
             <p className="mt-2 text-base text-[#475569]">
               Continue with redemption or switch to gift card purchase.
             </p>
@@ -2427,7 +2433,9 @@ export default function RedemptionPage() {
                 </div>
                 <div>
                   <p className="text-base font-semibold text-[#1E1B4B]">Redeem a card</p>
-                  <p className="text-sm text-[#4C1D95]/80">Use your existing card for redemption now.</p>
+                  <p className="text-sm text-[#4C1D95]/80">
+                    Use your existing card for redemption now.
+                  </p>
                 </div>
               </div>
             </button>
@@ -2450,7 +2458,11 @@ export default function RedemptionPage() {
           </div>
 
           <div className="mt-5">
-            <Button variant="outline" className="w-full" onClick={() => setShowActionChoiceModal(false)}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setShowActionChoiceModal(false)}
+            >
               Maybe later
             </Button>
           </div>
