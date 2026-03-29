@@ -8,10 +8,14 @@ import { z } from 'zod'
 import { formatCurrency } from '@/utils/format'
 import { AssignRecipientSchema } from '@/utils/schemas'
 import { useCreateCard } from '@/features/dashboard/hooks'
-import { useCart } from '../../hooks'
+import { useCart, useGuestCart } from '../../hooks'
 import { useCartStore } from '@/stores/cart'
 import { useUserProfile } from '@/hooks'
 import { useRecipients } from '@/features/dashboard/hooks'
+import { useAuthStore } from '@/stores'
+import { GUEST_EMAIL_STORAGE_KEY } from '@/utils/constants'
+import { addGuestCard, createGuestDashPro } from '../../services/cards'
+import { useToast } from '@/hooks'
 
 export default function DashProPurchase() {
   const [isCardFlipped, setIsCardFlipped] = React.useState(false)
@@ -26,7 +30,7 @@ export default function DashProPurchase() {
       name: '',
       phone: '',
       email: '',
-      message: 'Your personalized message will appear here...',
+      message: '',
     },
   })
 
@@ -46,11 +50,28 @@ export default function DashProPurchase() {
 
   const { mutate: createDashProCard, isPending: isCreatingDashProCard } = useCreateCard()
   const { addToCartAsync, refetch: refetchCart } = useCart()
+  const { refetch: refetchGuestCart } = useGuestCart()
   const { openCart } = useCartStore()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { useAssignRecipientService } = useRecipients()
+  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
+  const user = useAuthStore((state) => state.user)
+  const getGuestCartId = useAuthStore((state) => state.getGuestCartId)
+  const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
+  const { useAssignRecipientService, useAssignGuestRecipientService } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()
+  const assignGuestRecipientMutation = useAssignGuestRecipientService()
+  const toast = useToast()
+
+  const getGuestErrorMessage = (error: any) => {
+    return (
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.response?.data?.errors?.[0]?.message ||
+      error?.message ||
+      'Something went wrong'
+    )
+  }
 
   // Sync assignToSelf state with form value
   React.useEffect(() => {
@@ -90,51 +111,93 @@ export default function DashProPurchase() {
 
   const onSubmit = async (data: z.infer<typeof AssignRecipientSchema>) => {
     try {
-      // Calculate issue date in YYYY-MM-DD format
       const today = new Date()
-      const issueDate = today.toISOString().split('T')[0] // YYYY-MM-DD format
+      const issueDate = today.toISOString().split('T')[0]
 
-      // Step 1: Create the DashPro card
-      const cardResponse = await new Promise<any>((resolve, reject) => {
-        createDashProCard(
-          {
+      const cardResponse = isGuestAuth
+        ? await createGuestDashPro({
+            guest_name: (user as any)?.guest_name || data.name?.trim() || 'Guest User',
+            guest_email:
+              (typeof localStorage !== 'undefined'
+                ? localStorage.getItem(GUEST_EMAIL_STORAGE_KEY)
+                : null) ||
+              (user as any)?.guest_email ||
+              data.email?.trim() ||
+              '',
             product: 'DashPro',
             description: 'DashPro',
-            type: 'DashPro',
             price: amount,
             currency: 'GHS',
             issue_date: issueDate,
             images: [],
             terms_and_conditions: [],
-          },
-          {
-            onSuccess: (response: any) => {
-              resolve(response)
-            },
-            onError: (error: any) => {
-              reject(error)
-            },
-          },
-        )
-      })
+            country_code: (user as any)?.country_code || 'GH',
+          })
+        : await new Promise<any>((resolve, reject) => {
+            createDashProCard(
+              {
+                product: 'DashPro',
+                description: 'DashPro',
+                type: 'DashPro',
+                price: amount,
+                currency: 'GHS',
+                issue_date: issueDate,
+                images: [],
+                terms_and_conditions: [],
+              },
+              {
+                onSuccess: (response: any) => {
+                  resolve(response)
+                },
+                onError: (error: any) => {
+                  reject(error)
+                },
+              },
+            )
+          })
 
-      const cardId = cardResponse?.data?.id || cardResponse?.data?.card_id
+      const cardId =
+        cardResponse?.data?.id ||
+        cardResponse?.data?.card_id ||
+        cardResponse?.data?.card?.id ||
+        cardResponse?.id
       if (!cardId) {
         console.error('Failed to get card ID from response')
         return
       }
 
-      // Step 2: Add card to cart
-      await addToCartAsync({
-        card_id: cardId,
-        quantity: 1,
-      })
+      if (isGuestAuth) {
+        const guestName = (user as any)?.guest_name || data.name?.trim() || 'Guest User'
+        const guestEmail =
+          (typeof localStorage !== 'undefined'
+            ? localStorage.getItem(GUEST_EMAIL_STORAGE_KEY)
+            : null) ||
+          (user as any)?.guest_email ||
+          data.email?.trim() ||
+          ''
+        const cartId = getGuestCartId() ?? undefined
 
-      // Step 2b: Refetch cart items to get the cart_item_id
-      const cartItemsResponse = await refetchCart()
+        const addResult = await addGuestCard({
+          guest_name: guestName,
+          guest_email: guestEmail,
+          card_id: Number(cardId),
+          quantity: 1,
+          ...(cartId !== undefined && { cart_id: cartId }),
+        })
+        const nextCartId = addResult?.cart_id ?? (addResult as any)?.data?.cart_id
+        if (typeof nextCartId === 'number') {
+          setGuestCartId(nextCartId)
+        }
+      } else {
+        await addToCartAsync({
+          card_id: cardId,
+          quantity: 1,
+        })
+      }
+
+      const cartItemsResponse = isGuestAuth ? await refetchGuestCart() : await refetchCart()
       const cartItems = cartItemsResponse?.data || []
 
-      // Find the cart item that matches our card_id
       let cartItemId: number | null = null
       if (Array.isArray(cartItems)) {
         for (const cart of cartItems) {
@@ -151,12 +214,10 @@ export default function DashProPurchase() {
 
       if (!cartItemId) {
         console.error('Failed to get cart_item_id after adding to cart')
-        // Still open cart even if we can't assign recipient
         openCart()
         return
       }
 
-      // Step 3: Assign recipient to the cart item
       const assignPayload: any = {
         cart_item_id: cartItemId,
         assign_to_self: data.assign_to_self,
@@ -178,13 +239,16 @@ export default function DashProPurchase() {
         }
       }
 
-      await assignRecipientMutation.mutateAsync(assignPayload)
+      if (isGuestAuth) {
+        await assignGuestRecipientMutation.mutateAsync(assignPayload)
+      } else {
+        await assignRecipientMutation.mutateAsync(assignPayload)
+      }
 
-      // Step 4: Open cart on success
       openCart()
     } catch (error: any) {
       console.error('Error creating DashPro card and assigning recipient:', error)
-      // Open cart anyway if card was created
+      toast.error(getGuestErrorMessage(error))
       openCart()
     }
   }
@@ -473,8 +537,16 @@ export default function DashProPurchase() {
               type="submit"
               variant="secondary"
               className="md:w-auto"
-              disabled={isCreatingDashProCard || assignRecipientMutation.isPending}
-              loading={isCreatingDashProCard || assignRecipientMutation.isPending}
+              disabled={
+                isCreatingDashProCard ||
+                assignRecipientMutation.isPending ||
+                assignGuestRecipientMutation.isPending
+              }
+              loading={
+                isCreatingDashProCard ||
+                assignRecipientMutation.isPending ||
+                assignGuestRecipientMutation.isPending
+              }
             >
               Create and customize DashPro Gift Card
             </Button>

@@ -13,8 +13,8 @@ import {
   guestAuthOtpVerify,
   guestAuthTokenRefresh,
 } from '@/features/auth/services'
-import { addGuestCard } from '@/features/website/services/cards'
-import { GUEST_EMAIL_STORAGE_KEY, ROUTES } from '@/utils/constants'
+import { addGuestCard, createGuestCart } from '@/features/website/services/cards'
+import { GUEST_EMAIL_STORAGE_KEY, GUEST_NAME_STORAGE_KEY, ROUTES } from '@/utils/constants'
 import { useToast } from '@/hooks'
 
 const ContactSchema = z.object({
@@ -122,6 +122,9 @@ export default function GuestAddToCartModal() {
         refreshToken: refreshToken ?? null,
         isGuestAuth: true,
       })
+      if (typeof localStorage !== 'undefined' && guestName) {
+        localStorage.setItem(GUEST_NAME_STORAGE_KEY, guestName)
+      }
 
       // Immediately refresh guest token after login to align session lifecycle with backend.
       if (refreshToken) {
@@ -156,7 +159,21 @@ export default function GuestAddToCartModal() {
           console.warn('Guest immediate token refresh failed', refreshError)
         }
       }
-      const cartId = getGuestCartId() ?? undefined
+      let cartId = getGuestCartId() ?? undefined
+      if (cartId === undefined) {
+        const createCartResult = await createGuestCart({
+          guest_name: guestName,
+          guest_email: guestEmail,
+        })
+        const createdCartId =
+          createCartResult?.cart_id ??
+          (createCartResult as any)?.data?.cart_id ??
+          (createCartResult as any)?.id
+        if (typeof createdCartId === 'number') {
+          setGuestCartId(createdCartId)
+          cartId = createdCartId
+        }
+      }
       const addResult = await addGuestCard({
         guest_name: guestName,
         guest_email: guestEmail,

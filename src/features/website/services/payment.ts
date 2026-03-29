@@ -14,9 +14,27 @@ type PaymentProviderConfigResponse = {
   data: PaymentProviderConfig
 }
 
+export interface ServiceFeeConfig {
+  id: number
+  serviceFeeRate: number
+  vendorMarkupRate: number
+  updatedBy: number
+  createdAt: string
+  updatedAt: string
+}
+
+type ServiceFeeConfigResponse = {
+  data: ServiceFeeConfig
+}
+
 export const getPaymentProviderConfig = async (): Promise<PaymentProviderConfig> => {
   const res = await getMethod<PaymentProviderConfigResponse>('/payment-provider-config')
   return res?.data ?? (res as unknown as PaymentProviderConfig)
+}
+
+export const getServiceFees = async (): Promise<ServiceFeeConfig> => {
+  const res = await getMethod<ServiceFeeConfigResponse>('/service-fees')
+  return res?.data ?? (res as unknown as ServiceFeeConfig)
 }
 
 export const checkout = async (data: CheckoutPayload): Promise<any> => {

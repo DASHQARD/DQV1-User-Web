@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
-import { checkout, guestCheckout, getPaymentProviderConfig } from '../services/payment'
+import {
+  checkout,
+  guestCheckout,
+  getPaymentProviderConfig,
+  getServiceFees,
+} from '../services/payment'
 
 function handleCheckoutSuccess(data: any, queryClient: ReturnType<typeof useQueryClient>) {
   if (typeof data?.data === 'string') {
@@ -50,9 +55,17 @@ export function usePayments() {
     })
   }
 
+  function useServiceFeesConfig() {
+    return useQuery({
+      queryKey: ['service-fees'],
+      queryFn: getServiceFees,
+    })
+  }
+
   return {
     useCheckoutService,
     useGuestCheckoutService,
     usePaymentProviderConfig,
+    useServiceFeesConfig,
   }
 }

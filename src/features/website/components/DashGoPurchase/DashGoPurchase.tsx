@@ -12,7 +12,10 @@ import { usePublicCatalogMutations } from '../../hooks/website/usePublicCatalogM
 import { vendorQueries } from '@/features/dashboard/vendor/hooks'
 import { useUserProfile } from '@/hooks'
 import { useCartStore } from '@/stores/cart'
-import { useCart, useRecipients } from '../../hooks'
+import { useCart, useGuestCart, useRecipients } from '../../hooks'
+import { useAuthStore } from '@/stores'
+import { GUEST_EMAIL_STORAGE_KEY } from '@/utils/constants'
+import { addGuestCard, createGuestDashGo } from '../../services/cards'
 
 const QRPlaceholder = () => {
   const pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
@@ -72,11 +75,17 @@ export default function DashGoPurchase() {
   const { useCreateDashGoAndAssignService } = usePublicCatalogMutations()
   const createDashGoMutationAsync = useCreateDashGoAndAssignService()
   const { addToCartAsync } = useCart()
+  const { refetch: refetchGuestCart } = useGuestCart()
   const { openCart } = useCartStore()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { useAssignRecipientService } = useRecipients()
+  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
+  const user = useAuthStore((state) => state.user)
+  const getGuestCartId = useAuthStore((state) => state.getGuestCartId)
+  const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
+  const { useAssignRecipientService, useAssignGuestRecipientService } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()
+  const assignGuestRecipientMutation = useAssignGuestRecipientService()
 
   const { usePublicVendorsService } = usePublicCatalogQueries()
 
@@ -167,66 +176,122 @@ export default function DashGoPurchase() {
     }))
 
     try {
-      await createDashGoMutationAsync.mutateAsync(
-        {
-          vendor_id: data.vendor_id,
-          product: 'DashGo Gift Card',
-          description: `Custom DashGo card for ${vendorName}`,
-          price: data.recipient_card_amount,
-          currency: data.recipient_card_currency || 'GHS',
-          issue_date: issueDate,
-          redemption_branches: redemptionBranches,
-        },
-        {
-          onSuccess: async (response: any) => {
-            console.log('response from create dash go', response)
+      const createResponse = isGuestAuth
+        ? await createGuestDashGo({
+            guest_phone: (user as any)?.guest_phone || data.recipient_phone || '',
+            guest_name: (user as any)?.guest_name || data.recipient_name || 'Guest User',
+            guest_email:
+              (typeof localStorage !== 'undefined'
+                ? localStorage.getItem(GUEST_EMAIL_STORAGE_KEY)
+                : null) ||
+              (user as any)?.guest_email ||
+              data.recipient_email ||
+              '',
+            vendor_id: data.vendor_id,
+            product: 'DashGo Gift Card',
+            description: `Custom DashGo card for ${vendorName}`,
+            price: data.recipient_card_amount,
+            currency: data.recipient_card_currency || 'GHS',
+            issue_date: issueDate,
+            redemption_branches: redemptionBranches,
+            images: [],
+            terms_and_conditions: [],
+          })
+        : await createDashGoMutationAsync.mutateAsync({
+            vendor_id: data.vendor_id,
+            product: 'DashGo Gift Card',
+            description: `Custom DashGo card for ${vendorName}`,
+            price: data.recipient_card_amount,
+            currency: data.recipient_card_currency || 'GHS',
+            issue_date: issueDate,
+            redemption_branches: redemptionBranches,
+          })
 
-            await addToCartAsync(
-              {
-                card_id: response.data.card.id,
-                quantity: 1,
-              },
-              {
-                onSuccess: async (response: any) => {
-                  console.log('response from add to cart', response)
-                  if (data.assign_to_self) {
-                    await assignRecipientMutation.mutateAsync({
-                      cart_item_id: response.data.cart_item_id,
-                      assign_to_self: data.assign_to_self,
-                      quantity: 1,
-                      amount: data.recipient_card_amount,
-                      message: data.recipient_message,
-                    })
-                  } else {
-                    await assignRecipientMutation.mutateAsync({
-                      cart_item_id: response.data.cart_item_id,
-                      assign_to_self: data.assign_to_self,
-                      quantity: 1,
-                      amount: data.recipient_card_amount,
-                      message: data.recipient_message,
-                      name: data.recipient_name,
-                      phone: data.recipient_phone,
-                      email: data.recipient_email,
-                    })
-                  }
-                  openCart()
-                },
-                onError: (error: any) => {
-                  console.error('Failed to add card to cart:', error)
-                },
-              },
-            )
-          },
+      const cardId =
+        createResponse?.data?.card?.id ||
+        createResponse?.data?.id ||
+        createResponse?.data?.card_id ||
+        createResponse?.id
+      if (!cardId) {
+        console.error('Failed to get card ID from response')
+        return
+      }
 
-          onError: (error: any) => {
-            console.error('Failed to create DashGo card:', error)
-          },
-        },
-      )
+      let cartItemId: number | null = null
 
-      // Open cart on success
+      if (isGuestAuth) {
+        const guestName = (user as any)?.guest_name || data.recipient_name || 'Guest User'
+        const guestEmail =
+          (typeof localStorage !== 'undefined'
+            ? localStorage.getItem(GUEST_EMAIL_STORAGE_KEY)
+            : null) ||
+          (user as any)?.guest_email ||
+          data.recipient_email ||
+          ''
+        const cartId = getGuestCartId() ?? undefined
+
+        const addResult = await addGuestCard({
+          guest_name: guestName,
+          guest_email: guestEmail,
+          card_id: Number(cardId),
+          quantity: 1,
+          ...(cartId !== undefined && { cart_id: cartId }),
+        })
+        const nextCartId = addResult?.cart_id ?? (addResult as any)?.data?.cart_id
+        if (typeof nextCartId === 'number') {
+          setGuestCartId(nextCartId)
+        }
+
+        const cartItemsResponse = await refetchGuestCart()
+        const cartItems = cartItemsResponse?.data || []
+        if (Array.isArray(cartItems)) {
+          for (const cart of cartItems) {
+            if (cart.items) {
+              const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
+              const matchingItem = itemsArray.find((item: any) => item.card_id === Number(cardId))
+              if (matchingItem?.cart_item_id) {
+                cartItemId = matchingItem.cart_item_id
+                break
+              }
+            }
+          }
+        }
+      } else {
+        const addToCartResponse = await addToCartAsync({
+          card_id: Number(cardId),
+          quantity: 1,
+        })
+        cartItemId = addToCartResponse?.data?.cart_item_id ?? null
+      }
+
+      if (!cartItemId) {
+        console.error('Failed to get cart_item_id after adding to cart')
+        openCart()
+        return
+      }
+
+      const assignPayload: any = {
+        cart_item_id: cartItemId,
+        assign_to_self: data.assign_to_self,
+        quantity: 1,
+        amount: data.recipient_card_amount,
+        message: data.recipient_message,
+      }
+
+      if (!data.assign_to_self) {
+        assignPayload.name = data.recipient_name
+        assignPayload.phone = data.recipient_phone
+        assignPayload.email = data.recipient_email
+      }
+
+      if (isGuestAuth) {
+        await assignGuestRecipientMutation.mutateAsync(assignPayload)
+      } else {
+        await assignRecipientMutation.mutateAsync(assignPayload)
+      }
+
+      openCart()
     } catch (error) {
-      // Error is already handled by the mutation hook
       console.error('Failed to create DashGo card:', error)
     }
   }
@@ -546,9 +611,15 @@ export default function DashGoPurchase() {
               type="submit"
               variant="secondary"
               className="md:w-auto"
-              loading={createDashGoMutationAsync.isPending}
+              loading={
+                createDashGoMutationAsync.isPending ||
+                assignRecipientMutation.isPending ||
+                assignGuestRecipientMutation.isPending
+              }
               disabled={
                 createDashGoMutationAsync.isPending ||
+                assignRecipientMutation.isPending ||
+                assignGuestRecipientMutation.isPending ||
                 !watch('vendor_id') ||
                 watch('vendor_id') === 0
               }

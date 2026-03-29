@@ -21,10 +21,7 @@ import type { CartListResponse } from '@/types/responses'
 import type { FlattenedCartItem } from '@/types'
 import type { CheckoutPayloadBase, GuestCheckoutPayloadBase } from '@/types/responses'
 import { CHECKOUT_GATEWAY } from '@/features/website/utils/paymentConstants'
-import { GUEST_EMAIL_STORAGE_KEY } from '@/utils/constants'
-
-const SERVICE_FEE_MIN = 5.78
-const SERVICE_FEE_RATE = 0.05
+import { GUEST_EMAIL_STORAGE_KEY, GUEST_NAME_STORAGE_KEY } from '@/utils/constants'
 
 /** Checkout-specific flattened cart item (one row per quantity unit, with quantity_index) */
 export type CheckoutFlattenedCartItem = FlattenedCartItem & {
@@ -42,11 +39,17 @@ export function useCheckout() {
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { useCheckoutService, useGuestCheckoutService, usePaymentProviderConfig } = usePayments()
+  const {
+    useCheckoutService,
+    useGuestCheckoutService,
+    usePaymentProviderConfig,
+    useServiceFeesConfig,
+  } = usePayments()
   const { mutateAsync: checkoutMutation, isPending: isCheckingOut } = useCheckoutService()
   const { mutateAsync: guestCheckoutMutation, isPending: isGuestCheckingOut } =
     useGuestCheckoutService()
   const { data: paymentProviderConfig } = usePaymentProviderConfig()
+  const { data: serviceFeesConfig } = useServiceFeesConfig()
 
   const checkoutGateway = (paymentProviderConfig?.checkout_gateway ?? '').toLowerCase()
 
@@ -66,13 +69,17 @@ export function useCheckout() {
 
   React.useEffect(() => {
     if (isGuestAuth) {
+      const guestName =
+        typeof localStorage !== 'undefined'
+          ? (localStorage.getItem(GUEST_NAME_STORAGE_KEY) ?? '')
+          : ''
       const guestEmail =
         typeof localStorage !== 'undefined'
           ? (localStorage.getItem(GUEST_EMAIL_STORAGE_KEY) ?? '')
           : ''
       const guestPhone = (user as any)?.guest_phone ?? ''
       userInfoForm.reset({
-        full_name: '',
+        full_name: guestName,
         email: guestEmail,
         phone_number: guestPhone,
       })
@@ -166,7 +173,8 @@ export function useCheckout() {
     () => activeCartItems.reduce((sum, cart) => sum + parseFloat(cart.total_amount || '0'), 0),
     [activeCartItems],
   )
-  const serviceFee = Math.max(SERVICE_FEE_MIN, totalAmount * SERVICE_FEE_RATE)
+  const serviceFeeRate = Number(serviceFeesConfig?.serviceFeeRate ?? 0)
+  const serviceFee = totalAmount * serviceFeeRate
   const amountDue = totalAmount + serviceFee
 
   const isUserInfoIncomplete = !userInfoForm.watch('full_name') || !userInfoForm.watch('email')

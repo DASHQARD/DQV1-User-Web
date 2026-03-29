@@ -4,7 +4,7 @@ import { Icon } from '@/libs'
 import { USER_NAV_ITEMS, ROUTES } from '@/utils/constants'
 import { cn } from '@/libs'
 import { Text, Tooltip, TooltipTrigger, TooltipContent, ImageUpload } from '@/components'
-import Logo from '@/assets/images/logo-placeholder.png'
+// import Logo from '@/assets/images/logo-placeholder.png'
 import { useUserSidebar } from '@/features/dashboard/hooks'
 
 export default function UserSidebar() {
@@ -32,16 +32,7 @@ export default function UserSidebar() {
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <div className="flex items-center gap-3 flex-1 justify-between w-full">
-          {!isCollapsed && (
-            <Link to={ROUTES.IN_APP.HOME} className="shrink-0">
-              <img
-                src={Logo}
-                alt="Logo"
-                className={cn('h-8 w-auto object-contain', isCollapsed && 'h-6 w-6')}
-              />
-            </Link>
-          )}
+        <div className="flex items-center gap-3 flex-1 justify-end w-full">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={cn(
@@ -127,7 +118,7 @@ export default function UserSidebar() {
                     className={cn(
                       'flex items-center mb-1 rounded-lg transition-all duration-200 relative overflow-hidden',
                       isActive(item.path) &&
-                        'bg-gradient-to-r from-[#402D87]/10 to-[#402D87]/5 border-l-2 border-[#402D87]',
+                        'bg-linear-to-r from-[#402D87]/10 to-[#402D87]/5 border-l-2 border-[#402D87]',
                       !isActive(item.path) && 'hover:bg-gray-50',
                       isCollapsed && 'justify-center mb-2',
                     )}
@@ -194,7 +185,7 @@ export default function UserSidebar() {
           className={cn(
             'flex items-center gap-3 no-underline font-medium text-sm py-2.5 px-4 w-full transition-all duration-200 rounded-lg relative z-2',
             isActive('/dashboard/settings') &&
-              'text-[#402D87] font-semibold bg-gradient-to-r from-[#402D87]/10 to-[#402D87]/5 border-l-2 border-[#402D87]',
+              'text-[#402D87] font-semibold bg-linear-to-r from-[#402D87]/10 to-[#402D87]/5 border-l-2 border-[#402D87]',
             !isActive('/dashboard/settings') &&
               'text-gray-700 hover:text-[#402D87] hover:bg-gray-50',
             isCollapsed && 'justify-center px-2',

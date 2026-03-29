@@ -1,3 +1,4 @@
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Controller } from 'react-hook-form'
 import { Icon } from '@/libs'
@@ -20,6 +21,37 @@ const KOWRI_NETWORK_OPTIONS = [
   { value: 'AIRTELTIGO_MONEY', label: 'AirtelTigo Money' },
   { value: 'VODAFONE_CASH', label: 'Vodafone Cash' },
 ] as const
+
+const MTN_PREFIXES = new Set(['024', '025', '053', '054', '055', '059'])
+
+const AIRTELTIGO_PREFIXES = new Set(['026', '027', '056', '057'])
+
+const TELECEL_PREFIXES = new Set(['020', '050'])
+
+function normalizeGhanaPhonePrefix(phone: string): string {
+  const digitsOnly = phone.replace(/\D/g, '')
+
+  if (digitsOnly.length >= 10 && digitsOnly.startsWith('0')) {
+    return digitsOnly.slice(0, 3)
+  }
+
+  if (digitsOnly.startsWith('233') && digitsOnly.length >= 12) {
+    return `0${digitsOnly.slice(3, 5)}`
+  }
+
+  return ''
+}
+
+function detectNetworkFromPhone(phone: string): 'mtn' | 'airteltigo' | 'telecel' | null {
+  const prefix = normalizeGhanaPhonePrefix(phone)
+  if (!prefix) return null
+
+  if (MTN_PREFIXES.has(prefix)) return 'mtn'
+  if (AIRTELTIGO_PREFIXES.has(prefix)) return 'airteltigo'
+  if (TELECEL_PREFIXES.has(prefix)) return 'telecel'
+
+  return null
+}
 
 export default function Checkout() {
   const navigate = useNavigate()
@@ -64,6 +96,38 @@ export default function Checkout() {
   const isKowri = checkoutGateway === CHECKOUT_GATEWAY.KOWRI
   const isMobileMoney = paymentMethod?.payment_method_type === 'mobile_money'
   const isCard = paymentMethod?.payment_method_type === 'card'
+
+  const phoneNumber = userInfoForm.watch('phone_number')
+
+  React.useEffect(() => {
+    if (!showPaymentMethodSection || !isMobileMoney) return
+
+    const detectedNetwork = detectNetworkFromPhone(phoneNumber ?? '')
+    if (!detectedNetwork) return
+
+    if (isEgnanow) {
+      const mappedProvider =
+        detectedNetwork === 'mtn' ? 'MTNGH' : detectedNetwork === 'airteltigo' ? 'ATGH' : 'TCELGH'
+
+      if (paymentForm.getValues('paypartner_code') !== mappedProvider) {
+        paymentForm.setValue('paypartner_code', mappedProvider, { shouldValidate: true })
+      }
+      return
+    }
+
+    if (isKowri) {
+      const mappedProvider =
+        detectedNetwork === 'mtn'
+          ? 'MTN_MONEY'
+          : detectedNetwork === 'airteltigo'
+            ? 'AIRTELTIGO_MONEY'
+            : 'VODAFONE_CASH'
+
+      if (paymentForm.getValues('kowri_provider') !== mappedProvider) {
+        paymentForm.setValue('kowri_provider', mappedProvider, { shouldValidate: true })
+      }
+    }
+  }, [isEgnanow, isKowri, isMobileMoney, paymentForm, phoneNumber, showPaymentMethodSection])
 
   if (isLoadingCart) {
     return (
@@ -354,15 +418,42 @@ export default function Checkout() {
                 )}
 
                 {isCard && isKowri && (
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                    <div className="flex items-start gap-3">
+                  <div className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                          Full name <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="text"
+                          {...userInfoForm.register('full_name')}
+                          error={userInfoForm.formState.errors.full_name?.message}
+                          placeholder="John Doe"
+                          className="w-full bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                          Email <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="email"
+                          {...userInfoForm.register('email')}
+                          error={userInfoForm.formState.errors.email?.message}
+                          placeholder="john@example.com"
+                          className="w-full bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-white/70 p-3">
                       <Icon
                         icon="bi:credit-card"
-                        className="size-5 text-blue-600 mt-0.5 shrink-0"
+                        className="mt-0.5 size-5 shrink-0 text-blue-600"
                       />
                       <div>
                         <p className="text-sm font-medium text-blue-900">Secure card payment</p>
-                        <p className="text-sm text-blue-700 mt-1">
+                        <p className="mt-1 text-sm text-blue-700">
                           You will be redirected to a secure payment page to enter your card details
                           and complete the transaction.
                         </p>
@@ -491,38 +582,74 @@ export default function Checkout() {
         title="Payment Prompt Sent"
         panelClass="max-w-md"
       >
-        <div className="p-6 space-y-4">
-          <p className="text-sm text-gray-700">
-            A payment prompt has been sent to your mobile money number. Please approve the request
-            on your phone to complete the payment.
-          </p>
+        <div className="p-6 space-y-5">
+          <div className="flex items-start gap-3 rounded-xl border border-primary-100 bg-primary-50/60 p-4">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700">
+              <Icon icon="bi:phone" className="size-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                Prompt sent to your mobile phone
+              </p>
+              <p className="mt-1 text-sm text-gray-600">
+                Approve the request on your phone to complete this payment.
+              </p>
+            </div>
+          </div>
+
           {kowriCheckoutData && (
-            <div className="rounded-lg bg-gray-50 border border-gray-200 p-4 text-sm text-gray-700 space-y-1">
-              {kowriCheckoutData.receipt_number && (
-                <p>
-                  <span className="font-medium">Receipt:</span> {kowriCheckoutData.receipt_number}
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
+                <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                  Transaction details
                 </p>
-              )}
-              {kowriCheckoutData.merchant_order_id && (
-                <p>
-                  <span className="font-medium">Order ID:</span>{' '}
-                  {kowriCheckoutData.merchant_order_id}
-                </p>
-              )}
-              {kowriCheckoutData.transaction_id && (
-                <p>
-                  <span className="font-medium">Transaction ID:</span>{' '}
-                  {kowriCheckoutData.transaction_id}
-                </p>
-              )}
-              {kowriCheckoutData.status && (
-                <p>
-                  <span className="font-medium">Status:</span> {kowriCheckoutData.status}
-                </p>
-              )}
+              </div>
+              <div className="divide-y divide-gray-100">
+                {kowriCheckoutData.receipt_number && (
+                  <div className="flex items-start justify-between gap-3 px-4 py-3">
+                    <span className="text-sm text-gray-500">Receipt</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {kowriCheckoutData.receipt_number}
+                    </span>
+                  </div>
+                )}
+                {kowriCheckoutData.merchant_order_id && (
+                  <div className="flex items-start justify-between gap-3 px-4 py-3">
+                    <span className="text-sm text-gray-500">Order ID</span>
+                    <span className="max-w-[220px] wrap-break-word text-right text-sm font-medium text-gray-800">
+                      {kowriCheckoutData.merchant_order_id}
+                    </span>
+                  </div>
+                )}
+                {kowriCheckoutData.transaction_id && (
+                  <div className="flex items-start justify-between gap-3 px-4 py-3">
+                    <span className="text-sm text-gray-500">Transaction ID</span>
+                    <span className="max-w-[220px] wrap-break-word text-right text-sm font-medium text-gray-800">
+                      {kowriCheckoutData.transaction_id}
+                    </span>
+                  </div>
+                )}
+                {kowriCheckoutData.status && (
+                  <div className="flex items-center justify-between gap-3 px-4 py-3">
+                    <span className="text-sm text-gray-500">Status</span>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        kowriCheckoutData.status.toUpperCase() === 'SUCCESS'
+                          ? 'bg-green-100 text-green-700'
+                          : kowriCheckoutData.status.toUpperCase() === 'FAILED'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-amber-100 text-amber-700'
+                      }`}
+                    >
+                      {kowriCheckoutData.status}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
-          <div className="flex justify-end gap-3 pt-2">
+
+          <div className="flex justify-end border-t border-gray-100 pt-4">
             <Button variant="secondary" onClick={() => setIsKowriPromptModalOpen(false)}>
               Close
             </Button>

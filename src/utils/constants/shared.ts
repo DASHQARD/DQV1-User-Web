@@ -1,5 +1,7 @@
 /** localStorage key for guest email (collected during guest OTP flow, used later) */
 export const GUEST_EMAIL_STORAGE_KEY = 'dashqard-guest-email'
+/** localStorage key for guest name (collected during guest OTP flow, used later) */
+export const GUEST_NAME_STORAGE_KEY = 'dashqard-guest-name'
 
 export const ROUTES = {
   IN_APP: {

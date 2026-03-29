@@ -1,4 +1,5 @@
 export * from './useCart'
+export * from './useGuestCart'
 export * from './useCardItem'
 export * from './useCheckout'
 export * from './useDashQards'

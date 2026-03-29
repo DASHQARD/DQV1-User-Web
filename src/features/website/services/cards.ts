@@ -23,6 +23,15 @@ export const addGuestCard = async (data: GuestAddCardPayload): Promise<GuestAddC
   return body as GuestAddCardResponse
 }
 
+export const createGuestCart = async (data: {
+  guest_name: string
+  guest_email: string
+}): Promise<GuestAddCardResponse> => {
+  const res = await postMethod('/guest-carts', data)
+  const body = res?.data ?? res
+  return body as GuestAddCardResponse
+}
+
 export const createDashGoAndAssign = async (data: {
   vendor_id: number
   product: string
@@ -37,6 +46,23 @@ export const createDashGoAndAssign = async (data: {
   return await postMethod('/carts/create-dashgo', data)
 }
 
+export const createGuestDashGo = async (data: {
+  guest_phone: string
+  guest_name: string
+  guest_email: string
+  vendor_id: number
+  product: string
+  description: string
+  price: number
+  currency: string
+  images?: Array<{ file_url: string; file_name: string }>
+  terms_and_conditions?: Array<{ file_url: string; file_name: string }>
+  issue_date: string
+  redemption_branches: Array<{ branch_id: number }>
+}): Promise<any> => {
+  return await postMethod('/guest-cards/dash-go', data)
+}
+
 export const createDashProAndAssign = async (data: {
   recipient_ids: number[]
   product: string
@@ -48,6 +74,21 @@ export const createDashProAndAssign = async (data: {
   issue_date: string
 }): Promise<any> => {
   return await postMethod('/carts/create-dashpro-and-assign', data)
+}
+
+export const createGuestDashPro = async (data: {
+  guest_name: string
+  guest_email: string
+  product: string
+  description: string
+  price: number
+  currency: string
+  images?: Array<{ file_url: string; file_name: string }>
+  terms_and_conditions?: Array<{ file_url: string; file_name: string }>
+  issue_date: string
+  country_code: string
+}): Promise<any> => {
+  return await postMethod('/guest-cards/dash-pro', data)
 }
 
 export const getCartItems = async (query?: Record<string, any>): Promise<CartListResponse[]> => {

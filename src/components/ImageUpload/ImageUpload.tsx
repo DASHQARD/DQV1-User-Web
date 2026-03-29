@@ -53,7 +53,7 @@ export default function ImageUpload({
 
   return (
     <div
-      className={`flex bg-gray-200 ${borderRadius} h-[120px] w-[120px] mx-auto relative overflow-hidden ${className}`}
+      className={`flex bg-gray-200 ${borderRadius} h-[120px] w-[120px] mx-auto relative ${className}`}
     >
       <input
         ref={fileInputRef}
@@ -63,7 +63,7 @@ export default function ImageUpload({
         onChange={handleImageChange}
         disabled={isUploading}
       />
-      <div className="grid inset-0 m-auto">
+      <div className={`grid inset-0 m-auto overflow-hidden ${borderRadius}`}>
         {displayImage ? (
           <img
             src={displayImage}
@@ -81,7 +81,7 @@ export default function ImageUpload({
         type="button"
         onClick={handleCameraClick}
         disabled={isUploading}
-        className={`absolute ${buttonSize} border-2 border-white bg-[#8ac1ba] rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed z-10`}
+        className={`absolute ${buttonSize} border-2 border-white bg-[#8ac1ba] rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed z-20`}
       >
         {isUploading ? (
           <Icon icon="hugeicons:loading-01" className="text-white text-base m-auto animate-spin" />

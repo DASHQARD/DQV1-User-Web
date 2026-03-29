@@ -5,14 +5,12 @@ import { useCart } from './useCart'
 import { useGuestCart } from './useGuestCart'
 import { useViewBagMutations } from './useViewBagMutations'
 import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
+import { usePayments } from './usePayments'
 import { usePersistedModalState } from '@/hooks'
 import { MODAL_NAMES } from '@/utils/constants'
 import { getCardBackground, getImageUrl } from '@/utils/cardDisplay'
 import type { CartListResponse } from '@/types/responses'
 import type { FlattenedCartItem } from '@/types'
-
-const SERVICE_FEE_MIN = 5.78
-const SERVICE_FEE_RATE = 0.05
 
 export function useViewBag() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -39,6 +37,8 @@ export function useViewBag() {
 
   const { deleteRecipientMutation } = useViewBagMutations()
   const { useGetCartAllRecipientsService } = usePublicCatalogQueries()
+  const { useServiceFeesConfig } = usePayments()
+  const { data: serviceFeesConfig } = useServiceFeesConfig()
   useGetCartAllRecipientsService()
 
   const modal = usePersistedModalState<{
@@ -111,7 +111,8 @@ export function useViewBag() {
 
   const subtotal = isGuestCart ? getGuestTotalPrice() : subtotalFromApi
   const totalItems = isGuestCart ? getGuestTotalItems() : totalItemsFromApi
-  const serviceFee = Math.max(SERVICE_FEE_MIN, subtotal * SERVICE_FEE_RATE)
+  const serviceFeeRate = Number(serviceFeesConfig?.serviceFeeRate ?? 0)
+  const serviceFee = subtotal * serviceFeeRate
   const total = subtotal + serviceFee
 
   const handleRemoveItem = useCallback(
