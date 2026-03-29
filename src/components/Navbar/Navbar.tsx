@@ -11,6 +11,7 @@ import { Modal } from '@/components'
 import { CartPopoverContent } from '@/components/CartModal'
 import { GuestAddToCartModal } from '@/features/website/components/GuestAddToCartModal'
 import { useUserProfile, usePresignedURL } from '@/hooks'
+import { DEFAULT_AVATAR_SRC } from '@/components/Avatar/Avatar'
 import { vendorQueries } from '@/features'
 import { branchQueries } from '@/features/dashboard/branch'
 
@@ -394,8 +395,9 @@ export default function Navbar() {
     },
   ]
 
-  const showAvatar =
-    (isRegularUser || isCorporateUser || isVendor || isBranchManager) && Boolean(avatarUrl)
+  const showNavProfileImage =
+    isAuthenticated && (isRegularUser || isCorporateUser || isVendor || isBranchManager)
+  const navAvatarDisplaySrc = avatarUrl ?? DEFAULT_AVATAR_SRC
 
   return (
     <>
@@ -466,13 +468,15 @@ export default function Navbar() {
                       className="bg-gray-50 flex items-center justify-center rounded-full overflow-hidden relative hover:bg-gray-100 transition-colors ring-2 ring-transparent hover:ring-primary-200"
                       aria-label="Account"
                     >
-                      {showAvatar ? (
+                      {showNavProfileImage ? (
                         <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                           <img
-                            src={avatarUrl ?? undefined}
+                            src={navAvatarDisplaySrc}
                             alt={displayName}
                             className="w-full h-full rounded-full object-cover"
-                            onError={() => setAvatarUrl(null)}
+                            onError={() => {
+                              if (avatarUrl) setAvatarUrl(null)
+                            }}
                           />
                         </div>
                       ) : (
@@ -615,13 +619,15 @@ export default function Navbar() {
                 <>
                   <div className="border-t border-gray-200 pt-3 mt-3">
                     <div className="flex items-center gap-3 px-4 py-3 mb-2">
-                      {showAvatar ? (
+                      {showNavProfileImage ? (
                         <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                           <img
-                            src={avatarUrl ?? undefined}
+                            src={navAvatarDisplaySrc}
                             alt={displayName}
                             className="w-full h-full rounded-full object-cover"
-                            onError={() => setAvatarUrl(null)}
+                            onError={() => {
+                              if (avatarUrl) setAvatarUrl(null)
+                            }}
                           />
                         </div>
                       ) : (

@@ -1,8 +1,11 @@
 import React from 'react'
 
-import { DefaultAvatar } from '@/assets/images'
 import { cn } from '@/libs'
 // import { Icon } from '@/libs';
+
+/** Image for this pin: https://www.pinterest.com/pin/1008454541535131743/ */
+export const DEFAULT_AVATAR_SRC =
+  'https://i.pinimg.com/originals/57/99/ac/5799ac920c25355b131390474e453361.jpg'
 
 type AvatarProps = {
   src?: string | null
@@ -43,7 +46,7 @@ export function Avatar({
       .join('')
   }
 
-  const imageSource = error || !src ? DefaultAvatar : src
+  const imageSource = error || !src ? DEFAULT_AVATAR_SRC : src
   const initials = getInitials(name)
 
   if (error && fallback) {

@@ -146,6 +146,35 @@ export function CreateDashProModal() {
       showClose
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 py-4">
+        {/* Assign to Self Toggle */}
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-semibold text-gray-700">Assign to Self</label>
+            <button
+              type="button"
+              onClick={handleToggleAssignToSelf}
+              disabled={isPending}
+              className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  assignToSelf ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+              <span
+                className={`absolute inset-0 rounded-full transition-colors ${
+                  assignToSelf ? 'bg-primary-500' : 'bg-gray-300'
+                }`}
+              />
+            </button>
+          </div>
+          <Text variant="p" className="text-xs text-gray-600">
+            {assignToSelf
+              ? 'Card will be assigned to your account. Recipient details will be ignored.'
+              : 'Card will be assigned to someone else. Please provide recipient details below.'}
+          </Text>
+        </div>
+
         {/* Amount Field */}
         <div>
           <label className="mb-2 block text-sm font-semibold text-gray-700">
@@ -232,35 +261,6 @@ export function CreateDashProModal() {
             error={errors.message?.message}
             disabled={isPending}
           />
-        </div>
-
-        {/* Assign to Self Toggle */}
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-semibold text-gray-700">Assign to Self</label>
-            <button
-              type="button"
-              onClick={handleToggleAssignToSelf}
-              disabled={isPending}
-              className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  assignToSelf ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-              <span
-                className={`absolute inset-0 rounded-full transition-colors ${
-                  assignToSelf ? 'bg-primary-500' : 'bg-gray-300'
-                }`}
-              />
-            </button>
-          </div>
-          <Text variant="p" className="text-xs text-gray-600">
-            {assignToSelf
-              ? 'Card will be assigned to your account. Recipient details will be ignored.'
-              : 'Card will be assigned to someone else. Please provide recipient details below.'}
-          </Text>
         </div>
 
         {/* Action Buttons */}

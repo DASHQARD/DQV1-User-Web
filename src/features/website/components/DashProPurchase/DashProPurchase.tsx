@@ -388,6 +388,36 @@ export default function DashProPurchase() {
             </div>
           </section>
 
+          {/* Assign to self */}
+          <section className="border-b border-gray-100 px-10 py-8">
+            <div className="rounded-2xl bg-[#f8f9fa] p-6 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <label className="inline-flex cursor-pointer items-center gap-3">
+                  <div className="relative h-6 w-11">
+                    <input
+                      type="checkbox"
+                      {...register('assign_to_self')}
+                      checked={assignToSelf}
+                      onChange={handleAssignToSelf}
+                      className="peer sr-only"
+                    />
+                    <span className="absolute inset-0 rounded-full bg-gray-300 transition peer-checked:bg-primary-500" />
+                    <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5" />
+                  </div>
+                  <span className="text-sm font-semibold text-gray-700">
+                    <Icon icon="bi:person-check" className="mr-2 inline size-4 text-primary-500" />
+                    Assign to Self
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500">
+                  {assignToSelf
+                    ? 'Card will be assigned to your account. Name, email, and phone fields will be ignored.'
+                    : 'Card will be assigned to someone else. Please provide recipient details below.'}
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Amount Section */}
           <section className="border-b border-gray-100 px-10 py-8">
             <div className="mb-6">
@@ -494,36 +524,6 @@ export default function DashProPurchase() {
                   className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                   placeholder="Write a personal message for the recipient..."
                 />
-              </div>
-            </div>
-          </section>
-
-          {/* Assign to self */}
-          <section className="px-10 py-8">
-            <div className="rounded-2xl bg-[#f8f9fa] p-6 text-center">
-              <div className="flex flex-col items-center gap-4">
-                <label className="inline-flex cursor-pointer items-center gap-3">
-                  <div className="relative h-6 w-11">
-                    <input
-                      type="checkbox"
-                      {...register('assign_to_self')}
-                      checked={assignToSelf}
-                      onChange={handleAssignToSelf}
-                      className="peer sr-only"
-                    />
-                    <span className="absolute inset-0 rounded-full bg-gray-300 transition peer-checked:bg-primary-500" />
-                    <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5" />
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700">
-                    <Icon icon="bi:person-check" className="mr-2 inline size-4 text-primary-500" />
-                    Assign to Self
-                  </span>
-                </label>
-                <p className="text-xs text-gray-500">
-                  {assignToSelf
-                    ? 'Card will be assigned to your account. Name, email, and phone fields will be ignored.'
-                    : 'Card will be assigned to someone else. Please provide recipient details below.'}
-                </p>
               </div>
             </div>
           </section>
