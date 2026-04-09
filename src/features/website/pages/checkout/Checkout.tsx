@@ -2,7 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Controller } from 'react-hook-form'
 import { Icon } from '@/libs'
-import { Button, Loader, Modal, EmptyState, Input } from '@/components'
+import { Button, Loader, Modal, EmptyState, Input, BasePhoneInput } from '@/components'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import FileUploader from '@/components/FileUploader/FileUploader'
 import { useCheckout, type CheckoutFlattenedCartItem } from '@/features/website/hooks/useCheckout'
@@ -198,12 +198,17 @@ export default function Checkout() {
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">
                         Phone Number <span className="text-red-500">*</span>
                       </label>
-                      <Input
-                        type="tel"
-                        {...userInfoForm.register('phone_number')}
-                        error={userInfoForm.formState.errors.phone_number?.message}
-                        placeholder="024 123 4567"
-                        className="w-full"
+                      <Controller
+                        name="phone_number"
+                        control={userInfoForm.control}
+                        render={({ field }) => (
+                          <BasePhoneInput
+                            selectedVal={field.value || ''}
+                            handleChange={field.onChange}
+                            error={userInfoForm.formState.errors.phone_number?.message}
+                            placeholder="0241234567"
+                          />
+                        )}
                       />
                     </div>
                   </div>
@@ -406,12 +411,17 @@ export default function Checkout() {
                       <label className="mb-1 block text-sm font-medium text-gray-700">
                         Phone number (for payment) <span className="text-red-500">*</span>
                       </label>
-                      <Input
-                        type="tel"
-                        {...userInfoForm.register('phone_number')}
-                        error={userInfoForm.formState.errors.phone_number?.message}
-                        placeholder="024 123 4567"
-                        className="w-full"
+                      <Controller
+                        name="phone_number"
+                        control={userInfoForm.control}
+                        render={({ field }) => (
+                          <BasePhoneInput
+                            selectedVal={field.value || ''}
+                            handleChange={field.onChange}
+                            error={userInfoForm.formState.errors.phone_number?.message}
+                            placeholder="0241234567"
+                          />
+                        )}
                       />
                     </div>
                   </div>

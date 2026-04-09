@@ -31,6 +31,22 @@ const SORT_ACTIONS = [
   { label: 'Newest', value: 'newest' },
 ] as const
 
+function clampNonNegativePrice(price: string | undefined): number | null {
+  if (!price) return null
+  const parsed = parseFloat(price)
+  if (Number.isNaN(parsed)) return null
+  return Math.max(0, parsed)
+}
+
+function getNormalizedRange(minRaw: string | undefined, maxRaw: string | undefined) {
+  const min = clampNonNegativePrice(minRaw)
+  const max = clampNonNegativePrice(maxRaw)
+  if (min !== null && max !== null && min > max) {
+    return { min: max, max: min }
+  }
+  return { min, max }
+}
+
 export function useDashQards() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<DashQardsTabId>('dashx')
@@ -75,13 +91,12 @@ export function useDashQards() {
       const cardType = card.type?.toLowerCase()
       if (cardType !== activeTab) return false
       const cardPrice = parseFloat(String(card.price)) || 0
-      if (query.min_price) {
-        const minPrice = parseFloat(query.min_price)
-        if (!isNaN(minPrice) && cardPrice < minPrice) return false
+      const { min: minPrice, max: maxPrice } = getNormalizedRange(query.min_price, query.max_price)
+      if (minPrice !== null && cardPrice < minPrice) {
+        return false
       }
-      if (query.max_price) {
-        const maxPrice = parseFloat(query.max_price)
-        if (!isNaN(maxPrice) && cardPrice > maxPrice) return false
+      if (maxPrice !== null && cardPrice > maxPrice) {
+        return false
       }
       return true
     })
@@ -101,8 +116,8 @@ export function useDashQards() {
     (min: number | null | undefined, max: number | null | undefined) => {
       setQuery({
         ...query,
-        min_price: min != null ? String(min) : undefined,
-        max_price: max != null ? String(max) : undefined,
+        min_price: min != null ? String(Math.max(0, min)) : undefined,
+        max_price: max != null ? String(Math.max(0, max)) : undefined,
       })
     },
     [setQuery, query],
@@ -110,8 +125,10 @@ export function useDashQards() {
 
   const isPriceRangeActive = useCallback(
     (min: number | null, max: number | null) => {
-      const currentMin = query.min_price ? parseFloat(query.min_price) : null
-      const currentMax = query.max_price ? parseFloat(query.max_price) : null
+      const { min: currentMin, max: currentMax } = getNormalizedRange(
+        query.min_price,
+        query.max_price,
+      )
       if (min === null && max === null) return currentMin === null && currentMax === null
       if (min !== null && max !== null) return currentMin === min && currentMax === max
       if (min !== null && max === null) return currentMin === min && currentMax === null

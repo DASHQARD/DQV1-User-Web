@@ -1,6 +1,6 @@
 import { jwtDecode } from 'jwt-decode'
 import { create, type StateCreator } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
 type State = {
   token: string | null
@@ -84,6 +84,7 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
 const useAuthStore = create(
   persist(authStore, {
     name: 'dashqard-web-auth-store',
+    storage: createJSONStorage(() => sessionStorage),
   }),
 )
 

@@ -38,6 +38,12 @@ function toLegacyFormat(phone: string): string {
   return phone
 }
 
+function sanitizeE164Phone(value: string): string {
+  if (!value) return ''
+  const digitsOnly = value.replace(/\D/g, '')
+  return digitsOnly ? `+${digitsOnly}` : ''
+}
+
 export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
   (
     {
@@ -69,10 +75,10 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
         ) : null}
         <div
           className={cn(
-            'flex h-12 w-full min-w-0 items-center rounded-lg border border-gray-300 px-3 transition-colors overflow-hidden',
-            'focus-within:border-primary-400 focus-within:outline-none focus-within:ring-1 focus-within:ring-primary-400',
+            'relative flex h-12 w-full min-w-0 items-center rounded-lg border border-gray-300 px-3 transition-colors',
+            'focus-within:z-50 focus-within:border-primary-400 focus-within:outline-none focus-within:ring-1 focus-within:ring-primary-400',
             error && 'border-red-500',
-            disabled && 'cursor-not-allowed bg-gray-50 opacity-50',
+            disabled && 'cursor-not-allowed border-gray-300 bg-gray-100 opacity-100',
           )}
         >
           <PhoneInput
@@ -81,11 +87,12 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
             value={value}
             onChange={(phone: string) => {
               if (!handleChange) return
-              if (!phone) {
+              const sanitizedPhone = sanitizeE164Phone(phone)
+              if (!sanitizedPhone) {
                 handleChange('')
                 return
               }
-              const formatted = toLegacyFormat(phone)
+              const formatted = toLegacyFormat(sanitizedPhone)
               handleChange(formatted)
             }}
             preferredCountries={['gh']}
@@ -96,11 +103,33 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
               {
                 maxLength,
                 'data-testid': 'phoneNumber',
+                inputMode: 'numeric',
+                pattern: '[0-9]*',
+                onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.ctrlKey || e.metaKey || e.altKey) return
+                  const allowedKeys = new Set([
+                    'Backspace',
+                    'Delete',
+                    'Tab',
+                    'Escape',
+                    'Enter',
+                    'ArrowLeft',
+                    'ArrowRight',
+                    'ArrowUp',
+                    'ArrowDown',
+                    'Home',
+                    'End',
+                  ])
+                  if (allowedKeys.has(e.key)) return
+                  if (/^\d$/.test(e.key)) return
+                  e.preventDefault()
+                },
               } as React.InputHTMLAttributes<HTMLInputElement>
             }
-            className="flex-1 min-w-0"
+            className="flex-1 min-w-0 bg-transparent"
             inputClassName={cn(
               '!border-0 min-w-0 flex-1 bg-transparent text-sm font-light outline-none placeholder:text-gray-400',
+              disabled && 'text-gray-500 placeholder:text-gray-500',
             )}
             inputStyle={{ border: 'none' }}
             countrySelectorStyleProps={{
@@ -110,20 +139,35 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
                 borderBottom: 'none',
                 borderLeft: 'none',
                 borderRight: 'none',
+                outline: 'none',
+                boxShadow: 'none',
               },
-              buttonClassName:
-                '!border-0 flex shrink-0 items-center gap-2 bg-transparent px-0 cursor-pointer outline-none',
+              buttonClassName: cn(
+                '!border-0 !shadow-none flex shrink-0 items-center gap-2 bg-transparent px-0 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0',
+                disabled ? 'cursor-not-allowed opacity-80' : 'cursor-pointer',
+              ),
+              dropdownStyleProps: {
+                className: '!z-[100] !bg-white',
+                listItemClassName: '!bg-white',
+                listItemFocusedClassName: '!bg-white',
+                listItemSelectedClassName: '!bg-white',
+                listItemPreferredClassName: '!bg-white',
+              },
             }}
             dialCodePreviewStyleProps={{
               style: { border: 'none', marginRight: 0 },
-              className: '!border-0',
+              className: cn('!border-0', disabled && 'text-gray-500'),
             }}
             style={
               {
                 '--react-international-phone-height': '48px',
                 '--react-international-phone-border-color': 'transparent',
+                '--react-international-phone-background-color': 'transparent',
+                '--react-international-phone-border-radius': '0px',
                 '--react-international-phone-country-selector-border-color': 'transparent',
                 '--react-international-phone-dial-code-preview-border-color': 'transparent',
+                '--react-international-phone-dropdown-item-background-color': '#ffffff',
+                '--react-international-phone-selected-dropdown-item-background-color': '#ffffff',
               } as React.CSSProperties
             }
           />

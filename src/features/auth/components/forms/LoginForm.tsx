@@ -14,6 +14,7 @@ export default function LoginForm() {
       <section className="wrapper">
         <form
           onSubmit={form.handleSubmit(onSubmit)}
+          autoComplete="off"
           className="max-w-[470.61px] w-full flex flex-col gap-10 mx-auto"
         >
           <div className="flex items-center gap-3">
@@ -35,6 +36,7 @@ export default function LoginForm() {
               isRequired
               label="Email"
               placeholder="Enter your email"
+              autoComplete="off"
               {...form.register('email')}
               error={form.formState.errors.email?.message}
             />
@@ -42,6 +44,7 @@ export default function LoginForm() {
               isRequired
               label="Password"
               placeholder="Enter your password"
+              autoComplete="new-password"
               {...form.register('password')}
               type="password"
               error={form.formState.errors.password?.message}

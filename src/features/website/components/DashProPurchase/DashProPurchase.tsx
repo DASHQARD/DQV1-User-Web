@@ -1,8 +1,8 @@
 import React from 'react'
-import { Button, Text } from '@/components'
+import { BasePhoneInput, Button, Text } from '@/components'
 import { Icon } from '@/libs'
 import DashProBG from '@/assets/svgs/dashpro_bg.svg'
-import { useForm, useWatch } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { formatCurrency } from '@/utils/format'
@@ -214,7 +214,6 @@ export default function DashProPurchase() {
 
       if (!cartItemId) {
         console.error('Failed to get cart_item_id after adding to cart')
-        openCart()
         return
       }
 
@@ -249,7 +248,6 @@ export default function DashProPurchase() {
     } catch (error: any) {
       console.error('Error creating DashPro card and assigning recipient:', error)
       toast.error(getGuestErrorMessage(error))
-      openCart()
     }
   }
 
@@ -478,18 +476,21 @@ export default function DashProPurchase() {
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
                   Phone Number {!assignToSelf && '*'}
                 </label>
-                <input
-                  type="tel"
-                  {...register('phone')}
-                  disabled={assignToSelf}
-                  className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
-                    assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
-                  }`}
-                  placeholder={assignToSelf ? 'Will use your account phone' : 'Enter phone number'}
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <BasePhoneInput
+                      selectedVal={field.value || ''}
+                      handleChange={field.onChange}
+                      disabled={assignToSelf}
+                      placeholder={
+                        assignToSelf ? 'Will use your account phone' : 'Enter phone number'
+                      }
+                      error={errors.phone?.message}
+                    />
+                  )}
                 />
-                {errors.phone && (
-                  <p className="mt-1 text-xs text-red-500">{errors.phone.message}</p>
-                )}
                 {assignToSelf && (
                   <p className="mt-1 text-xs text-gray-500">Will use your account phone number</p>
                 )}
@@ -548,7 +549,7 @@ export default function DashProPurchase() {
                 assignGuestRecipientMutation.isPending
               }
             >
-              Create and customize DashPro Gift Card
+              Create DashPro Gift Card
             </Button>
           </div>
         </form>

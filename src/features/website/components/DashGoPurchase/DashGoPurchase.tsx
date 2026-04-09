@@ -266,7 +266,6 @@ export default function DashGoPurchase() {
 
       if (!cartItemId) {
         console.error('Failed to get cart_item_id after adding to cart')
-        openCart()
         return
       }
 
