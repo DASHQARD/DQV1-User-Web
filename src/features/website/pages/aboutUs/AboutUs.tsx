@@ -70,7 +70,7 @@ export default function AboutUs() {
                   <span>Instant</span>
                 </div>
                 <div
-                  className="absolute top-[60%] -left-[15%] bg-white rounded-full px-6 py-3 flex items-center gap-2 font-semibold text-[#2d2060] shadow-lg animate-bounce"
+                  className="absolute top-[35%] -left-[8%] bg-white rounded-full px-6 py-3 flex items-center gap-2 font-semibold text-[#2d2060] shadow-lg animate-bounce"
                   style={{ animationDelay: '2s' }}
                 >
                   <Icon icon="bi:shield-check" className="text-[#402D87]" />

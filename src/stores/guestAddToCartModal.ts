@@ -6,6 +6,8 @@ export type GuestAddToCartPendingItem = {
   price: number
   type?: string
   currency?: string
+  /** Guest OTP + cart setup only; skip add-to-cart (e.g. custom DashPro/DashGo on DashQards). */
+  authOnly?: boolean
 }
 
 type State = {

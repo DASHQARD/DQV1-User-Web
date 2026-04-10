@@ -2,6 +2,8 @@
 export const GUEST_EMAIL_STORAGE_KEY = 'dashqard-guest-email'
 /** localStorage key for guest name (collected during guest OTP flow, used later) */
 export const GUEST_NAME_STORAGE_KEY = 'dashqard-guest-name'
+/** localStorage key for guest phone (for assign-to-self prefill when JWT omits it) */
+export const GUEST_PHONE_STORAGE_KEY = 'dashqard-guest-phone'
 
 export const ROUTES = {
   IN_APP: {

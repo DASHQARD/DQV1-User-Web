@@ -1,5 +1,5 @@
 import React from 'react'
-import { PhoneInput, type PhoneInputRefType } from 'react-international-phone'
+import { defaultCountries, PhoneInput, type PhoneInputRefType } from 'react-international-phone'
 import 'react-international-phone/style.css'
 
 import { cn } from '@/libs'
@@ -44,6 +44,13 @@ function sanitizeE164Phone(value: string): string {
   return digitsOnly ? `+${digitsOnly}` : ''
 }
 
+/** Ghana has no mask in the default dataset; add spacing: +233 XX XXX XXXX (9-digit mobile). */
+const COUNTRIES_WITH_GHANA_MASK = defaultCountries.map((row) =>
+  row[1] === 'gh'
+    ? (['Ghana', 'gh', '233', '.. ... ....'] as (typeof defaultCountries)[number])
+    : row,
+) as typeof defaultCountries
+
 export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
   (
     {
@@ -84,6 +91,7 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
           <PhoneInput
             ref={ref}
             defaultCountry="gh"
+            countries={COUNTRIES_WITH_GHANA_MASK}
             value={value}
             onChange={(phone: string) => {
               if (!handleChange) return
@@ -103,8 +111,9 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
               {
                 maxLength,
                 'data-testid': 'phoneNumber',
-                inputMode: 'numeric',
-                pattern: '[0-9]*',
+                type: 'tel',
+                inputMode: 'tel',
+                autoComplete: 'tel',
                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                   if (e.ctrlKey || e.metaKey || e.altKey) return
                   const allowedKeys = new Set([

@@ -6,6 +6,7 @@ import DashGoImage from '@/assets/images/DashGo.png'
 import DashProImage from '@/assets/images/DashPro.png'
 import { CardItems, DashProPurchase, DashGoPurchase } from '../../components'
 import { useDashQards } from '../../hooks'
+import { DashQardsCustomCardGate, useCanUseCustomGiftCardFlow } from './DashQardsCustomCardGate'
 import { DashQardsFilters } from './DashQardsFilters'
 
 const heroImages = {
@@ -39,6 +40,8 @@ export default function DashQards() {
     () => [query.min_price, query.max_price, query.search, query.vendor_ids].filter(Boolean).length,
     [query.min_price, query.max_price, query.search, query.vendor_ids],
   )
+
+  const canUseCustomGiftCardFlow = useCanUseCustomGiftCardFlow()
 
   return (
     <div className="min-h-screen bg-white">
@@ -107,7 +110,7 @@ export default function DashQards() {
                 <div className="pt-2 pb-4 pr-4 border-b border-[#e6e6e6]">
                   <Text variant="h2" weight="medium" className="text-[#212529]">
                     Results for "All Gift Cards" in{' '}
-                    <span className="font-normal">({filteredQardsAll.length})</span>
+                    <span className="font-normal">({filteredQardsAll.length + 2})</span>
                   </Text>
                   <p className="py-2 opacity-0">check</p>
                 </div>
@@ -221,11 +224,19 @@ export default function DashQards() {
 
               {activeTab === 'dashpro' ? (
                 <div className="w-full">
-                  <DashProPurchase />
+                  {canUseCustomGiftCardFlow ? (
+                    <DashProPurchase />
+                  ) : (
+                    <DashQardsCustomCardGate cardKind="DashPro" />
+                  )}
                 </div>
               ) : activeTab === 'dashgo' ? (
                 <div className="w-full">
-                  <DashGoPurchase />
+                  {canUseCustomGiftCardFlow ? (
+                    <DashGoPurchase />
+                  ) : (
+                    <DashQardsCustomCardGate cardKind="DashGo" />
+                  )}
                 </div>
               ) : filteredQardsAll.length === 0 ? (
                 <div className="text-center py-20 px-5 text-grey-500">
@@ -234,9 +245,9 @@ export default function DashQards() {
                   </div>
                   <h3 className="text-2xl font-bold text-[#212529] mb-2">No gift cards found</h3>
                   <p className="text-base mb-6">Try adjusting your filters or search criteria</p>
-                  <Button variant="outline" onClick={clearAllFilters} className="rounded-full!">
+                  {/* <Button variant="outline" onClick={clearAllFilters} className="rounded-full!">
                     Clear All Filters
-                  </Button>
+                  </Button> */}
                 </div>
               ) : (
                 <>

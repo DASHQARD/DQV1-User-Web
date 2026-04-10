@@ -14,6 +14,7 @@ import { useUserProfile } from '@/hooks'
 import { useRecipients } from '@/features/dashboard/hooks'
 import { useAuthStore } from '@/stores'
 import { GUEST_EMAIL_STORAGE_KEY } from '@/utils/constants'
+import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
 import { addGuestCard, createGuestDashPro } from '../../services/cards'
 import { useToast } from '@/hooks'
 
@@ -88,10 +89,14 @@ export default function DashProPurchase() {
     setValue('assign_to_self', newValue)
 
     if (newValue) {
-      // Populate form fields with user's profile data
-      setValue('name', userProfileData?.fullname || '')
-      setValue('email', userProfileData?.email || '')
-      setValue('phone', userProfileData?.phonenumber || '')
+      const contact = getAssignToSelfContactPrefill({
+        isGuestAuth,
+        user,
+        userProfileData: userProfileData ?? null,
+      })
+      setValue('name', contact.name)
+      setValue('email', contact.email)
+      setValue('phone', contact.phone)
     } else {
       // Clear fields when not assigning to self
       setValue('name', '')
@@ -100,14 +105,18 @@ export default function DashProPurchase() {
     }
   }
 
-  // Populate form fields with user data when assignToSelf is true
+  // Populate form fields when assign-to-self (profile API for members; JWT + storage for guests)
   React.useEffect(() => {
-    if (assignToSelf && userProfileData) {
-      setValue('name', userProfileData?.fullname || '')
-      setValue('email', userProfileData?.email || '')
-      setValue('phone', userProfileData?.phonenumber || '')
-    }
-  }, [assignToSelf, userProfileData, setValue])
+    if (!assignToSelf) return
+    const contact = getAssignToSelfContactPrefill({
+      isGuestAuth,
+      user,
+      userProfileData: userProfileData ?? null,
+    })
+    setValue('name', contact.name)
+    setValue('email', contact.email)
+    setValue('phone', contact.phone)
+  }, [assignToSelf, isGuestAuth, user, userProfileData, setValue])
 
   const onSubmit = async (data: z.infer<typeof AssignRecipientSchema>) => {
     try {
@@ -262,10 +271,15 @@ export default function DashProPurchase() {
   const displayedCardAmount = amount ? formatCurrency(amount.toString(), 'GHS') : 'GHS 0'
   const displayedCardRecipient = React.useMemo(() => {
     if (assignToSelf) {
-      return userProfileData?.fullname || 'Your Name'
+      const contact = getAssignToSelfContactPrefill({
+        isGuestAuth,
+        user,
+        userProfileData: userProfileData ?? null,
+      })
+      return contact.name || recipientName || 'Your Name'
     }
     return recipientName || 'Recipient Name'
-  }, [assignToSelf, recipientName, userProfileData])
+  }, [assignToSelf, recipientName, isGuestAuth, user, userProfileData])
   const displayedCardMessage = message || 'Your personalized message will appear here...'
 
   return (

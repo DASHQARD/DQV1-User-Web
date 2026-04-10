@@ -15,6 +15,7 @@ import { useCartStore } from '@/stores/cart'
 import { useCart, useGuestCart, useRecipients } from '../../hooks'
 import { useAuthStore } from '@/stores'
 import { GUEST_EMAIL_STORAGE_KEY } from '@/utils/constants'
+import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
 import { addGuestCard, createGuestDashGo } from '../../services/cards'
 
 const QRPlaceholder = () => {
@@ -63,8 +64,6 @@ export default function DashGoPurchase() {
     watch,
   } = form
 
-  console.log('errors', errors)
-
   // Watch form values for card preview
   const amount = useWatch({ control, name: 'recipient_card_amount' })
   const recipientName = useWatch({ control, name: 'recipient_name' })
@@ -106,9 +105,14 @@ export default function DashGoPurchase() {
     setValue('assign_to_self', newValue)
 
     if (newValue) {
-      setValue('recipient_name', userProfileData?.fullname || '')
-      setValue('recipient_email', userProfileData?.email || '')
-      setValue('recipient_phone', userProfileData?.phonenumber || '')
+      const contact = getAssignToSelfContactPrefill({
+        isGuestAuth,
+        user,
+        userProfileData: userProfileData ?? null,
+      })
+      setValue('recipient_name', contact.name)
+      setValue('recipient_email', contact.email)
+      setValue('recipient_phone', contact.phone)
     } else {
       setValue('recipient_name', '')
       setValue('recipient_email', '')
@@ -117,12 +121,26 @@ export default function DashGoPurchase() {
   }
 
   React.useEffect(() => {
-    if (assignToSelf && userProfileData) {
-      setValue('recipient_name', userProfileData?.fullname || '')
-      setValue('recipient_email', userProfileData?.email || '')
-      setValue('recipient_phone', userProfileData?.phonenumber || '')
-    }
-  }, [assignToSelf, userProfileData, setValue])
+    if (!assignToSelf) return
+    const contact = getAssignToSelfContactPrefill({
+      isGuestAuth,
+      user,
+      userProfileData: userProfileData ?? null,
+    })
+    setValue('recipient_name', contact.name)
+    setValue('recipient_email', contact.email)
+    setValue('recipient_phone', contact.phone)
+  }, [assignToSelf, isGuestAuth, user, userProfileData, setValue])
+
+  const dashGoPreviewRecipientName = React.useMemo(() => {
+    if (!assignToSelfFormValue) return recipientName || 'Recipient Name'
+    const contact = getAssignToSelfContactPrefill({
+      isGuestAuth,
+      user,
+      userProfileData: userProfileData ?? null,
+    })
+    return contact.name || recipientName || 'Your Name'
+  }, [assignToSelfFormValue, recipientName, isGuestAuth, user, userProfileData])
 
   // Extract vendors from response
   const vendors = React.useMemo(() => {
@@ -348,9 +366,7 @@ export default function DashGoPurchase() {
                           {amount ? formatCurrency(amount.toString(), 'GHS') : 'GHS 0'}
                         </div>
                         <div className="p-4 text-lg font-semibold uppercase">
-                          {assignToSelfFormValue
-                            ? userProfileData?.fullname || 'Your Name'
-                            : recipientName || 'Recipient Name'}
+                          {dashGoPreviewRecipientName}
                         </div>
                         <div className="flex items-end justify-end p-4">
                           {amount && (assignToSelfFormValue || recipientName) && <QRPlaceholder />}

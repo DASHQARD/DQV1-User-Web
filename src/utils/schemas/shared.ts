@@ -35,6 +35,15 @@ export function getRequiredOTPSchema(label: string = 'OTP') {
   return z.string().min(6, `${label} must be 6 digits`)
 }
 
+/**
+ * Validates phone strings as stored by our inputs (E.164-style with optional + / spaces).
+ * Uses digit count only: ITU-T E.164 allows up to 15 digits; minimum 10 for a plausible mobile.
+ */
+export function isValidInternationalPhoneDigits(value: string): boolean {
+  const digits = value.replace(/\D/g, '')
+  return digits.length >= 10 && digits.length <= 15
+}
+
 const nigerianPhoneRegex =
   /^(?:\+234|0)(?:070|080|081|090|091|70[1-9]|80[2-9]|81[0-9]|90[1-9]|91[0-2])\d{7}$/
 

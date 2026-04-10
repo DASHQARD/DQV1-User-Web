@@ -14,7 +14,12 @@ import {
   guestAuthTokenRefresh,
 } from '@/features/auth/services'
 import { addGuestCard, createGuestCart } from '@/features/website/services/cards'
-import { GUEST_EMAIL_STORAGE_KEY, GUEST_NAME_STORAGE_KEY, ROUTES } from '@/utils/constants'
+import {
+  GUEST_EMAIL_STORAGE_KEY,
+  GUEST_NAME_STORAGE_KEY,
+  GUEST_PHONE_STORAGE_KEY,
+  ROUTES,
+} from '@/utils/constants'
 import { useToast } from '@/hooks'
 
 const ContactSchema = z.object({
@@ -85,6 +90,7 @@ export default function GuestAddToCartModal() {
       await guestAuthOtpRequest({ guest_phone: data.guest_phone })
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(GUEST_EMAIL_STORAGE_KEY, data.email)
+        localStorage.setItem(GUEST_PHONE_STORAGE_KEY, data.guest_phone)
       }
       setGuestName(data.guest_name)
       setGuestEmail(data.email)
@@ -122,8 +128,9 @@ export default function GuestAddToCartModal() {
         refreshToken: refreshToken ?? null,
         isGuestAuth: true,
       })
-      if (typeof localStorage !== 'undefined' && guestName) {
-        localStorage.setItem(GUEST_NAME_STORAGE_KEY, guestName)
+      if (typeof localStorage !== 'undefined') {
+        if (guestName) localStorage.setItem(GUEST_NAME_STORAGE_KEY, guestName)
+        if (submittedPhone) localStorage.setItem(GUEST_PHONE_STORAGE_KEY, submittedPhone)
       }
 
       // Immediately refresh guest token after login to align session lifecycle with backend.
@@ -174,6 +181,14 @@ export default function GuestAddToCartModal() {
           cartId = createdCartId
         }
       }
+
+      if (pendingItem.authOnly) {
+        queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+        handleClose()
+        toast.success("You're signed in. You can continue customizing your card.")
+        return
+      }
+
       const addResult = await addGuestCard({
         guest_name: guestName,
         guest_email: guestEmail,
@@ -204,7 +219,9 @@ export default function GuestAddToCartModal() {
       setIsOpen={(open) => !open && handleClose()}
       title={
         step === 'choice'
-          ? 'Add to cart'
+          ? pendingItem?.authOnly
+            ? 'Continue'
+            : 'Add to cart'
           : step === 'contact'
             ? 'Continue as guest'
             : 'Verify your phone'
@@ -216,10 +233,19 @@ export default function GuestAddToCartModal() {
           <>
             <div className="text-center mb-8 max-md:mb-6">
               <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-[#402D87] to-[#7950ed] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#402D87]/20">
-                <Icon icon="bi:bag-plus" className="text-2xl text-white" />
+                <Icon
+                  icon={pendingItem?.authOnly ? 'bi:gift' : 'bi:bag-plus'}
+                  className="text-2xl text-white"
+                />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Add to cart</h3>
-              <p className="text-sm text-gray-500">Choose how you’d like to continue</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                {pendingItem?.authOnly ? 'Create your custom card' : 'Add to cart'}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {pendingItem?.authOnly
+                  ? 'Sign in or continue as guest to customize your gift card'
+                  : 'Choose how you’d like to continue'}
+              </p>
             </div>
             <div className="space-y-3 max-md:space-y-2.5">
               <button
