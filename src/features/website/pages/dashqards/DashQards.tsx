@@ -6,7 +6,8 @@ import DashGoImage from '@/assets/images/DashGo.png'
 import DashProImage from '@/assets/images/DashPro.png'
 import { CardItems, DashProPurchase, DashGoPurchase } from '../../components'
 import { useDashQards } from '../../hooks'
-import { DashQardsCustomCardGate, useCanUseCustomGiftCardFlow } from './DashQardsCustomCardGate'
+import { DashQardsCustomCardGate } from './DashQardsCustomCardGate'
+import { useCanUseCustomGiftCardFlow } from './useCanUseCustomGiftCardFlow'
 import { DashQardsFilters } from './DashQardsFilters'
 
 const heroImages = {

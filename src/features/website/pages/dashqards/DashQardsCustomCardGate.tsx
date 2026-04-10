@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Button, Text } from '@/components'
 import { Icon } from '@/libs'
-import { useAuthStore, useGuestAddToCartModalStore } from '@/stores'
+import { useGuestAddToCartModalStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 
 type CardKind = 'DashPro' | 'DashGo'
@@ -29,8 +29,8 @@ export function DashQardsCustomCardGate({ cardKind }: { cardKind: CardKind }) {
         Sign in to create a custom {cardKind} card
       </Text>
       <p className="text-sm text-grey-500 mb-6 max-w-md mx-auto">
-        Custom {cardKind} gift cards require an account or a verified guest session. Choose an option
-        below to continue.
+        Custom {cardKind} gift cards require an account or a verified guest session. Choose an
+        option below to continue.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center max-w-md mx-auto">
         <Button
@@ -52,9 +52,4 @@ export function DashQardsCustomCardGate({ cardKind }: { cardKind: CardKind }) {
       </div>
     </div>
   )
-}
-
-/** True when user may use custom DashPro / DashGo flows (logged-in or guest OTP). */
-export function useCanUseCustomGiftCardFlow(): boolean {
-  return useAuthStore((s) => s.isAuthenticated)
 }
