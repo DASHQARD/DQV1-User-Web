@@ -48,9 +48,6 @@ export function PurchaseDetails() {
   const paymentData = paymentDetailsResponse
   const isPending = isLoading
 
-  // Console log the response
-  console.log('Payment Details Response:', paymentDetailsResponse)
-
   // Map payment data to display format
   const purchaseInfo = [
     {

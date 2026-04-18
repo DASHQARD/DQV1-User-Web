@@ -242,7 +242,6 @@ export default function OrdersPage() {
                           size="small"
                           onClick={() => {
                             // TODO: Implement view details functionality
-                            console.log('View details for payment:', payment.id)
                           }}
                         >
                           <Icon icon="bi:eye" className="size-4 mr-1" />

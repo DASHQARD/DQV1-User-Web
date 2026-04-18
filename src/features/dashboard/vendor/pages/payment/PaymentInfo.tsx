@@ -1,12 +1,11 @@
 import { Icon } from '@/libs'
 import { PaymentInfoForm } from '../../../components'
-import { useUserProfile } from '@/hooks'
+// import { useUserProfile } from '@/hooks'
 
 export default function PaymentInfo() {
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  console.log('userProfileData', userProfileData)
-  console.log('userProfile', useUserProfile)
+  // const { useGetUserProfileService } = useUserProfile()
+  // const { data: userProfileData } = useGetUserProfileService()
+
   return (
     <div className="bg-[#f8f9fa] rounded-[32px] p-4 sm:p-8 min-h-[600px]">
       <div className="max-w-4xl mx-auto bg-white rounded-[32px] shadow-[0_20px_60px_rgba(64,45,135,0.08)] border border-gray-100 overflow-hidden">

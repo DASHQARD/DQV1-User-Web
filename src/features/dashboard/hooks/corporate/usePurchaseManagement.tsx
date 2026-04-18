@@ -92,7 +92,7 @@ export function usePurchaseManagement() {
       label: 'Edit',
       onClickFn: () => {
         // TODO: Implement edit purchase functionality
-        console.log('Edit purchase:', purchase)
+        // console.log('Edit purchase:', purchase)
       },
     }
 
@@ -100,7 +100,7 @@ export function usePurchaseManagement() {
       label: 'Delete',
       onClickFn: () => {
         // TODO: Implement delete purchase functionality
-        console.log('Delete purchase:', purchase)
+        // console.log('Delete purchase:', purchase)
       },
     }
 

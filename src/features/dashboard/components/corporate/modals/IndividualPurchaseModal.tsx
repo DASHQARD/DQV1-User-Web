@@ -95,10 +95,10 @@ export function IndividualPurchaseModal() {
     if (selectedCardType === 'dashgo') {
       if (!dashGoAmount || parseFloat(dashGoAmount) <= 0) return
       // TODO: Handle DashGo individual purchase creation
-      console.log('Creating DashGo purchase for vendor:', selectedVendor, 'amount:', dashGoAmount)
+      // console.log('Creating DashGo purchase for vendor:', selectedVendor, 'amount:', dashGoAmount)
     } else {
       // TODO: Handle regular card individual purchase creation (includes DashX and DashPass which are vendor-created)
-      console.log('Creating individual purchase for card:', selectedCard, 'vendor:', selectedVendor)
+      // console.log('Creating individual purchase for card:', selectedCard, 'vendor:', selectedVendor)
     }
 
     modal.closeModal()

@@ -18,8 +18,6 @@ export function useBranchSidebar() {
   const { useGetBranchInfoService } = branchQueries()
   const { data: branchInfoResponse } = useGetBranchInfoService()
 
-  console.log('branch info response', branchInfoResponse)
-
   const data =
     (branchInfoResponse as BranchInfoResponse | undefined)?.data ??
     (branchInfoResponse as BranchInfoResponse['data'] | undefined)

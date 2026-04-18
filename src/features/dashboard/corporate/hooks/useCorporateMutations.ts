@@ -320,7 +320,6 @@ export function corporateMutations() {
     return useMutation({
       mutationFn: (data: AddToCartPayload) => addToCart(data),
       onSuccess: (response: any) => {
-        console.log('addToCartResponse', response)
         success(response?.message || 'Item added to cart successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
       },

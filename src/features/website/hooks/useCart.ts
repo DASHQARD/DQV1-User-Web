@@ -33,7 +33,6 @@ export function useCart(query?: Record<string, any>) {
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
     },
     onError: (error: { status: number; message: string }) => {
-      console.log(error)
       toastError(error.message || 'Failed to add item to cart')
     },
   })

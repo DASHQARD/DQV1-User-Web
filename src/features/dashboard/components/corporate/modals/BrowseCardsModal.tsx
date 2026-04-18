@@ -108,7 +108,6 @@ export function BrowseCardsModal() {
 
   const handleDashGoSelect = () => {
     // TODO: Handle DashGo selection
-    console.log('DashGo selected for vendor:', selectedVendor, 'amount:', dashGoAmount)
     modal.closeModal()
   }
 
@@ -130,7 +129,6 @@ export function BrowseCardsModal() {
   const handleConfirm = () => {
     if (!selectedCard) return
     // TODO: Handle card selection
-    console.log('Selected card:', selectedCard, 'for vendor:', selectedVendor)
     modal.closeModal()
     setSelectedCard(null)
     setSelectedVendor(null)

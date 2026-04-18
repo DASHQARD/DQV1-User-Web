@@ -23,8 +23,7 @@ export function RejectAction() {
     },
   })
 
-  const onSubmit: SubmitHandler<any> = (_data: any) => {
-    console.log(_data)
+  const onSubmit: SubmitHandler<any> = () => {
     const requestId = modal.modalData?.id
     if (!requestId) {
       console.error('Request ID is required')
