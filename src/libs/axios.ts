@@ -30,18 +30,6 @@ const processQueue = (error: any = null) => {
   failedQueue = []
 }
 
-// Check if token is valid (not expired)
-const isTokenValid = (token: string | null): boolean => {
-  if (!token) return false
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    const exp = payload.exp * 1000 // Convert to milliseconds
-    return Date.now() < exp
-  } catch {
-    return false
-  }
-}
-
 // Refresh token function (uses auth/refresh-token or guest-auth/token/refresh based on isGuestAuth)
 const refreshAccessToken = async (): Promise<string | null> => {
   const state = useAuthStore.getState()
@@ -137,13 +125,6 @@ instance.interceptors.response.use(
         const reset = useAuthStore.getState().reset
         reset()
         window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN
-        return errorHandler(error)
-      }
-
-      // Check if token is valid first
-      const currentToken = useAuthStore.getState().getToken()
-      if (currentToken && isTokenValid(currentToken)) {
-        // Token is valid but request failed, might be a different issue
         return errorHandler(error)
       }
 

@@ -70,6 +70,9 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
     ref,
   ) => {
     const value = toE164(selectedVal ?? '')
+    // Ghana mask adds spaces (e.g. +233 55 961 7908), so keep enough room
+    // even when callers still pass the old compact maxLength value.
+    const effectiveMaxLength = typeof maxLength === 'number' ? Math.max(maxLength, 16) : undefined
     void options
 
     return (
@@ -109,7 +112,7 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
             name={name}
             inputProps={
               {
-                maxLength,
+                maxLength: effectiveMaxLength,
                 'data-testid': 'phoneNumber',
                 type: 'tel',
                 inputMode: 'tel',

@@ -42,13 +42,13 @@ export default function PublicDashGoForm({
     }
 
     // Include all available branches for redemption
-    const redemptionBranches = availableBranches.map((branch: { branch_id: number }) => ({
+    const redemptionBranches = availableBranches.map((branch: { branch_id: string }) => ({
       branch_id: branch.branch_id,
     }))
 
     createDashGoMutation.mutate(
       {
-        vendor_id: parseInt(vendor_id, 10),
+        vendor_id,
         product: 'DashGo Gift Card',
         description: `Custom DashGo card for ${vendorName}`,
         price: cardAmount,

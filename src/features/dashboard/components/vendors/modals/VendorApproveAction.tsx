@@ -31,8 +31,7 @@ export function VendorApproveAction() {
       console.error('Request ID is required')
       return
     }
-    const id = typeof requestId === 'string' ? parseInt(requestId, 10) : requestId
-    const payload = { id, status: 'approved' as const }
+    const payload = { id: requestId, status: 'approved' as const }
 
     if (useCorporateVendorScoped && vendorIdFromUrl) {
       updateCorporateVendorRequestStatus(

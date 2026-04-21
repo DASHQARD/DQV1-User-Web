@@ -54,7 +54,10 @@ export const getRequestVendorInfo = async (id: number | string): Promise<any> =>
   return await getList<any>(`/requests/vendors/info/${id}`)
 }
 
-export const updateRequestStatus = async (data: { id: number; status: string }): Promise<any> => {
+export const updateRequestStatus = async (data: {
+  id: string | number
+  status: string
+}): Promise<any> => {
   return await patchMethod(`/requests/vendors/update-status`, data)
 }
 
@@ -63,7 +66,7 @@ export const deleteRequestVendor = async (id: number | string): Promise<any> => 
 }
 
 export const updateBusinessDetails = async (data: {
-  id: number
+  id: string
   name: string
   type: string
   phone: string
@@ -131,11 +134,15 @@ export const getBranchManagerInvitations = async (
   return response
 }
 
-export const cancelBranchManagerInvitation = async (invitationId: number): Promise<any> => {
+export const cancelBranchManagerInvitation = async (
+  invitationId: string | number,
+): Promise<any> => {
   return await postMethod(`/vendors/branch-manager-invitation/cancel/${invitationId}`)
 }
 
-export const deleteBranchManagerInvitation = async (invitationId: number): Promise<any> => {
+export const deleteBranchManagerInvitation = async (
+  invitationId: string | number,
+): Promise<any> => {
   return await deleteMethod(`/vendors/branch-manager-invitation/${invitationId}`)
 }
 
@@ -151,7 +158,7 @@ export const acceptBranchManagerInvitation = async (data: {
 }
 
 export interface UpdateBranchManagerDetailsPayload {
-  branch_manager_user_id: number
+  branch_manager_user_id: string
   email: string
   phone_number: string
   password: string

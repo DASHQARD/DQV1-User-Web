@@ -113,11 +113,8 @@ export function useRedemptionForm() {
       setBalanceCheckComplete(false)
       setBalanceError(null)
 
-      // Extract phone number in international format
-      const internationalPhone = convertToInternationalFormat(rawVendor)
-
       getBalanceMutation.mutate(
-        { phone_number: internationalPhone, card_type: form.cardType },
+        { card_type: form.cardType },
         {
           onSuccess: (response: any) => {
             const balanceData = response?.data

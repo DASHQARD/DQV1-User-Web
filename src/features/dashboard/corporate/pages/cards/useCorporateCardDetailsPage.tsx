@@ -35,7 +35,7 @@ function getCardBackground(type: CardType): string {
 export interface CardDisplayItem {
   id: string | number
   card_id?: string | number
-  recipient_id?: number
+  recipient_id?: string
   card_name: string
   name?: string
   card_type: CardType
@@ -44,10 +44,10 @@ export interface CardDisplayItem {
   card_price: number
   status: string
   expiry_date?: string
-  branch_id?: number
+  branch_id?: string
   branch_name?: string
   branch_location?: string
-  vendor_id?: number
+  vendor_id?: string
   vendor_name?: string
   currency: string
   images?: Array<{ file_url: string }>
@@ -68,7 +68,7 @@ export function useCorporateCardDetailsPage() {
   const [vendorSearch, setVendorSearch] = useState('')
   const [selectedVendor, setSelectedVendor] = useState<Record<string, unknown> | null>(null)
   const [selectedVendorId, setSelectedVendorId] = useState('')
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null)
   const [paginationLimit, setPaginationLimit] = useState(10)
   const [paginationAfter, setPaginationAfter] = useState<string>('')
   const [cardImageUrls, setCardImageUrls] = useState<Record<string, string>>({})
@@ -361,24 +361,24 @@ export function useCorporateCardDetailsPage() {
       card_type: string
       phone_number: string
       amount: number
-      branch_id: number
-      card_id: number
+      branch_id: string | number
+      card_id: string | number
     }
     if (validCardType === 'dashgo' || validCardType === 'dashpro') {
       payload = {
         card_type: cardTypeForAPI,
         phone_number: userPhone,
         amount: parseFloat(String(selectedCard.balance || selectedCard.amount || 0)),
-        branch_id: selectedBranchId !== null ? selectedBranchId : (selectedCard.branch_id ?? 0),
-        card_id: Number(selectedCard.id) || 0,
+        branch_id: selectedBranchId !== null ? selectedBranchId : (selectedCard.branch_id ?? ''),
+        card_id: selectedCard.id,
       }
     } else {
       payload = {
         card_type: cardTypeForAPI,
         phone_number: userPhone,
         amount: selectedCard.card_price || selectedCard.balance || selectedCard.amount || 0,
-        branch_id: selectedBranchId !== null ? selectedBranchId : (selectedCard.branch_id ?? 0),
-        card_id: Number(selectedCard.id),
+        branch_id: selectedBranchId !== null ? selectedBranchId : (selectedCard.branch_id ?? ''),
+        card_id: selectedCard.id,
       }
     }
     if (!payload.card_id || payload.amount <= 0) return
@@ -432,7 +432,7 @@ export function useCorporateCardDetailsPage() {
   }, [])
 
   const setSelectedBranchIdFromValue = useCallback((value: string) => {
-    if (value) setSelectedBranchId(Number(value))
+    if (value) setSelectedBranchId(value)
     else setSelectedBranchId(null)
   }, [])
 

@@ -50,7 +50,7 @@ export function useRemoveBranchManagerModal() {
 
       removeMutation.mutate(
         {
-          branch_id: Number(branchId),
+          branch_id: String(branchId),
           email,
           password: data.password,
         },

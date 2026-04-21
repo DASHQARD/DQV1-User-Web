@@ -2,10 +2,10 @@ import { getMethod, postMethod } from '@/services/requests'
 import type { CheckoutPayload, GuestCheckoutPayload } from '@/types'
 
 export interface PaymentProviderConfig {
-  id: number
+  id: string
   checkout_gateway: string
   payout_service: string
-  updated_by: number
+  updated_by: string
   created_at: string
   updated_at: string
 }
@@ -15,10 +15,10 @@ type PaymentProviderConfigResponse = {
 }
 
 export interface ServiceFeeConfig {
-  id: number
+  id: string
   serviceFeeRate: number
   vendorMarkupRate: number
-  updatedBy: number
+  updatedBy: string
   createdAt: string
   updatedAt: string
 }

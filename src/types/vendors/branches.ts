@@ -1,5 +1,5 @@
 export type UpdateBranchStatusPayload = {
-  branch_id: number
+  branch_id: string
   status: string
 }
 
@@ -36,7 +36,7 @@ export interface BranchPaymentDetailsResponse {
 }
 
 export interface UpdateBranchPaymentDetailsPayload {
-  branch_id: number
+  branch_id: string | number
   payment_method: 'mobile_money' | 'bank'
   // Mobile Money fields
   mobile_money_provider?: string
@@ -51,7 +51,7 @@ export interface UpdateBranchPaymentDetailsPayload {
 }
 
 export interface AddBranchPaymentDetailsPayload {
-  branch_id: number
+  branch_id: string | number
   payment_method: 'mobile_money' | 'bank'
   // Mobile Money fields
   mobile_money_provider?: string
@@ -105,11 +105,11 @@ export interface GetBranchManagerInvitationsQuery {
 }
 
 export interface CancelBranchManagerInvitationPayload {
-  invitation_id: number
+  invitation_id: string
 }
 
 export interface RemoveBranchManagerPayload {
-  branch_id: number
+  branch_id: string
   email: string // This is the branch_manager_email in the API request
   password: string
 }

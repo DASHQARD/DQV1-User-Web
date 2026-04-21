@@ -49,7 +49,7 @@ export default function VendorsProfile() {
   const availableBranches = React.useMemo(() => {
     const branches = (vendorDetails as any)?.branches_with_cards || []
     return branches.map((branch: any) => ({
-      branch_id: Number(branch.branch_id || branch.id),
+      branch_id: String(branch.branch_id || branch.id),
       branch_name: branch.branch_name || 'Unnamed Branch',
       branch_location: branch.branch_location || '',
     }))

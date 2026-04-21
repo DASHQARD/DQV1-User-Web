@@ -157,7 +157,7 @@ export function useBranchDetailsModal() {
 
         if (!hasExistingPaymentDetails) {
           const payload: AddBranchPaymentDetailsPayload = {
-            branch_id: Number(branch.id),
+            branch_id: branch.id,
             payment_method: data.payment_method || 'mobile_money',
           }
           if (
@@ -179,7 +179,7 @@ export function useBranchDetailsModal() {
         } else {
           if (!data.payment_method) throw new Error('Payment method is required')
           const payload: UpdateBranchPaymentDetailsPayload = {
-            branch_id: Number(branch.id),
+            branch_id: branch.id,
             payment_method: data.payment_method,
           }
           if (data.payment_method === 'mobile_money') {

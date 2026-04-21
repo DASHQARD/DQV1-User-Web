@@ -9,7 +9,7 @@ const STATUS_OPTIONS = [
 ] as const
 
 export function useUpdateBranchStatusModal() {
-  const modal = usePersistedModalState<{ id?: number; branch_id?: number; status?: string }>({
+  const modal = usePersistedModalState<{ id?: string; branch_id?: string; status?: string }>({
     paramName: MODALS.BRANCH.ROOT,
   })
 
@@ -32,7 +32,7 @@ export function useUpdateBranchStatusModal() {
 
     try {
       await updateBranchStatus({
-        branch_id: Number(branchId),
+        branch_id: String(branchId),
         status: selectedStatus,
       })
       modal.closeModal()

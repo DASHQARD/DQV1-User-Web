@@ -273,7 +273,7 @@ export function useVendorMutations() {
   function useUpdateRequestStatusService() {
     const queryClient = useQueryClient()
     return useMutation({
-      mutationFn: (data: { id: number; status: string }) => updateRequestStatus(data),
+      mutationFn: (data: { id: string | number; status: string }) => updateRequestStatus(data),
       onSuccess: (response: any) => {
         success(response?.message || 'Request status updated successfully')
         queryClient.invalidateQueries({ queryKey: ['requests-vendor'] })
@@ -301,7 +301,7 @@ export function useVendorMutations() {
   function useCancelBranchManagerInvitationService() {
     const queryClient = useQueryClient()
     return useMutation({
-      mutationFn: (invitationId: number) => cancelBranchManagerInvitation(invitationId),
+      mutationFn: (invitationId: string | number) => cancelBranchManagerInvitation(invitationId),
       onSuccess: (response: any) => {
         success(response?.message || 'Branch manager invitation cancelled successfully')
         queryClient.invalidateQueries({ queryKey: ['branch-manager-invitations'] })
@@ -315,7 +315,7 @@ export function useVendorMutations() {
   function useDeleteBranchManagerInvitationService() {
     const queryClient = useQueryClient()
     return useMutation({
-      mutationFn: (invitationId: number) => deleteBranchManagerInvitation(invitationId),
+      mutationFn: (invitationId: string | number) => deleteBranchManagerInvitation(invitationId),
       onSuccess: (response: any) => {
         success(response?.message || 'Branch manager invitation deleted successfully')
         queryClient.invalidateQueries({ queryKey: ['branch-manager-invitations'] })
@@ -345,7 +345,7 @@ export function useVendorMutations() {
     const queryClient = useQueryClient()
     return useMutation({
       mutationFn: (data: {
-        branch_manager_user_id: number
+        branch_manager_user_id: string
         email: string
         phone_number: string
         password: string
@@ -383,7 +383,7 @@ export function useVendorMutations() {
     const queryClient = useQueryClient()
     const navigate = useNavigate()
     return useMutation({
-      mutationFn: (data: { branch_id: number }) => deleteBranchByVendor(data),
+      mutationFn: (data: { branch_id: string | number }) => deleteBranchByVendor(data),
       onSuccess: (response: any) => {
         success(response?.message || 'Branch deleted successfully')
         queryClient.invalidateQueries({ queryKey: ['branches'] })

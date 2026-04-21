@@ -69,7 +69,7 @@ export function useInviteBranchManagerModal() {
     (data: CreateBranchManagerInvitationFormData) => {
       createMutation.mutate(
         {
-          branch_id: Number(data.branch_id),
+          branch_id: data.branch_id,
           branch_manager_name: data.branch_manager_name,
           branch_manager_email: data.branch_manager_email,
           branch_manager_phone: data.branch_manager_phone,

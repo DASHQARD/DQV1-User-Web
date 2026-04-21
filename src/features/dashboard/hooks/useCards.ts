@@ -22,7 +22,7 @@ export function useCards() {
   })
 }
 
-export function useCard(id: number | null) {
+export function useCard(id: string | number | null) {
   return useQuery({
     queryKey: ['card', id],
     queryFn: () => getCardById(id!),
@@ -68,7 +68,7 @@ export function useDeleteCard() {
   const toast = useToast()
 
   return useMutation({
-    mutationFn: (id: number) => deleteCard(id),
+    mutationFn: (id: string | number) => deleteCard(id),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['cards'] })
       queryClient.invalidateQueries({ queryKey: ['gift-card-metrics'] })

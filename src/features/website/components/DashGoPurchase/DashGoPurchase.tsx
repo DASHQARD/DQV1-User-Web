@@ -190,7 +190,7 @@ export default function DashGoPurchase() {
 
     // Map branches to redemption_branches format
     const redemptionBranches = branches.map((branch: any) => ({
-      branch_id: Number(branch.id || branch.branch_id),
+      branch_id: String(branch.id || branch.branch_id),
     }))
 
     try {

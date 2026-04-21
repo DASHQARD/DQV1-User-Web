@@ -273,7 +273,7 @@ export function BranchDetails() {
                     className="cursor-pointer"
                   >
                     <CardItems
-                      card_id={experience.card_id || Number(experience.id)}
+                      card_id={experience.card_id || String(experience.id)}
                       product={experience.product}
                       vendor_name={experience.vendor_name || ''}
                       branch_name={experience.branch_name || ''}

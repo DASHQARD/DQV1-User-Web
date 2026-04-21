@@ -3,7 +3,7 @@ import { getRequiredEmailSchema, getRequiredStringSchema } from '../shared'
 
 export interface Branch {
   id: string
-  user_id: number
+  user_id: string
   branch_manager_name: string
   branch_manager_email: string
   branch_name: string
@@ -11,7 +11,7 @@ export interface Branch {
   is_single_branch: boolean
   created_at: string
   updated_at: string
-  vendor_id: number
+  vendor_id: string
   full_branch_id: string
   gvid: string
   parent_branch_id: string | null

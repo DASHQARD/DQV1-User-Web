@@ -7,8 +7,8 @@ import { useAuthStore } from '@/stores'
 
 export function useDeleteBranchModal() {
   const modal = usePersistedModalState<{
-    id?: number
-    branch_id?: number
+    id?: string
+    branch_id?: string
     branch_name?: string
   }>({
     paramName: MODALS.BRANCH.ROOT,
@@ -46,7 +46,7 @@ export function useDeleteBranchModal() {
       })
     } else {
       deleteBranchByVendorMutation.mutate(
-        { branch_id: Number(branchId) },
+        { branch_id: String(branchId) },
         {
           onSuccess: () => {
             modal.closeModal()

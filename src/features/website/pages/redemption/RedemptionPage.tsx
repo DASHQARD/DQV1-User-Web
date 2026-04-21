@@ -36,20 +36,20 @@ type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
 
 interface VendorCard {
-  card_id: number
+  card_id: string
   card_name: string
   card_type: string
   card_price: number
   currency: string
   status: string
-  branch_id?: number
+  branch_id?: string
   branch_name?: string
   branch_location?: string
-  vendor_id?: number
+  vendor_id?: string
   vendor_name?: string
-  recipient_id?: number
+  recipient_id?: string
   /** Unique per assignment; use for selection when multiple cards share card_id+branch_id+recipient_id */
-  cart_item_id?: number
+  cart_item_id?: string
 }
 
 // Helper function to convert card type to API format
@@ -92,10 +92,10 @@ export default function RedemptionPage() {
   const [balanceError, setBalanceError] = useState<string | null>(null)
   const [vendorName, setVendorName] = useState('')
   const [selectedCard, setSelectedCard] = useState<VendorCard | null>(null)
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null)
   const [step, setStep] = useState<'method' | 'details' | 'success' | 'rating'>('method')
   const [isProcessingRedemption, setIsProcessingRedemption] = useState(false)
-  const [redeemedCardId, setRedeemedCardId] = useState<number | null>(null)
+  const [redeemedCardId, setRedeemedCardId] = useState<string | null>(null)
   const [rating, setRating] = useState<number>(0)
   const [isSubmittingRating, setIsSubmittingRating] = useState(false)
   const [showOTPModal, setShowOTPModal] = useState(false)
@@ -176,7 +176,7 @@ export default function RedemptionPage() {
     }
     // Add vendor_id if available
     if (selectedVendorId) {
-      params.vendor_id = parseInt(selectedVendorId)
+      params.vendor_id = selectedVendorId
     }
     // If neither branch_id nor vendor_id is available, return undefined to disable the query
     if (!branchId && !selectedVendorId) {
@@ -216,7 +216,7 @@ export default function RedemptionPage() {
     }
     // Add vendor_id if available
     if (selectedVendorId) {
-      params.vendor_id = parseInt(selectedVendorId)
+      params.vendor_id = selectedVendorId
     }
     return params
   }, [userPhoneNumber, selectedBranchId, selectedVendorId, selectedCard, isAuthenticated])
@@ -239,7 +239,7 @@ export default function RedemptionPage() {
     }
     // Add vendor_id if available
     if (selectedVendorId) {
-      params.vendor_id = parseInt(selectedVendorId)
+      params.vendor_id = selectedVendorId
     }
     return params
   }, [userPhoneNumber, selectedBranchId, selectedVendorId, selectedCard, isAuthenticated])
@@ -568,8 +568,12 @@ export default function RedemptionPage() {
               const cardTypeForAPI = formatCardTypeForAPI(selectedCard.card_type)
 
               if (cardTypeForAPI) {
+                if (!isAuthenticated) {
+                  setBalance(null)
+                  setBalanceError('Please log in to check card balance.')
+                  return
+                }
                 const response: CardBalanceResponse = await getCardBalance({
-                  phone_number: userPhoneNumber,
                   card_type: cardTypeForAPI,
                 })
 
@@ -1173,7 +1177,7 @@ export default function RedemptionPage() {
           response?.statusCode === 200 ||
           response?.statusCode === 201
         ) {
-          if (payload.card_id && payload.card_id > 0) {
+          if (payload.card_id) {
             setRedeemedCardId(payload.card_id)
           }
           setStep('success')
@@ -1270,7 +1274,7 @@ export default function RedemptionPage() {
           response?.statusCode === 200 ||
           response?.statusCode === 201
         ) {
-          if (pendingVendorIdPayload.card_id && pendingVendorIdPayload.card_id > 0) {
+          if (pendingVendorIdPayload.card_id) {
             setRedeemedCardId(pendingVendorIdPayload.card_id)
           }
           setPendingVendorIdPayload(null)
@@ -1935,7 +1939,7 @@ export default function RedemptionPage() {
                             onChange={(e: any) => {
                               const branchId = e.target.value
                               if (branchId) {
-                                setSelectedBranchId(Number(branchId))
+                                setSelectedBranchId(String(branchId))
                                 setSelectedCard(null) // Reset card selection when branch changes
                                 setCardType('') // Reset card type when branch changes
                               } else {

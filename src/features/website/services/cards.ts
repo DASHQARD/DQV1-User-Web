@@ -33,7 +33,7 @@ export const createGuestCart = async (data: {
 }
 
 export const createDashGoAndAssign = async (data: {
-  vendor_id: number
+  vendor_id: string
   product: string
   description: string
   price: number
@@ -41,7 +41,7 @@ export const createDashGoAndAssign = async (data: {
   images?: Array<{ file_url: string; file_name: string }>
   terms_and_conditions?: Array<{ file_url: string; file_name: string }>
   issue_date: string
-  redemption_branches: Array<{ branch_id: number }>
+  redemption_branches: Array<{ branch_id: string }>
 }): Promise<any> => {
   return await postMethod('/carts/create-dashgo', data)
 }
@@ -50,7 +50,7 @@ export const createGuestDashGo = async (data: {
   guest_phone: string
   guest_name: string
   guest_email: string
-  vendor_id: number
+  vendor_id: string
   product: string
   description: string
   price: number
@@ -58,7 +58,7 @@ export const createGuestDashGo = async (data: {
   images?: Array<{ file_url: string; file_name: string }>
   terms_and_conditions?: Array<{ file_url: string; file_name: string }>
   issue_date: string
-  redemption_branches: Array<{ branch_id: number }>
+  redemption_branches: Array<{ branch_id: string }>
 }): Promise<any> => {
   return await postMethod('/guest-cards/dash-go', data)
 }
@@ -125,20 +125,20 @@ export const getGuestCartItems = async (
   return [normalized]
 }
 
-export const getCartItem = async (id: number): Promise<CartItemResponse> => {
+export const getCartItem = async (id: string | number): Promise<CartItemResponse> => {
   return await getMethod(`/carts/${id}`)
 }
 
-export const deleteCartItem = async (id: number): Promise<any> => {
+export const deleteCartItem = async (id: string | number): Promise<any> => {
   return await deleteMethod(`/carts/items/${id}`)
 }
 
-export const deleteCartItemRecipient = async (cart_item_id: number): Promise<any> => {
+export const deleteCartItemRecipient = async (cart_item_id: string | number): Promise<any> => {
   return await deleteMethod(`/carts/items/${cart_item_id}`)
 }
 
 export const updateCartItem = async (data: {
-  cart_item_id: number
+  cart_item_id: string
   quantity: number
 }): Promise<any> => {
   return await patchMethod('/carts/items', data)

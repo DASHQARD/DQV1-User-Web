@@ -31,6 +31,10 @@ export function usePayments() {
         handleCheckoutSuccess(data, queryClient)
       },
       onError: (error: { status: number; message: string }) => {
+        if (error?.status === 429) {
+          toast.error('Too many checkout attempts. Please wait a minute and try again.')
+          return
+        }
         toast.error(error.message || 'Checkout failed')
       },
     })
@@ -43,6 +47,10 @@ export function usePayments() {
         handleCheckoutSuccess(data, queryClient)
       },
       onError: (error: { status: number; message: string }) => {
+        if (error?.status === 429) {
+          toast.error('Too many checkout attempts. Please wait a minute and try again.')
+          return
+        }
         toast.error(error.message || 'Checkout failed')
       },
     })

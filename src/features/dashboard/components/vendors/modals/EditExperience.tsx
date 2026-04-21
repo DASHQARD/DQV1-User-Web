@@ -81,7 +81,7 @@ export function EditExperience() {
   const [termsFiles, setTermsFiles] = useState<File[]>([])
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([])
   const [existingTermsUrls, setExistingTermsUrls] = useState<string[]>([])
-  const [selectedBranches, setSelectedBranches] = useState<number[]>([])
+  const [selectedBranches, setSelectedBranches] = useState<string[]>([])
   const [selectedBranchOptions, setSelectedBranchOptions] = useState<
     Array<{ label: string; value: string }>
   >([])
@@ -199,9 +199,9 @@ export function EditExperience() {
     const hasAllBranches = options.some((opt) => opt.value === 'all')
 
     if (hasAllBranches) {
-      setSelectedBranches(branchesArray.map((branch: any) => Number(branch.id)))
+      setSelectedBranches(branchesArray.map((branch: any) => String(branch.id)))
     } else {
-      const branchIds = options.filter((opt) => opt.value !== 'all').map((opt) => Number(opt.value))
+      const branchIds = options.filter((opt) => opt.value !== 'all').map((opt) => String(opt.value))
       setSelectedBranches(branchIds)
     }
   }

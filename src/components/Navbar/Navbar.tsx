@@ -90,7 +90,7 @@ export default function Navbar() {
   const isApprovedOrVerified = userStatus === 'approved' || userStatus === 'verified'
 
   // Get vendor_id for fetching branches
-  const vendorId = userProfileData?.vendor_id ? Number(userProfileData.vendor_id) : null
+  const vendorId = userProfileData?.vendor_id ? String(userProfileData.vendor_id) : null
   const { data: branchesData } = useGetBranchesByVendorIdService(vendorId, false)
 
   // Branch info for branch manager logo

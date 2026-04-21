@@ -40,7 +40,7 @@ export default function CreateExperienceForm() {
   const [termsFiles, setTermsFiles] = useState<File[]>([])
   const [imageErrors, setImageErrors] = useState<string>('')
   const [termsErrors, setTermsErrors] = useState<string>('')
-  const [selectedBranches, setSelectedBranches] = useState<number[]>([])
+  const [selectedBranches, setSelectedBranches] = useState<string[]>([])
   const [selectedBranchOptions, setSelectedBranchOptions] = useState<
     Array<{ label: string; value: string }>
   >([])
@@ -82,7 +82,7 @@ export default function CreateExperienceForm() {
   // Auto-select branch for branch managers
   useEffect(() => {
     if (isBranchManager && userProfileData?.branches?.[0]?.id && isModalOpen) {
-      const branchId = Number(userProfileData.branches[0].id)
+      const branchId = String(userProfileData.branches[0].id)
       setSelectedBranches([branchId])
       setSelectedBranchOptions([
         {
@@ -144,11 +144,11 @@ export default function CreateExperienceForm() {
       // If "All Branches" is selected, select all branch IDs
       const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
       if (branchesArray.length > 0) {
-        setSelectedBranches(branchesArray.map((branch: any) => Number(branch.id)))
+        setSelectedBranches(branchesArray.map((branch: any) => String(branch.id)))
       }
     } else {
       // Otherwise, use the selected branch IDs (excluding "all")
-      const branchIds = options.filter((opt) => opt.value !== 'all').map((opt) => Number(opt.value))
+      const branchIds = options.filter((opt) => opt.value !== 'all').map((opt) => String(opt.value))
       setSelectedBranches(branchIds)
     }
   }

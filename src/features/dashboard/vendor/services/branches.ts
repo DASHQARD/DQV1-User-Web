@@ -13,7 +13,7 @@ export const getBranches = async (): Promise<BranchesListResponse> => {
 }
 
 export const getBranchesByVendorId = async (
-  vendorId: number,
+  vendorId: string | number,
   includeRelatedVendors: boolean = false,
 ): Promise<any> => {
   return await getList<any>(`/branches/vendor/${vendorId}`, {
@@ -25,7 +25,9 @@ export const deleteBranch = async (id: string) => {
   return await deleteMethod(`/branches/${id}`)
 }
 
-export const deleteBranchByVendor = async (payload: { branch_id: number }): Promise<any> => {
+export const deleteBranchByVendor = async (payload: {
+  branch_id: string | number
+}): Promise<any> => {
   return await deleteMethod(`/vendors/delete/branch`, payload)
 }
 

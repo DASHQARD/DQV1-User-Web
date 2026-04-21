@@ -35,7 +35,7 @@ export default function VendorHome() {
   const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
 
   // Get vendor_id from user profile
-  const vendorId = userProfileData?.vendor_id ? Number(userProfileData.vendor_id) : null
+  const vendorId = userProfileData?.vendor_id ? String(userProfileData.vendor_id) : null
 
   // Fetch branches: corporate super admin with vendor selected → GET /branches/corporate?vendor_id=:vendor_id; else corporate list or vendor by profile
   const { data: vendorBranchesResponse, isLoading: isLoadingVendorBranches } =

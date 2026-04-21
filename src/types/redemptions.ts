@@ -29,7 +29,7 @@ export interface SearchVendorsParams {
 }
 
 export interface VendorSearchResult {
-  vendor_id: number
+  vendor_id: string
   vendor_name: string
   gvid: string
   phone_number: string
@@ -49,7 +49,6 @@ export interface SearchVendorsResponse {
 }
 
 export interface CardBalanceParams {
-  phone_number: string
   card_type?: 'DashPro' | 'DashGo' | 'DashX' | 'DashPass'
 }
 
@@ -82,10 +81,10 @@ export interface InitiateRedemptionPayload {
 }
 
 export interface CardsRedemptionPayload {
-  branch_id: number
+  branch_id: string
   card_type: 'DashGo' | 'DashPro' | 'DashX' | 'DashPass'
   amount: number
-  card_id: number
+  card_id: string
   phone_number: string
   /** OTP token for guest redemptions; required when using /redemptions/cards after /redemptions/initiate */
   token?: string
@@ -114,7 +113,7 @@ export interface GetRedemptionsParams {
   after?: string
   phone_number?: string
   card_type?: 'DashPro' | 'DashGo' | 'DashX' | 'DashPass'
-  vendor_id?: number
+  vendor_id?: string
   dateFrom?: string
   dateTo?: string
   status?: string
@@ -170,10 +169,10 @@ export interface RedemptionsSummaryResponse {
 }
 
 export interface RedemptionItem {
-  redemption_id: number
+  redemption_id: string
   phone_number: string
   vendor_name: string
-  vendor_id: number
+  vendor_id: string
   branch_name: string
   branch_location: string
   card_type: string
@@ -198,14 +197,14 @@ export interface VendorRedemptionsResponse {
 export interface GetVendorRedemptionsListParams {
   limit?: number
   after?: string
-  branch_id?: number
+  branch_id?: string
   branch_name?: string
 }
 
 export interface GetRedemptionsAmountDashGoParams {
   phone_number: string
-  branch_id?: number
-  vendor_id?: number
+  branch_id?: string
+  vendor_id?: string
 }
 
 export interface GetRedemptionsAmountDashProParams {
@@ -214,12 +213,12 @@ export interface GetRedemptionsAmountDashProParams {
 
 export interface GetRedemptionsAmountDashXParams {
   phone_number: string
-  branch_id?: number
-  vendor_id?: number
+  branch_id?: string
+  vendor_id?: string
 }
 
 export interface GetRedemptionsAmountDashPassParams {
   phone_number: string
-  branch_id?: number
-  vendor_id?: number
+  branch_id?: string
+  vendor_id?: string
 }

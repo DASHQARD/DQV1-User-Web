@@ -32,7 +32,7 @@ export function RejectAction() {
 
     updateRequestStatus(
       {
-        id: typeof requestId === 'string' ? parseInt(requestId, 10) : requestId,
+        id: requestId,
         status: 'rejected',
       },
       {

@@ -15,7 +15,7 @@ export const getCards = async (params?: {
   return response as unknown as CardsListResponse
 }
 
-export const getCardById = async (id: number): Promise<CardDetailResponse> => {
+export const getCardById = async (id: string | number): Promise<CardDetailResponse> => {
   const response = await axiosClient.get(`/cards/${id}`)
   return response as unknown as CardDetailResponse
 }
@@ -42,7 +42,9 @@ export const updateCard = async (data: UpdateCardData): Promise<CardDetailRespon
   return response as unknown as CardDetailResponse
 }
 
-export const deleteCard = async (id: number): Promise<{ status: string; message: string }> => {
+export const deleteCard = async (
+  id: string | number,
+): Promise<{ status: string; message: string }> => {
   const response = await axiosClient.delete(`/cards/${id}`)
   return response as unknown as { status: string; message: string }
 }
@@ -72,7 +74,7 @@ export const getCardMetricsDetails = async (
 }
 
 export interface RateCardPayload {
-  card_id: number
+  card_id: string
   rating: number
 }
 

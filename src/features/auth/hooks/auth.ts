@@ -71,7 +71,6 @@ export function useAuth() {
           }
           tokens: {
             accessToken: string
-            refreshToken: string
           }
         }
       },
@@ -85,12 +84,12 @@ export function useAuth() {
         }
         tokens: {
           accessToken: string
-          refreshToken: string
         }
       }) => {
+        const existingRefreshToken = useAuthStore.getState().getRefreshToken()
         useAuthStore.getState().authenticate({
           token: response.tokens.accessToken,
-          refreshToken: response.tokens.refreshToken,
+          refreshToken: existingRefreshToken,
         })
       },
       onError: (err: { status: number; message: string }) => {

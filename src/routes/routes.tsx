@@ -2,7 +2,7 @@ import { type RouteObject } from 'react-router'
 
 import { DashboardLayout, dashboardRoutes, websiteRoutes } from '../features'
 import { WebsiteLayout } from '../layout'
-import { CustomErrorBoundary } from '@/components'
+import { CustomErrorBoundary, RouteGuard } from '@/components'
 import { AuthLayout, authRoutes } from '@/features/auth'
 import { InviteCorporateAdmin } from '@/features/auth/pages'
 import AcceptVendorInvite from '@/features/auth/pages/acceptVendorInvite/AcceptVendorInvite'
@@ -40,7 +40,11 @@ export const routes: RouteObject[] = [
   },
   {
     path: '/dashboard',
-    element: <DashboardLayout />,
+    element: (
+      <RouteGuard>
+        <DashboardLayout />
+      </RouteGuard>
+    ),
     errorElement: <CustomErrorBoundary />,
     children: dashboardRoutes,
   },

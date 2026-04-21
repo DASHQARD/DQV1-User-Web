@@ -56,14 +56,17 @@ export const getCorporateSuperAdminVendorRequestInfo = async (
   return await getList(`/requests/corporate-super-admin/vendor/${vendorId}/info/${id}`)
 }
 
-export const updateRequestStatus = async (data: { id: number; status: string }): Promise<any> => {
+export const updateRequestStatus = async (data: {
+  id: string | number
+  status: string
+}): Promise<any> => {
   return await patchMethod(`/requests/corporate/update-status`, data)
 }
 
 /** PATCH /requests/corporate-super-admin/vendor/:vendor_id/update-status */
 export const updateCorporateSuperAdminVendorRequestStatus = async (
   vendorId: string | number,
-  data: { id: number; status: string },
+  data: { id: string | number; status: string },
 ): Promise<any> => {
   return await patchMethod(`/requests/corporate-super-admin/vendor/${vendorId}/update-status`, data)
 }

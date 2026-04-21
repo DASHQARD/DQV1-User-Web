@@ -375,6 +375,10 @@ export function corporateMutations() {
         }
       },
       onError: (err: any) => {
+        if (err?.status === 429) {
+          error('Too many checkout attempts. Please wait a minute and try again.')
+          return
+        }
         error(err?.message || 'Checkout failed. Please try again.')
       },
     })
@@ -463,7 +467,7 @@ export function corporateMutations() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
     return useMutation({
-      mutationFn: (data: { id: number; status: string }) => updateRequestStatus(data),
+      mutationFn: (data: { id: string | number; status: string }) => updateRequestStatus(data),
       onSuccess: (response: any, variables) => {
         success(response?.message || 'Request status updated successfully')
         queryClient.invalidateQueries({ queryKey: ['requests-corporate'] })
@@ -504,7 +508,7 @@ export function corporateMutations() {
         data,
       }: {
         vendorId: string | number
-        data: { id: number; status: string }
+        data: { id: string | number; status: string }
       }) => updateCorporateSuperAdminVendorRequestStatus(vendorId, data),
       onSuccess: (response: any) => {
         success(response?.message || 'Request status updated successfully')
@@ -590,7 +594,7 @@ export function corporateMutations() {
     const queryClient = useQueryClient()
     return useMutation({
       mutationFn: (data: {
-        branch_id: number
+        branch_id: string | number
         branch_manager_name: string
         branch_manager_email: string
         branch_manager_phone: string

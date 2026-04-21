@@ -35,11 +35,11 @@ function getCardBackground(type: CardType): string {
 }
 
 interface VendorItem {
-  vendor_id?: number
+  vendor_id?: string | number
   business_name?: string
   vendor_name?: string
   branches_with_cards?: Array<{
-    branch_id: number
+    branch_id: string | number
     branch_name?: string
     branch_location?: string
   }>
@@ -48,7 +48,7 @@ interface VendorItem {
 export interface CardDetailsDisplayItem {
   id: string | number
   card_id?: string | number
-  recipient_id?: number
+  recipient_id?: string | number
   card_name: string
   name?: string
   card_type: CardType
@@ -57,10 +57,10 @@ export interface CardDetailsDisplayItem {
   card_price: number
   status: string
   expiry_date?: string
-  branch_id?: number
+  branch_id?: string | number
   branch_name?: string
   branch_location?: string
-  vendor_id?: number
+  vendor_id?: string | number
   vendor_name?: string
   currency: string
   images?: Array<{ file_url: string }>
@@ -79,7 +79,7 @@ export function useCardDetailsPage() {
   const [vendorSearch, setVendorSearch] = useState('')
   const [selectedVendor, setSelectedVendor] = useState<Record<string, unknown> | null>(null)
   const [selectedVendorId, setSelectedVendorId] = useState('')
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null)
   const [paginationLimit, setPaginationLimit] = useState(10)
   const [paginationAfter, setPaginationAfter] = useState<string>('')
   const [cardImageUrls, setCardImageUrls] = useState<Record<string, string>>({})
@@ -169,13 +169,14 @@ export function useCardDetailsPage() {
     if (!vendor?.branches_with_cards) return []
     const branches = vendor.branches_with_cards
     const branchMap = new Map<
-      number,
-      { branch_id: number; branch_name?: string; branch_location?: string }
+      string,
+      { branch_id: string; branch_name?: string; branch_location?: string }
     >()
     branches.forEach((branch) => {
-      if (branch.branch_id && !branchMap.has(branch.branch_id)) {
-        branchMap.set(branch.branch_id, {
-          branch_id: branch.branch_id,
+      const branchId = String(branch.branch_id)
+      if (branch.branch_id && !branchMap.has(branchId)) {
+        branchMap.set(branchId, {
+          branch_id: branchId,
           branch_name: branch.branch_name,
           branch_location: branch.branch_location,
         })
@@ -206,7 +207,7 @@ export function useCardDetailsPage() {
       return {
         id: card.id,
         card_id: card.card_id ?? card.id,
-        recipient_id: card.recipient_id != null ? Number(card.recipient_id) : undefined,
+        recipient_id: card.recipient_id != null ? String(card.recipient_id) : undefined,
         card_name: card.product || `${CARD_DISPLAY_NAMES[validCardType]} Card`,
         card_type: validCardType,
         balance,
@@ -282,7 +283,7 @@ export function useCardDetailsPage() {
   const handleRedeemClick = useCallback((card: CardDetailsDisplayItem) => {
     setSelectedCard(card)
     setShowVendorModal(true)
-    setSelectedBranchId(card.branch_id ?? null)
+    setSelectedBranchId(card.branch_id != null ? String(card.branch_id) : null)
     setSelectedVendor(null)
     setSelectedVendorId('')
     setVendorSearch('')
@@ -340,16 +341,18 @@ export function useCardDetailsPage() {
         card_type: cardTypeForAPI,
         phone_number: userPhone,
         amount: parseFloat(String(selectedCard.balance || selectedCard.amount || 0)),
-        branch_id: selectedBranchId !== null ? selectedBranchId : (selectedCard?.branch_id ?? 0),
-        card_id: Number(selectedCard?.id ?? 0),
+        branch_id:
+          selectedBranchId !== null ? selectedBranchId : String(selectedCard?.branch_id ?? ''),
+        card_id: String(selectedCard?.id ?? ''),
       }
     } else {
       payload = {
         card_type: cardTypeForAPI,
         phone_number: userPhone,
         amount: selectedCard.card_price || selectedCard.balance || selectedCard.amount || 0,
-        branch_id: selectedBranchId !== null ? selectedBranchId : (selectedCard.branch_id ?? 0),
-        card_id: Number(selectedCard.id),
+        branch_id:
+          selectedBranchId !== null ? selectedBranchId : String(selectedCard.branch_id ?? ''),
+        card_id: String(selectedCard.id),
       }
     }
 

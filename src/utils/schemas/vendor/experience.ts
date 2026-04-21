@@ -13,7 +13,7 @@ export const CreateExperienceSchema = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expiry date must be in YYYY-MM-DD format'),
     redemption_branches: z.array(
-      z.object({ branch_id: z.number().positive('Branch ID is required') }),
+      z.object({ branch_id: z.string().min(1, 'Branch ID is required') }),
     ),
     images: z
       .array(
@@ -40,5 +40,5 @@ export const CreateExperienceSchema = z
   })
 
 export const UpdateExperienceSchema = CreateExperienceSchema.safeExtend({
-  card_id: z.number().positive('Card ID is required'),
+  card_id: z.string().min(1, 'Card ID is required'),
 })

@@ -34,7 +34,7 @@ export const DashGoDashboardPurchaseFormSchema = z.object({
 export const DashGoPurchaseFormSchema = z
   .object({
     assign_to_self: z.boolean(),
-    vendor_id: z.number().min(1, 'Vendor is required'),
+    vendor_id: z.string().min(1, 'Vendor is required'),
     recipient_name: z.string().optional(),
     recipient_phone: z.string().optional(),
     recipient_email: z.string().optional(),
@@ -163,7 +163,7 @@ export const AssignRecipientSchema = z
 export const DashGoAssignRecipientSchema = z
   .object({
     assign_to_self: z.boolean(),
-    vendor_id: z.number().min(1, 'Vendor is required'),
+    vendor_id: z.string().min(1, 'Vendor is required'),
     recipient_name: z.string().optional().or(z.literal('')),
     recipient_phone: z.string().optional().or(z.literal('')),
     recipient_email: z.string().optional().or(z.literal('')),
