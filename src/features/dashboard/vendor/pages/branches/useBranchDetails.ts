@@ -185,7 +185,7 @@ export function useBranchDetails() {
         ? undefined
         : {
             limit: 100,
-          branch_id: branchIdForApi ? String(branchIdForApi) : undefined,
+            branch_id: branchIdForApi ? String(branchIdForApi) : undefined,
             branch_name: branchNameForApi,
           },
     )
