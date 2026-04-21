@@ -43,13 +43,6 @@ function sanitizeE164Phone(value: string): string {
   return digitsOnly ? `+${digitsOnly}` : ''
 }
 
-/** Ghana has no mask in the default dataset; add spacing: +233 XX XXX XXXX (9-digit mobile). */
-const COUNTRIES_WITH_GHANA_MASK = defaultCountries.map((row) =>
-  row[1] === 'gh'
-    ? (['Ghana', 'gh', '233', '.. ... ....'] as (typeof defaultCountries)[number])
-    : row,
-) as typeof defaultCountries
-
 export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
   (
     {
@@ -89,7 +82,7 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
           <PhoneInput
             ref={ref}
             defaultCountry="gh"
-            countries={COUNTRIES_WITH_GHANA_MASK}
+            countries={defaultCountries}
             value={value}
             onChange={(phone: string) => {
               if (!handleChange) return
