@@ -315,7 +315,6 @@ export default function GuestAddToCartModal() {
                   selectedVal={value}
                   handleChange={onChange}
                   error={contactForm.formState.errors.guest_phone?.message}
-                  maxLength={14}
                   hint={
                     <>
                       Please enter your number in the format:{' '}

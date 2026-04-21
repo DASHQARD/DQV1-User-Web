@@ -134,7 +134,6 @@ export default function CreateBranchForm() {
               placeholder="Enter number eg. 5512345678"
               options={phoneCountries}
               selectedVal={value}
-              maxLength={14}
               handleChange={onChange}
               label="Phone Number"
               error={form.formState.errors.branch_manager_phone?.message}
@@ -203,7 +202,6 @@ export default function CreateBranchForm() {
                   placeholder="Enter number eg. 5512345678"
                   options={phoneCountries}
                   selectedVal={value}
-                  maxLength={14}
                   handleChange={onChange}
                   label="Phone Number"
                   error={form.formState.errors.mobile_money_number?.message}

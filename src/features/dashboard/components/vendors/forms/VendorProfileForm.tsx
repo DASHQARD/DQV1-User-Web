@@ -99,7 +99,6 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
                     placeholder="Enter number e.g. 5512345678"
                     options={countries}
                     selectedVal={value ?? ''}
-                    maxLength={14}
                     handleChange={onChange}
                     error={form.formState.errors.phone?.message}
                     hint={

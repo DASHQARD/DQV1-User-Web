@@ -100,7 +100,6 @@ export function UpdateBranchManagerDetailsModal() {
             <BasePhoneInput
               label="Phone number"
               options={phoneCountries}
-              maxLength={14}
               selectedVal={field.value}
               handleChange={field.onChange}
               error={fieldState.error?.message}

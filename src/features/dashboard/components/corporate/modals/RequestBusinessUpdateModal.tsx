@@ -113,7 +113,6 @@ export function RequestBusinessUpdateModal() {
                     label="Phone number"
                     placeholder="e.g. 5512345678"
                     options={phoneCountries}
-                    maxLength={14}
                     handleChange={(v) => setProposedValue('phone', v)}
                     selectedVal={(proposed.phone as string) ?? ''}
                   />

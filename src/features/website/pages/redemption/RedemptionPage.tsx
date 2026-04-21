@@ -1540,7 +1540,6 @@ export default function RedemptionPage() {
                           <BasePhoneInput
                             placeholder="Enter vendor phone number"
                             options={phoneCountries}
-                            maxLength={9}
                             handleChange={handleVendorMobileMoneyChange}
                             selectedVal={vendorMobileMoneyRaw}
                             disabled={false}
@@ -1667,7 +1666,6 @@ export default function RedemptionPage() {
                               <BasePhoneInput
                                 placeholder="Enter the phone number you received the gift card on"
                                 options={phoneCountries}
-                                maxLength={9}
                                 handleChange={(value: string) => {
                                   let local = ''
                                   if (value.includes('-')) {
@@ -1675,7 +1673,7 @@ export default function RedemptionPage() {
                                   } else {
                                     local = value.replace(/[^0-9]/g, '').replace(/^233/, '')
                                   }
-                                  setPhoneNumber(local.slice(0, 9))
+                                  setPhoneNumber(local)
                                 }}
                                 selectedVal={phoneNumber ? `+233-${phoneNumber}` : ''}
                               />

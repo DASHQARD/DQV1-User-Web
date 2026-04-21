@@ -64,7 +64,6 @@ export function UpdateBranchManagerInvitationModal() {
                 <BasePhoneInput
                   placeholder="Enter number eg. 5512345678"
                   options={phoneCountries}
-                  maxLength={9}
                   handleChange={onChange}
                   selectedVal={value}
                   label="Phone Number"

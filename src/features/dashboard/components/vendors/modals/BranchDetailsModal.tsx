@@ -279,7 +279,6 @@ export function BranchDetailsModal() {
                             placeholder="Enter number eg. 5512345678"
                             options={countries || []}
                             selectedVal={value}
-                            maxLength={10}
                             handleChange={onChange}
                             label="Mobile Money Number"
                             error={paymentForm.formState.errors.mobile_money_number?.message}

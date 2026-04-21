@@ -50,7 +50,6 @@ export default function SignUpForm() {
                 placeholder="Enter number eg. 5512345678"
                 options={phoneCountries}
                 isRequired
-                maxLength={14}
                 handleChange={onChange}
                 label="Phone Number"
                 error={form.formState.errors.phone_number?.message}

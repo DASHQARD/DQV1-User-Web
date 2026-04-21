@@ -15,7 +15,6 @@ interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, '
   name?: string
   /** Compatible with react-hook-form FieldError, ErrorText, etc. */
   error?: any
-  maxLength?: number
   placeholder?: string
   hint?: React.ReactNode
 }
@@ -62,7 +61,6 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
       label,
       isRequired,
       name,
-      maxLength,
       disabled,
       placeholder = 'Enter number',
       hint,
@@ -70,9 +68,6 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
     ref,
   ) => {
     const value = toE164(selectedVal ?? '')
-    // Ghana mask adds spaces (e.g. +233 55 961 7908), so keep enough room
-    // even when callers still pass the old compact maxLength value.
-    const effectiveMaxLength = typeof maxLength === 'number' ? Math.max(maxLength, 16) : undefined
     void options
 
     return (
@@ -112,7 +107,6 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
             name={name}
             inputProps={
               {
-                maxLength: effectiveMaxLength,
                 'data-testid': 'phoneNumber',
                 type: 'tel',
                 inputMode: 'tel',

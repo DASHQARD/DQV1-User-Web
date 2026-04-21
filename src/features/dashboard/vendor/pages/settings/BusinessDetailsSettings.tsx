@@ -53,7 +53,6 @@ export function BusinessDetailsSettings() {
                 <BasePhoneInput
                   placeholder="Enter number eg. 5512345678"
                   options={phoneCountries}
-                  maxLength={14}
                   handleChange={onChange}
                   isRequired
                   selectedVal={phoneValue}

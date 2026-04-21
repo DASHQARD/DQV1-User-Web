@@ -226,7 +226,6 @@ export function CreateDashProModal() {
                 placeholder="Enter phone number"
                 options={countries}
                 selectedVal={value || ''}
-                maxLength={10}
                 handleChange={onChange}
                 error={error?.message}
                 disabled={assignToSelf || isPending}

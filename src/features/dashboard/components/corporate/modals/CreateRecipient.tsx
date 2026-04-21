@@ -78,7 +78,6 @@ export function CreateRecipient() {
                 placeholder="Enter number eg. 5512345678"
                 options={countries}
                 selectedVal={value || ''}
-                maxLength={14}
                 handleChange={onChange}
                 label="Phone Number"
                 error={error?.message}

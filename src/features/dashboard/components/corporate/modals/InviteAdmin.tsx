@@ -86,7 +86,6 @@ export function InviteAdmin() {
                     <BasePhoneInput
                       placeholder="Enter number"
                       options={phoneCountries}
-                      maxLength={14}
                       selectedVal={value}
                       handleChange={onChange}
                       label="Phone Number"
