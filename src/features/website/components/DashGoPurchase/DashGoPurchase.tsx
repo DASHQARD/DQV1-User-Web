@@ -42,7 +42,7 @@ export default function DashGoPurchase() {
     resolver: zodResolver(DashGoAssignRecipientSchema),
     defaultValues: {
       assign_to_self: true,
-      vendor_id: 0,
+      vendor_id: '',
       recipient_name: '',
       recipient_phone: '',
       recipient_email: '',
@@ -156,7 +156,7 @@ export default function DashGoPurchase() {
   }, [vendorsResponse])
 
   // Watch selected vendor ID
-  const [selectedVendorId, setSelectedVendorId] = React.useState<number | null>(null)
+  const [selectedVendorId, setSelectedVendorId] = React.useState<string | null>(null)
 
   // Get branches for selected vendor
   const { data: branchesData } = useGetBranchesByVendorIdService(selectedVendorId, false)
@@ -167,8 +167,8 @@ export default function DashGoPurchase() {
 
   // Update selected vendor ID when form value changes
   React.useEffect(() => {
-    if (vendorId && vendorId > 0) {
-      setSelectedVendorId(vendorId)
+    if (vendorId) {
+      setSelectedVendorId(String(vendorId))
     }
   }, [vendorId])
 
@@ -179,7 +179,7 @@ export default function DashGoPurchase() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const onSubmit = async (data: z.infer<typeof DashGoAssignRecipientSchema>) => {
+  const onSubmit = async (data: any) => {
     // Calculate issue date in YYYY-MM-DD format
     const today = new Date()
     const issueDate = today.toISOString().split('T')[0] // YYYY-MM-DD format
@@ -456,9 +456,9 @@ export default function DashGoPurchase() {
                   value={field.value || undefined}
                   onChange={(e: any) => {
                     const value = e?.target?.value || e?.value
-                    const numValue = value ? Number(value) : 0
-                    field.onChange(numValue)
-                    setSelectedVendorId(numValue > 0 ? numValue : null)
+                    const stringValue = value ? String(value) : ''
+                    field.onChange(stringValue)
+                    setSelectedVendorId(stringValue || null)
                   }}
                   error={error?.message}
                   placeholder="Select a vendor"
@@ -636,7 +636,7 @@ export default function DashGoPurchase() {
                 assignRecipientMutation.isPending ||
                 assignGuestRecipientMutation.isPending ||
                 !watch('vendor_id') ||
-                watch('vendor_id') === 0
+                watch('vendor_id') === ''
               }
             >
               Create Customized DashGo Gift Card

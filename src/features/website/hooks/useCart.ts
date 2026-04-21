@@ -51,7 +51,7 @@ export function useCart(query?: Record<string, any>) {
 
   // Delete item from cart (cart_item_id)
   const deleteCartItemMutation = useMutation({
-    mutationFn: (cart_item_id: number) => deleteCartItemRecipient(cart_item_id),
+    mutationFn: (cart_item_id: string | number) => deleteCartItemRecipient(cart_item_id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
     },
@@ -61,7 +61,7 @@ export function useCart(query?: Record<string, any>) {
   })
 
   const updateCartItemMutation = useMutation({
-    mutationFn: (data: { cart_item_id: number; quantity: number }) => updateCartItem(data),
+    mutationFn: (data: { cart_item_id: string | number; quantity: number }) => updateCartItem(data),
     onSuccess: () => {
       queryClient.invalidateQueries()
       success('Cart updated')

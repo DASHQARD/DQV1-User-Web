@@ -65,10 +65,10 @@ export function UpdateBranchManagerDetailsModal() {
     useUpdateBranchManagerDetailsService()
 
   const onSubmit = async (data: UpdateBranchManagerDetailsFormData) => {
-    if (branchManagerUserId == null || branchManagerUserId === 0) return
+    if (branchManagerUserId == null || branchManagerUserId === '') return
 
     await updateBranchManagerDetails({
-      branch_manager_user_id: Number(branchManagerUserId),
+      branch_manager_user_id: String(branchManagerUserId),
       email: data.email,
       phone_number: data.phone_number,
       password: data.password,

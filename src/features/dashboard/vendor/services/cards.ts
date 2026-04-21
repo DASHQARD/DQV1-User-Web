@@ -11,7 +11,7 @@ export const createExperience = async (data: CreateExperienceData) => {
 }
 
 export const getCardsByVendorId = async (opts: {
-  vendor_id: number
+  vendor_id: string | number
   limit?: number
   after?: string
   search?: string

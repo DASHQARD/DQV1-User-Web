@@ -78,7 +78,7 @@ export function useUpdateBranchManagerInvitationModal() {
       if (!invitation?.id) return
 
       const payload = {
-        id: invitation.id,
+        id: String(invitation.id),
         data: {
           branch_manager_name: data.branch_manager_name,
           branch_manager_email: data.branch_manager_email,

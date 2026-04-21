@@ -356,7 +356,7 @@ export default function CardDetailsPage() {
                   value={selectedBranchId !== null ? String(selectedBranchId) : ''}
                   onChange={(e: { target: { value: string } }) => {
                     const branchId = e.target.value
-                    setSelectedBranchId(branchId ? Number(branchId) : null)
+                    setSelectedBranchId(branchId ? String(branchId) : null)
                   }}
                   placeholder="Select a branch..."
                 />

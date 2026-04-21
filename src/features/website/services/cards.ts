@@ -138,7 +138,7 @@ export const deleteCartItemRecipient = async (cart_item_id: string | number): Pr
 }
 
 export const updateCartItem = async (data: {
-  cart_item_id: string
+  cart_item_id: string | number
   quantity: number
 }): Promise<any> => {
   return await patchMethod('/carts/items', data)

@@ -446,7 +446,7 @@ export function useCorporateCardDetailsPage() {
 
   const branchNameForSummary =
     selectedBranchId !== null
-      ? availableBranches.find((b) => b.branch_id === selectedBranchId)?.branch_name
+      ? availableBranches.find((b) => String(b.branch_id) === String(selectedBranchId))?.branch_name
       : selectedCard?.branch_name
 
   return {

@@ -472,7 +472,7 @@ export const getCorporateBranchManagerInvitations = async (
 
 /** POST /branches/corporate/branch-manager-invitations */
 export const createCorporateBranchManagerInvitation = async (data: {
-  branch_id: number
+  branch_id: string | number
   branch_manager_name: string
   branch_manager_email: string
   branch_manager_phone: string

@@ -66,7 +66,7 @@ export const deleteRequestVendor = async (id: number | string): Promise<any> => 
 }
 
 export const updateBusinessDetails = async (data: {
-  id: string
+  id: string | number
   name: string
   type: string
   phone: string

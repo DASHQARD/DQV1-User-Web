@@ -1095,31 +1095,31 @@ export default function RedemptionPage() {
             redemptionsAmountDashGo?.data?.cards || redemptionsAmountDashGo?.cards || []
           const dashProCards =
             redemptionsAmountDashPro?.data?.cards || redemptionsAmountDashPro?.cards || []
-          const dashGoCardId = dashGoCards[0]?.card_id || 0
-          const dashProCardId = dashProCards[0]?.card_id || 0
+          const dashGoCardId = String(dashGoCards[0]?.card_id || '')
+          const dashProCardId = String(dashProCards[0]?.card_id || '')
 
           payload = {
             card_type: cardTypeForAPI,
             phone_number: phoneForApi,
             amount: parseFloat(amount),
-            branch_id: selectedBranchId || selectedCard?.branch_id || 0,
+            branch_id: String(selectedBranchId || selectedCard?.branch_id || ''),
             card_id: cardType === 'dashgo' ? dashGoCardId : dashProCardId,
           }
         } else if (cardType === 'dashpass') {
           const dashPassCards =
             redemptionsAmountDashPass?.data?.cards || redemptionsAmountDashPass?.cards || []
-          let dashPassCardId: number | undefined
+          let dashPassCardId: string | undefined
           let dashPassAmount = 0
-          let dashPassBranchId = 0
+          let dashPassBranchId = ''
 
           if (selectedCard) {
-            dashPassCardId = selectedCard.card_id
+            dashPassCardId = String(selectedCard.card_id)
             dashPassAmount = selectedCard.card_price || 0
-            dashPassBranchId = selectedBranchId || selectedCard.branch_id || 0
+            dashPassBranchId = String(selectedBranchId || selectedCard.branch_id || '')
           } else if (dashPassCards.length > 0) {
-            dashPassCardId = dashPassCards[0]?.card_id
+            dashPassCardId = String(dashPassCards[0]?.card_id || '')
             dashPassAmount = dashPassCards[0]?.amount || 0
-            dashPassBranchId = selectedBranchId || dashPassCards[0]?.branch_id || 0
+            dashPassBranchId = String(selectedBranchId || dashPassCards[0]?.branch_id || '')
           }
 
           if (!dashPassCardId) {
@@ -1145,8 +1145,8 @@ export default function RedemptionPage() {
             card_type: cardTypeForAPI,
             phone_number: phoneForApi,
             amount: selectedCard.card_price || 0,
-            branch_id: selectedBranchId || selectedCard.branch_id || 0,
-            card_id: selectedCard.card_id,
+            branch_id: String(selectedBranchId || selectedCard.branch_id || ''),
+            card_id: String(selectedCard.card_id),
           }
         }
 

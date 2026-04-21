@@ -62,7 +62,7 @@ export function vendorQueries() {
   }
 
   function useGetBranchesByVendorIdService(
-    vendorId: number | null | undefined,
+    vendorId: string | number | null | undefined,
     includeRelatedVendors: boolean = false,
   ) {
     return useQuery({
@@ -106,12 +106,12 @@ export function vendorQueries() {
   function useGetCardsByVendorIdService(params?: Record<string, any>) {
     const { useGetUserProfileService } = useUserProfile()
     const { data: userProfileData } = useGetUserProfileService()
-    const vendor_id = userProfileData?.vendor_id
+    const vendor_id = userProfileData?.vendor_id ? String(userProfileData.vendor_id) : undefined
     const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
 
     return useQuery({
       queryKey: ['cards-by-vendor-id', vendor_id, params],
-      queryFn: () => getCardsByVendorId({ vendor_id, ...params }),
+      queryFn: () => getCardsByVendorId({ vendor_id: vendor_id!, ...params }),
       enabled: !!vendor_id && userProfileData?.user_type !== 'branch' && !isCorporateSuperAdmin,
     })
   }
