@@ -34,8 +34,9 @@ const getPaymentInfo = async () => {
   return response
 }
 
-const getPaymentById = async (id: string) => {
-  const response = await axiosClient.get<PaymentInfoData>(`/payments/user/${id}`)
+const getPaymentById = async () => {
+  // const response = await axiosClient.get<PaymentInfoData>(`/payments/users/${id}`)
+  const response = await axiosClient.get<PaymentInfoData>(`/payments/users`)
   return response.data
 }
 

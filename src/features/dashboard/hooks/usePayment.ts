@@ -18,7 +18,7 @@ export function usePaymentInfoService() {
   function useGetPaymentByIdService() {
     return useQuery({
       queryKey: ['get-payment-by-id', user?.user_id],
-      queryFn: () => getPaymentById(user?.user_id as string),
+      queryFn: getPaymentById,
       enabled: !!user?.user_id && user?.user_type === 'user',
     })
   }
