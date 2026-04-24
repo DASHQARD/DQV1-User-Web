@@ -99,7 +99,9 @@ export const AssignRecipientSchema = z
     name: z.string().optional(),
     phone: z.string().optional(),
     email: z.string().optional(),
-    message: z.string().optional(),
+    message: z.string().refine((val) => val.trim().length > 0, {
+      message: 'Personal message is required',
+    }),
     amount: z
       .number()
       .min(1, 'Amount must be at least 1')

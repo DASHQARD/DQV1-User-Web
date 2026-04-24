@@ -166,8 +166,8 @@ export type FeaturedCardProps = {
 }
 
 export type FlattenedCartItem = {
-  cart_id: number
-  card_id: number
+  cart_id: string | number
+  card_id: string | number
   product: string
   vendor_name?: string
   type: string
@@ -175,17 +175,22 @@ export type FlattenedCartItem = {
   price: string
   amount: string
   images?: Array<{ file_url: string; file_name: string }>
-  cart_item_id?: number
+  cart_item_id?: string | number
   total_quantity?: number
   recipients?: Array<{
-    id?: number
-    recipient_id?: number
-    email: string
-    phone: string
-    message: string
+    id?: string | number
+    recipient_id?: string | number
+    email?: string
+    recipient_email?: string
+    phone?: string
+    recipient_phone?: string
+    message?: string
     name?: string
-    amount?: string
+    recipient_name?: string
+    amount?: string | number
+    recipient_amount?: string | number
     quantity?: number
+    recipient_quantity?: number
   }>
 }
 

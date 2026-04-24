@@ -247,7 +247,7 @@ export type GuestCartApiResponse = {
 
 export type AssignRecipientPayload = {
   assign_to_self: boolean
-  cart_item_id: number
+  cart_item_id: string | number
   quantity: number
   amount: number
   message?: string
@@ -487,19 +487,19 @@ export type CheckoutResponse = {
 
 /** Payload for PATCH /guest-carts/items */
 export type GuestUpdateCartItemPayload = {
-  cart_item_id: number
+  cart_item_id: string | number
   quantity: number
 }
 
 /** Query params for DELETE /guest-carts/items */
 export type GuestDeleteCartItemParams = {
-  cart_item_id: number
+  cart_item_id: string | number
 }
 
 /** Payload for POST /guest-carts/recipients */
 export type GuestAssignRecipientPayload = {
   // guest_phone: string
-  cart_item_id: number
+  cart_item_id: string | number
   assign_to_self: boolean
   amount: number
   recipient_name?: string

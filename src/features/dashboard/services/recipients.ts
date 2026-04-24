@@ -48,7 +48,7 @@ export const getRecipients = async (params?: {
   return response as unknown as RecipientsListResponse
 }
 
-export const deleteRecipient = async (id: number): Promise<void> => {
+export const deleteRecipient = async (id: string | number): Promise<void> => {
   await axiosClient.delete(`/carts/recipients/${id}`)
 }
 

@@ -31,7 +31,7 @@ export function useGuestCart(query?: Record<string, any>) {
   }, [isGuestAuth, cartItems, getGuestCartId, setGuestCartId])
 
   const deleteCartItemMutation = useMutation({
-    mutationFn: (cart_item_id: number) => deleteGuestCartItem({ cart_item_id }),
+    mutationFn: (cart_item_id: string | number) => deleteGuestCartItem({ cart_item_id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart-items', 'guest'] })
     },
@@ -41,7 +41,7 @@ export function useGuestCart(query?: Record<string, any>) {
   })
 
   const updateCartItemMutation = useMutation({
-    mutationFn: (data: { cart_item_id: number; quantity: number }) =>
+    mutationFn: (data: { cart_item_id: string | number; quantity: number }) =>
       updateGuestCartItem({ cart_item_id: data.cart_item_id, quantity: data.quantity }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart-items', 'guest'] })

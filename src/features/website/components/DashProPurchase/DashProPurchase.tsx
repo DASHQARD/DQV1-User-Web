@@ -498,9 +498,7 @@ export default function DashProPurchase() {
                       selectedVal={field.value || ''}
                       handleChange={field.onChange}
                       disabled={assignToSelf}
-                      placeholder={
-                        assignToSelf ? 'Will use your account phone' : 'Enter phone number'
-                      }
+                      placeholder={assignToSelf ? 'Will use your account phone' : '+233559617908'}
                       error={errors.phone?.message}
                     />
                   )}
@@ -531,7 +529,7 @@ export default function DashProPurchase() {
               </div>
               <div>
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Personal Message
+                  Personal Message *
                 </label>
                 <textarea
                   rows={3}
@@ -539,6 +537,9 @@ export default function DashProPurchase() {
                   className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                   placeholder="Write a personal message for the recipient..."
                 />
+                {errors.message && (
+                  <p className="mt-1 text-xs text-red-500">{errors.message.message}</p>
+                )}
               </div>
             </div>
           </section>

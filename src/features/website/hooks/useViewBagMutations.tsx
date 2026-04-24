@@ -25,6 +25,7 @@ export function useViewBagMutations() {
     onSuccess: () => {
       toast.success('Recipient removed successfully')
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+      queryClient.invalidateQueries({ queryKey: ['cart-all-recipients'] })
     },
     onError: (error: any) => {
       toast.error(error?.message || 'Failed to remove recipient')

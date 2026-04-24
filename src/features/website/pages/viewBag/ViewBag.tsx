@@ -94,12 +94,7 @@ export default function ViewBag() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-normal text-gray-900 text-base mb-1">
-                              {item.title}
-                            </h3>
-                            <span className="text-[#402D87] font-semibold text-base">
-                              {formatCurrency(displayPrice)}
-                            </span>
+                            <h3 className="font-normal text-gray-900 text-base">{item.title}</h3>
                           </div>
                           <div className="flex items-center gap-3">
                             <button
@@ -160,11 +155,13 @@ export default function ViewBag() {
                       item.cart_item_id && recipientsByCartItem[item.cart_item_id]
                         ? recipientsByCartItem[item.cart_item_id]
                         : []
-                    const displayPrice = parseFloat(item.amount || '0')
+                    // `item.amount` comes from API `total_amount` — already the line total, not per-unit price
+                    const lineTotal = parseFloat(item.amount || '0')
                     const hasRecipients = itemRecipients.length > 0
                     const quantity = item.total_quantity || 1
                     const totalAssignedQuantity = itemRecipients.reduce(
-                      (sum: number, recipient: any) => sum + (recipient.quantity || 1),
+                      (sum: number, recipient: any) =>
+                        sum + (recipient.quantity ?? recipient.recipient_quantity ?? 1),
                       0,
                     )
 
@@ -191,12 +188,9 @@ export default function ViewBag() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-normal text-gray-900 text-base mb-1">
+                            <h3 className="font-normal text-gray-900 text-base">
                               {item.product || `Card #${item.card_id}`}
                             </h3>
-                            <span className="text-[#402D87] font-semibold text-base">
-                              {formatCurrency(displayPrice)}
-                            </span>
                           </div>
                           <div className="flex items-center gap-3">
                             {quantity === 1 ? (
@@ -278,32 +272,41 @@ export default function ViewBag() {
                           </div>
                           <div className="text-right">
                             <span className="font-bold text-gray-900 text-base">
-                              {formatCurrency(displayPrice * quantity)}
+                              {formatCurrency(lineTotal)}
                             </span>
                           </div>
                         </div>
 
                         {hasRecipients && (
                           <div className="mt-4 ml-24 space-y-2">
-                            {itemRecipients.map((recipient) => (
+                            {itemRecipients.map((recipient: any) => (
                               <div
-                                key={recipient.id}
+                                key={
+                                  recipient.id ??
+                                  recipient.recipient_id ??
+                                  recipient.recipientId ??
+                                  `${item.cart_item_id}-${recipient.email ?? recipient.recipient_email ?? ''}`
+                                }
                                 className="flex items-center justify-between bg-gray-50 rounded-xl p-3"
                               >
                                 <div className="flex-1 min-w-0">
                                   <p className="font-medium text-gray-900 text-sm truncate">
-                                    {recipient.name}
+                                    {recipient.name ?? recipient.recipient_name ?? 'Recipient'}
                                   </p>
                                   <p className="text-gray-500 text-sm truncate">
-                                    {recipient.email}
+                                    {recipient.email ?? recipient.recipient_email ?? ''}
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-2 ml-4 shrink-0">
                                   <span className="text-gray-900 font-medium text-sm">
-                                    {formatCurrency(recipient.amount)}
-                                    {recipient.quantity > 1 && (
+                                    {formatCurrency(
+                                      recipient.amount ?? recipient.recipient_amount ?? 0,
+                                    )}
+                                    {(recipient.quantity ?? recipient.recipient_quantity ?? 1) >
+                                      1 && (
                                       <span className="text-gray-500 text-xs ml-1">
-                                        (qty: {recipient.quantity})
+                                        (qty:{' '}
+                                        {recipient.quantity ?? recipient.recipient_quantity ?? 1})
                                       </span>
                                     )}
                                   </span>
@@ -425,16 +428,22 @@ export default function ViewBag() {
                   </p>
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                     <p className="font-semibold text-gray-900">
-                      {recipientToDelete.name || 'Self'}
+                      {recipientToDelete.name || recipientToDelete.recipient_name || 'Self'}
                     </p>
-                    {recipientToDelete.email && (
-                      <p className="text-sm text-gray-600 mt-1">{recipientToDelete.email}</p>
+                    {(recipientToDelete.email || recipientToDelete.recipient_email) && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        {recipientToDelete.email || recipientToDelete.recipient_email}
+                      </p>
                     )}
-                    {recipientToDelete.phone && (
-                      <p className="text-sm text-gray-600">{recipientToDelete.phone}</p>
+                    {(recipientToDelete.phone || recipientToDelete.recipient_phone) && (
+                      <p className="text-sm text-gray-600">
+                        {recipientToDelete.phone || recipientToDelete.recipient_phone}
+                      </p>
                     )}
                     <p className="text-sm font-semibold text-primary-500 mt-2">
-                      {formatCurrency(recipientToDelete.amount ?? 0)}
+                      {formatCurrency(
+                        recipientToDelete.amount ?? recipientToDelete.recipient_amount ?? 0,
+                      )}
                     </p>
                   </div>
                 </div>

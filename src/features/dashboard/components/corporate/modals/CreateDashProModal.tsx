@@ -223,7 +223,7 @@ export function CreateDashProModal() {
             name="phone"
             render={({ field: { value, onChange }, fieldState: { error } }) => (
               <BasePhoneInput
-                placeholder="Enter phone number"
+                placeholder="+233559617908"
                 options={countries}
                 selectedVal={value || ''}
                 handleChange={onChange}

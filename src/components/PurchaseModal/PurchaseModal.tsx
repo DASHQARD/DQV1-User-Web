@@ -20,7 +20,7 @@ import { MODAL_NAMES } from '@/utils/constants'
 
 export default function PurchaseModal() {
   const modal = usePersistedModalState<{
-    cart_item_id: number
+    cart_item_id: string | number
     cardType?: string
     cardProduct?: string
     cardCurrency?: string
@@ -418,7 +418,7 @@ export default function PurchaseModal() {
                   min={1}
                   max={10000}
                   step="0.01"
-                  {...form.register('amount')}
+                  {...form.register('amount', { valueAsNumber: true })}
                   error={form.formState.errors.amount?.message}
                   placeholder="0.00"
                   className="w-full rounded-lg border border-gray-200 px-4 py-3 pl-16 text-lg font-semibold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
@@ -475,7 +475,7 @@ export default function PurchaseModal() {
                 {...form.register('phone')}
                 error={form.formState.errors.phone?.message}
                 disabled={assignToSelf}
-                placeholder={assignToSelf ? 'Will use your account phone' : 'Enter phone number'}
+                placeholder={assignToSelf ? 'Will use your account phone' : '+233559617908'}
               />
             </div>
             <div>
@@ -492,7 +492,7 @@ export default function PurchaseModal() {
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Personal Message
+                Personal Message *
               </label>
               <Input
                 type="textarea"
@@ -501,6 +501,7 @@ export default function PurchaseModal() {
                 {...form.register('message')}
                 error={form.formState.errors.message?.message}
                 placeholder="Write a personal message for the recipient..."
+                isRequired
               />
             </div>
           </div>

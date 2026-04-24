@@ -6,11 +6,34 @@ import { useGuestCart } from './useGuestCart'
 import { useViewBagMutations } from './useViewBagMutations'
 import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
 import { usePayments } from './usePayments'
-import { usePersistedModalState } from '@/hooks'
+import { usePersistedModalState, useToast } from '@/hooks'
 import { MODAL_NAMES } from '@/utils/constants'
 import { getCardBackground, getImageUrl } from '@/utils/cardDisplay'
 import type { CartListResponse } from '@/types/responses'
 import type { FlattenedCartItem } from '@/types'
+
+/**
+ * Id for DELETE /carts/recipients/:id. Supports UUID strings (e.g. v7) and legacy numeric ids.
+ * Never coerce with Number() — UUID strings become NaN and delete would be skipped.
+ */
+function resolveRecipientDeleteId(recipient: unknown): string | null {
+  if (!recipient || typeof recipient !== 'object') return null
+  const r = recipient as Record<string, unknown>
+  const keys = [
+    'recipient_id',
+    'recipientId',
+    'id',
+    'cart_recipient_id',
+    'cartRecipientId',
+  ] as const
+  for (const key of keys) {
+    const raw = r[key]
+    if (raw == null || raw === '') continue
+    const s = typeof raw === 'string' ? raw.trim() : String(raw).trim()
+    if (s.length > 0) return s
+  }
+  return null
+}
 
 export function useViewBag() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -35,6 +58,7 @@ export function useViewBag() {
     ? guestCart.deleteCartItemAsync
     : userCart.deleteCartItemAsync
 
+  const toast = useToast()
   const { deleteRecipientMutation } = useViewBagMutations()
   const { useGetCartAllRecipientsService } = usePublicCatalogQueries()
   const { useServiceFeesConfig } = usePayments()
@@ -42,7 +66,7 @@ export function useViewBag() {
   useGetCartAllRecipientsService()
 
   const modal = usePersistedModalState<{
-    cart_item_id: number
+    cart_item_id: string | number
     cardType?: string
     cardProduct?: string
     cardCurrency?: string
@@ -86,10 +110,11 @@ export function useViewBag() {
   }, [activeCartItems])
 
   const recipientsByCartItem = useMemo(() => {
-    const map: Record<number, any[]> = {}
+    const map: Record<string, any[]> = {}
     displayCartItems.forEach((item) => {
-      if (item.cart_item_id) {
-        map[item.cart_item_id] = item.recipients ?? []
+      const cid = item.cart_item_id
+      if (cid != null && cid !== '') {
+        map[String(cid)] = item.recipients ?? []
       }
     })
     return map
@@ -116,14 +141,14 @@ export function useViewBag() {
   const total = subtotal + serviceFee
 
   const handleRemoveItem = useCallback(
-    async (cartItemId: number) => {
+    async (cartItemId: string | number) => {
       await deleteCartItemAsync(cartItemId)
     },
     [deleteCartItemAsync],
   )
 
   const handleQuantityChange = useCallback(
-    (cartItemId: number, quantity: number) => {
+    (cartItemId: string | number, quantity: number) => {
       if (quantity < 1) {
         handleRemoveItem(cartItemId)
         return
@@ -155,9 +180,8 @@ export function useViewBag() {
   }, [])
 
   const confirmDeleteRecipient = useCallback(() => {
-    const rawId = recipientToDelete?.id ?? recipientToDelete?.recipient_id
-    const recipientId = rawId != null ? Number(rawId) : null
-    if (recipientId != null && !Number.isNaN(recipientId)) {
+    const recipientId = resolveRecipientDeleteId(recipientToDelete)
+    if (recipientId) {
       deleteRecipientMutation.mutate(recipientId, {
         onSettled: () => {
           setIsDeleteModalOpen(false)
@@ -165,10 +189,13 @@ export function useViewBag() {
         },
       })
     } else {
+      toast.error(
+        'Could not remove this recipient (missing id). Refresh the page or contact support if this keeps happening.',
+      )
       setIsDeleteModalOpen(false)
       setRecipientToDelete(null)
     }
-  }, [recipientToDelete, deleteRecipientMutation])
+  }, [recipientToDelete, deleteRecipientMutation, toast])
 
   return {
     isGuestCart,

@@ -572,7 +572,7 @@ export default function DashGoPurchase() {
                   className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
                     assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
                   }`}
-                  placeholder={assignToSelf ? 'Will use your account phone' : 'Enter phone number'}
+                  placeholder={assignToSelf ? 'Will use your account phone' : '+233559617908'}
                 />
                 {errors.recipient_phone && (
                   <p className="mt-1 text-xs text-red-500">{errors.recipient_phone.message}</p>
