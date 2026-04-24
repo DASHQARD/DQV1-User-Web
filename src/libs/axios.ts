@@ -30,6 +30,30 @@ const processQueue = (error: any = null) => {
   failedQueue = []
 }
 
+const extractTokens = (payload: any) => {
+  const data = payload?.data ?? payload
+  const nested = data?.data ?? data
+  const tokens = nested?.tokens ?? data?.tokens ?? {}
+
+  const accessToken =
+    tokens?.access_token ??
+    tokens?.accessToken ??
+    nested?.access_token ??
+    nested?.accessToken ??
+    data?.access_token ??
+    data?.accessToken
+
+  const refreshToken =
+    tokens?.refresh_token ??
+    tokens?.refreshToken ??
+    nested?.refresh_token ??
+    nested?.refreshToken ??
+    data?.refresh_token ??
+    data?.refreshToken
+
+  return { accessToken, refreshToken }
+}
+
 // Refresh token function (uses auth/refresh-token or guest-auth/token/refresh based on isGuestAuth)
 const refreshAccessToken = async (): Promise<string | null> => {
   const state = useAuthStore.getState()
@@ -46,15 +70,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
 
   try {
     const response = await axios.post(url, body)
-    const responseData = response?.data?.data || response?.data || response
-    const accessToken =
-      responseData?.accessToken ||
-      responseData?.tokens?.accessToken ||
-      responseData?.data?.accessToken
-    const newRefreshToken =
-      responseData?.refreshToken ||
-      responseData?.tokens?.refreshToken ||
-      responseData?.data?.refreshToken
+    const { accessToken, refreshToken: newRefreshToken } = extractTokens(response?.data)
 
     if (!accessToken) {
       throw new Error('Unable to refresh access token')
@@ -130,6 +146,11 @@ instance.interceptors.response.use(
 
       // If already retried, don't retry again
       if (originalRequest._retry) {
+        const reset = useAuthStore.getState().reset
+        reset()
+        if (!window.location.pathname.includes('auth')) {
+          window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN
+        }
         return errorHandler(error)
       }
 

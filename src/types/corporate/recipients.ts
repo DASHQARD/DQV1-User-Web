@@ -10,7 +10,7 @@ export interface CardRecipientAssignment {
   recipientIds: number[]
   cardId?: number
   cardType: string
-  vendorId?: number
+  vendorId?: string | number
   dashGoAmount?: number
   cardName?: string
   cardPrice?: number

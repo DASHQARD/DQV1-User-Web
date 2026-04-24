@@ -109,7 +109,7 @@ export function useCreateBranchForm() {
         c.id === 1 || c.name === 'Ghana' || (c.name && c.name.toLowerCase() === 'ghana'),
     )
     if (ghana) {
-      form.setValue('country', String(ghana.id))
+      form.setValue('country', ghana.name || 'Ghana')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- omit form to avoid loop
   }, [countries])

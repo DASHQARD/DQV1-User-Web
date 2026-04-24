@@ -74,10 +74,20 @@ export default function CreateBranchForm() {
           render={({ field, fieldState: { error } }) => (
             <Combobox
               label="Country"
-              options={countries?.map((country: { name: string }) => ({
-                label: country.name,
-                value: country.name,
-              }))}
+              options={[
+                ...(countries?.map((country: { name: string }) => ({
+                  label: country.name,
+                  value: country.name,
+                })) ?? []),
+                // Keep current value visible (e.g. Ghana) even when countries API page does not include it.
+                ...(field.value &&
+                !countries?.some(
+                  (country: { name: string }) =>
+                    country.name.toLowerCase() === field.value.toLowerCase(),
+                )
+                  ? [{ label: field.value, value: field.value }]
+                  : []),
+              ]}
               value={field.value || undefined}
               error={error?.message}
               placeholder="Select country"

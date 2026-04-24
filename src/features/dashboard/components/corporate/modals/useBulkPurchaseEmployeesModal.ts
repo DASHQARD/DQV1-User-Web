@@ -95,9 +95,7 @@ export function useBulkPurchaseEmployeesModal() {
     [vendorList],
   )
 
-  const { data: selectedVendorData } = useGetVendorByIdManagementService(
-    selectedVendorId ? Number(selectedVendorId) : null,
-  )
+  const { data: selectedVendorData } = useGetVendorByIdManagementService(selectedVendorId || null)
   const selectedVendor = selectedVendorId ? selectedVendorId : null
   const selectedVendorName = useMemo(() => {
     const v = vendorList.find((x: any) => String(x.vendor_id ?? x.id) === selectedVendorId)
@@ -107,7 +105,7 @@ export function useBulkPurchaseEmployeesModal() {
   const { data: cardsResponse } = useGetCardsService()
   const allCards = useMemo(() => cardsResponse?.data ?? [], [cardsResponse?.data])
   const { data: vendorCardsResponse } = useGetCardsByVendorIdForCorporateService(
-    selectedVendorId ? Number(selectedVendorId) : null,
+    selectedVendorId || null,
   )
   const vendorCardsFromApi = useMemo(
     () => vendorCardsResponse?.data ?? [],
@@ -256,7 +254,7 @@ export function useBulkPurchaseEmployeesModal() {
     const recipientIds = Array.from(selectedRecipients)
     if (recipientIds.length === 0) return
 
-    const vendorId = selectedVendorId ? Number(selectedVendorId) : undefined
+    const vendorId = selectedVendorId || undefined
     const amount = dashGoAmount ? parseFloat(dashGoAmount) : 0
 
     if (selectedCardType === 'dashgo' && vendorId && amount > 0) {
@@ -364,7 +362,7 @@ export function useBulkPurchaseEmployeesModal() {
           createDashGoMutation.mutate(
             {
               recipient_ids: a.recipientIds,
-              vendor_id: Number(a.vendorId),
+              vendor_id: a.vendorId,
               product: 'DashGo',
               description: 'DashGo',
               price: Number(a.cardPrice),

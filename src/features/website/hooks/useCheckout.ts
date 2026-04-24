@@ -176,6 +176,7 @@ export function useCheckout() {
   const serviceFeeRate = Number(serviceFeesConfig?.serviceFeeRate ?? 0)
   const serviceFee = totalAmount * serviceFeeRate
   const amountDue = totalAmount + serviceFee
+  const checkoutAmountDue = totalAmount
 
   const isUserInfoIncomplete = !userInfoForm.watch('full_name') || !userInfoForm.watch('email')
 
@@ -211,7 +212,7 @@ export function useCheckout() {
         full_name: userValues.full_name,
         email: userValues.email,
         phone_number: userValues.phone_number,
-        amount_due: amountDue,
+        amount_due: checkoutAmountDue,
       }
 
       if (gateway === CHECKOUT_GATEWAY.PAYSTACK || !gateway) {
@@ -292,7 +293,7 @@ export function useCheckout() {
       full_name: userValues.full_name,
       email: userValues.email,
       phone_number: userValues.phone_number,
-      amount_due: amountDue,
+      amount_due: checkoutAmountDue,
     }
 
     if (gateway === CHECKOUT_GATEWAY.PAYSTACK || !gateway) {
@@ -368,7 +369,7 @@ export function useCheckout() {
   }, [
     isGuestAuth,
     activeCartItems,
-    amountDue,
+    checkoutAmountDue,
     userInfoForm,
     paymentForm,
     checkoutGateway,

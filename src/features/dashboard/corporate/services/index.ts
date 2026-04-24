@@ -60,7 +60,10 @@ export const updateRequestStatus = async (data: {
   id: string | number
   status: string
 }): Promise<any> => {
-  return await patchMethod(`/requests/corporate/update-status`, data)
+  return await patchMethod(`/requests/corporate/update-status`, {
+    ...data,
+    id: String(data.id),
+  })
 }
 
 /** PATCH /requests/corporate-super-admin/vendor/:vendor_id/update-status */

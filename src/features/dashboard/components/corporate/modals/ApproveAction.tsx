@@ -20,7 +20,8 @@ export function ApproveAction() {
 
     updateRequestStatus(
       {
-        id: typeof requestId === 'string' ? parseInt(requestId, 10) : requestId,
+        // Backend expects request UUID/GUID; keep id as string instead of numeric coercion.
+        id: String(requestId),
         status: 'approved',
       },
       {
