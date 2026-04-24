@@ -357,12 +357,13 @@ export function useBulkPurchaseEmployeesModal() {
     if (assignments.length === 0) return
     const cartIdToUse = cartId ?? undefined
     for (const a of assignments) {
-      if (a.cardType === 'dashgo' && a.vendorId != null && a.cardPrice != null) {
+      const vendorId = a.vendorId
+      if (a.cardType === 'dashgo' && vendorId != null && a.cardPrice != null) {
         await new Promise<void>((resolve) => {
           createDashGoMutation.mutate(
             {
               recipient_ids: a.recipientIds,
-              vendor_id: a.vendorId,
+              vendor_id: vendorId,
               product: 'DashGo',
               description: 'DashGo',
               price: Number(a.cardPrice),

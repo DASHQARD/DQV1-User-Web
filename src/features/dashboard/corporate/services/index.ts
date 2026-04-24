@@ -218,7 +218,7 @@ export const assignCardToRecipients = async (data: {
 
 export const createDashGoAndAssign = async (data: {
   recipient_ids: number[]
-  vendor_id: number
+  vendor_id: string | number
   product: string
   description: string
   price: number
