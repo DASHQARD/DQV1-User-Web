@@ -192,7 +192,7 @@ export type CartListResponse = {
 }
 
 export type AddToCartPayload = {
-  card_id: number
+  card_id: string | number
   quantity: number
 }
 

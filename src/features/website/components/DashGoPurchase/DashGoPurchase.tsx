@@ -276,7 +276,7 @@ export default function DashGoPurchase() {
         }
       } else {
         const addToCartResponse = await addToCartAsync({
-          card_id: Number(cardId),
+          card_id: cardId,
           quantity: 1,
         })
         cartItemId = addToCartResponse?.data?.cart_item_id ?? null
