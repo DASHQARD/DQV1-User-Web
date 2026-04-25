@@ -28,7 +28,7 @@ export function useRedemptionQueries() {
     return useQuery({
       queryKey: ['search-vendors', params],
       queryFn: () => searchVendors(params),
-      enabled: false,
+      enabled: !!params?.search,
     })
   }
 
@@ -62,14 +62,16 @@ export function useRedemptionQueries() {
     return useQuery({
       queryKey: ['redemptions-amount-dash-go', params],
       queryFn: () => getRedemptionsAmountDashGo(params),
-      enabled: !!params,
+      enabled: !!(params?.branch_id || params?.vendor_id),
     })
   }
 
   function useGetRedemptionsAmountDashProService() {
+    const { isAuthenticated } = useAuthStore()
     return useQuery({
       queryKey: ['redemptions-amount-dash-pro'],
       queryFn: () => getRedemptionsAmountDashPro(),
+      enabled: isAuthenticated,
     })
   }
 
@@ -77,14 +79,15 @@ export function useRedemptionQueries() {
     return useQuery({
       queryKey: ['redemptions-amount-dash-x', params],
       queryFn: () => getRedemptionsAmountDashX(params),
-      enabled: !!params,
+      enabled: !!(params?.branch_id || params?.vendor_id),
     })
   }
+
   function useGetRedemptionsAmountDashPassService(params?: GetRedemptionsAmountDashPassParams) {
     return useQuery({
       queryKey: ['redemptions-amount-dash-pass', params],
       queryFn: () => getRedemptionsAmountDashPass(params),
-      enabled: !!params,
+      enabled: !!(params?.branch_id || params?.vendor_id),
     })
   }
 

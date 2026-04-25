@@ -202,20 +202,35 @@ export interface GetVendorRedemptionsListParams {
 }
 
 export interface GetRedemptionsAmountDashGoParams {
-  phone_number?: string
   branch_id?: string
   vendor_id?: string
 }
 
-
 export interface GetRedemptionsAmountDashXParams {
-  phone_number?: string
   branch_id?: string
   vendor_id?: string
 }
 
 export interface GetRedemptionsAmountDashPassParams {
-  phone_number?: string
   branch_id?: string
   vendor_id?: string
+}
+
+export interface RecipientAmountResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: {
+    balance: number
+    card_id?: string
+    currency?: string
+  }
+}
+
+export interface UserRedemptionCardsPayload {
+  vendor_id?: string
+  branch_id?: string
+  card_type: 'DashGo' | 'DashPro' | 'DashX' | 'DashPass'
+  amount: number
+  card_id?: string
 }

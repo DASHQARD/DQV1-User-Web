@@ -23,6 +23,7 @@ import type {
   GetRedemptionsAmountDashGoParams,
   GetRedemptionsAmountDashXParams,
   GetRedemptionsAmountDashPassParams,
+  UserRedemptionCardsPayload,
 } from '@/types'
 import { getQueryString } from '@/utils/helpers'
 
@@ -259,6 +260,13 @@ export const processRedemptionCards = async (data: CardsRedemptionPayload): Prom
   return await postMethod(`${commonUrl}/users/cards`, data)
 }
 
+export const processUserRedemptionCards = async (
+  data: UserRedemptionCardsPayload,
+): Promise<RedemptionResponse> => {
+  const response = await axiosClient.post(`${commonUrl}/users/cards`, data)
+  return response as unknown as RedemptionResponse
+}
+
 // Initiate redemption
 export const initiateRedemption = async (
   data: InitiateRedemptionPayload,
@@ -294,4 +302,5 @@ export type {
   GetRedemptionsAmountDashGoParams,
   GetRedemptionsAmountDashXParams,
   GetRedemptionsAmountDashPassParams,
+  UserRedemptionCardsPayload,
 } from '@/types'

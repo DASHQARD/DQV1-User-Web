@@ -1,13 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRedemptionMutation } from './redemption/useRedemptionMutation'
+import { useRedemptionQueries } from './redemption/useRedemptionQueries'
 import { useAuthStore } from '@/stores'
 import { detectMobileMoneyProvider, convertToInternationalFormat } from '../services/redemptions'
+import type { VendorSearchResult } from '../services/redemptions'
 
-interface RedemptionForm {
-  redemptionAmount: number | null
-  vendorPhone: string
-  cardType?: 'DashPro' | 'DashGo' | 'DashX' | 'DashPass'
-}
+export type CardType = 'DashPro' | 'DashGo' | 'DashX' | 'DashPass'
 
 export function useRedemptionForm() {
   const { user } = useAuthStore()
@@ -15,251 +13,246 @@ export function useRedemptionForm() {
 
   const {
     useValidateVendorMobileMoneyService,
-    useGetCardBalanceService,
-    useProcessDashProRedemptionService,
-    useProcessCardsRedemptionService,
+    useProcessDashProRedemptionForUserService,
+    useProcessUserRedemptionCardsService,
   } = useRedemptionMutation()
 
-  const validateVendorMutation = useValidateVendorMobileMoneyService()
-  const getBalanceMutation = useGetCardBalanceService()
-  const dashProRedemptionMutation = useProcessDashProRedemptionService()
-  const cardsRedemptionMutation = useProcessCardsRedemptionService()
+  const {
+    useSearchVendorsService,
+    useGetRedemptionsAmountDashProService,
+    useGetRedemptionsAmountDashGoService,
+    useGetRedemptionsAmountDashXService,
+    useGetRedemptionsAmountDashPassService,
+  } = useRedemptionQueries()
 
-  const [form, setForm] = useState<RedemptionForm>({
-    redemptionAmount: null,
-    vendorPhone: '',
-    cardType: undefined,
-  })
-  const [rawVendor, setRawVendor] = useState('')
-  const [debouncedVendor, setDebouncedVendor] = useState('')
+  const validateVendorMutation = useValidateVendorMobileMoneyService()
+  const dashProMutation = useProcessDashProRedemptionForUserService()
+  const cardsMutation = useProcessUserRedemptionCardsService()
+
+  // Stable mutate reference for use in effects
+  const { mutate: validateMutate } = validateVendorMutation
+
+  // Form state
+  const [cardType, setCardType] = useState<CardType>('DashPro')
+  const [redemptionAmount, setRedemptionAmount] = useState<number | null>(null)
+
+  // DashPro: vendor identified by mobile money phone number
+  const [rawVendorPhone, setRawVendorPhone] = useState('')
+  const [debouncedVendorPhone, setDebouncedVendorPhone] = useState('')
   const [validatingVendor, setValidatingVendor] = useState(false)
-  const [vendorError, setVendorError] = useState<string | null>(null)
-  const [vendorName, setVendorName] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [balance, setBalance] = useState<number | null>(null)
-  const [balanceCheckComplete, setBalanceCheckComplete] = useState(false)
-  const [balanceError, setBalanceError] = useState<string | null>(null)
+  const [vendorPhoneError, setVendorPhoneError] = useState<string | null>(null)
+  const [vendorPhoneName, setVendorPhoneName] = useState<string | null>(null)
+
+  // Vendor-scoped cards: vendor identified via search
+  const [vendorSearch, setVendorSearch] = useState('')
+  const [debouncedVendorSearch, setDebouncedVendorSearch] = useState('')
+  const [selectedVendor, setSelectedVendor] = useState<VendorSearchResult | null>(null)
+
+  // UI state
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const [redemptionReferenceId, setRedemptionReferenceId] = useState<string | null>(null)
 
-  // Debounce vendor phone number input - only validate after user stops typing
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedVendor(rawVendor)
-    }, 800) // Wait 800ms after user stops typing
+  const isVendorScoped = cardType !== 'DashPro'
 
+  // Vendor search query (enabled when search term is present and card is vendor-scoped)
+  const vendorSearchQuery = useSearchVendorsService(
+    isVendorScoped && debouncedVendorSearch.length >= 2
+      ? { search: debouncedVendorSearch }
+      : undefined,
+  )
+
+  // Scope params for vendor-scoped balance queries
+  const scopeParams = selectedVendor ? { vendor_id: selectedVendor.vendor_id } : undefined
+
+  // All four balance queries called unconditionally (React hooks rules)
+  const dashProQuery = useGetRedemptionsAmountDashProService()
+  const dashGoQuery = useGetRedemptionsAmountDashGoService(
+    cardType === 'DashGo' ? scopeParams : undefined,
+  )
+  const dashXQuery = useGetRedemptionsAmountDashXService(
+    cardType === 'DashX' ? scopeParams : undefined,
+  )
+  const dashPassQuery = useGetRedemptionsAmountDashPassService(
+    cardType === 'DashPass' ? scopeParams : undefined,
+  )
+
+  const activeBalanceQuery = {
+    DashPro: dashProQuery,
+    DashGo: dashGoQuery,
+    DashX: dashXQuery,
+    DashPass: dashPassQuery,
+  }[cardType]
+
+  const availableBalance: number | null = (activeBalanceQuery.data as any)?.balance ?? null
+  const balanceLoading = activeBalanceQuery.isLoading || activeBalanceQuery.isFetching
+  const balanceError: string | null = activeBalanceQuery.isError
+    ? ((activeBalanceQuery.error as any)?.message ?? 'Failed to fetch balance')
+    : null
+
+  // Reset vendor/amount state when card type changes — handled in setCardType wrapper
+  // so we don't need a useEffect that lists cardType as a trigger-only dependency.
+  const handleCardTypeChange = useCallback((newType: CardType) => {
+    setCardType(newType)
+    setRawVendorPhone('')
+    setDebouncedVendorPhone('')
+    setVendorPhoneName(null)
+    setVendorPhoneError(null)
+    setVendorSearch('')
+    setDebouncedVendorSearch('')
+    setSelectedVendor(null)
+    setRedemptionAmount(null)
+  }, [])
+
+  // Debounce vendor phone (DashPro)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedVendorPhone(rawVendorPhone), 800)
     return () => clearTimeout(timer)
-  }, [rawVendor])
+  }, [rawVendorPhone])
 
-  // Validate vendor phone number only after debounce
+  // Validate vendor mobile money (DashPro only)
   useEffect(() => {
-    if (debouncedVendor && debouncedVendor.length >= 10) {
-      setValidatingVendor(true)
-      setVendorError(null)
-      setVendorName(null)
+    if (cardType !== 'DashPro') return
 
-      // Extract phone number and detect provider
-      const internationalPhone = convertToInternationalFormat(debouncedVendor)
-      const provider = detectMobileMoneyProvider(debouncedVendor)
-
-      if (!provider) {
-        setVendorError(
-          'Unable to detect mobile money provider. Please enter a valid Ghana phone number.',
-        )
-        setVendorName(null)
-        setValidatingVendor(false)
-        return
-      }
-
-      validateVendorMutation.mutate(
-        { phone_number: internationalPhone, provider },
-        {
-          onSuccess: (response: any) => {
-            const vendorData = response?.data
-            if (vendorData?.vendor_name) {
-              setVendorName(vendorData.vendor_name)
-              setVendorError(null)
-              setForm((prev) => ({ ...prev, vendorPhone: rawVendor }))
-            } else {
-              setVendorError(
-                response?.message || 'Vendor not found. Please check the phone number.',
-              )
-              setVendorName(null)
-            }
-            setValidatingVendor(false)
-          },
-          onError: (error: any) => {
-            setVendorError(error?.message || 'Vendor not found. Please check the phone number.')
-            setVendorName(null)
-            setValidatingVendor(false)
-          },
-        },
-      )
-    } else if (debouncedVendor && debouncedVendor.length > 0 && debouncedVendor.length < 10) {
-      setVendorName(null)
-      setVendorError(null)
+    if (!debouncedVendorPhone || debouncedVendorPhone.length < 10) {
+      setVendorPhoneName(null)
+      setVendorPhoneError(null)
       setValidatingVendor(false)
-    } else if (!debouncedVendor) {
-      setVendorName(null)
-      setVendorError(null)
-      setValidatingVendor(false)
+      return
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedVendor])
 
-  // Check balance when amount is entered
+    const provider = detectMobileMoneyProvider(debouncedVendorPhone)
+    if (!provider) {
+      setVendorPhoneError(
+        'Unable to detect mobile money provider. Please enter a valid Ghana phone number.',
+      )
+      setVendorPhoneName(null)
+      setValidatingVendor(false)
+      return
+    }
+
+    setValidatingVendor(true)
+    setVendorPhoneError(null)
+    setVendorPhoneName(null)
+
+    validateMutate(
+      { phone_number: convertToInternationalFormat(debouncedVendorPhone), provider },
+      {
+        onSuccess: (response: any) => {
+          const data = response?.data
+          const name = data?.vendor_name || data?.account_name
+          if (name) {
+            setVendorPhoneName(name)
+            setVendorPhoneError(null)
+          } else {
+            setVendorPhoneError(
+              response?.message || 'Vendor not found. Please check the phone number.',
+            )
+            setVendorPhoneName(null)
+          }
+          setValidatingVendor(false)
+        },
+        onError: (err: any) => {
+          setVendorPhoneError(err?.message || 'Vendor not found. Please check the phone number.')
+          setVendorPhoneName(null)
+          setValidatingVendor(false)
+        },
+      },
+    )
+  }, [debouncedVendorPhone, cardType, validateMutate])
+
+  // Debounce vendor search (vendor-scoped cards)
   useEffect(() => {
-    if (form.redemptionAmount && form.redemptionAmount > 0 && rawVendor) {
-      setBalanceCheckComplete(false)
-      setBalanceError(null)
+    const timer = setTimeout(() => setDebouncedVendorSearch(vendorSearch), 500)
+    return () => clearTimeout(timer)
+  }, [vendorSearch])
 
-      getBalanceMutation.mutate(
-        { card_type: form.cardType },
-        {
-          onSuccess: (response: any) => {
-            const balanceData = response?.data
-            if (balanceData?.balance !== undefined) {
-              const availableBalance = balanceData.balance
-              setBalance(availableBalance)
-
-              if (availableBalance >= form.redemptionAmount!) {
-                setBalanceError(null)
-              } else {
-                setBalanceError('Insufficient balance')
-              }
-            } else {
-              setBalanceError(response?.message || 'Failed to check balance')
-            }
-            setBalanceCheckComplete(true)
-          },
-          onError: (error: any) => {
-            setBalanceError(error?.message || 'Failed to check balance. Please try again.')
-            setBalanceCheckComplete(true)
-          },
-        },
-      )
-    } else {
-      setBalanceCheckComplete(false)
-      setBalanceError(null)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.redemptionAmount, form.cardType, rawVendor])
+  const handleSelectVendor = useCallback((vendor: VendorSearchResult) => {
+    setSelectedVendor(vendor)
+    setVendorSearch(vendor.vendor_name)
+  }, [])
 
   const isFormValid = useMemo(() => {
-    return (
-      vendorName !== null &&
-      !vendorError &&
-      form.redemptionAmount !== null &&
-      form.redemptionAmount > 0 &&
-      balanceCheckComplete &&
-      !balanceError &&
-      userPhone
-    )
-  }, [
-    vendorName,
-    vendorError,
-    form.redemptionAmount,
-    balanceCheckComplete,
-    balanceError,
-    userPhone,
-  ])
+    if (!redemptionAmount || redemptionAmount <= 0) return false
+    if (availableBalance === null || redemptionAmount > availableBalance) return false
+    if (!userPhone) return false
+
+    if (cardType === 'DashPro') {
+      return !!(vendorPhoneName && !vendorPhoneError)
+    }
+    return !!selectedVendor
+  }, [cardType, redemptionAmount, availableBalance, vendorPhoneName, vendorPhoneError, selectedVendor, userPhone])
 
   const clearForm = useCallback(() => {
-    setForm({
-      redemptionAmount: null,
-      vendorPhone: '',
-      cardType: undefined,
-    })
-    setRawVendor('')
-    setVendorName(null)
-    setVendorError(null)
-    setBalance(null)
-    setBalanceCheckComplete(false)
-    setBalanceError(null)
+    setRedemptionAmount(null)
+    setRawVendorPhone('')
+    setDebouncedVendorPhone('')
+    setVendorPhoneName(null)
+    setVendorPhoneError(null)
+    setVendorSearch('')
+    setDebouncedVendorSearch('')
+    setSelectedVendor(null)
     setRedemptionReferenceId(null)
   }, [])
 
-  const submitRedemption = useCallback(
-    async (token?: string) => {
-      if (!isFormValid || !userPhone || !form.vendorPhone) return
+  const submitRedemption = useCallback(async () => {
+    if (!isFormValid || !redemptionAmount) return
 
-      setIsSubmitting(true)
-      try {
-        // Extract phone numbers (remove country code prefix if present)
-
-        // Determine redemption type based on card type
-        // For now, we'll default to DashPro if no card type is specified
-        // In the future, you might want to add a card type selector to the form
-        const cardType = form.cardType || 'DashPro'
-
-        if (cardType === 'DashPro') {
-          // Process DashPro redemption
-          const vendorInternationalPhone = convertToInternationalFormat(rawVendor)
-          const userInternationalPhone = convertToInternationalFormat(userPhone)
-
-          if (!token) {
-            throw new Error('OTP token is required for DashPro redemption')
-          }
-
-          const result = await dashProRedemptionMutation.mutateAsync({
-            vendor_phone_number: vendorInternationalPhone,
-            amount: form.redemptionAmount!,
-            user_phone_number: userInternationalPhone,
-            token: token,
-          })
-
-          if (result?.data?.reference_id) {
-            setRedemptionReferenceId(result.data.reference_id)
-            setShowSummaryModal(true)
-          }
-        } else {
-          // Process cards redemption (DashGo, DashX, DashPass)
-          // Note: CardsRedemptionPayload requires branch_id, card_id, and amount
-          // This implementation is incomplete - the form needs to collect these fields
-          // For now, we'll log an error as this requires additional form fields
-          console.error(
-            'Cards redemption requires branch_id, card_id, and amount. These fields are not currently collected in the form.',
-          )
-          throw new Error(
-            'Cards redemption is not fully implemented. Missing required fields: branch_id, card_id.',
-          )
-        }
-      } catch (error: any) {
-        console.error('Redemption submission error:', error)
-        // Error handling is done in the mutation's onError callback
-      } finally {
-        setIsSubmitting(false)
+    try {
+      if (cardType === 'DashPro') {
+        const result = await dashProMutation.mutateAsync({
+          vendor_phone_number: convertToInternationalFormat(rawVendorPhone),
+          amount: redemptionAmount,
+          user_phone_number: convertToInternationalFormat(userPhone),
+        })
+        if (result?.data?.reference_id) setRedemptionReferenceId(result.data.reference_id)
+        setShowSummaryModal(true)
+      } else {
+        if (!selectedVendor) return
+        const result = await cardsMutation.mutateAsync({
+          vendor_id: selectedVendor.vendor_id,
+          card_type: cardType,
+          amount: redemptionAmount,
+        })
+        if (result?.data?.reference_id) setRedemptionReferenceId(result.data.reference_id)
+        setShowSummaryModal(true)
       }
-    },
-    [
-      isFormValid,
-      userPhone,
-      form.vendorPhone,
-      form.redemptionAmount,
-      form.cardType,
-      rawVendor,
-      dashProRedemptionMutation,
-    ],
-  )
+    } catch {
+      // Errors are surfaced by the mutation's onError toast
+    }
+  }, [isFormValid, cardType, redemptionAmount, rawVendorPhone, userPhone, selectedVendor, dashProMutation, cardsMutation])
 
   return {
-    form,
-    rawVendor,
-    setRawVendor,
+    // Card type
+    cardType,
+    setCardType: handleCardTypeChange,
+    // Amount
+    redemptionAmount,
+    setRedemptionAmount,
+    // DashPro vendor
+    rawVendorPhone,
+    setRawVendorPhone,
     validatingVendor: validatingVendor || validateVendorMutation.isPending,
-    vendorError,
-    vendorName,
+    vendorPhoneError,
+    vendorPhoneName,
+    // Vendor-scoped
+    vendorSearch,
+    setVendorSearch,
+    vendorSearchResults: ((vendorSearchQuery.data as any)?.data ?? []) as VendorSearchResult[],
+    isSearchingVendors: vendorSearchQuery.isFetching,
+    selectedVendor,
+    handleSelectVendor,
+    // Balance (from recipient-amounts)
+    availableBalance,
+    balanceLoading,
+    balanceError,
+    // Submission
     isFormValid,
-    isSubmitting:
-      isSubmitting || dashProRedemptionMutation.isPending || cardsRedemptionMutation.isPending,
+    isSubmitting: dashProMutation.isPending || cardsMutation.isPending,
     submitRedemption,
     clearForm,
-    balance,
-    balanceCheckComplete: balanceCheckComplete || getBalanceMutation.isPending,
-    balanceError,
+    // Summary modal
     showSummaryModal,
     setShowSummaryModal,
-    setForm,
     redemptionReferenceId,
   }
 }
