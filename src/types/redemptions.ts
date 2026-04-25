@@ -202,16 +202,24 @@ export interface GetVendorRedemptionsListParams {
 }
 
 export interface GetRedemptionsAmountDashGoParams {
+  phone_number?: string
   branch_id?: string
   vendor_id?: string
 }
 
 export interface GetRedemptionsAmountDashXParams {
+export interface GetRedemptionsAmountDashProParams {
+  phone_number?: string
+}
+
+export interface GetRedemptionsAmountDashXParams {
+  phone_number?: string
   branch_id?: string
   vendor_id?: string
 }
 
 export interface GetRedemptionsAmountDashPassParams {
+  phone_number?: string
   branch_id?: string
   vendor_id?: string
 }

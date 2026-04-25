@@ -180,8 +180,6 @@ export default function RedemptionPage() {
     return params
   }, [userPhoneNumber, selectedBranchId, selectedVendorId, selectedCard, isAuthenticated])
 
-
-
   // Prepare params for DashX hook
   const dashXParams = useMemo(() => {
     if (!isAuthenticated && (!userPhoneNumber || userPhoneNumber.length < 9)) {
