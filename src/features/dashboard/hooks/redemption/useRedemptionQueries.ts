@@ -61,13 +61,8 @@ export function useRedemptionQueries() {
   function useGetRedemptionsAmountDashGoService(params?: GetRedemptionsAmountDashGoParams) {
     return useQuery({
       queryKey: ['redemptions-amount-dash-go', params],
-      queryFn: () => {
-        if (!params?.phone_number) {
-          throw new Error('Phone number is required')
-        }
-        return getRedemptionsAmountDashGo(params)
-      },
-      enabled: !!params?.phone_number,
+      queryFn: () => getRedemptionsAmountDashGo(params),
+      enabled: !!params,
     })
   }
 

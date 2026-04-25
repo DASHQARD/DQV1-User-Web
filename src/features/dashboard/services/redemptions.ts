@@ -234,7 +234,7 @@ export const getRedemptionsLegacy = async (): Promise<RedemptionsListResponse> =
 }
 
 export const getRedemptionsAmountDashGo = async (
-  params: GetRedemptionsAmountDashGoParams,
+  params?: GetRedemptionsAmountDashGoParams,
 ): Promise<any> => {
   return await getList(`${commonUrl}/recipient-amounts/dash-go`, params)
 }

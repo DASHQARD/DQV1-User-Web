@@ -158,29 +158,24 @@ export default function RedemptionPage() {
     ? (user as any)?.phonenumber || (user as any)?.phone || ''
     : phoneNumber
 
-  // Prepare params for DashGo hook (requires phone_number and either branch_id or vendor_id)
+  // Prepare params for DashGo hook
   const dashGoParams = useMemo(() => {
-    if (!userPhoneNumber || userPhoneNumber.length < 9) {
+    if (!isAuthenticated && (!userPhoneNumber || userPhoneNumber.length < 9)) {
       return undefined
     }
-    const phoneForApi = isAuthenticated
-      ? userPhoneNumber
-      : convertToInternationalFormat(userPhoneNumber)
-    const params: any = {
-      phone_number: phoneForApi,
-    }
-    // Always add branch_id if available (from selected branch or selected card)
     const branchId = selectedBranchId !== null ? selectedBranchId : selectedCard?.branch_id
+    if (!isAuthenticated && !branchId && !selectedVendorId) {
+      return undefined
+    }
+    const params: any = {}
+    if (!isAuthenticated) {
+      params.phone_number = convertToInternationalFormat(userPhoneNumber)
+    }
     if (branchId !== null && branchId !== undefined) {
       params.branch_id = branchId
     }
-    // Add vendor_id if available
     if (selectedVendorId) {
       params.vendor_id = selectedVendorId
-    }
-    // If neither branch_id nor vendor_id is available, return undefined to disable the query
-    if (!branchId && !selectedVendorId) {
-      return undefined
     }
     return params
   }, [userPhoneNumber, selectedBranchId, selectedVendorId, selectedCard, isAuthenticated])
