@@ -972,6 +972,19 @@ export default function RedemptionPage() {
         return
       }
 
+      if (cardType === 'dashgo' || cardType === 'dashpro') {
+        const dashGoCards =
+          redemptionsAmountDashGo?.data?.cards || redemptionsAmountDashGo?.cards || []
+        const dashProCards =
+          redemptionsAmountDashPro?.data?.cards || redemptionsAmountDashPro?.cards || []
+        const activeCards = cardType === 'dashgo' ? dashGoCards : dashProCards
+        if (activeCards.length === 0) {
+          const label = cardType === 'dashgo' ? 'DashGo' : 'DashPro'
+          toast.error(`You have no ${label} balance to redeem`)
+          return
+        }
+      }
+
       const userPhoneNumber = isAuthenticated
         ? (user as any)?.phonenumber || (user as any)?.phone || ''
         : phoneNumber
@@ -1071,6 +1084,14 @@ export default function RedemptionPage() {
             redemptionsAmountDashGo?.data?.cards || redemptionsAmountDashGo?.cards || []
           const dashProCards =
             redemptionsAmountDashPro?.data?.cards || redemptionsAmountDashPro?.cards || []
+
+          const activeCards = cardType === 'dashgo' ? dashGoCards : dashProCards
+          if (activeCards.length === 0) {
+            toast.error(`You have no ${cardTypeForAPI} balance to redeem`)
+            setIsProcessingRedemption(false)
+            return
+          }
+
           const dashGoCardId = String(dashGoCards[0]?.card_id || '')
           const dashProCardId = String(dashProCards[0]?.card_id || '')
 
