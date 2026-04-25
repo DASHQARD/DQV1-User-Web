@@ -82,13 +82,14 @@ export function useBranchDetails() {
       if (!corporateBranchData) return null
       return corporateBranchData?.data || corporateBranchData || null
     }
-    if (!branchData || !Array.isArray(branchData)) return null
-    if (!branchId) return branchData[0] || null
-    const foundBranch = branchData.find((branch: any) => {
+    const branchArray = Array.isArray(branchData) ? branchData : branchData?.data
+    if (!branchArray || !Array.isArray(branchArray)) return null
+    if (!branchId) return branchArray[0] || null
+    const foundBranch = branchArray.find((branch: any) => {
       const bId = branch.id || branch.branch_id
       return String(bId) === String(branchId)
     })
-    return foundBranch || branchData[0] || null
+    return foundBranch || branchArray[0] || null
   }, [isCorporateSuperAdmin, corporateBranchData, branchData, branchId])
 
   const experiences = React.useMemo(() => {
