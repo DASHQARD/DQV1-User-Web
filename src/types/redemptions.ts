@@ -209,13 +209,13 @@ export interface GetRedemptionsAmountDashGoParams {
 
 
 export interface GetRedemptionsAmountDashXParams {
-  phone_number: string
+  phone_number?: string
   branch_id?: string
   vendor_id?: string
 }
 
 export interface GetRedemptionsAmountDashPassParams {
-  phone_number: string
+  phone_number?: string
   branch_id?: string
   vendor_id?: string
 }

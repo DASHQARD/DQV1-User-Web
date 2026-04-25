@@ -187,46 +187,38 @@ export default function RedemptionPage() {
 
 
 
-  // Prepare params for DashX hook (requires phone_number and optionally branch_id or vendor_id)
+  // Prepare params for DashX hook
   const dashXParams = useMemo(() => {
-    if (!userPhoneNumber || userPhoneNumber.length < 9) {
+    if (!isAuthenticated && (!userPhoneNumber || userPhoneNumber.length < 9)) {
       return undefined
     }
-    const phoneForApi = isAuthenticated
-      ? userPhoneNumber
-      : convertToInternationalFormat(userPhoneNumber)
-    const params: any = {
-      phone_number: phoneForApi,
+    const params: any = {}
+    if (!isAuthenticated) {
+      params.phone_number = convertToInternationalFormat(userPhoneNumber)
     }
-    // Add branch_id if available (from selected branch or selected card)
     const branchId = selectedBranchId !== null ? selectedBranchId : selectedCard?.branch_id
     if (branchId !== null && branchId !== undefined) {
       params.branch_id = branchId
     }
-    // Add vendor_id if available
     if (selectedVendorId) {
       params.vendor_id = selectedVendorId
     }
     return params
   }, [userPhoneNumber, selectedBranchId, selectedVendorId, selectedCard, isAuthenticated])
 
-  // Prepare params for DashPass hook (requires phone_number and optionally branch_id or vendor_id)
+  // Prepare params for DashPass hook
   const dashPassParams = useMemo(() => {
-    if (!userPhoneNumber || userPhoneNumber.length < 9) {
+    if (!isAuthenticated && (!userPhoneNumber || userPhoneNumber.length < 9)) {
       return undefined
     }
-    const phoneForApi = isAuthenticated
-      ? userPhoneNumber
-      : convertToInternationalFormat(userPhoneNumber)
-    const params: any = {
-      phone_number: phoneForApi,
+    const params: any = {}
+    if (!isAuthenticated) {
+      params.phone_number = convertToInternationalFormat(userPhoneNumber)
     }
-    // Add branch_id if available (from selected branch or selected card)
     const branchId = selectedBranchId !== null ? selectedBranchId : selectedCard?.branch_id
     if (branchId !== null && branchId !== undefined) {
       params.branch_id = branchId
     }
-    // Add vendor_id if available
     if (selectedVendorId) {
       params.vendor_id = selectedVendorId
     }

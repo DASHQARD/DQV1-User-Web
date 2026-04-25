@@ -81,25 +81,15 @@ export function useRedemptionQueries() {
   function useGetRedemptionsAmountDashXService(params?: GetRedemptionsAmountDashXParams) {
     return useQuery({
       queryKey: ['redemptions-amount-dash-x', params],
-      queryFn: () => {
-        if (!params?.phone_number) {
-          throw new Error('Phone number is required')
-        }
-        return getRedemptionsAmountDashX(params)
-      },
-      enabled: !!params?.phone_number,
+      queryFn: () => getRedemptionsAmountDashX(params),
+      enabled: !!params,
     })
   }
   function useGetRedemptionsAmountDashPassService(params?: GetRedemptionsAmountDashPassParams) {
     return useQuery({
       queryKey: ['redemptions-amount-dash-pass', params],
-      queryFn: () => {
-        if (!params?.phone_number) {
-          throw new Error('Phone number is required')
-        }
-        return getRedemptionsAmountDashPass(params)
-      },
-      enabled: !!params?.phone_number,
+      queryFn: () => getRedemptionsAmountDashPass(params),
+      enabled: !!params,
     })
   }
 

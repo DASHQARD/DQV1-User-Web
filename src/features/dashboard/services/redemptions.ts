@@ -244,13 +244,13 @@ export const getRedemptionsAmountDashPro = async (): Promise<any> => {
 }
 
 export const getRedemptionsAmountDashX = async (
-  params: GetRedemptionsAmountDashXParams,
+  params?: GetRedemptionsAmountDashXParams,
 ): Promise<any> => {
   return await getList(`${commonUrl}/recipient-amounts/dash-x`, params)
 }
 
 export const getRedemptionsAmountDashPass = async (
-  params: GetRedemptionsAmountDashPassParams,
+  params?: GetRedemptionsAmountDashPassParams,
 ): Promise<any> => {
   return await getList(`${commonUrl}/recipient-amounts/dash-pass`, params)
 }
