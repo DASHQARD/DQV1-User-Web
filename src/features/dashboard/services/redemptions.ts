@@ -21,7 +21,6 @@ import type {
   VendorRedemptionsResponse,
   GetVendorRedemptionsListParams,
   GetRedemptionsAmountDashGoParams,
-  GetRedemptionsAmountDashProParams,
   GetRedemptionsAmountDashXParams,
   GetRedemptionsAmountDashPassParams,
 } from '@/types'
@@ -240,10 +239,8 @@ export const getRedemptionsAmountDashGo = async (
   return await getList(`${commonUrl}/recipient-amounts/dash-go`, params)
 }
 
-export const getRedemptionsAmountDashPro = async (
-  params: GetRedemptionsAmountDashProParams,
-): Promise<any> => {
-  return await getList(`${commonUrl}/recipient-amounts/dash-pro`, params)
+export const getRedemptionsAmountDashPro = async (): Promise<any> => {
+  return await getList(`${commonUrl}/recipient-amounts/dash-pro`)
 }
 
 export const getRedemptionsAmountDashX = async (
@@ -295,7 +292,6 @@ export type {
   VendorRedemptionsResponse,
   GetVendorRedemptionsListParams,
   GetRedemptionsAmountDashGoParams,
-  GetRedemptionsAmountDashProParams,
   GetRedemptionsAmountDashXParams,
   GetRedemptionsAmountDashPassParams,
 } from '@/types'

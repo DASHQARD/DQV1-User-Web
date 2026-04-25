@@ -185,18 +185,7 @@ export default function RedemptionPage() {
     return params
   }, [userPhoneNumber, selectedBranchId, selectedVendorId, selectedCard, isAuthenticated])
 
-  // Prepare params for DashPro hook
-  const dashProParams = useMemo(() => {
-    if (!userPhoneNumber || userPhoneNumber.length < 9) {
-      return undefined
-    }
-    const phoneForApi = isAuthenticated
-      ? userPhoneNumber
-      : convertToInternationalFormat(userPhoneNumber)
-    return {
-      phone_number: phoneForApi,
-    }
-  }, [userPhoneNumber, isAuthenticated])
+
 
   // Prepare params for DashX hook (requires phone_number and optionally branch_id or vendor_id)
   const dashXParams = useMemo(() => {
@@ -247,7 +236,7 @@ export default function RedemptionPage() {
   const { data: redemptionsAmountDashGo, isLoading: isLoadingRedemptionsAmountDashGo } =
     useGetRedemptionsAmountDashGoService(dashGoParams)
   const { data: redemptionsAmountDashPro, isLoading: isLoadingRedemptionsAmountDashPro } =
-    useGetRedemptionsAmountDashProService(dashProParams)
+    useGetRedemptionsAmountDashProService()
   const { data: redemptionsAmountDashX, isLoading: isLoadingRedemptionsAmountDashX } =
     useGetRedemptionsAmountDashXService(dashXParams)
   const { data: redemptionsAmountDashPass, isLoading: isLoadingRedemptionsAmountDashPass } =

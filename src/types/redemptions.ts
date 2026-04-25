@@ -207,9 +207,6 @@ export interface GetRedemptionsAmountDashGoParams {
   vendor_id?: string
 }
 
-export interface GetRedemptionsAmountDashProParams {
-  phone_number: string
-}
 
 export interface GetRedemptionsAmountDashXParams {
   phone_number: string

@@ -16,7 +16,6 @@ import {
   getRedemptionsAmountDashGo,
   getRedemptionsAmountDashPro,
   type GetRedemptionsAmountDashGoParams,
-  type GetRedemptionsAmountDashProParams,
   getRedemptionsAmountDashX,
   type GetRedemptionsAmountDashXParams,
   getRedemptionsAmountDashPass,
@@ -72,16 +71,10 @@ export function useRedemptionQueries() {
     })
   }
 
-  function useGetRedemptionsAmountDashProService(params?: GetRedemptionsAmountDashProParams) {
+  function useGetRedemptionsAmountDashProService() {
     return useQuery({
-      queryKey: ['redemptions-amount-dash-pro', params],
-      queryFn: () => {
-        if (!params?.phone_number) {
-          throw new Error('Phone number is required')
-        }
-        return getRedemptionsAmountDashPro(params)
-      },
-      enabled: !!params?.phone_number,
+      queryKey: ['redemptions-amount-dash-pro'],
+      queryFn: () => getRedemptionsAmountDashPro(),
     })
   }
 
