@@ -49,5 +49,6 @@ export const getCardsPerformanceMetrics = async () => {
 }
 
 export const getVendorCardCounts = async (): Promise<VendorCardCountsResponse> => {
-  return await getMethod<VendorCardCountsResponse>(`${commonManagerUrl}/vendor/gift-card/counts`)
+  const res = await getMethod(`${commonManagerUrl}/vendor/gift-card/counts`)
+  return res?.data ?? res
 }
