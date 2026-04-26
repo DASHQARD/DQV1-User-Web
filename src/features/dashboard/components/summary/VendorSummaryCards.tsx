@@ -5,7 +5,6 @@ import { Text, Loader } from '@/components'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
 import { vendorQueries } from '@/features'
-import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 import { useAuthStore } from '@/stores'
 import { useUserProfile } from '@/hooks'
 
@@ -27,53 +26,12 @@ export default function VendorSummaryCards() {
   const { data: userProfileData } = useGetUserProfileService()
   const userType = (user as any)?.user_type || userProfileData?.user_type
   const isBranchManager = userType === 'branch'
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
 
   const { useGetVendorCardCountsService } = vendorQueries()
   const { data: vendorCardCountsData, isLoading: isLoadingVendorCounts } =
     useGetVendorCardCountsService()
 
-  const {
-    useGetCorporateSuperAdminCardsService,
-    useGetCorporateSuperAdminVendorCardsSummaryService,
-  } = corporateQueries()
-  const { data: corporateCardsData, isLoading: isLoadingCorporateCards } =
-    useGetCorporateSuperAdminCardsService()
-
-  const { data: vendorSummaryData, isLoading: isLoadingVendorSummary } =
-    useGetCorporateSuperAdminVendorCardsSummaryService(
-      isCorporateSuperAdmin && vendorIdFromUrl ? vendorIdFromUrl : null,
-    )
-
-  // Extract card counts: corporate super admin with vendor selected → vendor summary endpoint; else corporate cards list or vendor counts
   const metrics = useMemo(() => {
-    if (isCorporateSuperAdmin && vendorIdFromUrl && vendorSummaryData != null) {
-      const raw = (vendorSummaryData as any)?.data ?? vendorSummaryData
-      const byType = (raw as any)?.cards_by_type ?? {}
-      return {
-        DashX: Number(byType.DashX) || 0,
-        DashPass: Number(byType.DashPass) || 0,
-      }
-    }
-
-    if (isCorporateSuperAdmin && !vendorIdFromUrl) {
-      if (!corporateCardsData) {
-        return { DashX: 0, DashPass: 0 }
-      }
-      const cards = Array.isArray(corporateCardsData)
-        ? corporateCardsData
-        : corporateCardsData?.data || []
-      const dashXCount = cards.filter(
-        (card: any) =>
-          card.type?.toLowerCase() === 'dashx' || card.card_type?.toLowerCase() === 'dashx',
-      ).length
-      const dashPassCount = cards.filter(
-        (card: any) =>
-          card.type?.toLowerCase() === 'dashpass' || card.card_type?.toLowerCase() === 'dashpass',
-      ).length
-      return { DashX: dashXCount, DashPass: dashPassCount }
-    }
-
     if (!vendorCardCountsData) {
       return { DashX: 0, DashPass: 0 }
     }
@@ -81,20 +39,9 @@ export default function VendorSummaryCards() {
       DashX: vendorCardCountsData.DashX || 0,
       DashPass: vendorCardCountsData.DashPass || 0,
     }
-  }, [
-    isCorporateSuperAdmin,
-    vendorIdFromUrl,
-    vendorSummaryData,
-    corporateCardsData,
-    vendorCardCountsData,
-  ])
+  }, [vendorCardCountsData])
 
-  const isLoading =
-    isCorporateSuperAdmin && vendorIdFromUrl
-      ? isLoadingVendorSummary
-      : isCorporateSuperAdmin
-        ? isLoadingCorporateCards
-        : isLoadingVendorCounts
+  const isLoading = isLoadingVendorCounts
 
   const CARD_INFO = useMemo(
     () => [
