@@ -25,6 +25,8 @@ import {
   removeBranchManager,
   updateBranchManagerDetails,
   updateBranchStatus,
+  createVendorPayment,
+  updateVendorPayment,
 } from '../services'
 import type {
   UpdateBranchPaymentDetailsPayload,
@@ -396,6 +398,55 @@ export function useVendorMutations() {
     })
   }
 
+  function useCreateVendorPaymentService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: {
+        vendor_id: string | number
+        vendor_user_id: string | number
+        payment_frequency: string
+        branch_location: string
+        branch_id: string | number
+        payment_amount: number
+        payment_period: string
+        due_date: string
+        description: string
+      }) => createVendorPayment(data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Vendor payment created successfully')
+        queryClient.invalidateQueries({ queryKey: ['vendor-payments'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to create vendor payment. Please try again.')
+      },
+    })
+  }
+
+  function useUpdateVendorPaymentService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: {
+        id: string | number
+        payload: {
+          status?: 'pending' | 'paid' | 'overdue'
+          paid_date?: string
+          payment_amount?: number
+          description?: string
+          due_date?: string
+          payment_period?: string
+        }
+      }) => updateVendorPayment(data.id, data.payload),
+      onSuccess: (response: any, variables) => {
+        success(response?.message || 'Vendor payment updated successfully')
+        queryClient.invalidateQueries({ queryKey: ['vendor-payments'] })
+        queryClient.invalidateQueries({ queryKey: ['vendor-payment', variables.id] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to update vendor payment. Please try again.')
+      },
+    })
+  }
+
   return {
     useCreateVendorService,
     useVendorInviteService,
@@ -422,5 +473,7 @@ export function useVendorMutations() {
     useUpdateBranchManagerDetailsService,
     useUpdateBranchStatusService,
     useDeleteBranchByVendorService,
+    useCreateVendorPaymentService,
+    useUpdateVendorPaymentService,
   }
 }

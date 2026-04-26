@@ -1,6 +1,6 @@
-import { DateCell, StatusCell, CurrencyCell } from '@/components'
+import { DateCellTimestamp, StatusCell, CurrencyCell } from '@/components'
 import type { CsvHeader } from '@/types'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatDate, formatCurrency, formatFullDate } from '@/utils/format'
 import { PurchaseActionCell } from './PurchaseActionCell'
 
 export const purchasesListColumns = [
@@ -32,9 +32,9 @@ export const purchasesListColumns = [
     cell: StatusCell,
   },
   {
-    header: 'Date',
+    header: 'Timestamp',
     accessorKey: 'date',
-    cell: DateCell,
+    cell: DateCellTimestamp,
   },
   {
     id: 'actions',
@@ -78,9 +78,9 @@ export const purchaseListCsvHeaders: Array<CsvHeader> = [
     accessor: 'status',
   },
   {
-    name: 'Date',
+    name: 'Timestamp',
     accessor: 'date',
-    transform: (value) => formatDate(value),
+    transform: (value) => formatFullDate(value),
   },
   {
     name: 'Updated At',

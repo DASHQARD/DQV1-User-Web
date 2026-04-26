@@ -25,15 +25,11 @@ export function useBranchDetails() {
   const branchIdFromParams = searchParams.get('branch_id')
   const branchIdFromPath = params.id
   const vendorIdFromProfile = userProfileData?.vendor_id
-  const vendorId = vendorIdFromParams
-    ? Number(vendorIdFromParams)
-    : vendorIdFromProfile
-      ? Number(vendorIdFromProfile)
-      : null
+  const vendorId = vendorIdFromParams || vendorIdFromProfile || null
 
   const branchId = React.useMemo(() => {
-    if (branchIdFromParams) return Number(branchIdFromParams)
-    if (branchIdFromPath) return Number(branchIdFromPath)
+    if (branchIdFromParams) return branchIdFromParams
+    if (branchIdFromPath) return branchIdFromPath
     return null
   }, [branchIdFromParams, branchIdFromPath])
 
