@@ -274,6 +274,14 @@ export const getPaymentDetailsByUserId = async (userId: string | number): Promis
   return await getList(`/payment-details/info/${userId}`)
 }
 
+export const getPaymentDetailsByBranchId = async (branchId: string | number): Promise<any> => {
+  return await getList(`/payment-details/branch/${branchId}`)
+}
+
+export const getAdminPaymentDetailsByBranchId = async (branchId: string | number): Promise<any> => {
+  return await getList(`/payment-details/admin/branch/${branchId}`)
+}
+
 export const checkout = async (data: {
   cart_id: number
   full_name: string
@@ -316,8 +324,66 @@ export const updatePaymentDetails = async (data: {
   return await putMethod(`/payment-details`, data)
 }
 
+export const updateBranchPaymentDetails = async (data: {
+  branch_id: string | number
+  mobile_money_accounts: Array<{
+    id: number
+    mobile_money_number: string
+    mobile_money_provider: string
+  }>
+  bank_accounts: Array<{
+    id: number
+    account_number: string
+    account_holder_name: string
+    bank_name: string
+    bank_branch: string
+    swift_code: string
+    sort_code: string
+  }>
+}): Promise<any> => {
+  return await putMethod(`/payment-details/update-branch`, data)
+}
+
+export const updateCorporateSuperAdminPaymentDetails = async (data: {
+  target_type: 'branch' | 'vendor'
+  target_id: string | number
+  payment_method: 'mobile_money' | 'bank'
+  mobile_money_provider?: string
+  mobile_money_number?: string
+  bank_name?: string
+  bank_branch?: string
+  account_holder_name?: string
+  account_number?: string
+  swift_code?: string
+  sort_code?: string
+}): Promise<any> => {
+  return await putMethod(`/payment-details/corporate-super-admin/update`, data)
+}
+
 export const deletePaymentDetails = async (): Promise<any> => {
   return await deleteMethod(`/payment-details`)
+}
+
+export const deleteVendorBranchPaymentDetails = async (branchId: string | number): Promise<any> => {
+  return await deleteMethod(`/payment-details/vendor/delete-branch/payment-details/${branchId}`)
+}
+
+export const addBranchPaymentDetails = async (data: {
+  branch_id: string | number
+  mobile_money_accounts: Array<{
+    momo_number: string
+    provider: string
+  }>
+  bank_accounts: Array<{
+    account_number: string
+    account_holder_name: string
+    bank_name: string
+    bank_branch: string
+    swift_code: string
+    sort_code: string
+  }>
+}): Promise<any> => {
+  return await postMethod(`/vendors/add/branch-payment-details`, data)
 }
 
 export const getCorporateCards = async (params?: Record<string, any>): Promise<any> => {

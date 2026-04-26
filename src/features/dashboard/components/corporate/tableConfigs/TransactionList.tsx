@@ -1,6 +1,6 @@
-import { DateCell, StatusCell, CurrencyCell } from '@/components'
+import { DateCellTimestamp, StatusCell, CurrencyCell } from '@/components'
 import type { CsvHeader } from '@/types'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatCurrency, formatFullDate } from '@/utils/format'
 import { TransactionActionCell } from './TransactionActionCell'
 
 export const transactionsListColumns = [
@@ -19,9 +19,9 @@ export const transactionsListColumns = [
     cell: StatusCell,
   },
   {
-    header: 'Created At',
+    header: 'Timestamp',
     accessorKey: 'created_at',
-    cell: DateCell,
+    cell: DateCellTimestamp,
   },
   {
     id: 'actions',
@@ -49,8 +49,8 @@ export const transactionListCsvHeaders: Array<CsvHeader> = [
     accessor: 'status',
   },
   {
-    name: 'Created At',
+    name: 'Timestamp',
     accessor: 'created_at',
-    transform: (value) => formatDate(value),
+    transform: (value) => formatFullDate(value),
   },
 ]

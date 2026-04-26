@@ -15,6 +15,7 @@ import { Settings } from '../pages/settings'
 import { BranchManagers } from '../pages/branchManagers'
 import { CreateBranch } from '../pages/branches'
 import { InviteAdminPage } from '../pages/admin'
+import { CorporatePaymentDetails } from '@/features/dashboard/corporate/pages/paymentDetails/CorporatePaymentDetails'
 
 // Vendor-specific dashboard routes. These are mounted under "/dashboard".
 export const vendorRoutes: RouteObject[] = [
@@ -61,6 +62,10 @@ export const vendorRoutes: RouteObject[] = [
   {
     path: 'payments',
     element: <Payments />,
+  },
+  {
+    path: 'corporate-payment-details',
+    element: <CorporatePaymentDetails />,
   },
   {
     path: 'redemptions',

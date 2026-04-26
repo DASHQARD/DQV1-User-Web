@@ -18,6 +18,7 @@ import {
   updateBusinessDetails,
   updateBusinessLogo,
   updatePaymentDetails,
+  updateCorporateSuperAdminPaymentDetails,
   deletePaymentDetails,
   checkout,
   updateRequestStatus,
@@ -42,6 +43,7 @@ import {
 import { useToast } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@/stores'
 import type {
   CreateRecipientPayload,
   AssignRecipientPayload,
@@ -49,6 +51,10 @@ import type {
 } from '@/types/responses'
 
 export function corporateMutations() {
+  const { user } = useAuthStore.getState()
+  const userType = (user as any)?.user_type
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
+
   function useInviteAdminForCorporateService() {
     const { success, error } = useToast()
     return useMutation({
@@ -426,18 +432,40 @@ export function corporateMutations() {
   function useUpdatePaymentDetailsService() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
+
+    type UpdatePaymentPayload = {
+      payment_method: 'mobile_money' | 'bank'
+      mobile_money_provider?: string
+      mobile_money_number?: string
+      bank_name?: string
+      branch?: string
+      account_name?: string
+      account_number?: string
+      swift_code?: string
+      sort_code?: string
+      target_type?: 'branch' | 'vendor'
+      target_id?: string | number
+      bank_branch?: string
+      account_holder_name?: string
+    }
+
     return useMutation({
-      mutationFn: (data: {
-        payment_method: 'mobile_money' | 'bank'
-        mobile_money_provider?: string
-        mobile_money_number?: string
-        bank_name?: string
-        branch?: string
-        account_name?: string
-        account_number?: string
-        swift_code?: string
-        sort_code?: string
-      }) => updatePaymentDetails(data),
+      mutationFn: (data: UpdatePaymentPayload) =>
+        isCorporateSuperAdmin
+          ? updateCorporateSuperAdminPaymentDetails({
+              target_type: data.target_type || 'vendor',
+              target_id: data.target_id || '',
+              payment_method: data.payment_method,
+              mobile_money_provider: data.mobile_money_provider,
+              mobile_money_number: data.mobile_money_number,
+              bank_name: data.bank_name,
+              bank_branch: data.bank_branch || data.branch,
+              account_holder_name: data.account_holder_name || data.account_name,
+              account_number: data.account_number,
+              swift_code: data.swift_code,
+              sort_code: data.sort_code,
+            })
+          : updatePaymentDetails(data),
       onSuccess: (response: any) => {
         success(response?.message || 'Payment details updated successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-payment-details'] })

@@ -18,6 +18,8 @@ import {
   getBranchPaymentDetails,
   getBranchManagerInvitations,
   getVendorPayments,
+  getCorporateSuperAdminVendorPayments,
+  getVendorPaymentById,
 } from '../services'
 import { getRequestsCorporate } from '@/features/dashboard/corporate/services'
 import type { QueryType, GetBranchManagerInvitationsQuery } from '@/types'
@@ -153,11 +155,27 @@ export function vendorQueries() {
     })
   }
 
+  function useGetCorporateSuperAdminVendorPaymentsService(query?: QueryType) {
+    return useQuery({
+      queryKey: ['corporate-super-admin-vendor-payments', query],
+      queryFn: () => getCorporateSuperAdminVendorPayments(query),
+      enabled: true,
+    })
+  }
+
   function useGetVendorPaymentsService(query?: QueryType) {
     return useQuery({
       queryKey: ['vendor-payments', query],
       queryFn: () => getVendorPayments(query),
-      enabled: false,
+      enabled: true,
+    })
+  }
+
+  function useGetVendorPaymentByIdService(id: string | number | null) {
+    return useQuery({
+      queryKey: ['vendor-payment', id],
+      queryFn: () => getVendorPaymentById(id as string | number),
+      enabled: !!id,
     })
   }
 
@@ -192,7 +210,9 @@ export function vendorQueries() {
     useGetVendorCardCountsService,
     useGetAllVendorsDetailsForVendorService,
     useGetVendorPaymentsService,
+    useGetVendorPaymentByIdService,
     useGetBranchPaymentDetailsService,
     useGetBranchManagerInvitationsService,
+    useGetCorporateSuperAdminVendorPaymentsService,
   }
 }

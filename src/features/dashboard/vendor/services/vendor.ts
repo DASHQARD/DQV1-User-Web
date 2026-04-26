@@ -113,6 +113,42 @@ export const getVendorPayments = async (query?: QueryType): Promise<any> => {
   return await getList<any>(`/vendor-payments`, query)
 }
 
+export const getCorporateSuperAdminVendorPayments = async (query?: QueryType): Promise<any> => {
+  return await getList<any>(`/payment-details`, query)
+}
+
+export const createVendorPayment = async (data: {
+  vendor_id: string | number
+  vendor_user_id: string | number
+  payment_frequency: string
+  branch_location: string
+  branch_id: string | number
+  payment_amount: number
+  payment_period: string
+  due_date: string
+  description: string
+}): Promise<any> => {
+  return await postMethod(`/vendor-payments`, data)
+}
+
+export const updateVendorPayment = async (
+  id: string | number,
+  data: {
+    status?: 'pending' | 'paid' | 'overdue'
+    paid_date?: string
+    payment_amount?: number
+    description?: string
+    due_date?: string
+    payment_period?: string
+  },
+): Promise<any> => {
+  return await putMethod(`/vendor-payments/${id}`, data)
+}
+
+export const getVendorPaymentById = async (id: string | number): Promise<any> => {
+  return await getList<any>(`/vendor-payments/${id}`)
+}
+
 export const deleteBranchPaymentDetails = async (branchId: number | string): Promise<any> => {
   return await deleteMethod(`/payment-details/vendor/delete-branch/payment-details/${branchId}`, {})
 }

@@ -8,7 +8,7 @@ import { Icon } from '@/libs'
 import { TransactionDetailsSkeleton } from './skeletons'
 
 export function TransactionDetails() {
-  const modal = usePersistedModalState<{ id: string | number }>({
+  const modal = usePersistedModalState<{ id: string | number; [key: string]: any }>({
     paramName: MODALS.TRANSACTION.PARAM_NAME,
   })
 
@@ -17,8 +17,21 @@ export function TransactionDetails() {
 
   const { useGetPaymentByIdService } = corporateQueries()
   const { data: paymentDetailsResponse, isLoading } = useGetPaymentByIdService(paymentId)
-
-  const paymentData = paymentDetailsResponse || null
+  const modalPaymentData = modal.modalData ?? null
+  const paymentData = (() => {
+    const responseData = paymentDetailsResponse?.data
+    if (Array.isArray(responseData) && paymentId) {
+      const matched = responseData.find((payment: any) => String(payment?.id) === String(paymentId))
+      return matched ?? modalPaymentData
+    }
+    if (responseData && !Array.isArray(responseData)) {
+      return responseData
+    }
+    if (paymentDetailsResponse && !Array.isArray(paymentDetailsResponse)) {
+      return paymentDetailsResponse
+    }
+    return modalPaymentData
+  })()
   const isPending = isLoading
   const cartDetails = paymentData?.cart_details || null
   const cartItems = cartDetails?.items || []
