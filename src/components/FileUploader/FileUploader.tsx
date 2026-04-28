@@ -127,7 +127,7 @@ export default function FileUploader({
           isDragging && !value && 'border-primary-600 bg-primary-50/40',
           !value && 'min-h-48 p-6',
           value && hasDocumentIcon && 'border-2 border-solid border-gray-200 bg-white p-0 min-h-0',
-          value && !hasDocumentIcon && 'border-primary-500 bg-primary-50/20 min-h-48 p-4',
+          value && !hasDocumentIcon && 'border-primary-500 bg-primary-50/20 min-h-32 p-3',
         )}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -185,8 +185,8 @@ export default function FileUploader({
             ) : (
               <div className="relative w-full">
                 {preview && (
-                  <div className="rounded-lg overflow-hidden border border-gray-200 bg-white aspect-4/3 w-full min-h-48">
-                    <img src={preview} alt={value.name} className="w-full h-full object-cover" />
+                  <div className="rounded-lg overflow-hidden border border-gray-200 bg-white w-full h-40 flex items-center justify-center">
+                    <img src={preview} alt={value.name} className="w-full h-full object-contain" />
                   </div>
                 )}
                 <button

@@ -3,20 +3,21 @@ import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { SearchBox, Loader, EmptyState } from '@/components'
 import { VendorItems } from '../../components/VendorItems'
-import { usePublicCatalog } from '../../hooks/website'
+import { usePublicCatalogQueries } from '../../hooks/website'
 import { EmptyStateImage } from '@/assets/images'
 
 export default function Vendors() {
   const navigate = useNavigate()
-  const { vendors, vendorsLoading, query, setQuery } = usePublicCatalog()
+  const [search, setSearch] = React.useState('')
+  const { usePublicVendors } = usePublicCatalogQueries()
+  const { data: vendors, isLoading: vendorsLoading } = usePublicVendors()
 
-  const vendorsWithCards = vendors?.filter((vendor) => {
-    // Filter out vendors without branches
-    if (!vendor.branches_with_cards || vendor.branches_with_cards.length === 0) {
-      return false
-    }
-    // Filter out vendors where branches don't have any cards
-    return vendor.branches_with_cards.some((branch: any) => branch.cards && branch.cards.length > 0)
+  const vendorsWithCards = vendors?.filter((vendor: any) => vendor.branches_with_cards?.length > 0)
+
+  const visibleVendors = vendorsWithCards?.filter((vendor: any) => {
+    if (!search.trim()) return true
+    const vendorName = (vendor.business_name || vendor.vendor_name || '').toLowerCase()
+    return vendorName.includes(search.trim().toLowerCase())
   })
 
   return (
@@ -50,19 +51,17 @@ export default function Vendors() {
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex-1 w-full sm:max-w-md">
               <SearchBox
-                value={query.search || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setQuery({ ...query, search: e.target.value })
-                }
+                value={search}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
                 placeholder="Search vendors by name..."
                 className="w-full"
               />
             </div>
-            {vendorsWithCards && vendorsWithCards.length > 0 && (
+            {visibleVendors && visibleVendors.length > 0 && (
               <div className="flex items-center gap-2 text-sm text-gray-600 bg-white px-4 py-2 rounded-lg border border-gray-200">
                 <Icon icon="bi:building" className="size-4 text-primary-600" />
                 <span className="font-medium">
-                  {vendorsWithCards.length} {vendorsWithCards.length === 1 ? 'Vendor' : 'Vendors'}
+                  {visibleVendors.length} {visibleVendors.length === 1 ? 'Vendor' : 'Vendors'}
                 </span>
               </div>
             )}
@@ -74,13 +73,13 @@ export default function Vendors() {
           <div className="flex items-center justify-center py-20">
             <Loader />
           </div>
-        ) : vendorsWithCards?.length === 0 ? (
+        ) : visibleVendors?.length === 0 ? (
           <div className="py-12">
             <EmptyState
               image={EmptyStateImage}
-              title={query.search ? 'No vendors found' : 'No vendors available'}
+              title={search.trim() ? 'No vendors found' : 'No vendors available'}
               description={
-                query.search
+                search.trim()
                   ? 'Try adjusting your search criteria or browse all vendors'
                   : 'Check back soon for new partner vendors'
               }
@@ -88,7 +87,7 @@ export default function Vendors() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {vendorsWithCards?.map((vendor: any) => {
+            {visibleVendors?.map((vendor: any) => {
               const vendorName = vendor.business_name || vendor.vendor_name || 'Unnamed Vendor'
               return (
                 <div

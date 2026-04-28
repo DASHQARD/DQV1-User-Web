@@ -9,6 +9,8 @@ import { useToast } from '@/hooks'
 import { ContactUsSchema } from '@/utils/schemas'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { Link } from 'react-router-dom'
+import { ROUTES } from '@/utils/constants'
 
 export default function Contact() {
   const { success, error } = useToast()
@@ -90,7 +92,12 @@ export default function Contact() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <p className="text-grey-500 text-xs">Support Line</p>
-                    <p className="text-primary-500 font-bold">+233 54 202 2245</p>
+                    <a
+                      href="tel:+233542022245"
+                      className="text-primary-500 font-bold hover:underline"
+                    >
+                      +233 54 202 2245
+                    </a>
                   </div>
                 </section>
                 <section className="flex gap-4 p-4 bg-[#402d8708] rounded-[12px]">
@@ -99,7 +106,14 @@ export default function Contact() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <p className="text-grey-500 text-xs">Purchase Line (WhatsApp)</p>
-                    <p className="text-primary-500 font-bold">+233 56 608 0362</p>
+                    <a
+                      href="https://wa.me/233566080362"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary-500 font-bold hover:underline"
+                    >
+                      +233 56 608 0362
+                    </a>
                   </div>
                 </section>
                 <section className="flex gap-4 p-4 bg-[#402d8708] rounded-[12px]">
@@ -108,7 +122,12 @@ export default function Contact() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <p className="text-grey-500 text-xs">Email Support</p>
-                    <p className="text-primary-500 font-bold">support@dashqard.com</p>
+                    <a
+                      href="mailto:support@dashqard.com"
+                      className="text-primary-500 font-bold hover:underline"
+                    >
+                      support@dashqard.com
+                    </a>
                   </div>
                 </section>
               </div>
@@ -143,9 +162,12 @@ export default function Contact() {
               </ul>
               <div>
                 <p className="text-white font-normal text-sm">Ready to get started?</p>
-                <button className="text-yellow-500 hover:text-yellow-500/80 cursor-pointer !rounded-4xl font-bold">
+                <Link
+                  to={ROUTES.IN_APP.DASHQARDS}
+                  className="inline-flex text-yellow-500 hover:text-yellow-500/80 cursor-pointer rounded-4xl! font-bold"
+                >
                   Get a DashQard!
-                </button>
+                </Link>
               </div>
             </div>
           </div>

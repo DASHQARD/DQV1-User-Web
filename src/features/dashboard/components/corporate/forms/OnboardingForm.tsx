@@ -204,7 +204,7 @@ export default function OnboardingForm() {
           ) : (
             <section
               className={cn(
-                'grid gap-4 flex-1',
+                'grid gap-4 flex-1 max-w-[554px]',
                 needsOnlyFront ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
               )}
             >

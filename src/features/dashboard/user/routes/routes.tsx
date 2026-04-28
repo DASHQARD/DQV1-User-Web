@@ -1,19 +1,13 @@
 import type { RouteObject } from 'react-router'
 import { Navigate, Outlet } from 'react-router-dom'
 
-import {
-  UserDashboard,
-  UserRedemptions,
-  Orders,
-  MyCards,
-  CardDetailsPage,
-  UserSettings,
-} from '../pages'
+import { UserRedemptions, Orders, MyCards, CardDetailsPage, UserSettings } from '../pages'
+import { DashboardIndexResolver } from './DashboardIndexResolver'
 
 export const userRoutes: RouteObject[] = [
   {
     index: true,
-    element: <UserDashboard />,
+    element: <DashboardIndexResolver />,
   },
   {
     path: 'my-cards',

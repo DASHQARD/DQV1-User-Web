@@ -1,13 +1,14 @@
 import { z } from 'zod'
-import isEmail from 'validator/es/lib/isEmail'
 
-import { isValidInternationalPhoneDigits } from './shared'
+import { isValidEmailAddress, isValidInternationalPhoneDigits } from './shared'
 
 export const DashGoAndDashProPurchaseFormSchema = z.object({
   assign_to_self: z.boolean(),
   recipient_name: z.string().min(1),
   recipient_phone: z.string().min(1),
-  recipient_email: z.string().email(),
+  recipient_email: z.string().refine((val) => isValidEmailAddress(val), {
+    message: 'Invalid email address',
+  }),
   recipient_message: z.string().min(1),
   recipient_card_amount: z.number().min(1).max(10000),
   recipient_card_currency: z.string().min(1),
@@ -83,7 +84,7 @@ export const DashGoPurchaseFormSchema = z
           message: 'Recipient email is required when not assigning to self',
           path: ['recipient_email'],
         })
-      } else if (!isEmail(data.recipient_email.trim())) {
+      } else if (!isValidEmailAddress(data.recipient_email)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Please provide a valid email address',
@@ -135,7 +136,7 @@ export const AssignRecipientSchema = z
           message: 'Email is required when not assigning to yourself',
           path: ['email'],
         })
-      } else if (!isEmail(data.email.trim())) {
+      } else if (!isValidEmailAddress(data.email)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Please provide a valid email address',
@@ -144,7 +145,7 @@ export const AssignRecipientSchema = z
       }
     } else {
       const email = data.email?.trim()
-      if (email && !isEmail(email)) {
+      if (email && !isValidEmailAddress(email)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Please provide a valid email address',
@@ -211,7 +212,7 @@ export const DashGoAssignRecipientSchema = z
           message: 'Recipient email is required when not assigning to yourself',
           path: ['recipient_email'],
         })
-      } else if (!isEmail(data.recipient_email.trim())) {
+      } else if (!isValidEmailAddress(data.recipient_email)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Please provide a valid email address',
@@ -220,7 +221,7 @@ export const DashGoAssignRecipientSchema = z
       }
     } else {
       const email = data.recipient_email?.trim()
-      if (email && !isEmail(email)) {
+      if (email && !isValidEmailAddress(email)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Please provide a valid email address',

@@ -5,7 +5,6 @@ import { Icon } from '@/libs'
 import React from 'react'
 import { CardItems, PublicDashGoForm } from '../../components'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
-import { useForm } from 'react-hook-form'
 import { usePublicCatalogQueries } from '../../hooks/website'
 import { EmptyStateImage } from '@/assets/images'
 import LoaderGif from '@/assets/gifs/loader.gif'
@@ -34,17 +33,11 @@ export default function VendorsProfile() {
     return vendor || null
   }, [vendorDetailsResponse, vendor_id])
 
-  const form = useForm<{ amount: string }>({
-    defaultValues: {
-      amount: '100',
-    },
-  })
+  const [selectedAmount, setSelectedAmount] = React.useState('100')
 
   const isLoading = isLoadingVendor || isLoadingQrCode
 
   const quickAmounts = [100, 200, 300, 400, 500]
-  const selectedAmount = form.watch('amount')
-
   // Get available branches for redemption
   const availableBranches = React.useMemo(() => {
     const branches = (vendorDetails as any)?.branches_with_cards || []
@@ -180,9 +173,7 @@ export default function VendorsProfile() {
                   <div className="flex items-start justify-between">
                     <div className="text-2xl font-black tracking-[0.3em]">DASHGO</div>
                     <div className="text-right text-2xl font-semibold">
-                      {form.watch('amount')
-                        ? `GHS ${parseFloat(form.watch('amount')).toFixed(2)}`
-                        : 'GHS'}
+                      {selectedAmount ? `GHS ${parseFloat(selectedAmount).toFixed(2)}` : 'GHS'}
                     </div>
                   </div>
                   {/* Bottom Section */}
@@ -200,6 +191,7 @@ export default function VendorsProfile() {
               availableBranches={availableBranches}
               quickAmounts={quickAmounts}
               selectedAmount={selectedAmount}
+              onAmountChange={setSelectedAmount}
             />
           </div>
         </div>

@@ -2,7 +2,7 @@ import { BasePhoneInput, Input, Text } from '@/components'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Controller } from 'react-hook-form'
 import AccountType from '../AccountType'
 import EmailSentModal from '../modals/EmailSentModal'
@@ -11,6 +11,15 @@ import { useSignUpForm } from '../../hooks'
 
 export default function SignUpForm() {
   const { form, onSubmit, isPending, phoneCountries } = useSignUpForm()
+  const navigate = useNavigate()
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    navigate(ROUTES.IN_APP.HOME)
+  }
 
   return (
     <section className="wrapper">
@@ -18,6 +27,14 @@ export default function SignUpForm() {
         onSubmit={form.handleSubmit(onSubmit)}
         className="max-w-[470.61px] w-full flex flex-col gap-6 mx-auto"
       >
+        <button
+          type="button"
+          onClick={handleBack}
+          className="inline-flex items-center gap-2 text-sm text-primary-500 hover:text-primary-700 w-fit"
+        >
+          <Icon icon="bi:arrow-left" className="size-4" />
+          Back
+        </button>
         <div className="flex items-center gap-3">
           <div className="bg-primary-500 rounded-full p-2 h-10 w-10 flex items-center justify-center">
             <Icon icon="bi:shop-window" className="size-5 text-white" />
