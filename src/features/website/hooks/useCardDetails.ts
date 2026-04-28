@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useEffect } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 import {
@@ -15,7 +15,6 @@ import {
 import { useAuthStore, useGuestAddToCartModalStore } from '@/stores'
 import { useCart } from './useCart'
 import { useCartStore } from '@/stores/cart'
-import { usePresignedURL } from '@/hooks'
 import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
 
 export type {
@@ -34,7 +33,6 @@ export function useCardDetails(): UseCardDetailsReturn {
   const openGuestAddToCartModal = useGuestAddToCartModalStore((s) => s.open)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
 
   /** Normalize API id/file_name to a valid record key (string | number). */
   const toRecordKey = (x: unknown, fallback: number): string | number =>
@@ -61,102 +59,20 @@ export function useCardDetails(): UseCardDetailsReturn {
     return [{ branch_name: c.branch_name, branch_location: c.branch_location ?? '' }]
   }, [card])
 
-  const [imageUrls, setImageUrls] = useState<Record<number | string, string>>({})
-  const [termsUrls, setTermsUrls] = useState<Record<number | string, string>>({})
-  const [isLoadingImages, setIsLoadingImages] = useState(false)
-  const [isLoadingTerms, setIsLoadingTerms] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<CardDetailsDocument | null>(null)
   const [imageIndex, setImageIndex] = useState(-1)
 
-  useEffect(() => {
-    if (!card) {
-      setImageUrls({})
-      setTermsUrls({})
-      setIsLoadingImages(false)
-      setIsLoadingTerms(false)
-      return
-    }
-    let cancelled = false
+  const termsUrls = useMemo((): Record<string | number, string> => {
     const cardAny = card as {
-      images?: { id?: unknown; file_name?: string; file_url?: string }[]
       terms_and_conditions?: { id?: unknown; file_name?: string; file_url?: string }[]
-    }
-
-    if (cardAny.images?.length) {
-      setIsLoadingImages(true)
-      const fetchImageUrls = async () => {
-        try {
-          const results = await Promise.all(
-            cardAny.images!.map(async (image, index) => {
-              try {
-                const response = await fetchPresignedURL(image.file_url!)
-                const url =
-                  typeof response === 'string'
-                    ? response
-                    : ((response as { url?: string })?.url ?? (response as string))
-                return { key: toRecordKey(image.id ?? image.file_name, index), url: url ?? null }
-              } catch {
-                return { key: toRecordKey(image.id ?? image.file_name, index), url: null }
-              }
-            }),
-          )
-          if (!cancelled) {
-            const urlMap: Record<number | string, string> = {}
-            results.forEach((r) => {
-              if (r.url) urlMap[r.key] = r.url
-            })
-            setImageUrls(urlMap)
-            setIsLoadingImages(false)
-          }
-        } catch {
-          if (!cancelled) setIsLoadingImages(false)
-        }
-      }
-      fetchImageUrls()
-    } else {
-      setImageUrls({})
-      setIsLoadingImages(false)
-    }
-
-    if (cardAny.terms_and_conditions?.length) {
-      setIsLoadingTerms(true)
-      const fetchTermsUrls = async () => {
-        try {
-          const results = await Promise.all(
-            cardAny.terms_and_conditions!.map(async (term, index) => {
-              try {
-                const response = await fetchPresignedURL(term.file_url!)
-                const url =
-                  typeof response === 'string'
-                    ? response
-                    : ((response as { url?: string })?.url ?? (response as string))
-                return { key: toRecordKey(term.id ?? term.file_name, index), url: url ?? null }
-              } catch {
-                return { key: toRecordKey(term.id ?? term.file_name, index), url: null }
-              }
-            }),
-          )
-          if (!cancelled) {
-            const urlMap: Record<number | string, string> = {}
-            results.forEach((r) => {
-              if (r.url) urlMap[r.key] = r.url
-            })
-            setTermsUrls(urlMap)
-            setIsLoadingTerms(false)
-          }
-        } catch {
-          if (!cancelled) setIsLoadingTerms(false)
-        }
-      }
-      fetchTermsUrls()
-    } else {
-      setTermsUrls({})
-      setIsLoadingTerms(false)
-    }
-    return () => {
-      cancelled = true
-    }
-  }, [card, fetchPresignedURL])
+    } | null
+    if (!cardAny?.terms_and_conditions?.length) return {}
+    const urlMap: Record<string | number, string> = {}
+    cardAny.terms_and_conditions.forEach((term, index) => {
+      if (term.file_url) urlMap[toRecordKey(term.id ?? term.file_name, index)] = term.file_url
+    })
+    return urlMap
+  }, [card])
 
   const getCardBackground = useCallback(() => getCardBg(card?.type), [card?.type])
   const getCardTypeName = useCallback(() => getCardTypeDisplayName(card?.type), [card?.type])
@@ -186,22 +102,15 @@ export function useCardDetails(): UseCardDetailsReturn {
 
   const lightboxImages = useMemo((): LightboxSlide[] => {
     const c = card as {
-      images?: { id?: unknown; file_name?: string; file_url?: string }[]
+      images?: { file_url?: string }[]
       product?: string
     } | null
     if (!c?.images) return []
-    return c.images.map((img, index) => {
-      const key = toRecordKey(img.id ?? img.file_name, index)
-      const src =
-        imageUrls[key] ||
-        (img.file_url?.startsWith('http://') || img.file_url?.startsWith('https://')
-          ? img.file_url
-          : '') ||
-        (img.file_url?.startsWith('data:') ? img.file_url : '') ||
-        ''
-      return { src, alt: `${c.product} image ${index + 1}` }
-    })
-  }, [card, imageUrls])
+    return c.images.map((img, index) => ({
+      src: img.file_url ?? '',
+      alt: `${c.product} image ${index + 1}`,
+    }))
+  }, [card])
 
   const displayPrice = card ? parseFloat(String((card as { price?: unknown }).price)) || 0 : 0
   const cardBackground = getCardBg(card?.type)
@@ -212,8 +121,6 @@ export function useCardDetails(): UseCardDetailsReturn {
     isLoading,
     redemptionBranches,
     termsUrls,
-    isLoadingImages,
-    isLoadingTerms,
     selectedDocument,
     setSelectedDocument,
     imageIndex,

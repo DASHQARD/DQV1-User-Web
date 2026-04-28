@@ -13,8 +13,6 @@ export default function CardDetails() {
     card,
     isLoading,
     redemptionBranches,
-    isLoadingImages,
-    isLoadingTerms,
     selectedDocument,
     setSelectedDocument,
     imageIndex,
@@ -193,15 +191,11 @@ export default function CardDetails() {
                         key={image.id || image.file_name || index}
                         type="button"
                         onClick={() => setImageIndex(index)}
-                        disabled={!imageUrl || isLoadingImages}
+                        disabled={!imageUrl}
                         className="relative overflow-hidden rounded-xl bg-gray-200 cursor-pointer hover:scale-105 hover:shadow-lg transition-all duration-300 disabled:cursor-not-allowed disabled:hover:scale-100 group border-2 border-transparent hover:border-primary-300"
                         style={{ paddingTop: '100%' }}
                       >
-                        {isLoadingImages ? (
-                          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                            <Loader />
-                          </div>
-                        ) : imageUrl ? (
+                        {imageUrl ? (
                           <>
                             <img
                               src={imageUrl}
@@ -463,11 +457,7 @@ export default function CardDetails() {
                           <Icon icon="bi:file-earmark-pdf" className="text-xl" />
                         </div>
                         <span className="flex-1 font-semibold text-base">{termName}</span>
-                        {isLoadingTerms ? (
-                          <div className="size-5">
-                            <Loader />
-                          </div>
-                        ) : termUrl ? (
+                        {termUrl ? (
                           <div className="w-10 h-10 rounded-lg bg-primary-600 group-hover:bg-primary-700 flex items-center justify-center transition-colors">
                             <Icon icon="bi:eye" className="text-white text-lg" />
                           </div>

@@ -40,8 +40,6 @@ export interface UseCardDetailsReturn {
   isLoading: boolean
   redemptionBranches: RedemptionBranch[]
   termsUrls: Record<string | number, string>
-  isLoadingImages: boolean
-  isLoadingTerms: boolean
   selectedDocument: CardDetailsDocument | null
   setSelectedDocument: Dispatch<SetStateAction<CardDetailsDocument | null>>
   imageIndex: number
