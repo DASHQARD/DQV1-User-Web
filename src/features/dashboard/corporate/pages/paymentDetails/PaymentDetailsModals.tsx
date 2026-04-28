@@ -60,10 +60,10 @@ export function PaymentDetailsModals({
       <Modal
         isOpen={isAddModalOpen}
         setIsOpen={setIsAddModalOpen}
-        panelClass="!max-w-2xl"
+        panelClass="!w-[500px]"
         position="center"
       >
-        <div className="p-6 space-y-4">
+        <div className="p-8 space-y-5">
           <Text variant="h3" weight="semibold">
             Add Payment Details
           </Text>
@@ -105,24 +105,12 @@ export function PaymentDetailsModals({
               />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <Input
                 label={formatFieldLabel('bank_name')}
                 value={addForm.bank_name}
                 onChange={(e: any) =>
                   setAddForm((prev) => ({ ...prev, bank_name: e.target.value }))
-                }
-              />
-              <Input
-                label="branch"
-                value={addForm.branch}
-                onChange={(e: any) => setAddForm((prev) => ({ ...prev, branch: e.target.value }))}
-              />
-              <Input
-                label={formatFieldLabel('account_name')}
-                value={addForm.account_name}
-                onChange={(e: any) =>
-                  setAddForm((prev) => ({ ...prev, account_name: e.target.value }))
                 }
               />
               <Input
@@ -132,20 +120,34 @@ export function PaymentDetailsModals({
                   setAddForm((prev) => ({ ...prev, account_number: e.target.value }))
                 }
               />
-              <Input
-                label={formatFieldLabel('swift_code')}
-                value={addForm.swift_code}
-                onChange={(e: any) =>
-                  setAddForm((prev) => ({ ...prev, swift_code: e.target.value }))
-                }
-              />
-              <Input
-                label={formatFieldLabel('sort_code')}
-                value={addForm.sort_code}
-                onChange={(e: any) =>
-                  setAddForm((prev) => ({ ...prev, sort_code: e.target.value }))
-                }
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="branch"
+                  value={addForm.branch}
+                  onChange={(e: any) => setAddForm((prev) => ({ ...prev, branch: e.target.value }))}
+                />
+                <Input
+                  label={formatFieldLabel('account_name')}
+                  value={addForm.account_name}
+                  onChange={(e: any) =>
+                    setAddForm((prev) => ({ ...prev, account_name: e.target.value }))
+                  }
+                />
+                <Input
+                  label={formatFieldLabel('swift_code')}
+                  value={addForm.swift_code}
+                  onChange={(e: any) =>
+                    setAddForm((prev) => ({ ...prev, swift_code: e.target.value }))
+                  }
+                />
+                <Input
+                  label={formatFieldLabel('sort_code')}
+                  value={addForm.sort_code}
+                  onChange={(e: any) =>
+                    setAddForm((prev) => ({ ...prev, sort_code: e.target.value }))
+                  }
+                />
+              </div>
             </div>
           )}
 
@@ -163,10 +165,10 @@ export function PaymentDetailsModals({
       <Modal
         isOpen={isEditModalOpen}
         setIsOpen={setIsEditModalOpen}
-        panelClass="!max-w-2xl"
+        panelClass="!max-w-4xl"
         position="center"
       >
-        <div className="p-6 space-y-4">
+        <div className="p-8 space-y-5">
           <Text variant="h3" weight="semibold">
             Update Payment Details
           </Text>
@@ -208,24 +210,12 @@ export function PaymentDetailsModals({
               />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <Input
                 label={formatFieldLabel('bank_name')}
                 value={editForm.bank_name}
                 onChange={(e: any) =>
                   setEditForm((prev) => ({ ...prev, bank_name: e.target.value }))
-                }
-              />
-              <Input
-                label="Branch"
-                value={editForm.branch}
-                onChange={(e: any) => setEditForm((prev) => ({ ...prev, branch: e.target.value }))}
-              />
-              <Input
-                label={formatFieldLabel('account_name')}
-                value={editForm.account_name}
-                onChange={(e: any) =>
-                  setEditForm((prev) => ({ ...prev, account_name: e.target.value }))
                 }
               />
               <Input
@@ -235,20 +225,36 @@ export function PaymentDetailsModals({
                   setEditForm((prev) => ({ ...prev, account_number: e.target.value }))
                 }
               />
-              <Input
-                label={formatFieldLabel('swift_code')}
-                value={editForm.swift_code}
-                onChange={(e: any) =>
-                  setEditForm((prev) => ({ ...prev, swift_code: e.target.value }))
-                }
-              />
-              <Input
-                label={formatFieldLabel('sort_code')}
-                value={editForm.sort_code}
-                onChange={(e: any) =>
-                  setEditForm((prev) => ({ ...prev, sort_code: e.target.value }))
-                }
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Branch"
+                  value={editForm.branch}
+                  onChange={(e: any) =>
+                    setEditForm((prev) => ({ ...prev, branch: e.target.value }))
+                  }
+                />
+                <Input
+                  label={formatFieldLabel('account_name')}
+                  value={editForm.account_name}
+                  onChange={(e: any) =>
+                    setEditForm((prev) => ({ ...prev, account_name: e.target.value }))
+                  }
+                />
+                <Input
+                  label={formatFieldLabel('swift_code')}
+                  value={editForm.swift_code}
+                  onChange={(e: any) =>
+                    setEditForm((prev) => ({ ...prev, swift_code: e.target.value }))
+                  }
+                />
+                <Input
+                  label={formatFieldLabel('sort_code')}
+                  value={editForm.sort_code}
+                  onChange={(e: any) =>
+                    setEditForm((prev) => ({ ...prev, sort_code: e.target.value }))
+                  }
+                />
+              </div>
             </div>
           )}
 

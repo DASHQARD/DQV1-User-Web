@@ -8,11 +8,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useToast } from '@/hooks'
 import { postMethod } from '@/services/requests'
+import { isValidEmailAddress } from '@/utils/schemas/shared'
 
 // Extended schema to include phone and inquiryType
 const ContactFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address'),
+  email: z.string().refine((val) => isValidEmailAddress(val), {
+    message: 'Invalid email address',
+  }),
   phone: z.string().optional(),
   inquiryType: z.string().min(1, 'Feedback type is required'),
   subject: z.string().min(1, 'Subject is required'),

@@ -120,13 +120,13 @@ export default function UserUploadIDForm() {
                 <p className="text-sm font-medium text-gray-700">Front of Identification</p>
                 <div
                   className={cn(
-                    'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
+                    'border-2 border-dashed rounded-lg p-3 transition-colors min-h-36 flex items-center justify-center min-w-0',
                   )}
                 >
                   <img
                     src={frontOfIdentification ?? ''}
                     alt="Front of Identification"
-                    className="max-h-48 w-full object-contain"
+                    className="max-h-36 w-full object-contain"
                   />
                 </div>
               </div>
@@ -134,13 +134,13 @@ export default function UserUploadIDForm() {
                 <p className="text-sm font-medium text-gray-700">Back of Identification</p>
                 <div
                   className={cn(
-                    'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
+                    'border-2 border-dashed rounded-lg p-3 transition-colors min-h-36 flex items-center justify-center min-w-0',
                   )}
                 >
                   <img
                     src={backOfIdentification ?? ''}
                     alt="Back of Identification"
-                    className="max-h-48 w-full object-contain"
+                    className="max-h-36 w-full object-contain"
                   />
                 </div>
               </div>

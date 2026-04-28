@@ -33,7 +33,7 @@ export const cancelVendorInvitation = async (data: { invitation_id: number }): P
   return await patchMethod(`${VENDOR_MANAGEMENT_BASE}/cancel-invitation`, data)
 }
 
-/** GET /vendor-management/all-vendors — filter by status (active | inactive | suspended | pending), search, dateFrom, dateTo */
+/** GET /vendors/all/details — public-style vendor listing with details */
 export const getAllVendorsManagement = async (params?: {
   search?: string
   dateFrom?: string
@@ -50,9 +50,7 @@ export const getAllVendorsManagement = async (params?: {
   if (params?.limit) query.limit = params.limit
   if (params?.after) query.after = params.after
   const queryString = getQueryString(query)
-  const fullUrl = queryString
-    ? `${VENDOR_MANAGEMENT_BASE}/all-vendors?${queryString}`
-    : `${VENDOR_MANAGEMENT_BASE}/all-vendors`
+  const fullUrl = queryString ? `/vendors/all/details?${queryString}` : `/vendors/all/details`
   const response = await axiosClient.get(fullUrl)
   return response
 }

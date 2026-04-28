@@ -1,19 +1,27 @@
-import isEmail from 'validator/es/lib/isEmail'
 import z from 'zod'
+
+const validEmailRegex = /^[A-Za-z0-9][A-Za-z0-9._+-]*@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/
+
+export function isValidEmailAddress(value: string) {
+  return validEmailRegex.test(value.trim())
+}
 
 export function getOptionalStringSchema() {
   return z.string().optional().nullable()
 }
 
 export function getRequiredStringSchema(label: string = 'Field', message?: string) {
-  return z.string().min(1, message || `${label} is required`)
+  return z
+    .string()
+    .trim()
+    .min(1, message || `${label} is required`)
 }
 export function getRequiredNumberSchema(label: string = 'Field') {
   return z.number().min(1, `${label} is required`)
 }
 
 export function getRequiredEmailSchema(label: string = 'Email') {
-  return getRequiredStringSchema(label).refine((val) => isEmail(val), 'Invalid email')
+  return getRequiredStringSchema(label).refine((val) => isValidEmailAddress(val), 'Invalid email')
 }
 
 export function getRequiredAlphaNumericStringSchema(label: string = 'Field') {

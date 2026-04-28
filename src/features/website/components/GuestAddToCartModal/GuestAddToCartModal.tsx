@@ -21,11 +21,14 @@ import {
   ROUTES,
 } from '@/utils/constants'
 import { useToast } from '@/hooks'
+import { isValidEmailAddress } from '@/utils/schemas/shared'
 
 const ContactSchema = z.object({
-  guest_name: z.string().min(1, 'Name is required'),
+  guest_name: z.string().trim().min(1, 'Name is required'),
   guest_phone: z.string().min(1, 'Phone number is required'),
-  email: z.string().email('Please enter a valid email address'),
+  email: z.string().refine((val) => isValidEmailAddress(val), {
+    message: 'Please enter a valid email address',
+  }),
 })
 
 const OTPSchema = z.object({

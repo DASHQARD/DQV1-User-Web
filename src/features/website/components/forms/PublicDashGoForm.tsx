@@ -3,6 +3,7 @@ import { Icon } from '@/libs'
 import { useForm } from 'react-hook-form'
 import { usePublicCatalogMutations } from '../../hooks/website/usePublicCatalogMutations'
 import { useCartStore } from '@/stores/cart'
+import React from 'react'
 
 interface PublicDashGoFormProps {
   vendorName: string
@@ -10,6 +11,7 @@ interface PublicDashGoFormProps {
   availableBranches: any[]
   quickAmounts: number[]
   selectedAmount: string
+  onAmountChange?: (amount: string) => void
   vendor_id: string
 }
 
@@ -19,6 +21,7 @@ export default function PublicDashGoForm({
   availableBranches,
   quickAmounts,
   selectedAmount,
+  onAmountChange,
   vendor_id,
 }: PublicDashGoFormProps) {
   const { useCreateDashGoAndAssignService } = usePublicCatalogMutations()
@@ -27,9 +30,15 @@ export default function PublicDashGoForm({
 
   const form = useForm<{ amount: string }>({
     defaultValues: {
-      amount: '100',
+      amount: selectedAmount || '100',
     },
   })
+
+  const watchedAmount = form.watch('amount')
+
+  React.useEffect(() => {
+    onAmountChange?.(watchedAmount || '')
+  }, [watchedAmount, onAmountChange])
 
   const onSubmit = async (data: { amount: string }) => {
     const cardAmount = parseFloat(data.amount)
@@ -101,7 +110,7 @@ export default function PublicDashGoForm({
         {/* Quick Selection Buttons */}
         <div className="flex gap-3 mb-4 flex-wrap">
           {quickAmounts.map((amount) => {
-            const isSelected = parseFloat(selectedAmount || '0') === amount
+            const isSelected = parseFloat(watchedAmount || '0') === amount
             return (
               <button
                 key={amount}

@@ -9,6 +9,15 @@ import { useLoginForm } from '../../hooks'
 export default function LoginForm() {
   const { form, onSubmit, isPending, modal } = useLoginForm()
   const navigate = useNavigate()
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    navigate(ROUTES.IN_APP.HOME)
+  }
+
   return (
     <>
       <section className="wrapper">
@@ -17,8 +26,17 @@ export default function LoginForm() {
           autoComplete="off"
           className="max-w-[470.61px] w-full flex flex-col gap-10 mx-auto"
         >
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 text-sm text-primary-500 hover:text-primary-700 w-fit"
+          >
+            <Icon icon="bi:arrow-left" className="size-4" />
+            Back
+          </button>
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => navigate(ROUTES.IN_APP.HOME)}
               className="bg-primary-500 rounded-full p-2 h-10 w-10 flex items-center justify-center"
             >

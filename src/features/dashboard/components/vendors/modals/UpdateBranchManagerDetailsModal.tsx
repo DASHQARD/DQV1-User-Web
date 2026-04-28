@@ -7,9 +7,13 @@ import { usePersistedModalState, useCountriesData } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { Icon } from '@/libs'
 import { useVendorMutations } from '@/features/dashboard/vendor/hooks/useVendorMutations'
+import { isValidEmailAddress } from '@/utils/schemas/shared'
 
 const UpdateBranchManagerDetailsSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Invalid email address'),
+  email: z
+    .string()
+    .min(1, 'Email is required')
+    .refine((val) => isValidEmailAddress(val), { message: 'Invalid email address' }),
   phone_number: z.string().min(1, 'Phone number is required'),
   password: z.string().min(1, 'Password is required'),
 })

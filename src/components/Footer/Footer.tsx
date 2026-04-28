@@ -166,7 +166,12 @@ export default function Footer() {
               </div>
               <div className="flex flex-col gap-1">
                 <p className="text-xs font-medium text-white/60">Support Line</p>
-                <p className="text-xs md:text-sm font-medium text-white">+233 54 202 2245</p>
+                <a
+                  href="tel:+233542022245"
+                  className="text-xs md:text-sm font-medium text-white hover:text-yellow-500 transition-colors hover:underline"
+                >
+                  +233 54 202 2245
+                </a>
               </div>
             </li>
             <li className="flex items-start gap-2 md:items-center">
@@ -176,7 +181,7 @@ export default function Footer() {
               <div className="min-w-0">
                 <p className="text-xs font-medium text-white/60">Purchase Line (WhatsApp)</p>
                 <a
-                  href="https://wa.me/233542022245"
+                  href="https://wa.me/233566080362"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs md:text-sm font-medium text-white hover:text-yellow-500 transition-colors hover:underline break-all"
