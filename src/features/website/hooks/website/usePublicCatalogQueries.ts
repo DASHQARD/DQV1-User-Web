@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getPublicVendors, getPublicCards, getCards, getVendorQrCode } from '../../services'
+import { getPublicVendors, getPublicCards, getCards } from '../../services'
 import type {
   PublicCardsResponse,
   VendorDetailsResponse,
@@ -45,18 +45,6 @@ export function usePublicCatalogQueries() {
     })
   }
 
-  function useVendorQrCodeService(vendor_id: string | null) {
-    return useQuery<
-      { qr_code: string; vendor_account_id: number },
-      Error,
-      { qr_code: string; vendor_account_id: number }
-    >({
-      queryKey: ['vendor-qr-code', vendor_id],
-      queryFn: () => getVendorQrCode(vendor_id || ''),
-      enabled: !!vendor_id,
-    })
-  }
-
   function useGetCartAllRecipientsService() {
     return useQuery<RecipientsListResponse, Error, RecipientsListResponse>({
       queryKey: ['cart-all-recipients'],
@@ -78,7 +66,6 @@ export function usePublicCatalogQueries() {
     usePublicVendorCardsService,
     useCardsService,
     usePublicVendors,
-    useVendorQrCodeService,
     useGetCartAllRecipientsService,
     useGetRecipientsByCartIdService,
   }

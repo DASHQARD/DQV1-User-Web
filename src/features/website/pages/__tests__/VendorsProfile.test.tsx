@@ -8,7 +8,6 @@ vi.mock('@/assets/gifs/loader.gif', () => ({ default: '/loader.gif' }))
 vi.mock('../../hooks/website', () => ({
   usePublicCatalogQueries: () => ({
     usePublicVendorsService: () => ({ data: [], isLoading: false }),
-    useVendorQrCodeService: () => ({ data: null, isLoading: false }),
   }),
 }))
 

@@ -1,4 +1,4 @@
-import { Loader, EmptyState } from '@/components'
+import { EmptyState } from '@/components'
 import { ROUTES } from '@/utils/constants/shared'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/libs'
@@ -8,16 +8,16 @@ import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import { usePublicCatalogQueries } from '../../hooks/website'
 import { EmptyStateImage } from '@/assets/images'
 import LoaderGif from '@/assets/gifs/loader.gif'
+import { QRCodeSVG } from 'qrcode.react'
 
 export default function VendorsProfile() {
   const [searchParams] = useSearchParams()
   const vendor_id = searchParams.get('vendor_id') || ''
-  const { usePublicVendorsService, useVendorQrCodeService } = usePublicCatalogQueries()
+  const { usePublicVendorsService } = usePublicCatalogQueries()
   const { data: vendorDetailsResponse, isLoading: isLoadingVendor } = usePublicVendorsService(
     vendor_id ? { vendor_id, limit: 500 } : undefined,
     !!vendor_id,
   )
-  const { data: qrCodeData, isLoading: isLoadingQrCode } = useVendorQrCodeService(vendor_id || null)
 
   const vendorDetails = React.useMemo(() => {
     if (!vendorDetailsResponse || !vendor_id) return null
@@ -35,7 +35,9 @@ export default function VendorsProfile() {
 
   const [selectedAmount, setSelectedAmount] = React.useState('100')
 
-  const isLoading = isLoadingVendor || isLoadingQrCode
+  const logoUrl = (vendorDetails as any)?.logo || null
+
+  const isLoading = isLoadingVendor
 
   const quickAmounts = [100, 200, 300, 400, 500]
   // Get available branches for redemption
@@ -97,7 +99,6 @@ export default function VendorsProfile() {
   const vendorDescription =
     'Explore our wide range of gift cards and services. We offer quality products and exceptional customer service to meet all your needs.'
 
-  const vendorQrCode = qrCodeData?.qr_code || ''
 
   if (isLoading) {
     return (
@@ -205,10 +206,14 @@ export default function VendorsProfile() {
           </h2>
           <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-              {/* Left - Vendor Icon */}
+              {/* Left - Vendor Logo */}
               <div className="flex justify-center md:justify-start">
-                <div className="w-24 h-24 bg-linear-to-br from-[#ffc400] to-[#f0b90b] rounded-2xl flex items-center justify-center shadow-lg">
-                  <Icon icon="bi:gift" className="size-12 text-primary-500" />
+                <div className="w-24 h-24 bg-linear-to-br from-[#ffc400] to-[#f0b90b] rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt={vendorName} className="w-full h-full object-cover" />
+                  ) : (
+                    <Icon icon="bi:gift" className="size-12 text-primary-500" />
+                  )}
                 </div>
               </div>
 
@@ -229,12 +234,8 @@ export default function VendorsProfile() {
               {/* Right - Vendor QR Code */}
               <div className="flex justify-center md:justify-end">
                 <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                  {isLoadingQrCode ? (
-                    <div className="w-32 h-32 flex items-center justify-center">
-                      <Loader />
-                    </div>
-                  ) : vendorQrCode ? (
-                    <img src={vendorQrCode} alt="Vendor QR Code" className="w-32 h-32" />
+                  {vendorDetails?.qr_url ? (
+                    <QRCodeSVG value={vendorDetails.qr_url} size={128} />
                   ) : (
                     <div className="w-32 h-32 flex items-center justify-center text-grey-500 text-sm">
                       QR Code unavailable
