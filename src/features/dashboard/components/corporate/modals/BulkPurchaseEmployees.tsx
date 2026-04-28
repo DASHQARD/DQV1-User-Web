@@ -11,6 +11,8 @@ import { formatCurrency } from '@/utils/format'
 import { useBulkPurchaseEmployeesModal } from '@/features/dashboard/components/corporate/modals/useBulkPurchaseEmployeesModal'
 import type { RecipientRow, CardRecipientAssignment } from '@/types'
 
+type VendorBranchesResponse = { data: unknown[] }
+
 export function BulkPurchaseEmployees() {
   const modal = usePersistedModalState({
     paramName: MODALS.BULK_EMPLOYEE_PURCHASE.PARAM_NAME,
@@ -348,14 +350,9 @@ export function BulkPurchaseEmployeesModal() {
                               {selectedVendorName}
                             </Text>
                           </div>
-                          {(selectedVendorData as { branches_with_cards?: unknown[] })
-                            .branches_with_cards && (
+                          {Array.isArray((selectedVendorData as VendorBranchesResponse)?.data) && (
                             <Text variant="span" className="text-sm text-green-700 block mt-1">
-                              {
-                                (selectedVendorData as { branches_with_cards?: unknown[] })
-                                  .branches_with_cards?.length
-                              }{' '}
-                              branch(es) available
+                              {(selectedVendorData as VendorBranchesResponse).data.length} branch(es) available
                             </Text>
                           )}
                         </div>

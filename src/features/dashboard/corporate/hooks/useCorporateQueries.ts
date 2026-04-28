@@ -384,7 +384,7 @@ export function corporateQueries() {
 
   function useGetVendorByIdManagementService(id: number | string | null) {
     return useQuery({
-      queryKey: ['vendor-by-id-management', id],
+      queryKey: ['vendor-branches-with-cards', id],
       queryFn: () => getVendorByIdManagement(id!),
       enabled: !!id,
     })

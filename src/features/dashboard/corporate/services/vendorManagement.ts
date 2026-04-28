@@ -1,5 +1,5 @@
 import { axiosClient } from '@/libs'
-import { deleteMethod, getList, getMethod, patchMethod } from '@/services/requests'
+import { deleteMethod, getList, patchMethod } from '@/services/requests'
 import { getQueryString } from '@/utils/helpers'
 
 const VENDOR_MANAGEMENT_BASE = '/vendor-management'
@@ -55,9 +55,9 @@ export const getAllVendorsManagement = async (params?: {
   return response
 }
 
-/** GET /vendor-management/vendor/{id} */
+/** GET /vendors/:vendor_id/branches-with-cards */
 export const getVendorByIdManagement = async (id: number | string): Promise<any> => {
-  return await getMethod(`${VENDOR_MANAGEMENT_BASE}/vendor`, String(id))
+  return await getList(`/vendors/${id}/branches-with-cards`)
 }
 
 /** DELETE /vendor-management/vendor/{id} */
