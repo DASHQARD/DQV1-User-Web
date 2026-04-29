@@ -12,7 +12,7 @@ export function ApproveAction() {
   const { mutate: updateRequestStatus, isPending } = useUpdateRequestStatusService()
 
   const handleApprove = () => {
-    const requestId = modal.modalData?.id
+    const requestId = modal.modalData?.id ?? modal.modalData?.request_id
     if (!requestId) {
       console.error('Request ID is required')
       return

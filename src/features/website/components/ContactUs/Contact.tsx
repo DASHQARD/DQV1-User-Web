@@ -9,8 +9,6 @@ import { useToast } from '@/hooks'
 import { ContactUsSchema } from '@/utils/schemas'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Link } from 'react-router-dom'
-import { ROUTES } from '@/utils/constants'
 
 export default function Contact() {
   const { success, error } = useToast()
@@ -160,15 +158,6 @@ export default function Contact() {
                   <p className="text-white text-sm">Custom bulk solutions</p>
                 </li>
               </ul>
-              <div>
-                <p className="text-white font-normal text-sm">Ready to get started?</p>
-                <Link
-                  to={ROUTES.IN_APP.DASHQARDS}
-                  className="inline-flex text-yellow-500 hover:text-yellow-500/80 cursor-pointer rounded-4xl! font-bold"
-                >
-                  Get a DashQard!
-                </Link>
-              </div>
             </div>
           </div>
           <div

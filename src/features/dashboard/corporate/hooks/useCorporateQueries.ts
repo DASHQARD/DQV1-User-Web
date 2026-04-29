@@ -43,6 +43,14 @@ import {
 import { getCards } from '@/features/dashboard/services/cards'
 import { useAuthStore } from '@/stores'
 
+const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+const normalizeGuid = (value: string | number | null | undefined): string | null => {
+  if (value == null) return null
+  const text = String(value).trim()
+  return GUID_REGEX.test(text) ? text : null
+}
+
 export function corporateQueries() {
   function useGetCorporateService() {
     return useQuery({
@@ -89,10 +97,15 @@ export function corporateQueries() {
   }
 
   function useGetRequestsCorporateSuperAdminVendorService(vendorId: string | null) {
+    const { user } = useAuthStore()
+    const userType = (user as any)?.user_type
+    const isCorporateSuperAdmin = userType === 'corporate super admin'
+    const validVendorId = normalizeGuid(vendorId)
+
     return useQuery({
       queryKey: ['requests-corporate-super-admin-vendor', vendorId],
-      queryFn: () => getRequestsCorporateSuperAdminByVendor(vendorId!),
-      enabled: !!vendorId,
+      queryFn: () => getRequestsCorporateSuperAdminByVendor(validVendorId!),
+      enabled: isCorporateSuperAdmin && !!validVendorId,
     })
   }
 
@@ -108,10 +121,12 @@ export function corporateQueries() {
     vendorId: string | number | null,
     id: number | string | null,
   ) {
+    const validVendorId = normalizeGuid(vendorId)
+
     return useQuery({
       queryKey: ['corporate-super-admin-vendor-request', vendorId, id],
-      queryFn: () => getCorporateSuperAdminVendorRequestInfo(vendorId!, id!),
-      enabled: !!vendorId && !!id,
+      queryFn: () => getCorporateSuperAdminVendorRequestInfo(validVendorId!, id!),
+      enabled: !!validVendorId && !!id,
     })
   }
 
@@ -228,10 +243,15 @@ export function corporateQueries() {
   }
 
   function useGetCorporateBranchesByVendorIdService(vendorId: string | null) {
+    const { user } = useAuthStore()
+    const userType = (user as any)?.user_type
+    const isCorporateSuperAdmin = userType === 'corporate super admin'
+    const validVendorId = normalizeGuid(vendorId)
+
     return useQuery({
       queryKey: ['corporate-branches-by-vendor', vendorId],
-      queryFn: () => getCorporateBranchesByVendorId(vendorId!),
-      enabled: !!vendorId,
+      queryFn: () => getCorporateBranchesByVendorId(validVendorId!),
+      enabled: isCorporateSuperAdmin && !!validVendorId,
     })
   }
 
@@ -326,10 +346,12 @@ export function corporateQueries() {
     const userType = (user as any)?.user_type
     const isCorporateSuperAdmin = userType === 'corporate super admin'
 
+    const validVendorId = normalizeGuid(vendorId)
+
     return useQuery({
       queryKey: ['corporate-redemptions-by-vendor', vendorId, params],
-      queryFn: () => getCorporateRedemptionsByVendorId(vendorId!, params),
-      enabled: isCorporateSuperAdmin && !!vendorId,
+      queryFn: () => getCorporateRedemptionsByVendorId(validVendorId!, params),
+      enabled: isCorporateSuperAdmin && !!validVendorId,
     })
   }
 
@@ -341,10 +363,12 @@ export function corporateQueries() {
     const userType = (user as any)?.user_type
     const isCorporateSuperAdmin = userType === 'corporate super admin'
 
+    const validVendorId = normalizeGuid(vendorId)
+
     return useQuery({
       queryKey: ['corporate-super-admin-branch-managers', vendorId, params],
-      queryFn: () => getCorporateSuperAdminBranchManagers(vendorId!, params),
-      enabled: isCorporateSuperAdmin && !!vendorId,
+      queryFn: () => getCorporateSuperAdminBranchManagers(validVendorId!, params),
+      enabled: isCorporateSuperAdmin && !!validVendorId,
     })
   }
 
@@ -394,11 +418,12 @@ export function corporateQueries() {
     const { user } = useAuthStore()
     const userType = (user as any)?.user_type
     const isCorporateSuperAdmin = userType === 'corporate super admin'
+    const validVendorId = normalizeGuid(vendorId)
 
     return useQuery({
       queryKey: ['corporate-super-admin-vendor-cards-summary', vendorId],
-      queryFn: () => getCorporateSuperAdminVendorCardsSummary(vendorId!),
-      enabled: isCorporateSuperAdmin && !!vendorId,
+      queryFn: () => getCorporateSuperAdminVendorCardsSummary(validVendorId!),
+      enabled: isCorporateSuperAdmin && !!validVendorId,
     })
   }
 
@@ -410,10 +435,12 @@ export function corporateQueries() {
     const userType = (user as any)?.user_type
     const isCorporateSuperAdmin = userType === 'corporate super admin'
 
+    const validVendorId = normalizeGuid(vendorId)
+
     return useQuery({
       queryKey: ['corporate-vendor-cards', vendorId, params],
-      queryFn: () => getCardsByVendorIdForCorporate(vendorId!, params),
-      enabled: isCorporateSuperAdmin && !!vendorId,
+      queryFn: () => getCardsByVendorIdForCorporate(validVendorId!, params),
+      enabled: isCorporateSuperAdmin && !!validVendorId,
     })
   }
 

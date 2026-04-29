@@ -39,8 +39,7 @@ export function useCorporateSidebar() {
     const list = Array.isArray(requestsCorporateResponse?.data)
       ? requestsCorporateResponse.data
       : []
-    return list.filter((r: { status?: string }) => String(r?.status).toLowerCase() === 'pending')
-      .length
+    return list.length
   }, [requestsCorporateResponse])
 
   const allVendorsCreatedByCorporate = useMemo(() => {

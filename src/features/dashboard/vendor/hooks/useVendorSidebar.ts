@@ -218,7 +218,7 @@ export function useVendorSidebar() {
     return `${path}${separator}account=vendor`
   }
 
-  const handleSwitchToVendor = (vendorId: number) => {
+  const handleSwitchToVendor = (vendorId: string | number) => {
     setIsPopoverOpen(false)
     navigate(
       `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor${vendorId ? `&vendor_id=${vendorId}` : ''}`,

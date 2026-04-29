@@ -7,8 +7,12 @@ export function RequestActionCell({ row }: any) {
   const modal = usePersistedModalState({
     paramName: MODALS.REQUEST.PARAM_NAME,
   })
-  const isPending = row.original.status?.toLowerCase() === 'pending'
-  const isApproved = row.original.status?.toLowerCase() === 'approved'
+  const normalizedStatus = String(row.original.status || '').toLowerCase().trim()
+  const isAwaitingApproval =
+    normalizedStatus === 'pending' ||
+    normalizedStatus === 'awaiting corporate approval' ||
+    (normalizedStatus.includes('awaiting') && normalizedStatus.includes('approval'))
+  const isApproved = normalizedStatus === 'approved'
   const canDelete = !isApproved
 
   const actions = [
@@ -18,7 +22,7 @@ export function RequestActionCell({ row }: any) {
         modal.openModal(MODALS.REQUEST.CHILDREN.VIEW, { ...row.original })
       },
     },
-    ...(isPending
+    ...(isAwaitingApproval
       ? [
           {
             label: 'Approve',

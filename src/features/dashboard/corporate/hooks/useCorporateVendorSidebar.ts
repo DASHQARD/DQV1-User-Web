@@ -235,7 +235,7 @@ export function useCorporateVendorSidebar() {
     return currentVendorId ? `${base}&vendor_id=${currentVendorId}` : base
   }
 
-  const handleSwitchToVendor = (vendorId: number) => {
+  const handleSwitchToVendor = (vendorId: string | number) => {
     setIsPopoverOpen(false)
     const isAlreadyOnVendorView =
       searchParams.get('account') === 'vendor' &&

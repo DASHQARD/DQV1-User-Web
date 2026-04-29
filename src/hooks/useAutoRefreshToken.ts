@@ -23,11 +23,12 @@ export function useAutoRefreshToken() {
   const refreshPromiseRef = useRef<Promise<void> | null>(null)
 
   useEffect(() => {
-    if (!token || !refreshToken) {
+    if (!token) {
       return
     }
 
-    let timeoutId: number | null = null
+    let refreshTimeoutId: number | null = null
+    let expiryTimeoutId: number | null = null
 
     const safeDecode = (jwtToken: string): JwtPayload | null => {
       try {
@@ -76,7 +77,32 @@ export function useAutoRefreshToken() {
       }
     }
 
+    const scheduleForcedLogout = () => {
+      const refreshDecoded = refreshToken ? safeDecode(refreshToken) : null
+      const accessDecoded = safeDecode(token)
+      const sessionExpSeconds = refreshDecoded?.exp ?? accessDecoded?.exp
+
+      if (!sessionExpSeconds) return
+
+      const sessionExpiresAt = sessionExpSeconds * 1000
+      const delay = sessionExpiresAt - Date.now()
+
+      const forceLogout = () => {
+        logout()
+        toast.error('Session expired. Please log in again.')
+      }
+
+      if (delay <= 0) {
+        forceLogout()
+        return
+      }
+
+      expiryTimeoutId = window.setTimeout(forceLogout, delay)
+    }
+
     const scheduleRefresh = () => {
+      if (!refreshToken) return
+
       const decoded = safeDecode(token)
       if (!decoded?.exp) {
         return
@@ -99,14 +125,18 @@ export function useAutoRefreshToken() {
         return
       }
 
-      timeoutId = window.setTimeout(trigger, delay)
+      refreshTimeoutId = window.setTimeout(trigger, delay)
     }
 
+    scheduleForcedLogout()
     scheduleRefresh()
 
     return () => {
-      if (timeoutId) {
-        window.clearTimeout(timeoutId)
+      if (refreshTimeoutId) {
+        window.clearTimeout(refreshTimeoutId)
+      }
+      if (expiryTimeoutId) {
+        window.clearTimeout(expiryTimeoutId)
       }
     }
   }, [token, refreshToken, isGuestAuth, authenticate, logout, toast])

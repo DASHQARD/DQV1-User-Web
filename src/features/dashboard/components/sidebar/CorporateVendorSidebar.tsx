@@ -134,7 +134,7 @@ export default function CorporateVendorSidebar() {
                     : statusLabel
                   const onSwitchToVendor = () => {
                     if (!canSwitch || isCurrentVendor) return
-                    handleSwitchToVendor(Number(vendorId))
+                    handleSwitchToVendor(vendorId)
                   }
 
                   return (

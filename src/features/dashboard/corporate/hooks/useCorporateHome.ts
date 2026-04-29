@@ -11,7 +11,11 @@ export function useCorporateHome() {
   const { metrics, formatCurrency, isLoading } = useDashboardMetrics()
   const navigate = useNavigate()
   const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
+  const {
+    data: userProfileData,
+    isLoading: isUserProfileLoading,
+    isFetching: isUserProfileFetching,
+  } = useGetUserProfileService()
   const { useGetAllVendorsDetailsService } = vendorQueries()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
   const vendorAccountModal = usePersistedModalState<{ user?: unknown }>({
@@ -39,6 +43,8 @@ export function useCorporateHome() {
   }
 
   const isCorporateAdmin = userProfileData?.user_type === 'corporate admin'
+  const isOnboardingStatusLoading =
+    (isUserProfileLoading || isUserProfileFetching) && !userProfileData
 
   const onboardingProgress = {
     hasProfile: Boolean(userProfileData?.onboarding_progress?.personal_details_completed),
@@ -123,6 +129,7 @@ export function useCorporateHome() {
     metrics,
     formatCurrency,
     isLoading,
+    isOnboardingStatusLoading,
     isCorporateAdmin,
     onboardingProgress: {
       ...onboardingProgress,

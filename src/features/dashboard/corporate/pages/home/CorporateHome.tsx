@@ -1,4 +1,4 @@
-import { Text, Button } from '@/components'
+import { Text, Button, Loader } from '@/components'
 import { Icon } from '@/libs'
 import { StarImage } from '@/assets/images'
 import { cn } from '@/libs'
@@ -14,6 +14,7 @@ export default function CorporateHome() {
     metrics,
     formatCurrency,
     isLoading,
+    isOnboardingStatusLoading,
     isCorporateAdmin,
     onboardingProgress: { hasProfileAndID, hasBusinessDetailsAndDocs },
     completedCount,
@@ -39,8 +40,18 @@ export default function CorporateHome() {
         {/* Account status banner – explains why some features are locked or coming soon */}
         <CorporateAccountStatusBanner status={accountStatusBanner} />
 
+        {/* Onboarding status loading state to prevent flash before profile resolves */}
+        {isOnboardingStatusLoading ? (
+          <div className="bg-white border border-gray-100 rounded-2xl shadow-lg p-10 flex flex-col items-center justify-center gap-4 min-h-[240px]">
+            <Loader />
+            <Text variant="span" className="text-sm text-gray-500">
+              Checking onboarding status...
+            </Text>
+          </div>
+        ) : null}
+
         {/* Onboarding Steps Section - Only show if not complete */}
-        {!isComplete && (
+        {!isOnboardingStatusLoading && !isComplete && (
           <div className="bg-linear-to-br from-[#f9f5ff] via-white to-[#fdf9ff] border border-gray-100 rounded-2xl shadow-lg p-6 sm:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-6">
               <div className="flex items-start gap-4">
@@ -342,7 +353,7 @@ export default function CorporateHome() {
           </div> */}
         </div>
 
-        {!isComplete && (
+        {!isOnboardingStatusLoading && !isComplete && (
           <div className="fixed bottom-6 right-6 z-50 w-[598px] max-w-[calc(100vw-3rem)]">
             <CompleteCorporateWidget />
           </div>

@@ -469,7 +469,7 @@ export default function CorporateSidebar() {
                               : item.label}
                             {item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS &&
                               pendingRequestsCount > 0 &&
-                              ` (${pendingRequestsCount} pending)`}
+                              ` (${pendingRequestsCount})`}
                           </TooltipContent>
                         </Tooltip>
                       ) : (

@@ -8,7 +8,7 @@ import { BranchDetails } from '../pages/branches'
 import { Redemptions } from '../pages/redemptions'
 import { Requests } from '../pages/requests'
 import { AuditLogs } from '../pages/auditLogs'
-import { PaymentInfo, BranchPaymentDetails } from '../pages/payment'
+import { PaymentInfo, VendorPaymentDetails } from '../pages/payment'
 import Payments from '../pages/payments/Payments'
 import { Compliance, ProfileInformation, UploadID, BusinessDetails } from '../pages/compliance'
 import { Settings } from '../pages/settings'
@@ -57,7 +57,7 @@ export const vendorRoutes: RouteObject[] = [
   },
   {
     path: 'payment-details',
-    element: <BranchPaymentDetails />,
+    element: <VendorPaymentDetails />,
   },
   {
     path: 'payments',
