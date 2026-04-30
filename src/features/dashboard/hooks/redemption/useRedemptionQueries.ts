@@ -15,6 +15,10 @@ import {
   type GetRedemptionsSummaryParams,
   getRedemptionsAmountDashGo,
   getRedemptionsAmountDashPro,
+  getGuestAssignedCards,
+  getGuestRedemptionsAmountDashGo,
+  getGuestRedemptionsAmountDashPro,
+  getGuestRedemptions,
   type GetRedemptionsAmountDashGoParams,
   getRedemptionsAmountDashX,
   type GetRedemptionsAmountDashXParams,
@@ -59,18 +63,19 @@ export function useRedemptionQueries() {
   }
 
   function useGetRedemptionsAmountDashGoService(params?: GetRedemptionsAmountDashGoParams) {
+    const { isGuestAuth } = useAuthStore()
     return useQuery({
       queryKey: ['redemptions-amount-dash-go', params],
-      queryFn: () => getRedemptionsAmountDashGo(params),
-      enabled: !!(params?.branch_id || params?.vendor_id),
+      queryFn: () => (isGuestAuth ? getGuestRedemptionsAmountDashGo() : getRedemptionsAmountDashGo(params)),
+      enabled: isGuestAuth || !!(params?.branch_id || params?.vendor_id),
     })
   }
 
   function useGetRedemptionsAmountDashProService() {
-    const { isAuthenticated } = useAuthStore()
+    const { isAuthenticated, isGuestAuth } = useAuthStore()
     return useQuery({
       queryKey: ['redemptions-amount-dash-pro'],
-      queryFn: () => getRedemptionsAmountDashPro(),
+      queryFn: () => (isGuestAuth ? getGuestRedemptionsAmountDashPro() : getRedemptionsAmountDashPro()),
       enabled: isAuthenticated,
     })
   }
@@ -105,6 +110,24 @@ export function useRedemptionQueries() {
     })
   }
 
+  function useGetGuestAssignedCardsService(enabled: boolean = true) {
+    const { isGuestAuth } = useAuthStore()
+    return useQuery({
+      queryKey: ['guest-assigned-cards'],
+      queryFn: () => getGuestAssignedCards(),
+      enabled: isGuestAuth && enabled,
+    })
+  }
+
+  function useGetGuestRedemptionsService(enabled: boolean = true) {
+    const { isGuestAuth } = useAuthStore()
+    return useQuery({
+      queryKey: ['guest-redemptions'],
+      queryFn: () => getGuestRedemptions(),
+      enabled: isGuestAuth && enabled,
+    })
+  }
+
   return {
     useSearchVendorsService,
     useGetRedemptionsService,
@@ -116,5 +139,7 @@ export function useRedemptionQueries() {
     useGetRedemptionsAmountDashProService,
     useGetRedemptionsAmountDashXService,
     useGetRedemptionsAmountDashPassService,
+    useGetGuestAssignedCardsService,
+    useGetGuestRedemptionsService,
   }
 }

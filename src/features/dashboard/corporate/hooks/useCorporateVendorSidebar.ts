@@ -99,6 +99,7 @@ export function useCorporateVendorSidebar() {
   useGetCorporatePaymentsService()
 
   const corporateBranches = currentVendorId ? corporateBranchesByVendor : corporateBranchesList
+  console.log('corporateBranches', corporateBranches)
   const branchesArray = useMemo(() => {
     if (!corporateBranches) return []
     return Array.isArray(corporateBranches)

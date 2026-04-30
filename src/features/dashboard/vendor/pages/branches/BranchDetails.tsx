@@ -48,6 +48,9 @@ export function BranchDetails() {
   const [isEditPaymentModalOpen, setIsEditPaymentModalOpen] = useState(false)
   const [isDeletePaymentModalOpen, setIsDeletePaymentModalOpen] = useState(false)
   const branchId = branches?.id || branches?.branch_id
+  const hasAssignedBranchManager = Boolean(
+    branches?.user_id || branches?.branch_manager_user_id,
+  )
   const [updateForm, setUpdateForm] = useState({
     payment_method: 'mobile_money',
     mobile_money_provider: '',
@@ -64,7 +67,7 @@ export function BranchDetails() {
     {
       queryKey: ['branch-payment-details-view', branchId],
       queryFn: () => getPaymentDetailsByBranchId(branchId),
-      enabled: !!branchId,
+      enabled: !!branchId && hasAssignedBranchManager,
     },
   )
   const branchPaymentDetails =
@@ -219,6 +222,23 @@ export function BranchDetails() {
             </Button>
           </div>
         </div>
+
+        {!hasAssignedBranchManager && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+            <div className="flex items-start gap-3">
+              <Icon icon="bi:exclamation-triangle" className="text-yellow-600 text-xl mt-0.5" />
+              <div className="space-y-1">
+                <Text variant="span" weight="semibold" className="block text-yellow-900">
+                  Branch manager required before payment setup
+                </Text>
+                <Text variant="span" className="text-sm text-yellow-800 block">
+                  Assign an active branch manager to this branch before viewing or editing payment
+                  details.
+                </Text>
+              </div>
+            </div>
+          </div>
+        )}
 
         <BranchMetricsCards
           summary={branchSummary}
@@ -425,101 +445,103 @@ export function BranchDetails() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] p-6 space-y-4">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <Text variant="h6" weight="medium">
-              Branch Payment Details Management
-            </Text>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={openEditPaymentModal}>
-                <Icon icon="bi:pencil-square" className="mr-2" />
-                Edit Payment Detail
-              </Button>
-              <Button variant="outline" onClick={openDeletePaymentModal}>
-                <Icon icon="bi:trash3" className="mr-2 text-red-500" />
-                Delete Payment Detail
-              </Button>
+        {hasAssignedBranchManager && (
+          <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] p-6 space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <Text variant="h6" weight="medium">
+                Branch Payment Details Management
+              </Text>
+              <div className="flex items-center gap-3">
+                <Button variant="outline" onClick={openEditPaymentModal}>
+                  <Icon icon="bi:pencil-square" className="mr-2" />
+                  Edit Payment Detail
+                </Button>
+                <Button variant="outline" onClick={openDeletePaymentModal}>
+                  <Icon icon="bi:trash3" className="mr-2 text-red-500" />
+                  Delete Payment Detail
+                </Button>
+              </div>
+            </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
+              <Text variant="span" weight="semibold" className="block">
+                Current Branch Payment Details
+              </Text>
+              {isLoadingBranchPaymentDetails ? (
+                <Text variant="span" className="text-sm text-gray-600">
+                  Loading branch payment details...
+                </Text>
+              ) : branchMobileMoneyAccounts.length === 0 && branchBankAccounts.length === 0 ? (
+                <Text variant="span" className="text-sm text-gray-500">
+                  No payment details found for this branch.
+                </Text>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <Text variant="span" className="text-sm font-medium block mb-2">
+                      Mobile Money Accounts ({branchMobileMoneyAccounts.length})
+                    </Text>
+                    {branchMobileMoneyAccounts.length === 0 ? (
+                      <Text variant="span" className="text-xs text-gray-500">
+                        No mobile money accounts.
+                      </Text>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {branchMobileMoneyAccounts.map((account: any, idx: number) => (
+                          <div
+                            key={String(account.id ?? idx)}
+                            className="bg-white border border-gray-200 rounded-md p-3"
+                          >
+                            <Text variant="span" className="text-xs block">
+                              <strong>Provider:</strong>{' '}
+                              {account.provider || account.mobile_money_provider || '-'}
+                            </Text>
+                            <Text variant="span" className="text-xs block">
+                              <strong>Number:</strong>{' '}
+                              {account.momo_number || account.mobile_money_number || '-'}
+                            </Text>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Text variant="span" className="text-sm font-medium block mb-2">
+                      Bank Accounts ({branchBankAccounts.length})
+                    </Text>
+                    {branchBankAccounts.length === 0 ? (
+                      <Text variant="span" className="text-xs text-gray-500">
+                        No bank accounts.
+                      </Text>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {branchBankAccounts.map((account: any, idx: number) => (
+                          <div
+                            key={String(account.id ?? idx)}
+                            className="bg-white border border-gray-200 rounded-md p-3"
+                          >
+                            <Text variant="span" className="text-xs block">
+                              <strong>Bank:</strong> {account.bank_name || '-'}
+                            </Text>
+                            <Text variant="span" className="text-xs block">
+                              <strong>Account Name:</strong>{' '}
+                              {account.account_holder_name || account.account_name || '-'}
+                            </Text>
+                            <Text variant="span" className="text-xs block">
+                              <strong>Account Number:</strong> {account.account_number || '-'}
+                            </Text>
+                            <Text variant="span" className="text-xs block">
+                              <strong>Branch:</strong> {account.bank_branch || account.branch || '-'}
+                            </Text>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
-            <Text variant="span" weight="semibold" className="block">
-              Current Branch Payment Details
-            </Text>
-            {isLoadingBranchPaymentDetails ? (
-              <Text variant="span" className="text-sm text-gray-600">
-                Loading branch payment details...
-              </Text>
-            ) : branchMobileMoneyAccounts.length === 0 && branchBankAccounts.length === 0 ? (
-              <Text variant="span" className="text-sm text-gray-500">
-                No payment details found for this branch.
-              </Text>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <Text variant="span" className="text-sm font-medium block mb-2">
-                    Mobile Money Accounts ({branchMobileMoneyAccounts.length})
-                  </Text>
-                  {branchMobileMoneyAccounts.length === 0 ? (
-                    <Text variant="span" className="text-xs text-gray-500">
-                      No mobile money accounts.
-                    </Text>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {branchMobileMoneyAccounts.map((account: any, idx: number) => (
-                        <div
-                          key={String(account.id ?? idx)}
-                          className="bg-white border border-gray-200 rounded-md p-3"
-                        >
-                          <Text variant="span" className="text-xs block">
-                            <strong>Provider:</strong>{' '}
-                            {account.provider || account.mobile_money_provider || '-'}
-                          </Text>
-                          <Text variant="span" className="text-xs block">
-                            <strong>Number:</strong>{' '}
-                            {account.momo_number || account.mobile_money_number || '-'}
-                          </Text>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <Text variant="span" className="text-sm font-medium block mb-2">
-                    Bank Accounts ({branchBankAccounts.length})
-                  </Text>
-                  {branchBankAccounts.length === 0 ? (
-                    <Text variant="span" className="text-xs text-gray-500">
-                      No bank accounts.
-                    </Text>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {branchBankAccounts.map((account: any, idx: number) => (
-                        <div
-                          key={String(account.id ?? idx)}
-                          className="bg-white border border-gray-200 rounded-md p-3"
-                        >
-                          <Text variant="span" className="text-xs block">
-                            <strong>Bank:</strong> {account.bank_name || '-'}
-                          </Text>
-                          <Text variant="span" className="text-xs block">
-                            <strong>Account Name:</strong>{' '}
-                            {account.account_holder_name || account.account_name || '-'}
-                          </Text>
-                          <Text variant="span" className="text-xs block">
-                            <strong>Account Number:</strong> {account.account_number || '-'}
-                          </Text>
-                          <Text variant="span" className="text-xs block">
-                            <strong>Branch:</strong> {account.bank_branch || account.branch || '-'}
-                          </Text>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
       <BranchDetailsModal />

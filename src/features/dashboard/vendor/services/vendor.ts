@@ -167,6 +167,7 @@ export const getBranchManagerInvitations = async (
     ? `${commonUrl}/branch-manager-invitations?${queryString}`
     : `${commonUrl}/branch-manager-invitations`
   const response = await axiosClient.get(fullUrl)
+  console.log('response from vendor', response)
   return response
 }
 

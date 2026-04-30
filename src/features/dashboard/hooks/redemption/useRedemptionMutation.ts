@@ -4,6 +4,7 @@ import {
   getCardBalance,
   initiateRedemption,
   processCardsRedemption,
+  processGuestCardsRedemption,
   processDashProRedemption,
   processDashProRedemptionForUser,
   processRedemptionCards,
@@ -14,6 +15,7 @@ import {
   type CardsRedemptionPayload,
   type DashProRedemptionPayload,
   type DashProRedemptionForUserPayload,
+  type GuestCardsRedemptionPayload,
   type InitiateRedemptionPayload,
   type UpdateRedemptionStatusPayload,
   type ValidateVendorMobileMoneyPayload,
@@ -64,6 +66,19 @@ export function useRedemptionMutation() {
       onSuccess: (response: any) => {
         success(response?.message || 'Redemption processed successfully')
         queryClient.invalidateQueries({ queryKey: ['redemptions'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to process redemption. Please try again.')
+      },
+    })
+  }
+
+  function useProcessGuestCardsRedemptionService() {
+    return useMutation({
+      mutationFn: (data: GuestCardsRedemptionPayload) => processGuestCardsRedemption(data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Redemption processed successfully')
+        queryClient.invalidateQueries({ queryKey: ['guest-redemptions'] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to process redemption. Please try again.')
@@ -136,6 +151,7 @@ export function useRedemptionMutation() {
     useProcessDashProRedemptionForUserService,
     useProcessUserRedemptionCardsService,
     useProcessCardsRedemptionService,
+    useProcessGuestCardsRedemptionService,
     useValidateVendorMobileMoneyService,
     useUpdateRedemptionStatusService,
     useInitiateRedemptionService,

@@ -31,39 +31,36 @@ export function useBranchManagers() {
     return params
   }, [query, isCorporateSwitchedToVendor, vendorIdFromUrl])
 
+  const corporateApiQuery = useMemo((): GetBranchManagerInvitationsQuery => {
+    const params: GetBranchManagerInvitationsQuery = {
+      limit: Number(query.limit) || 10,
+    }
+    if (query.after) params.after = query.after
+    if (query.search) params.search = query.search
+    if ((query as any).status) params.status = (query as any).status
+    if (query.dateFrom) params.dateFrom = query.dateFrom
+    if (query.dateTo) params.dateTo = query.dateTo
+    return params
+  }, [query])
+
   const { useGetBranchManagerInvitationsService } = vendorQueries()
-  const {
-    useGetCorporateSuperAdminBranchManagersService,
-    useGetCorporateBranchManagerInvitationsService,
-  } = corporateQueries()
+  const { useGetCorporateBranchManagerInvitationsService } = corporateQueries()
 
   const { data: vendorInvitationsResponse, isLoading: isLoadingVendorInvitations } =
     useGetBranchManagerInvitationsService(isCorporateSuperAdmin ? undefined : apiQuery)
 
-  const {
-    data: corporateSuperAdminBranchManagersResponse,
-    isLoading: isLoadingCorporateSuperAdminBranchManagers,
-  } = useGetCorporateSuperAdminBranchManagersService(
-    isCorporateSwitchedToVendor ? vendorIdFromUrl : null,
-    isCorporateSwitchedToVendor ? apiQuery : undefined,
-  )
-
   const { data: corporateInvitationsResponse, isLoading: isLoadingCorporateInvitations } =
     useGetCorporateBranchManagerInvitationsService(
-      isCorporateSuperAdmin && !vendorIdFromUrl ? apiQuery : undefined,
+      isCorporateSuperAdmin ? corporateApiQuery : undefined,
     )
 
-  const invitationsResponse = isCorporateSwitchedToVendor
-    ? corporateSuperAdminBranchManagersResponse
-    : isCorporateSuperAdmin
-      ? corporateInvitationsResponse
-      : vendorInvitationsResponse
+  const invitationsResponse = isCorporateSuperAdmin
+    ? corporateInvitationsResponse
+    : vendorInvitationsResponse
 
-  const isLoadingInvitations = isCorporateSwitchedToVendor
-    ? isLoadingCorporateSuperAdminBranchManagers
-    : isCorporateSuperAdmin
-      ? isLoadingCorporateInvitations
-      : isLoadingVendorInvitations
+  const isLoadingInvitations = isCorporateSuperAdmin
+    ? isLoadingCorporateInvitations
+    : isLoadingVendorInvitations
 
   const inviteModal = usePersistedModalState({
     paramName: MODALS.BRANCH_MANAGER_INVITATION.PARAM_NAME,
@@ -71,10 +68,23 @@ export function useBranchManagers() {
 
   const invitations = useMemo(() => {
     if (!invitationsResponse) return []
-    return Array.isArray(invitationsResponse?.data) ? invitationsResponse.data : []
-  }, [invitationsResponse])
+    const rows = Array.isArray(invitationsResponse?.data) ? invitationsResponse.data : []
+    if (isCorporateSwitchedToVendor && vendorIdFromUrl) {
+      return rows.filter((row: any) => String(row?.vendor_id ?? '') === String(vendorIdFromUrl))
+    }
+    return rows
+  }, [invitationsResponse, isCorporateSwitchedToVendor, vendorIdFromUrl])
 
-  const pagination = invitationsResponse?.pagination
+  const pagination = useMemo(
+    () =>
+      invitationsResponse?.pagination ?? {
+        hasNextPage: invitationsResponse?.hasNextPage,
+        hasPreviousPage: invitationsResponse?.hasPreviousPage,
+        next: invitationsResponse?.next,
+        previous: invitationsResponse?.previous,
+      },
+    [invitationsResponse],
+  )
 
   const handleNextPage = useCallback(() => {
     if (pagination?.hasNextPage && pagination?.next) {

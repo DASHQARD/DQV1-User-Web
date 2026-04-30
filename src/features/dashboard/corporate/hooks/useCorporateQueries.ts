@@ -43,7 +43,8 @@ import {
 import { getCards } from '@/features/dashboard/services/cards'
 import { useAuthStore } from '@/stores'
 
-const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+// Backend vendor/branch IDs are GUID-like but not strict UUID v1-v5.
+const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const normalizeGuid = (value: string | number | null | undefined): string | null => {
   if (value == null) return null

@@ -18,8 +18,6 @@ import { useCountriesData, useUserProfile } from '@/hooks'
 import type { DropdownOption } from '@/types'
 import { useToast } from '@/hooks'
 import {
-  getCardBalance,
-  type CardBalanceResponse,
   type CardsRedemptionPayload,
   detectMobileMoneyProvider,
   convertToInternationalFormat,
@@ -30,7 +28,8 @@ import {
   useRateCard,
 } from '@/features/dashboard/hooks'
 import RedemptionOTPModal from '@/features/website/components/RedemptionOTPModal'
-import { ROUTES } from '@/utils/constants'
+import { GUEST_PHONE_STORAGE_KEY, ROUTES } from '@/utils/constants'
+import { getCardBackground, getCardTypeName, getImageUrl } from '@/utils/cardDisplay'
 
 type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
@@ -50,6 +49,9 @@ interface VendorCard {
   recipient_id?: string
   /** Unique per assignment; use for selection when multiple cards share card_id+branch_id+recipient_id */
   cart_item_id?: string
+  image_url?: string
+  expiry_date?: string
+  description?: string
 }
 
 // Helper function to convert card type to API format
@@ -64,10 +66,22 @@ const formatCardTypeForAPI = (
   return undefined
 }
 
+const formatExpiryDate = (dateValue?: string): string => {
+  if (!dateValue) return 'No expiry date'
+  const parsedDate = new Date(dateValue)
+  if (Number.isNaN(parsedDate.getTime())) return 'No expiry date'
+  return parsedDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 export default function RedemptionPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { isAuthenticated } = useAuthStore()
+  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { countries: phoneCountries } = useCountriesData()
   const { useGetUserProfileService } = useUserProfile()
@@ -103,11 +117,30 @@ export default function RedemptionPage() {
   const [showActionChoiceModal, setShowActionChoiceModal] = useState(false)
   const toast = useToast()
 
+  const getStoredGuestPhone = () =>
+    typeof localStorage !== 'undefined' ? (localStorage.getItem(GUEST_PHONE_STORAGE_KEY) ?? '') : ''
+
+  const normalizeToLocalPhone = (value: string) => {
+    const digitsOnly = (value || '').replace(/[^0-9]/g, '')
+    if (!digitsOnly) return ''
+    if (digitsOnly.startsWith('233')) return digitsOnly.slice(3)
+    return digitsOnly
+  }
+
   useEffect(() => {
     if (searchParams.get('redeem') === 'true') {
       setShowActionChoiceModal(true)
     }
   }, [searchParams])
+
+  useEffect(() => {
+    // Prefill guest phone in redemption input when available.
+    if (isAuthenticated || phoneNumber) return
+    const prefillPhone = normalizeToLocalPhone(getStoredGuestPhone())
+    if (prefillPhone) {
+      setPhoneNumber(prefillPhone)
+    }
+  }, [isAuthenticated, phoneNumber])
 
   const clearRedeemQueryParam = () => {
     const params = new URLSearchParams(searchParams)
@@ -132,10 +165,12 @@ export default function RedemptionPage() {
     useGetRedemptionsAmountDashProService,
     useGetRedemptionsAmountDashXService,
     useGetRedemptionsAmountDashPassService,
+    useGetGuestAssignedCardsService,
   } = useRedemptionQueries()
   const {
     useProcessRedemptionCardsService,
     useProcessCardsRedemptionService,
+    useProcessGuestCardsRedemptionService,
     useValidateVendorMobileMoneyService,
     useInitiateRedemptionService,
     useProcessDashProRedemptionService,
@@ -143,6 +178,7 @@ export default function RedemptionPage() {
   } = useRedemptionMutation()
   const processRedemptionMutation = useProcessRedemptionCardsService()
   const processCardsRedemptionMutation = useProcessCardsRedemptionService()
+  const processGuestCardsRedemptionMutation = useProcessGuestCardsRedemptionService()
   const validateVendorMobileMoneyMutation = useValidateVendorMobileMoneyService()
   const initiateRedemptionMutation = useInitiateRedemptionService()
   const processDashProRedemptionMutation = useProcessDashProRedemptionService()
@@ -155,7 +191,10 @@ export default function RedemptionPage() {
 
   // Get phone number for balance queries
   const userPhoneNumber = isAuthenticated
-    ? (user as any)?.phonenumber || (user as any)?.phone || ''
+    ? (user as any)?.phonenumber ||
+      (user as any)?.phone ||
+      (isGuestAuth ? getStoredGuestPhone() : '') ||
+      ''
     : phoneNumber
 
   // Prepare params for DashGo hook
@@ -226,6 +265,9 @@ export default function RedemptionPage() {
     useGetRedemptionsAmountDashXService(dashXParams)
   const { data: redemptionsAmountDashPass, isLoading: isLoadingRedemptionsAmountDashPass } =
     useGetRedemptionsAmountDashPassService(dashPassParams)
+  const { data: guestAssignedCardsResponse } = useGetGuestAssignedCardsService(
+    redemptionMethod === 'vendor_id',
+  )
 
   // Fetch vendors same as Vendors/DashQards: limit 100 when on vendor_id flow
   const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService(
@@ -233,8 +275,32 @@ export default function RedemptionPage() {
     redemptionMethod === 'vendor_id',
   )
 
+  const guestAssignedCards = useMemo(() => {
+    if (!isGuestAuth) return []
+    const cards = guestAssignedCardsResponse?.data?.cards
+    return Array.isArray(cards) ? cards : []
+  }, [isGuestAuth, guestAssignedCardsResponse])
+
   // Extract vendors and filter same as Vendors/DashQards: only vendors with branches that have cards
   const vendors = useMemo(() => {
+    if (isGuestAuth) {
+      const vendorMap = new Map<
+        string,
+        { vendor_id: string; business_name: string; vendor_name: string }
+      >()
+      guestAssignedCards.forEach((card: any) => {
+        const id = String(card.vendor_id ?? '')
+        if (!id) return
+        if (!vendorMap.has(id)) {
+          vendorMap.set(id, {
+            vendor_id: id,
+            business_name: card.vendor_name || 'Unknown Vendor',
+            vendor_name: card.vendor_name || 'Unknown Vendor',
+          })
+        }
+      })
+      return Array.from(vendorMap.values())
+    }
     if (!vendorsResponse) return []
     const raw = Array.isArray(vendorsResponse)
       ? vendorsResponse
@@ -245,7 +311,7 @@ export default function RedemptionPage() {
         v.branches_with_cards?.length > 0 &&
         v.branches_with_cards.some((b: any) => b.cards && b.cards.length > 0),
     )
-  }, [vendorsResponse])
+  }, [isGuestAuth, guestAssignedCards, vendorsResponse])
 
   // Convert to dropdown options (Combobox filters by search internally)
   const vendorOptions: DropdownOption[] = useMemo(() => {
@@ -258,6 +324,28 @@ export default function RedemptionPage() {
   // Extract cards from selected vendor with branch information
   const vendorCards = useMemo(() => {
     if (!selectedVendor) return []
+
+    if (isGuestAuth) {
+      return guestAssignedCards
+        .filter((card: any) => String(card.vendor_id ?? '') === String(selectedVendorId))
+        .map((card: any) => ({
+          card_id: String(card.gift_card_id || card.card_id || ''),
+          card_name: card.product || 'Unknown Card',
+          card_type: String(card.card_type || '').toLowerCase(),
+          card_price: Number(card.price || card.amount || 0),
+          currency: card.currency || guestAssignedCardsResponse?.data?.currency || 'GHS',
+          status: 'active',
+          branch_id: card.branch_id ? String(card.branch_id) : undefined,
+          branch_name: card.branch_name,
+          branch_location: card.branch_location,
+          vendor_id: card.vendor_id ? String(card.vendor_id) : undefined,
+          vendor_name: card.vendor_name,
+          recipient_id: card.guest_recipient_id ? String(card.guest_recipient_id) : undefined,
+          image_url: card.images?.[0]?.file_url ? getImageUrl(card.images[0].file_url) : undefined,
+          expiry_date: card.expiry_date,
+          description: card.description,
+        })) as VendorCard[]
+    }
     const cards: VendorCard[] = []
 
     // Extract cards from branches_with_cards (includes branch info)
@@ -296,10 +384,30 @@ export default function RedemptionPage() {
     }
 
     return cards
-  }, [selectedVendor])
+  }, [
+    isGuestAuth,
+    guestAssignedCards,
+    guestAssignedCardsResponse,
+    selectedVendor,
+    selectedVendorId,
+  ])
 
   // Extract unique branches from vendor
   const availableBranches = useMemo(() => {
+    if (isGuestAuth) {
+      const branchMap = new Map<string, any>()
+      vendorCards.forEach((card) => {
+        if (!card.branch_id) return
+        if (!branchMap.has(card.branch_id)) {
+          branchMap.set(card.branch_id, {
+            branch_id: card.branch_id,
+            branch_name: card.branch_name || 'Branch',
+            branch_location: card.branch_location || '',
+          })
+        }
+      })
+      return Array.from(branchMap.values())
+    }
     if (!selectedVendor || !selectedVendor.branches_with_cards) return []
     const branchMap = new Map<number, any>()
     selectedVendor.branches_with_cards.forEach((branch: any) => {
@@ -312,7 +420,7 @@ export default function RedemptionPage() {
       }
     })
     return Array.from(branchMap.values())
-  }, [selectedVendor])
+  }, [isGuestAuth, selectedVendor, vendorCards])
 
   // Create branch options for dropdown
   const branchOptions: DropdownOption[] = useMemo(() => {
@@ -349,6 +457,9 @@ export default function RedemptionPage() {
       vendor_name: card.vendor_name,
       recipient_id: card.recipient_id,
       cart_item_id: card.cart_item_id,
+      image_url: card.images?.[0]?.file_url ? getImageUrl(card.images[0].file_url) : undefined,
+      expiry_date: card.expiry_date,
+      description: card.description,
     }))
   }, [redemptionsAmountDashX])
 
@@ -374,6 +485,9 @@ export default function RedemptionPage() {
       vendor_name: card.vendor_name,
       recipient_id: card.recipient_id,
       cart_item_id: card.cart_item_id,
+      image_url: card.images?.[0]?.file_url ? getImageUrl(card.images[0].file_url) : undefined,
+      expiry_date: card.expiry_date,
+      description: card.description,
     }))
   }, [redemptionsAmountDashPass])
 
@@ -403,7 +517,10 @@ export default function RedemptionPage() {
     const fetchBalance = async () => {
       // Get phone number - from user if authenticated, otherwise from phoneNumber state
       const userPhoneNumber = isAuthenticated
-        ? (user as any)?.phonenumber || (user as any)?.phone || ''
+        ? (user as any)?.phonenumber ||
+          (user as any)?.phone ||
+          (isGuestAuth ? getStoredGuestPhone() : '') ||
+          ''
         : phoneNumber
 
       if (!userPhoneNumber) {
@@ -535,43 +652,59 @@ export default function RedemptionPage() {
               setBalance(null)
             }
           } else {
-            // For DashX and DashPass, use the API
-            setBalanceLoading(true)
-            setBalanceError(null)
-            try {
-              const cardTypeForAPI = formatCardTypeForAPI(selectedCard.card_type)
+            // For DashX and DashPass, use recipient-amount endpoints (supports guest flow)
+            if (cardTypeLower === 'dashx') {
+              setBalanceLoading(isLoadingRedemptionsAmountDashX || false)
+              setBalanceError(null)
 
-              if (cardTypeForAPI) {
-                if (!isAuthenticated) {
-                  setBalance(null)
-                  setBalanceError('Please log in to check card balance.')
-                  return
-                }
-                const response: CardBalanceResponse = await getCardBalance({
-                  card_type: cardTypeForAPI,
-                })
-
-                if (response?.data?.balance !== undefined) {
-                  setBalance(response.data.balance)
-                  setBalanceError(null)
+              if (redemptionsAmountDashX) {
+                const balanceValue =
+                  redemptionsAmountDashX?.data?.total_balance !== undefined
+                    ? redemptionsAmountDashX.data.total_balance
+                    : redemptionsAmountDashX.total_balance
+                if (balanceValue !== undefined && balanceValue !== null) {
+                  const numericBalance =
+                    typeof balanceValue === 'number'
+                      ? balanceValue
+                      : parseFloat(String(balanceValue))
+                  if (!isNaN(numericBalance)) {
+                    setBalance(numericBalance)
+                    setBalanceError(null)
+                  } else {
+                    setBalance(null)
+                  }
                 } else {
                   setBalance(null)
-                  setBalanceError(response?.message || 'Unable to fetch balance. Please try again.')
                 }
               } else {
                 setBalance(null)
-                setBalanceError('Invalid card type')
               }
-            } catch (error: any) {
-              console.error('Error fetching balance:', error)
-              setBalance(null)
-              setBalanceError(
-                error?.response?.data?.message ||
-                  error?.message ||
-                  'Failed to fetch balance. Please try again.',
-              )
-            } finally {
-              setBalanceLoading(false)
+            } else if (cardTypeLower === 'dashpass') {
+              setBalanceLoading(isLoadingRedemptionsAmountDashPass || false)
+              setBalanceError(null)
+
+              if (redemptionsAmountDashPass) {
+                const balanceValue =
+                  redemptionsAmountDashPass?.data?.total_balance !== undefined
+                    ? redemptionsAmountDashPass.data.total_balance
+                    : redemptionsAmountDashPass.total_balance
+                if (balanceValue !== undefined && balanceValue !== null) {
+                  const numericBalance =
+                    typeof balanceValue === 'number'
+                      ? balanceValue
+                      : parseFloat(String(balanceValue))
+                  if (!isNaN(numericBalance)) {
+                    setBalance(numericBalance)
+                    setBalanceError(null)
+                  } else {
+                    setBalance(null)
+                  }
+                } else {
+                  setBalance(null)
+                }
+              } else {
+                setBalance(null)
+              }
             }
           }
         } else {
@@ -742,6 +875,7 @@ export default function RedemptionPage() {
     selectedVendor,
     cardType,
     isAuthenticated,
+    isGuestAuth,
     user,
     redemptionMethod,
     redemptionsAmountDashGo,
@@ -984,7 +1118,10 @@ export default function RedemptionPage() {
       }
 
       const userPhoneNumber = isAuthenticated
-        ? (user as any)?.phonenumber || (user as any)?.phone || ''
+        ? (user as any)?.phonenumber ||
+          (user as any)?.phone ||
+          (isGuestAuth ? getStoredGuestPhone() : '') ||
+          ''
         : phoneNumber
 
       if (!userPhoneNumber) {
@@ -1049,7 +1186,10 @@ export default function RedemptionPage() {
 
       // Get phone number (international format for guests: initiate + /redemptions/cards)
       const userPhoneNumber = isAuthenticated
-        ? (user as any)?.phonenumber || (user as any)?.phone || ''
+        ? (user as any)?.phonenumber ||
+          (user as any)?.phone ||
+          (isGuestAuth ? getStoredGuestPhone() : '') ||
+          ''
         : phoneNumber
       const phoneForApi = isAuthenticated
         ? userPhoneNumber
@@ -1145,7 +1285,7 @@ export default function RedemptionPage() {
           }
         }
 
-        // Guest: /redemptions/initiate → OTP modal → /redemptions/cards with token
+        // Not authenticated guest: /redemptions/initiate → OTP modal → /redemptions/cards with token
         if (!isAuthenticated) {
           const initiateResponse = await initiateRedemptionMutation.mutateAsync({
             phone_number: phoneForApi,
@@ -1162,6 +1302,28 @@ export default function RedemptionPage() {
           }
           toast.error(initiateResponse?.message || 'Failed to initiate redemption')
           setIsProcessingRedemption(false)
+          return
+        }
+
+        // Authenticated guest: /guest-redemptions/cards (no OTP modal)
+        if (isGuestAuth) {
+          const response = await processGuestCardsRedemptionMutation.mutateAsync({
+            guest_phone: phoneForApi,
+            branch_id: String(payload.branch_id || ''),
+            card_type: payload.card_type,
+            amount: payload.amount,
+            card_id: String(payload.card_id || ''),
+          })
+          if (
+            response?.status === 'success' ||
+            response?.statusCode === 200 ||
+            response?.statusCode === 201
+          ) {
+            if (payload.card_id) {
+              setRedeemedCardId(payload.card_id)
+            }
+            setStep('success')
+          }
           return
         }
 
@@ -1185,7 +1347,10 @@ export default function RedemptionPage() {
     } else {
       // For vendor_mobile_money, handle DashPro redemption
       const userPhoneNumber = isAuthenticated
-        ? (user as any)?.phonenumber || (user as any)?.phone || ''
+        ? (user as any)?.phonenumber ||
+          (user as any)?.phone ||
+          (isGuestAuth ? getStoredGuestPhone() : '') ||
+          ''
         : phoneNumber
 
       if (!userPhoneNumber) {
@@ -2022,7 +2187,7 @@ export default function RedemptionPage() {
                                     </Text>
                                   </div>
                                 ) : (
-                                  <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-136 overflow-y-auto pr-1">
                                     {filteredCards.map((card: VendorCard) => {
                                       const key =
                                         card.cart_item_id != null
@@ -2045,62 +2210,115 @@ export default function RedemptionPage() {
                                             setSelectedCard(card)
                                             setSelectedBranchId(card.branch_id || null)
                                           }}
-                                          className={`p-4 border-2 rounded-lg text-left transition-colors ${
+                                          className={`border-2 rounded-2xl text-left transition-all overflow-hidden bg-white shadow-sm ${
                                             isSelected
-                                              ? 'border-primary-500 bg-primary-50'
+                                              ? 'border-primary-500 ring-2 ring-primary-100'
                                               : 'border-gray-200 hover:border-gray-300'
                                           }`}
                                         >
-                                          <div className="flex justify-between items-start">
-                                            <div className="flex-1">
+                                          <div className="relative h-44 bg-gray-100">
+                                            <img
+                                              src={
+                                                card.image_url || getCardBackground(card.card_type)
+                                              }
+                                              alt={card.card_name}
+                                              className="w-full h-full object-cover"
+                                              onError={(event) => {
+                                                const target = event.target as HTMLImageElement
+                                                target.src = getCardBackground(card.card_type)
+                                              }}
+                                            />
+                                            <div className="absolute top-3 left-3">
+                                              <div className="px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-semibold flex items-center gap-1">
+                                                <Icon icon="bi:briefcase" className="text-sm" />
+                                                {getCardTypeName(card.card_type)}
+                                              </div>
+                                            </div>
+                                            <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-white/90 text-primary-700 text-sm font-semibold">
+                                              {card.currency}{' '}
+                                              {Number(card.card_price || 0).toLocaleString(
+                                                undefined,
+                                                {
+                                                  minimumFractionDigits: 2,
+                                                  maximumFractionDigits: 2,
+                                                },
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          <div className="p-4">
+                                            <div className="flex items-start justify-between gap-3">
                                               <Text
                                                 variant="span"
                                                 weight="semibold"
-                                                className="text-gray-900 block"
+                                                className="text-gray-900 text-2xl block"
                                               >
                                                 {card.card_name}
                                               </Text>
-                                              <Text
-                                                variant="span"
-                                                className="text-gray-600 text-sm block mt-1"
-                                              >
-                                                {card.currency} {card.card_price.toFixed(2)}
-                                              </Text>
-                                              {card.branch_name && (
-                                                <div className="mt-2 flex items-start gap-2">
-                                                  <Icon
-                                                    icon="bi:shop"
-                                                    className="text-primary-600 text-sm mt-0.5"
-                                                  />
-                                                  <div>
-                                                    <Text
-                                                      variant="span"
-                                                      className="text-gray-700 text-sm font-medium block"
-                                                    >
-                                                      {card.branch_name}
-                                                    </Text>
-                                                    {card.branch_location && (
-                                                      <Text
-                                                        variant="span"
-                                                        className="text-gray-500 text-xs block mt-0.5"
-                                                      >
-                                                        {card.branch_location}
-                                                      </Text>
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                            {isSelected && (
-                                              <div className="shrink-0 ml-3">
-                                                <div className="w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center">
+                                              {isSelected && (
+                                                <div className="w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center shrink-0 mt-1">
                                                   <Icon
                                                     icon="bi:check"
                                                     className="text-white text-sm"
                                                   />
                                                 </div>
+                                              )}
+                                            </div>
+
+                                            <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                              <div className="h-full w-4/5 bg-primary-600 rounded-full" />
+                                            </div>
+
+                                            <div className="mt-3 flex items-center gap-2 text-gray-500">
+                                              <Icon icon="bi:calendar3" className="text-base" />
+                                              <Text variant="span" className="text-sm">
+                                                Expires {formatExpiryDate(card.expiry_date)}
+                                              </Text>
+                                            </div>
+
+                                            <div className="my-4 border-t border-gray-200" />
+
+                                            <div className="flex items-end justify-between gap-3">
+                                              <div className="flex items-center gap-2 min-w-0">
+                                                <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center shrink-0">
+                                                  <Icon
+                                                    icon="bi:shop"
+                                                    className="text-primary-600 text-base"
+                                                  />
+                                                </div>
+                                                <div className="min-w-0">
+                                                  <Text
+                                                    variant="span"
+                                                    weight="semibold"
+                                                    className="text-gray-900 block truncate"
+                                                  >
+                                                    {card.vendor_name ||
+                                                      vendorName ||
+                                                      selectedVendor?.vendor_name}
+                                                  </Text>
+                                                  <Text
+                                                    variant="span"
+                                                    className="text-gray-500 text-sm block"
+                                                  >
+                                                    Vendor
+                                                  </Text>
+                                                </div>
                                               </div>
-                                            )}
+                                              <Text
+                                                variant="span"
+                                                weight="semibold"
+                                                className="text-primary-700 text-2xl shrink-0"
+                                              >
+                                                {card.currency}{' '}
+                                                {Number(card.card_price || 0).toLocaleString(
+                                                  undefined,
+                                                  {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2,
+                                                  },
+                                                )}
+                                              </Text>
+                                            </div>
                                           </div>
                                         </button>
                                       )

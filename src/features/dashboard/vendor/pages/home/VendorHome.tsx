@@ -78,6 +78,7 @@ export default function VendorHome() {
       : isCorporateSuperAdmin
         ? corporateExperiencesData
         : vendorExperiencesData
+
   const isLoadingExperiences =
     isCorporateSuperAdmin && vendorIdFromUrl
       ? isLoadingCorporateVendorExperiences

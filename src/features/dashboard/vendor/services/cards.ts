@@ -25,6 +25,7 @@ export const getCardsByVendorId = async (opts: {
   const base = `${commonManagerUrl}/vendor/${vendor_id}`
   const fullUrl = queryString ? `${base}?${queryString}` : base
   const response = await axiosClient.get(fullUrl)
+  console.log('getCardsByVendorId response', response)
   return response
 }
 

@@ -489,6 +489,7 @@ export const getCorporatePayments = async (params?: Record<string, any>): Promis
   const queryString = getQueryString(params)
   const fullUrl = queryString ? `/payments/corporate?${queryString}` : `/payments/corporate`
   const response = await axiosClient.get(fullUrl)
+  console.log('response', response)
   return response
 }
 

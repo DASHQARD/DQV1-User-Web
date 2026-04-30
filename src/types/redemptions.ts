@@ -90,6 +90,14 @@ export interface CardsRedemptionPayload {
   token?: string
 }
 
+export interface GuestCardsRedemptionPayload {
+  guest_phone: string
+  branch_id: string
+  card_type: 'DashGo' | 'DashPro' | 'DashX' | 'DashPass'
+  amount: number
+  card_id: string
+}
+
 export interface RedemptionResponse {
   status: string
   statusCode: number

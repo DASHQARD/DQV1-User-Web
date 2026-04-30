@@ -2,31 +2,24 @@ import { Icon } from '@/libs'
 import { Text } from '@/components'
 import { useCardItem } from '../../hooks/useCardItem'
 import type { FeaturedCardProps } from '@/types'
+import { getImageUrl } from '@/utils/cardDisplay'
+import { formatDate } from '@/utils/format'
 
 export const CardItems = (props: FeaturedCardProps) => {
   const {
-    isHovered,
-    setIsHovered,
-    roundedRating,
     cardBackground,
-    cardTypeName,
     displayPrice,
-    handleQuickAdd,
     handleCardClick,
     product,
-    branch_name,
-    branch_location,
     vendor_name,
-    buttonText,
-    rating,
-    isAdding,
+    branch_name,
   } = useCardItem(props)
+  const firstImageUrl = (props as any)?.images?.[0]?.file_url as string | undefined
+  const cardImage = getImageUrl(firstImageUrl) || cardBackground
 
   return (
     <article
-      className="flex flex-col overflow-hidden rounded-2xl group cursor-pointer"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className="flex flex-col rounded-xl border border-gray-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-shadow overflow-hidden group cursor-pointer"
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
@@ -37,84 +30,60 @@ export const CardItems = (props: FeaturedCardProps) => {
         }
       }}
     >
-      {/* Thumbnail */}
-      <div className="relative overflow-hidden bg-gray-200" style={{ paddingTop: '62.5%' }}>
+      <div className="relative aspect-video bg-gray-100 overflow-hidden">
         <img
-          src={cardBackground}
+          src={cardImage}
           alt={`${product} card background`}
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
         />
-
-        {/* Card Overlay Content */}
-        <div className="absolute inset-0 p-4 flex flex-col justify-between text-white">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <Icon icon="bi:gift" className="size-5" />
-              <span className="font-extrabold text-lg tracking-wide">{cardTypeName}</span>
-            </div>
-            <div className="text-right">
-              <span className="text-2xl font-extrabold">{displayPrice}</span>
-            </div>
-          </div>
-
-          <div className="flex items-end justify-between">
-            {vendor_name && (
-              <div>
-                <span className="font-bold text-base tracking-wide uppercase">{vendor_name}</span>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
-      {/* Body */}
-      <div className="pt-2 px-1 flex flex-col h-full">
-        <header className="flex flex-col gap-2 text-[#030303]">
-          <Text variant="p" weight="semibold" className="hover:underline">
-            {vendor_name || branch_name}
-          </Text>
-          <Text variant="span" className="text-[#666]">
-            {product}
-          </Text>
-          <Text variant="span" className="text-[#666]">
-            {branch_location}
-          </Text>
-
-          {rating > 0 && (
-            <div
-              className="inline-flex items-center gap-1.5"
-              aria-label={`Rating ${rating} out of 5`}
-            >
-              {Array.from({ length: 5 }).map((_, n) => {
-                const starNumber = n + 1
-                return (
-                  <Icon
-                    key={starNumber}
-                    icon={starNumber <= roundedRating ? 'bi:star-fill' : 'bi:star'}
-                    className="size-4 text-yellow-500"
-                  />
-                )
-              })}
-              <span className="text-sm font-semibold text-[#7a7a7a]">{rating.toFixed(1)}</span>
+      <div className="p-3">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#402D87]/10 text-[#402D87] mb-2">
+          <Icon icon="bi:briefcase-fill" className="text-[8px]" />
+          {props.type?.toUpperCase() || 'DASHX'}
+        </span>
+        <Text
+          variant="span"
+          weight="semibold"
+          className="text-gray-900 block line-clamp-2 text-xs leading-snug mb-2"
+        >
+          {product}
+        </Text>
+        <div className="mb-2">
+          {props.status && (
+            <div className="h-1 rounded-full bg-gray-100 overflow-hidden mb-1">
+              <div
+                className="h-full rounded-full bg-[#402D87] transition-all"
+                style={{
+                  width:
+                    props.status === 'active' ? '80%' : props.status === 'expired' ? '100%' : '40%',
+                }}
+              />
             </div>
           )}
-
-          {props.price && <p className="font-medium">{displayPrice}</p>}
-        </header>
-
-        <div className="mt-auto pt-3.5">
-          <button
-            type="button"
-            onClick={handleQuickAdd}
-            disabled={isAdding}
-            className={`w-full rounded-full bg-primary-500 px-4 py-2.5 text-sm font-bold text-white shadow-[0_6px_16px_rgba(64,45,135,0.25)] transition-all duration-200 hover:bg-primary-700 active:translate-y-px cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-              isHovered
-                ? 'opacity-100 translate-y-0 pointer-events-auto'
-                : 'opacity-0 translate-y-2 pointer-events-none'
-            }`}
-          >
-            {isAdding ? 'Adding...' : buttonText}
-          </button>
+          {props.expiry_date && (
+            <Text variant="span" className="text-gray-500 text-[10px] flex items-center gap-0.5">
+              <Icon icon="bi:calendar-event" className="size-2.5" />
+              Expires {formatDate(props.expiry_date)}
+            </Text>
+          )}
+        </div>
+        <div className="flex items-center gap-2 pt-1.5 border-t border-gray-100">
+          <div className="w-6 h-6 rounded-full bg-[#402D87]/10 flex items-center justify-center shrink-0">
+            <Icon icon="bi:shop" className="text-[#402D87] text-[10px]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <Text variant="span" weight="semibold" className="text-gray-900 block text-xs truncate">
+              {vendor_name || branch_name || 'Vendor'}
+            </Text>
+            <Text variant="span" className="text-gray-500 text-[10px] block">
+              Vendor
+            </Text>
+          </div>
+          <Text variant="span" weight="bold" className="text-[#402D87] text-xs shrink-0">
+            {displayPrice}
+          </Text>
         </div>
       </div>
     </article>

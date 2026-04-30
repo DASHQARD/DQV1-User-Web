@@ -17,6 +17,7 @@ import type { AssignRecipientPayload, GuestAssignRecipientPayload } from '@/type
 import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { MODAL_NAMES } from '@/utils/constants'
+import { getAssignToSelfContactPrefill } from '@/features/website/utils/assignToSelfContactPrefill'
 
 export default function PurchaseModal() {
   const modal = usePersistedModalState<{
@@ -32,7 +33,7 @@ export default function PurchaseModal() {
   const [isMobile, setIsMobile] = React.useState(false)
   const [assignToSelf, setAssignToSelf] = React.useState(true)
   const isGuestAuth = useAuthStore((s) => s.isGuestAuth)
-  // const guestUser = useAuthStore((s) => s.user)
+  const user = useAuthStore((s) => s.user)
   const { useAssignRecipientService, useAssignGuestRecipientService } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()
   const assignGuestRecipientMutation = useAssignGuestRecipientService()
@@ -110,10 +111,15 @@ export default function PurchaseModal() {
   const recipientName = form.watch('name')
   const displayedCardRecipient = React.useMemo(() => {
     if (assignToSelf) {
-      return userProfileData?.fullname || 'Your Name'
+      const contact = getAssignToSelfContactPrefill({
+        isGuestAuth,
+        user,
+        userProfileData: userProfileData ?? null,
+      })
+      return contact.name || userProfileData?.fullname || 'Your Name'
     }
     return recipientName || 'Recipient Name'
-  }, [assignToSelf, recipientName, userProfileData])
+  }, [assignToSelf, recipientName, isGuestAuth, user, userProfileData])
   const displayedCardMessage =
     form.watch('message') || 'Your personalized message will appear here...'
 
@@ -127,9 +133,14 @@ export default function PurchaseModal() {
     form.setValue('assign_to_self', newValue)
 
     if (newValue) {
-      form.setValue('name', userProfileData?.fullname || '')
-      form.setValue('email', userProfileData?.email || '')
-      form.setValue('phone', userProfileData?.phonenumber || '')
+      const contact = getAssignToSelfContactPrefill({
+        isGuestAuth,
+        user,
+        userProfileData: userProfileData ?? null,
+      })
+      form.setValue('name', contact.name)
+      form.setValue('email', contact.email)
+      form.setValue('phone', contact.phone)
     } else {
       form.setValue('name', '')
       form.setValue('email', '')
@@ -151,9 +162,14 @@ export default function PurchaseModal() {
       form.setValue('assign_to_self', assignToSelf)
       if (assignToSelf) {
         // Set values explicitly to ensure they're visible
-        form.setValue('name', userProfileData?.fullname || '')
-        form.setValue('phone', userProfileData?.phonenumber || '')
-        form.setValue('email', userProfileData?.email || '')
+        const contact = getAssignToSelfContactPrefill({
+          isGuestAuth,
+          user,
+          userProfileData: userProfileData ?? null,
+        })
+        form.setValue('name', contact.name)
+        form.setValue('phone', contact.phone)
+        form.setValue('email', contact.email)
         form.setValue('message', '')
         form.setValue('amount', initialAmount)
       } else {
@@ -169,7 +185,9 @@ export default function PurchaseModal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted to avoid unnecessary re-runs
   }, [
     assignToSelf,
+    isGuestAuth,
     modalData,
+    user,
     userProfileData?.email,
     userProfileData?.fullname,
     userProfileData?.phonenumber,

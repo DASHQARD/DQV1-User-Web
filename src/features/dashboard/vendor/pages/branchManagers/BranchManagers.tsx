@@ -27,6 +27,8 @@ export default function BranchManagers() {
     openInviteModal,
   } = useBranchManagers()
 
+  console.log('invitations', invitations)
+
   return (
     <div className="py-10">
       <CancelBranchManagerInvitationModal />

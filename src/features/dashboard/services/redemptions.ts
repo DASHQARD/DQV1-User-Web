@@ -9,6 +9,7 @@ import type {
   CardBalanceResponse,
   DashProRedemptionPayload,
   DashProRedemptionForUserPayload,
+  GuestCardsRedemptionPayload,
   InitiateRedemptionPayload,
   CardsRedemptionPayload,
   RedemptionResponse,
@@ -180,6 +181,13 @@ export const processCardsRedemption = async (
   return response as unknown as RedemptionResponse
 }
 
+export const processGuestCardsRedemption = async (
+  data: GuestCardsRedemptionPayload,
+): Promise<RedemptionResponse> => {
+  const response = await axiosClient.post(`/guest-redemptions/cards`, data)
+  return response as unknown as RedemptionResponse
+}
+
 // Get redemptions list
 export const getRedemptions = async (
   params?: GetRedemptionsParams,
@@ -244,6 +252,22 @@ export const getRedemptionsAmountDashPro = async (): Promise<any> => {
   return await getList(`${commonUrl}/recipient-amounts/dash-pro`)
 }
 
+export const getGuestAssignedCards = async (): Promise<any> => {
+  return await getList(`/guest-redemptions/assigned-cards`)
+}
+
+export const getGuestRedemptionsAmountDashGo = async (): Promise<any> => {
+  return await getList(`/guest-redemptions/recipient-amounts/dash-go`)
+}
+
+export const getGuestRedemptionsAmountDashPro = async (): Promise<any> => {
+  return await getList(`/guest-redemptions/recipient-amounts/dash-pro`)
+}
+
+export const getGuestRedemptions = async (): Promise<any> => {
+  return await getList(`/guest-redemptions`)
+}
+
 export const getRedemptionsAmountDashX = async (
   params?: GetRedemptionsAmountDashXParams,
 ): Promise<any> => {
@@ -288,6 +312,7 @@ export type {
   DashProRedemptionForUserPayload,
   InitiateRedemptionPayload,
   CardsRedemptionPayload,
+  GuestCardsRedemptionPayload,
   RedemptionResponse,
   UpdateRedemptionStatusPayload,
   GetRedemptionsParams,
