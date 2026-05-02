@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button, Dropdown, Modal, Text } from '@/components'
+import { Button, Dropdown, Loader, Modal, Text } from '@/components'
 import { Icon } from '@/libs'
 import DashXImage from '@/assets/images/DashX.png'
 import DashGoImage from '@/assets/images/DashGo.png'
@@ -7,7 +7,9 @@ import DashProImage from '@/assets/images/DashPro.png'
 import { CardItems, DashProPurchase, DashGoPurchase } from '../../components'
 import { useDashQards } from '../../hooks'
 import { DashQardsCustomCardGate } from './DashQardsCustomCardGate'
+import { DashQardsOnboardingGate } from './DashQardsOnboardingGate'
 import { useCanUseCustomGiftCardFlow } from './useCanUseCustomGiftCardFlow'
+import { useMemberMustCompleteOnboardingForCustomCards } from '@/features/website/hooks/useMemberMustCompleteOnboardingForCustomCards'
 import { DashQardsFilters } from './DashQardsFilters'
 
 const heroImages = {
@@ -43,6 +45,7 @@ export default function DashQards() {
   )
 
   const canUseCustomGiftCardFlow = useCanUseCustomGiftCardFlow()
+  const { profilePending, mustCompleteOnboarding } = useMemberMustCompleteOnboardingForCustomCards()
 
   return (
     <div className="min-h-screen bg-white">
@@ -225,18 +228,30 @@ export default function DashQards() {
 
               {activeTab === 'dashpro' ? (
                 <div className="w-full">
-                  {canUseCustomGiftCardFlow ? (
-                    <DashProPurchase />
-                  ) : (
+                  {!canUseCustomGiftCardFlow ? (
                     <DashQardsCustomCardGate cardKind="DashPro" />
+                  ) : profilePending ? (
+                    <div className="flex min-h-[240px] items-center justify-center py-12">
+                      <Loader />
+                    </div>
+                  ) : mustCompleteOnboarding ? (
+                    <DashQardsOnboardingGate cardKind="DashPro" />
+                  ) : (
+                    <DashProPurchase />
                   )}
                 </div>
               ) : activeTab === 'dashgo' ? (
                 <div className="w-full">
-                  {canUseCustomGiftCardFlow ? (
-                    <DashGoPurchase />
-                  ) : (
+                  {!canUseCustomGiftCardFlow ? (
                     <DashQardsCustomCardGate cardKind="DashGo" />
+                  ) : profilePending ? (
+                    <div className="flex min-h-[240px] items-center justify-center py-12">
+                      <Loader />
+                    </div>
+                  ) : mustCompleteOnboarding ? (
+                    <DashQardsOnboardingGate cardKind="DashGo" />
+                  ) : (
+                    <DashGoPurchase />
                   )}
                 </div>
               ) : filteredQardsAll.length === 0 ? (

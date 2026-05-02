@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores'
 import { useCart } from './useCart'
 import { useGuestCart } from './useGuestCart'
 import { usePayments } from './usePayments'
-import { usePersistedModalState } from '@/hooks'
+import { usePersistedModalState, useToast } from '@/hooks'
 import { useUserProfile } from '@/hooks'
 import { MODAL_NAMES } from '@/utils/constants'
 import { bulkAssignRecipients } from '@/features/dashboard/services'
@@ -21,7 +21,12 @@ import type { CartListResponse } from '@/types/responses'
 import type { FlattenedCartItem } from '@/types'
 import type { CheckoutPayloadBase, GuestCheckoutPayloadBase } from '@/types/responses'
 import { CHECKOUT_GATEWAY } from '@/features/website/utils/paymentConstants'
-import { GUEST_EMAIL_STORAGE_KEY, GUEST_NAME_STORAGE_KEY } from '@/utils/constants'
+import {
+  GUEST_EMAIL_STORAGE_KEY,
+  GUEST_NAME_STORAGE_KEY,
+  getGuestContactSessionItem,
+} from '@/utils/constants'
+import { useMemberMustCompleteOnboardingForCustomCards } from './useMemberMustCompleteOnboardingForCustomCards'
 
 /** Checkout-specific flattened cart item (one row per quantity unit, with quantity_index) */
 export type CheckoutFlattenedCartItem = FlattenedCartItem & {
@@ -30,7 +35,9 @@ export type CheckoutFlattenedCartItem = FlattenedCartItem & {
 
 export function useCheckout() {
   const queryClient = useQueryClient()
+  const toast = useToast()
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
+  const { recipientActionsBlocked } = useMemberMustCompleteOnboardingForCustomCards()
   const userCart = useCart()
   const guestCart = useGuestCart()
 
@@ -69,14 +76,8 @@ export function useCheckout() {
 
   React.useEffect(() => {
     if (isGuestAuth) {
-      const guestName =
-        typeof localStorage !== 'undefined'
-          ? (localStorage.getItem(GUEST_NAME_STORAGE_KEY) ?? '')
-          : ''
-      const guestEmail =
-        typeof localStorage !== 'undefined'
-          ? (localStorage.getItem(GUEST_EMAIL_STORAGE_KEY) ?? '')
-          : ''
+      const guestName = getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY)
+      const guestEmail = getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY)
       const guestPhone = (user as any)?.guest_phone ?? ''
       userInfoForm.reset({
         full_name: guestName,
@@ -190,6 +191,10 @@ export function useCheckout() {
   }, [displayCartItems, recipientsByCartItem])
 
   const handleCheckout = useCallback(async () => {
+    if (recipientActionsBlocked) {
+      toast.error('Complete onboarding in your dashboard before checkout.')
+      return
+    }
     if (itemsMissingRecipients.length > 0) {
       setIsMissingRecipientsModalOpen(true)
       return
@@ -376,6 +381,8 @@ export function useCheckout() {
     checkoutMutation,
     guestCheckoutMutation,
     itemsMissingRecipients,
+    recipientActionsBlocked,
+    toast,
   ])
 
   const bulkAssignMutation = useMutation({
@@ -395,6 +402,7 @@ export function useCheckout() {
 
   const openAssignModal = useCallback(
     (item: CheckoutFlattenedCartItem) => {
+      if (recipientActionsBlocked) return
       if (!item.cart_item_id) return
       const perRecipientAmountRaw = parseFloat(item.amount || '0')
       // DashPro amount input uses step=0.01; round to 2dp to avoid browser "nearest valid values" errors
@@ -407,15 +415,16 @@ export function useCheckout() {
         amount: perRecipientAmount,
       })
     },
-    [modal],
+    [modal, recipientActionsBlocked],
   )
 
   const openAssignModalFromMissing = useCallback(
     (item: CheckoutFlattenedCartItem) => {
+      if (recipientActionsBlocked) return
       setIsMissingRecipientsModalOpen(false)
       openAssignModal(item)
     },
-    [openAssignModal],
+    [openAssignModal, recipientActionsBlocked],
   )
 
   return {
@@ -435,6 +444,7 @@ export function useCheckout() {
     recipientsByCartItem,
     itemsMissingRecipients,
     allRecipientsAssigned: itemsMissingRecipients.length === 0,
+    recipientActionsBlocked,
     handleCheckout,
     bulkAssignMutation,
     handleBulkUpload,

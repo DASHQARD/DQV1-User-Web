@@ -18,7 +18,8 @@ export type GuestOtpRequestData = {
 
 export type GuestOtpVerifyData = {
   otp: string
-  guest_phone?: string
+  /** Required by API: must match the number used on `/guest-auth/otp/request` */
+  guest_phone: string
 }
 
 export type GuestTokenRefreshData = {

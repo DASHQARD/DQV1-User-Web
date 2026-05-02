@@ -32,6 +32,46 @@ export const createGuestCart = async (data: {
   return body as GuestAddCardResponse
 }
 
+/** Create guest cart if needed, then POST /guest-carts/add-card (never /carts). */
+export async function ensureGuestCartAndAddCard(args: {
+  card_id: string
+  guest_name: string
+  guest_email: string
+  getGuestCartId: () => number | null
+  setGuestCartId: (id: number | null) => void
+}): Promise<GuestAddCardResponse> {
+  const { card_id, guest_name, guest_email, getGuestCartId, setGuestCartId } = args
+  let cartId = getGuestCartId() ?? undefined
+  if (cartId === undefined) {
+    const createCartResult = await createGuestCart({
+      guest_name,
+      guest_email,
+    })
+    const createdCartId =
+      createCartResult?.cart_id ??
+      (createCartResult as { data?: { cart_id?: number } })?.data?.cart_id ??
+      (createCartResult as { id?: number })?.id
+    if (typeof createdCartId === 'number') {
+      setGuestCartId(createdCartId)
+      cartId = createdCartId
+    }
+  }
+
+  const addResult = await addGuestCard({
+    guest_name,
+    guest_email,
+    card_id,
+    quantity: 1,
+    ...(cartId !== undefined && { cart_id: cartId }),
+  })
+  const nextCartId =
+    addResult?.cart_id ?? (addResult as { data?: { cart_id?: number } })?.data?.cart_id
+  if (typeof nextCartId === 'number') {
+    setGuestCartId(nextCartId)
+  }
+  return addResult
+}
+
 export const createDashGoAndAssign = async (data: {
   vendor_id: string
   product: string

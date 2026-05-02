@@ -1,6 +1,11 @@
 import { jwtDecode } from 'jwt-decode'
 import { create, type StateCreator } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import {
+  GUEST_EMAIL_STORAGE_KEY,
+  GUEST_NAME_STORAGE_KEY,
+  GUEST_PHONE_STORAGE_KEY,
+} from '@/utils/constants'
 
 type State = {
   token: string | null
@@ -60,6 +65,16 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
     })
   },
   logout: () => {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(GUEST_EMAIL_STORAGE_KEY)
+      sessionStorage.removeItem(GUEST_NAME_STORAGE_KEY)
+      sessionStorage.removeItem(GUEST_PHONE_STORAGE_KEY)
+    }
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(GUEST_EMAIL_STORAGE_KEY)
+      localStorage.removeItem(GUEST_NAME_STORAGE_KEY)
+      localStorage.removeItem(GUEST_PHONE_STORAGE_KEY)
+    }
     set({
       token: null,
       refreshToken: null,

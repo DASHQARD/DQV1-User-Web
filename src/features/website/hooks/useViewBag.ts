@@ -7,6 +7,7 @@ import { useViewBagMutations } from './useViewBagMutations'
 import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
 import { usePayments } from './usePayments'
 import { usePersistedModalState, useToast } from '@/hooks'
+import { useMemberMustCompleteOnboardingForCustomCards } from './useMemberMustCompleteOnboardingForCustomCards'
 import { MODAL_NAMES } from '@/utils/constants'
 import { getCardBackground, getImageUrl } from '@/utils/cardDisplay'
 import type { CartListResponse } from '@/types/responses'
@@ -38,6 +39,7 @@ function resolveRecipientDeleteId(recipient: unknown): string | null {
 export function useViewBag() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
+  const { recipientActionsBlocked } = useMemberMustCompleteOnboardingForCustomCards()
   const isGuestCart = !isAuthenticated
 
   const {
@@ -160,6 +162,7 @@ export function useViewBag() {
 
   const handleAddRecipient = useCallback(
     (item: FlattenedCartItem) => {
+      if (recipientActionsBlocked) return
       const amount = parseFloat(item.amount || '0')
       const totalQuantity = item.total_quantity || 1
       const perRecipientAmount = totalQuantity > 0 ? amount / totalQuantity : amount
@@ -171,7 +174,7 @@ export function useViewBag() {
         amount: perRecipientAmount,
       })
     },
-    [modal],
+    [modal, recipientActionsBlocked],
   )
 
   const handleDeleteRecipient = useCallback((recipient: any) => {
@@ -222,5 +225,6 @@ export function useViewBag() {
     getCardBackground,
     getImageUrl,
     deleteRecipientMutation,
+    recipientActionsBlocked,
   }
 }

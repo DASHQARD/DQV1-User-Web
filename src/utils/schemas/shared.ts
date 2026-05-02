@@ -1,6 +1,11 @@
 import z from 'zod'
 
-const validEmailRegex = /^[A-Za-z0-9][A-Za-z0-9._+-]*@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/
+/**
+ * Pragmatic validation for common mailbox addresses (aligned with typical product rules).
+ * Local part: letters, digits, underscore, dot, plus, hyphen — including as the first character
+ * (e.g. plus-addressing, names with underscores). Domain: at least one dot (e.g. example.com).
+ */
+const validEmailRegex = /^[\w.+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/
 
 export function isValidEmailAddress(value: string) {
   return validEmailRegex.test(value.trim())

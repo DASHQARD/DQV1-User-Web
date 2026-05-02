@@ -256,12 +256,26 @@ export const getGuestAssignedCards = async (): Promise<any> => {
   return await getList(`/guest-redemptions/assigned-cards`)
 }
 
-export const getGuestRedemptionsAmountDashGo = async (): Promise<any> => {
-  return await getList(`/guest-redemptions/recipient-amounts/dash-go`)
+export const getGuestRedemptionsAmountDashGo = async (
+  params?: GetRedemptionsAmountDashGoParams,
+): Promise<any> => {
+  return await getList(`/guest-redemptions/recipient-amounts/dash-go`, params)
 }
 
 export const getGuestRedemptionsAmountDashPro = async (): Promise<any> => {
   return await getList(`/guest-redemptions/recipient-amounts/dash-pro`)
+}
+
+export const getGuestRedemptionsAmountDashX = async (
+  params?: GetRedemptionsAmountDashXParams,
+): Promise<any> => {
+  return await getList(`/guest-redemptions/recipient-amounts/dash-x`, params)
+}
+
+export const getGuestRedemptionsAmountDashPass = async (
+  params?: GetRedemptionsAmountDashPassParams,
+): Promise<any> => {
+  return await getList(`/guest-redemptions/recipient-amounts/dash-pass`, params)
 }
 
 export const getGuestRedemptions = async (): Promise<any> => {

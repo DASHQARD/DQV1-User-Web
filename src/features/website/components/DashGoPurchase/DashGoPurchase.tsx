@@ -14,7 +14,7 @@ import { useUserProfile } from '@/hooks'
 import { useCartStore } from '@/stores/cart'
 import { useCart, useGuestCart, useRecipients } from '../../hooks'
 import { useAuthStore } from '@/stores'
-import { GUEST_EMAIL_STORAGE_KEY } from '@/utils/constants'
+import { GUEST_EMAIL_STORAGE_KEY, getGuestContactSessionItem } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
 import { addGuestCard, createGuestDashGo } from '../../services/cards'
 
@@ -199,9 +199,7 @@ export default function DashGoPurchase() {
             guest_phone: (user as any)?.guest_phone || data.recipient_phone || '',
             guest_name: (user as any)?.guest_name || data.recipient_name || 'Guest User',
             guest_email:
-              (typeof localStorage !== 'undefined'
-                ? localStorage.getItem(GUEST_EMAIL_STORAGE_KEY)
-                : null) ||
+              getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
               (user as any)?.guest_email ||
               data.recipient_email ||
               '',
@@ -240,9 +238,7 @@ export default function DashGoPurchase() {
       if (isGuestAuth) {
         const guestName = (user as any)?.guest_name || data.recipient_name || 'Guest User'
         const guestEmail =
-          (typeof localStorage !== 'undefined'
-            ? localStorage.getItem(GUEST_EMAIL_STORAGE_KEY)
-            : null) ||
+          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
           (user as any)?.guest_email ||
           data.recipient_email ||
           ''
@@ -251,7 +247,7 @@ export default function DashGoPurchase() {
         const addResult = await addGuestCard({
           guest_name: guestName,
           guest_email: guestEmail,
-          card_id: Number(cardId),
+          card_id: String(cardId),
           quantity: 1,
           ...(cartId !== undefined && { cart_id: cartId }),
         })
@@ -266,7 +262,9 @@ export default function DashGoPurchase() {
           for (const cart of cartItems) {
             if (cart.items) {
               const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
-              const matchingItem = itemsArray.find((item: any) => item.card_id === Number(cardId))
+              const matchingItem = itemsArray.find(
+                (item: any) => String(item.card_id) === String(cardId),
+              )
               if (matchingItem?.cart_item_id) {
                 cartItemId = matchingItem.cart_item_id
                 break

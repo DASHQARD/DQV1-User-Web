@@ -30,7 +30,7 @@ vi.mock('@/features/auth/services', () => ({
 }))
 
 vi.mock('@/features/website/services/cards', () => ({
-  addGuestCard: vi.fn().mockResolvedValue({}),
+  ensureGuestCartAndAddCard: vi.fn().mockResolvedValue({}),
 }))
 
 describe('GuestAddToCartModal', () => {

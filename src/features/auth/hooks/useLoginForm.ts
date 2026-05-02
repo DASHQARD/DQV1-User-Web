@@ -19,6 +19,7 @@ export function useLoginForm() {
 
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
+    mode: 'onChange',
   })
 
   const openOtpModalAndClearVtoken = (email: string) => {

@@ -200,7 +200,8 @@ export type AddToCartPayload = {
 export type GuestAddCardPayload = {
   guest_name: string
   guest_email: string
-  card_id: number
+  /** Catalog cards use UUID strings from cards-info; coerce at the call site with String(id). */
+  card_id: string
   quantity: number
   cart_id?: number
 }

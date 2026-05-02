@@ -572,12 +572,6 @@ ${data.message}
               <div className="grid grid-cols-2 gap-3">
                 {[
                   {
-                    icon: 'bi:youtube',
-                    label: '@dashqard',
-                    href: 'https://www.youtube.com/@dashqard',
-                    color: 'text-red-600 bg-red-50 border-red-200',
-                  },
-                  {
                     icon: 'bi:twitter-x',
                     label: '@dashqard',
                     href: 'https://x.com/dashqard',
@@ -594,12 +588,6 @@ ${data.message}
                     label: '@dashqard',
                     href: 'https://www.linkedin.com/company/dashqard/?viewAsMember=true',
                     color: 'text-blue-600 bg-blue-50 border-blue-200',
-                  },
-                  {
-                    icon: 'bi:tiktok',
-                    label: '@dashqard',
-                    href: 'https://www.tiktok.com/@dashqard?lang=en',
-                    color: 'text-black bg-gray-50 border-gray-200',
                   },
                 ].map((social) => (
                   <a

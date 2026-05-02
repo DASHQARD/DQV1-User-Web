@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 
 import {
   getCardBackground as getCardBg,
@@ -16,6 +17,13 @@ import { useAuthStore, useGuestAddToCartModalStore } from '@/stores'
 import { useCart } from './useCart'
 import { useCartStore } from '@/stores/cart'
 import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
+import { ensureGuestCartAndAddCard } from '@/features/website/services/cards'
+import {
+  GUEST_EMAIL_STORAGE_KEY,
+  GUEST_NAME_STORAGE_KEY,
+  getGuestContactSessionItem,
+} from '@/utils/constants'
+import { useToast } from '@/hooks'
 
 export type {
   CardDetailsCard,
@@ -30,9 +38,15 @@ export function useCardDetails(): UseCardDetailsReturn {
   const { usePublicCardsService } = usePublicCatalogQueries()
   const { data: cardsResponse, isLoading } = usePublicCardsService()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isGuestAuth = useAuthStore((s) => s.isGuestAuth)
+  const user = useAuthStore((s) => s.user)
+  const getGuestCartId = useAuthStore((s) => s.getGuestCartId)
+  const setGuestCartId = useAuthStore((s) => s.setGuestCartId)
   const openGuestAddToCartModal = useGuestAddToCartModalStore((s) => s.open)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
+  const queryClient = useQueryClient()
+  const toast = useToast()
 
   /** Normalize API id/file_name to a valid record key (string | number). */
   const toRecordKey = (x: unknown, fallback: number): string | number =>
@@ -79,26 +93,70 @@ export function useCardDetails(): UseCardDetailsReturn {
 
   const handleAddToCart = useCallback(async () => {
     if (!card) return
-    const cardId = (card as { card_id?: unknown }).card_id ?? (card as { id?: unknown }).id
-    const cardIdNum = typeof cardId === 'number' ? cardId : Number(cardId)
+    const cardIdRaw = (card as { card_id?: unknown }).card_id ?? (card as { id?: unknown }).id
     const price = parseFloat(String((card as { price?: unknown }).price)) || 0
-    if (!isAuthenticated) {
-      openGuestAddToCartModal({
-        card_id: Number.isFinite(cardIdNum) ? cardIdNum : 0,
-        product: (card as { product?: string }).product ?? '',
-        price,
-        type: (card as { type?: string }).type,
-        currency: (card as { currency?: string }).currency,
-      })
+    const pending = {
+      card_id: String(cardIdRaw),
+      product: (card as { product?: string }).product ?? '',
+      price,
+      type: (card as { type?: string }).type,
+      currency: (card as { currency?: string }).currency,
+    }
+
+    if (!isAuthenticated || isGuestAuth) {
+      if (cardIdRaw == null || String(cardIdRaw).trim() === '') return
+      if (isGuestAuth) {
+        const guestName =
+          getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
+          (user as { guest_name?: string } | null)?.guest_name ||
+          ''
+        const guestEmail =
+          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
+          (user as { guest_email?: string } | null)?.guest_email ||
+          ''
+        if (!guestName.trim() || !guestEmail.trim()) {
+          openGuestAddToCartModal(pending)
+          return
+        }
+        try {
+          await ensureGuestCartAndAddCard({
+            card_id: String(cardIdRaw),
+            guest_name: guestName.trim(),
+            guest_email: guestEmail.trim(),
+            getGuestCartId,
+            setGuestCartId,
+          })
+          queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+          openCart()
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Failed to add to cart'
+          toast.error(message)
+        }
+        return
+      }
+      openGuestAddToCartModal(pending)
       return
     }
     if (!id) return
     await addToCartAsync({
-      card_id: cardId,
+      card_id: cardIdRaw,
       quantity: 1,
     } as Parameters<typeof addToCartAsync>[0])
     openCart()
-  }, [card, id, isAuthenticated, openGuestAddToCartModal, addToCartAsync, openCart])
+  }, [
+    card,
+    id,
+    isAuthenticated,
+    isGuestAuth,
+    user,
+    getGuestCartId,
+    setGuestCartId,
+    openGuestAddToCartModal,
+    addToCartAsync,
+    openCart,
+    queryClient,
+    toast,
+  ])
 
   const lightboxImages = useMemo((): LightboxSlide[] => {
     const c = card as {

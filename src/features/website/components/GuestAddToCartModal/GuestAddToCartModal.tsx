@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,12 +13,14 @@ import {
   guestAuthOtpVerify,
   guestAuthTokenRefresh,
 } from '@/features/auth/services'
-import { addGuestCard, createGuestCart } from '@/features/website/services/cards'
+import { ensureGuestCartAndAddCard } from '@/features/website/services/cards'
 import {
   GUEST_EMAIL_STORAGE_KEY,
   GUEST_NAME_STORAGE_KEY,
   GUEST_PHONE_STORAGE_KEY,
   ROUTES,
+  getGuestContactSessionItem,
+  setGuestContactSessionItem,
 } from '@/utils/constants'
 import { useToast } from '@/hooks'
 import { isValidEmailAddress } from '@/utils/schemas/shared'
@@ -67,6 +69,23 @@ export default function GuestAddToCartModal() {
     defaultValues: { otp: '' },
   })
 
+  useEffect(() => {
+    if (!isOpen || !pendingItem) return
+    if (pendingItem.redemptionOnly) {
+      setStep('contact')
+      const phone = getGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY) ?? ''
+      contactForm.reset({
+        guest_name: getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ?? '',
+        guest_phone: phone,
+        email: getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ?? '',
+      })
+      otpForm.reset({ otp: '' })
+    } else {
+      setStep('choice')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset forms when opening modal / switching item
+  }, [isOpen, pendingItem])
+
   const handleClose = () => {
     setStep('choice')
     contactForm.reset()
@@ -91,10 +110,8 @@ export default function GuestAddToCartModal() {
     setIsRequestingOtp(true)
     try {
       await guestAuthOtpRequest({ guest_phone: data.guest_phone })
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(GUEST_EMAIL_STORAGE_KEY, data.email)
-        localStorage.setItem(GUEST_PHONE_STORAGE_KEY, data.guest_phone)
-      }
+      setGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY, data.email)
+      setGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY, data.guest_phone)
       setGuestName(data.guest_name)
       setGuestEmail(data.email)
       setSubmittedPhone(data.guest_phone)
@@ -111,7 +128,15 @@ export default function GuestAddToCartModal() {
     if (!pendingItem) return
     setIsVerifyingOtp(true)
     try {
-      const response = await guestAuthOtpVerify({ otp: data.otp })
+      if (!submittedPhone) {
+        toast.error('Phone number is missing. Go back and send the code again.')
+        setIsVerifyingOtp(false)
+        return
+      }
+      const response = await guestAuthOtpVerify({
+        otp: data.otp,
+        guest_phone: submittedPhone,
+      })
       const verifyData = response?.data ?? response
       const accessToken =
         verifyData?.access_token ??
@@ -131,10 +156,8 @@ export default function GuestAddToCartModal() {
         refreshToken: refreshToken ?? null,
         isGuestAuth: true,
       })
-      if (typeof localStorage !== 'undefined') {
-        if (guestName) localStorage.setItem(GUEST_NAME_STORAGE_KEY, guestName)
-        if (submittedPhone) localStorage.setItem(GUEST_PHONE_STORAGE_KEY, submittedPhone)
-      }
+      if (guestName) setGuestContactSessionItem(GUEST_NAME_STORAGE_KEY, guestName)
+      if (submittedPhone) setGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY, submittedPhone)
 
       // Immediately refresh guest token after login to align session lifecycle with backend.
       if (refreshToken) {
@@ -169,20 +192,12 @@ export default function GuestAddToCartModal() {
           console.warn('Guest immediate token refresh failed', refreshError)
         }
       }
-      let cartId = getGuestCartId() ?? undefined
-      if (cartId === undefined) {
-        const createCartResult = await createGuestCart({
-          guest_name: guestName,
-          guest_email: guestEmail,
-        })
-        const createdCartId =
-          createCartResult?.cart_id ??
-          (createCartResult as any)?.data?.cart_id ??
-          (createCartResult as any)?.id
-        if (typeof createdCartId === 'number') {
-          setGuestCartId(createdCartId)
-          cartId = createdCartId
-        }
+
+      if (pendingItem.redemptionOnly) {
+        useGuestAddToCartModalStore.getState().redemptionOnSuccess?.()
+        handleClose()
+        toast.success("You're signed in. Continue by selecting your vendor.")
+        return
       }
 
       if (pendingItem.authOnly) {
@@ -192,17 +207,17 @@ export default function GuestAddToCartModal() {
         return
       }
 
-      const addResult = await addGuestCard({
+      if (pendingItem.card_id == null) {
+        throw new Error('Missing card')
+      }
+
+      await ensureGuestCartAndAddCard({
+        card_id: String(pendingItem.card_id),
         guest_name: guestName,
         guest_email: guestEmail,
-        card_id: pendingItem.card_id,
-        quantity: 1,
-        ...(cartId !== undefined && { cart_id: cartId }),
+        getGuestCartId,
+        setGuestCartId,
       })
-      const nextCartId = addResult?.cart_id ?? (addResult as any)?.data?.cart_id
-      if (typeof nextCartId === 'number') {
-        setGuestCartId(nextCartId)
-      }
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
       openCart()
       handleClose()
@@ -226,13 +241,15 @@ export default function GuestAddToCartModal() {
             ? 'Continue'
             : 'Add to cart'
           : step === 'contact'
-            ? 'Continue as guest'
+            ? pendingItem?.redemptionOnly
+              ? 'Verify your details'
+              : 'Continue as guest'
             : 'Verify your phone'
       }
       panelClass="!max-w-md max-md:!max-w-[94vw] max-md:!my-4 max-md:max-h-[calc(100dvh-2rem)] max-md:overflow-y-auto"
     >
       <div className="px-6 py-6 max-md:px-4 max-md:py-5">
-        {step === 'choice' && (
+        {step === 'choice' && !pendingItem?.redemptionOnly && (
           <>
             <div className="text-center mb-8 max-md:mb-6">
               <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-[#402D87] to-[#7950ed] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#402D87]/20">
@@ -343,7 +360,7 @@ export default function GuestAddToCartModal() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setStep('choice')}
+                onClick={() => (pendingItem?.redemptionOnly ? handleClose() : setStep('choice'))}
                 disabled={isRequestingOtp}
                 className="flex-1"
               >
@@ -414,7 +431,11 @@ export default function GuestAddToCartModal() {
                   disabled={!otpForm.formState.isValid || isVerifyingOtp}
                   className="flex-1 bg-linear-to-r from-[#402D87] to-[#7950ed] hover:from-[#402D87]/90 hover:to-[#7950ed]/90 text-white border-0"
                 >
-                  Verify & add to cart
+                  {pendingItem?.redemptionOnly
+                    ? 'Verify & continue'
+                    : pendingItem?.authOnly
+                      ? 'Verify & continue'
+                      : 'Verify & add to cart'}
                 </Button>
               </div>
             </form>

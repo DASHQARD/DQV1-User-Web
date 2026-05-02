@@ -28,7 +28,15 @@ export function useCart(query?: Record<string, any>) {
   const cartItems = cartItemsQuery.data ?? []
 
   const addToCartMutation = useMutation({
-    mutationFn: (data: AddToCartPayload) => addToCart(data),
+    mutationFn: (data: AddToCartPayload) => {
+      if (isGuestAuth) {
+        return Promise.reject({
+          message: 'Guest sessions use the guest cart, not the account cart.',
+          status: 400,
+        })
+      }
+      return addToCart(data)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
     },

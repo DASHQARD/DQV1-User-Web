@@ -1,9 +1,34 @@
-/** localStorage key for guest email (collected during guest OTP flow, used later) */
+/** sessionStorage key for guest email (collected during guest OTP flow; tab-scoped) */
 export const GUEST_EMAIL_STORAGE_KEY = 'dashqard-guest-email'
-/** localStorage key for guest name (collected during guest OTP flow, used later) */
+/** sessionStorage key for guest name (collected during guest OTP flow; tab-scoped) */
 export const GUEST_NAME_STORAGE_KEY = 'dashqard-guest-name'
-/** localStorage key for guest phone (for assign-to-self prefill when JWT omits it) */
+/** sessionStorage key for guest phone (assign-to-self / redemption prefill when JWT omits it) */
 export const GUEST_PHONE_STORAGE_KEY = 'dashqard-guest-phone'
+
+/** Read guest contact from sessionStorage; migrates legacy localStorage once if present. */
+export function getGuestContactSessionItem(key: string): string {
+  if (typeof sessionStorage === 'undefined') return ''
+  let value = sessionStorage.getItem(key) ?? ''
+  if (!value && typeof localStorage !== 'undefined') {
+    const legacy = localStorage.getItem(key)
+    if (legacy != null && legacy !== '') {
+      sessionStorage.setItem(key, legacy)
+      localStorage.removeItem(key)
+      value = legacy
+    }
+  }
+  return value
+}
+
+/** Persist guest contact for the browser tab only; clears matching legacy localStorage key. */
+export function setGuestContactSessionItem(key: string, value: string): void {
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem(key, value)
+  }
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem(key)
+  }
+}
 
 export const ROUTES = {
   IN_APP: {
@@ -143,9 +168,6 @@ export const ROUTES = {
       TRANSACTIONS: '/admin/transactions',
       DAILY_LIMIT: '/admin/transactions/pending-limits',
     },
-  },
-  EXTERNAL: {
-    YOUTUBE: 'https://www.youtube.com/@dashqard',
   },
 }
 

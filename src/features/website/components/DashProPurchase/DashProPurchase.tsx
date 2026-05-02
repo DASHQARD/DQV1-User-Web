@@ -13,7 +13,7 @@ import { useCartStore } from '@/stores/cart'
 import { useUserProfile } from '@/hooks'
 import { useRecipients } from '@/features/dashboard/hooks'
 import { useAuthStore } from '@/stores'
-import { GUEST_EMAIL_STORAGE_KEY } from '@/utils/constants'
+import { GUEST_EMAIL_STORAGE_KEY, getGuestContactSessionItem } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
 import { addGuestCard, createGuestDashPro } from '../../services/cards'
 import { useToast } from '@/hooks'
@@ -105,7 +105,7 @@ export default function DashProPurchase() {
     }
   }
 
-  // Populate form fields when assign-to-self (profile API for members; JWT + storage for guests)
+  // Populate form fields when assign-to-self (profile API for members; JWT + session for guests)
   React.useEffect(() => {
     if (!assignToSelf) return
     const contact = getAssignToSelfContactPrefill({
@@ -127,9 +127,7 @@ export default function DashProPurchase() {
         ? await createGuestDashPro({
             guest_name: (user as any)?.guest_name || data.name?.trim() || 'Guest User',
             guest_email:
-              (typeof localStorage !== 'undefined'
-                ? localStorage.getItem(GUEST_EMAIL_STORAGE_KEY)
-                : null) ||
+              getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
               (user as any)?.guest_email ||
               data.email?.trim() ||
               '',
@@ -178,9 +176,7 @@ export default function DashProPurchase() {
       if (isGuestAuth) {
         const guestName = (user as any)?.guest_name || data.name?.trim() || 'Guest User'
         const guestEmail =
-          (typeof localStorage !== 'undefined'
-            ? localStorage.getItem(GUEST_EMAIL_STORAGE_KEY)
-            : null) ||
+          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
           (user as any)?.guest_email ||
           data.email?.trim() ||
           ''
@@ -189,7 +185,7 @@ export default function DashProPurchase() {
         const addResult = await addGuestCard({
           guest_name: guestName,
           guest_email: guestEmail,
-          card_id: Number(cardId),
+          card_id: String(cardId),
           quantity: 1,
           ...(cartId !== undefined && { cart_id: cartId }),
         })
@@ -212,7 +208,9 @@ export default function DashProPurchase() {
         for (const cart of cartItems) {
           if (cart.items) {
             const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
-            const matchingItem = itemsArray.find((item: any) => item.card_id === cardId)
+            const matchingItem = itemsArray.find(
+              (item: any) => String(item.card_id) === String(cardId),
+            )
             if (matchingItem?.cart_item_id) {
               cartItemId = matchingItem.cart_item_id
               break

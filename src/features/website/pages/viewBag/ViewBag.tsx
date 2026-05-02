@@ -3,6 +3,7 @@ import { Icon } from '@/libs'
 import { Button, Loader, Text, Modal } from '@/components'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import { useViewBag } from '@/features/website/hooks/useViewBag'
+import { MemberOnboardingRecipientBlock } from '@/features/website/components/MemberOnboardingRecipientBlock'
 import { formatCurrency } from '@/utils/format'
 import type { FlattenedCartItem } from '@/types'
 import type { CartItem } from '@/stores/cart'
@@ -34,6 +35,7 @@ export default function ViewBag() {
     getCardBackground,
     getImageUrl,
     deleteRecipientMutation,
+    recipientActionsBlocked,
   } = useViewBag()
 
   if (isLoading) {
@@ -144,7 +146,10 @@ export default function ViewBag() {
                 className="bg-white rounded-2xl p-6"
                 style={{ boxShadow: '0px 4px 40px 0px rgba(0, 0, 0, 0.04)' }}
               >
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Items Name</h2>
+                <div className="mb-4 space-y-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Items Name</h2>
+                  {recipientActionsBlocked ? <MemberOnboardingRecipientBlock /> : null}
+                </div>
                 <div className="space-y-0">
                   {displayCartItems.map((item: FlattenedCartItem, index: number) => {
                     const cardBackground = getCardBackground(item.type || '')
@@ -327,8 +332,15 @@ export default function ViewBag() {
                         {totalAssignedQuantity < quantity && (
                           <div className="mt-3 ml-24">
                             <button
+                              type="button"
                               onClick={() => handleAddRecipient(item)}
-                              className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                              disabled={recipientActionsBlocked}
+                              title={
+                                recipientActionsBlocked
+                                  ? 'Complete onboarding in your dashboard first'
+                                  : undefined
+                              }
+                              className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                             >
                               <Icon icon="bi:person-plus" className="text-base" />
                               {itemRecipients.length > 0
@@ -393,8 +405,15 @@ export default function ViewBag() {
                 </div>
               </section>
               <button
+                type="button"
                 onClick={() => navigate('/checkout')}
-                className="w-full mb-4 bg-gradient-to-r from-[#402D87] to-[#7950ed] hover:from-[#402D87]/90 hover:to-[#7950ed]/90 text-white border-0 rounded-full h-14 flex items-center justify-between px-6 font-medium transition-all"
+                disabled={recipientActionsBlocked}
+                title={
+                  recipientActionsBlocked
+                    ? 'Complete onboarding in your dashboard before checkout'
+                    : undefined
+                }
+                className="w-full mb-4 bg-gradient-to-r from-[#402D87] to-[#7950ed] hover:from-[#402D87]/90 hover:to-[#7950ed]/90 text-white border-0 rounded-full h-14 flex items-center justify-between px-6 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-[#402D87] disabled:hover:to-[#7950ed]"
               >
                 <div className="flex items-center gap-2">
                   <Icon icon="hugeicons:credit-card" className="size-5 text-white" />

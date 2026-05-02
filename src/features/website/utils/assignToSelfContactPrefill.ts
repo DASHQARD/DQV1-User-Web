@@ -2,6 +2,7 @@ import {
   GUEST_EMAIL_STORAGE_KEY,
   GUEST_NAME_STORAGE_KEY,
   GUEST_PHONE_STORAGE_KEY,
+  getGuestContactSessionItem,
 } from '@/utils/constants'
 
 export type AssignToSelfContact = {
@@ -17,7 +18,7 @@ type UserProfileShape = {
 } | null
 
 /**
- * Contact fields for "assign to self": full users use profile API; guests use JWT claims + localStorage from OTP flow.
+ * Contact fields for "assign to self": full users use profile API; guests use JWT claims + session from OTP flow.
  */
 export function getAssignToSelfContactPrefill(params: {
   isGuestAuth: boolean
@@ -32,11 +33,9 @@ export function getAssignToSelfContactPrefill(params: {
     let email = u.guest_email ?? u.email ?? ''
     let phone = u.guest_phone ?? u.phone ?? u.phonenumber ?? ''
 
-    if (typeof localStorage !== 'undefined') {
-      if (!name) name = localStorage.getItem(GUEST_NAME_STORAGE_KEY) ?? ''
-      if (!email) email = localStorage.getItem(GUEST_EMAIL_STORAGE_KEY) ?? ''
-      if (!phone) phone = localStorage.getItem(GUEST_PHONE_STORAGE_KEY) ?? ''
-    }
+    if (!name) name = getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY)
+    if (!email) email = getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY)
+    if (!phone) phone = getGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY)
 
     return { name, email, phone }
   }

@@ -2,8 +2,18 @@ import { describe, it, expect, vi } from 'vitest'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import RedemptionPage from '../redemption/RedemptionPage'
 
+const mockAuthState = {
+  isAuthenticated: false,
+  isGuestAuth: false,
+  authenticate: vi.fn(),
+}
 vi.mock('@/stores', () => ({
-  useAuthStore: () => ({ isAuthenticated: false }),
+  useAuthStore: (selector?: (s: typeof mockAuthState) => unknown) =>
+    selector ? selector(mockAuthState) : mockAuthState,
+  useGuestAddToCartModalStore: () => ({
+    open: vi.fn(),
+    close: vi.fn(),
+  }),
 }))
 vi.mock('@/features/website/hooks/website/usePublicCatalogQueries', () => ({
   usePublicCatalogQueries: () => ({
@@ -25,14 +35,13 @@ vi.mock('@/features/dashboard/hooks', () => ({
     useGetRedemptionsAmountDashProService: () => ({ data: null, isLoading: false }),
     useGetRedemptionsAmountDashXService: () => ({ data: null, isLoading: false }),
     useGetRedemptionsAmountDashPassService: () => ({ data: null, isLoading: false }),
+    useGetGuestAssignedCardsService: () => ({ data: null, isLoading: false }),
   }),
   useRedemptionMutation: () => ({
     useProcessRedemptionCardsService: () => ({ mutateAsync: vi.fn() }),
     useProcessCardsRedemptionService: () => ({ mutateAsync: vi.fn() }),
+    useProcessGuestCardsRedemptionService: () => ({ mutateAsync: vi.fn() }),
     useInitiateRedemptionService: () => ({ mutateAsync: vi.fn() }),
-    useProcessDashProRedemptionService: () => ({ mutateAsync: vi.fn() }),
-    useProcessDashProRedemptionForUserService: () => ({ mutateAsync: vi.fn() }),
-    useValidateVendorMobileMoneyService: () => ({ mutateAsync: vi.fn() }),
   }),
   useRateCard: () => ({}),
 }))

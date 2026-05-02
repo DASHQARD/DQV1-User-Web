@@ -6,6 +6,7 @@ import { Button, Loader, Modal, EmptyState, Input, BasePhoneInput } from '@/comp
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import FileUploader from '@/components/FileUploader/FileUploader'
 import { useCheckout, type CheckoutFlattenedCartItem } from '@/features/website/hooks/useCheckout'
+import { MemberOnboardingRecipientBlock } from '@/features/website/components/MemberOnboardingRecipientBlock'
 import { formatCurrency } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
 import { CHECKOUT_GATEWAY } from '@/features/website/utils/paymentConstants'
@@ -85,6 +86,7 @@ export default function Checkout() {
     bulkFile,
     setBulkFile,
     allRecipientsAssigned,
+    recipientActionsBlocked,
     kowriCheckoutData,
     isKowriPromptModalOpen,
     setIsKowriPromptModalOpen,
@@ -172,7 +174,7 @@ export default function Checkout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            {!isPersonalDetailsCompleted && (
+            {!recipientActionsBlocked && !isPersonalDetailsCompleted && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
                 {showPaymentMethodSection && (
@@ -229,8 +231,9 @@ export default function Checkout() {
             )}
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-6 border-b border-gray-200 space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900">Order Items</h2>
+                {recipientActionsBlocked ? <MemberOnboardingRecipientBlock /> : null}
               </div>
               <div className="divide-y divide-gray-200">
                 {displayCartItems
@@ -324,6 +327,12 @@ export default function Checkout() {
                                   variant="outline"
                                   size="small"
                                   className="w-full sm:w-auto"
+                                  disabled={recipientActionsBlocked}
+                                  title={
+                                    recipientActionsBlocked
+                                      ? 'Complete onboarding in your dashboard first'
+                                      : undefined
+                                  }
                                 >
                                   <Icon icon="bi:person-plus" className="mr-1.5" />
                                   Assign Recipient
@@ -338,7 +347,7 @@ export default function Checkout() {
               </div>
             </div>
 
-            {showPaymentMethodSection && (
+            {!recipientActionsBlocked && showPaymentMethodSection && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Payment method</h3>
                 <div className="flex gap-2 p-1 bg-gray-100 rounded-lg mb-4">
@@ -565,17 +574,22 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {!allRecipientsAssigned && (
+              {recipientActionsBlocked ? (
+                <p className="text-sm text-amber-700 mb-3">
+                  Complete onboarding in your dashboard before you can assign recipients or complete
+                  this purchase.
+                </p>
+              ) : !allRecipientsAssigned ? (
                 <p className="text-sm text-amber-600 mb-3">
                   Assign recipients to all gift cards before completing your purchase.
                 </p>
-              )}
+              ) : null}
               <Button
                 variant="secondary"
                 className="w-full"
                 onClick={handleCheckout}
                 loading={isCheckingOut}
-                disabled={isCheckingOut || !allRecipientsAssigned}
+                disabled={isCheckingOut || !allRecipientsAssigned || recipientActionsBlocked}
               >
                 {isCheckingOut ? 'Processing...' : 'Complete Purchase'}
               </Button>
@@ -764,6 +778,12 @@ export default function Checkout() {
                           variant="outline"
                           size="small"
                           onClick={() => openAssignModalFromMissing(item)}
+                          disabled={recipientActionsBlocked}
+                          title={
+                            recipientActionsBlocked
+                              ? 'Complete onboarding in your dashboard first'
+                              : undefined
+                          }
                         >
                           <Icon icon="bi:person-plus" className="mr-1.5" />
                           {itemRecipients.length > 0 ? 'Add Recipients' : 'Assign Recipients'}

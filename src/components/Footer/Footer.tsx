@@ -18,14 +18,6 @@ export default function Footer() {
       icon: 'hugeicons:twitter',
       url: 'https://www.twitter.com/dashqard',
     },
-    {
-      icon: 'hugeicons:youtube',
-      url: 'https://www.youtube.com/dashqard',
-    },
-    {
-      icon: 'hugeicons:tiktok',
-      url: 'https://www.tiktok.com/dashqard',
-    },
   ]
 
   const quickLinks = [
