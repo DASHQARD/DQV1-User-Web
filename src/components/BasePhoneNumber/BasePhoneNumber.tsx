@@ -57,6 +57,7 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
       disabled,
       placeholder = 'Enter number',
       hint,
+      maxLength = 15,
     },
     ref,
   ) => {
@@ -104,6 +105,7 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
                 type: 'tel',
                 inputMode: 'tel',
                 autoComplete: 'tel',
+                maxLength,
                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                   if (e.ctrlKey || e.metaKey || e.altKey) return
                   const allowedKeys = new Set([

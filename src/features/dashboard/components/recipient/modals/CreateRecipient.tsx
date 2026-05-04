@@ -73,6 +73,7 @@ export function CreateRecipient() {
             <Input
               label="Phone Number"
               type="tel"
+              maxLength={15}
               placeholder="Enter recipient's phone number (optional)"
               {...register('phone')}
               error={errors.phone?.message}

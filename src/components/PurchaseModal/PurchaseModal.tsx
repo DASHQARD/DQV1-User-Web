@@ -490,6 +490,7 @@ export default function PurchaseModal() {
               </label>
               <Input
                 type="tel"
+                maxLength={15}
                 {...form.register('phone')}
                 error={form.formState.errors.phone?.message}
                 disabled={assignToSelf}

@@ -16,8 +16,8 @@ export default function AboutUs() {
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="bg-white text-gray-800 relative">
-        <div className="wrapper pt-8 lg:pt-16">
-          <div className="flex flex-col lg:flex-row items-center lg:items-start min-h-[75vh] gap-8">
+        <div className="wrapper py-8 lg:py-16">
+          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
             <div className="w-full lg:w-1/2">
               <div className="mb-10">
                 <span className="bg-gradient-to-br from-[#402D87] to-[#2d2060] text-white rounded-full px-6 py-2 text-sm font-semibold inline-block shadow-lg">

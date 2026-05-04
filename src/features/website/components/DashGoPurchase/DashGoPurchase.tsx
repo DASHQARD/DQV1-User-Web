@@ -565,6 +565,7 @@ export default function DashGoPurchase() {
                 </label>
                 <input
                   type="tel"
+                  maxLength={15}
                   {...register('recipient_phone')}
                   disabled={assignToSelf}
                   className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${

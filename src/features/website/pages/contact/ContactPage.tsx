@@ -330,6 +330,7 @@ ${data.message}
                       </label>
                       <Input
                         type="tel"
+                        maxLength={15}
                         placeholder="Enter your phone number (optional)"
                         {...form.register('phone')}
                         error={form.formState.errors.phone?.message}
