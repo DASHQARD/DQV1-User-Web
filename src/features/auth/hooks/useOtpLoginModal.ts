@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
@@ -12,11 +13,19 @@ export function useOtpLoginModal() {
   const { useVerifyLoginOTPService, useResendRefreshTokenService } = useAuth()
   const { mutate, isPending } = useVerifyLoginOTPService()
   const { mutate: resendRefreshToken } = useResendRefreshTokenService()
-  const modal = usePersistedModalState<{ email?: string; session_id?: string }>({
+  const modal = usePersistedModalState<{ email?: string }>({
     paramName: MODAL_NAMES.AUTH.ROOT,
   })
   const email = modal.modalData?.email
-  const sessionId = modal.modalData?.session_id
+  const [sessionId, setSessionId] = useState<string | null>(() =>
+    sessionStorage.getItem('login_session_id'),
+  )
+
+  useEffect(() => {
+    return () => {
+      sessionStorage.removeItem('login_session_id')
+    }
+  }, [])
 
   const form = useForm<z.infer<typeof VerifyLoginOTPSchema>>({
     resolver: zodResolver(VerifyLoginOTPSchema),
@@ -33,7 +42,8 @@ export function useOtpLoginModal() {
         onSuccess: (data) => {
           const newSessionId = data?.session_id
           if (newSessionId) {
-            modal.openModal(MODAL_NAMES.AUTH.ROOT, { email, session_id: newSessionId })
+            sessionStorage.setItem('login_session_id', newSessionId)
+            setSessionId(newSessionId)
           }
         },
       })

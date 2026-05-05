@@ -13,7 +13,7 @@ export function useLoginForm() {
   const { mutate: verifyEmail, isPending: isVerifyEmailPending } = useVerifyEmailMutation()
   const [searchParams, setSearchParams] = useSearchParams()
   const token = searchParams.get('vtoken')
-  const modal = usePersistedModalState<{ email?: string; session_id?: string }>({
+  const modal = usePersistedModalState<{ email?: string }>({
     paramName: MODAL_NAMES.AUTH.ROOT,
   })
 
@@ -28,7 +28,10 @@ export function useLoginForm() {
       newSearchParams.delete('vtoken')
       setSearchParams(newSearchParams, { replace: true })
     }
-    modal.openModal(MODAL_NAMES.AUTH.ROOT, { email, session_id: sessionId })
+    if (sessionId) {
+      sessionStorage.setItem('login_session_id', sessionId)
+    }
+    modal.openModal(MODAL_NAMES.AUTH.ROOT, { email })
   }
 
   const onSubmit = (data: z.infer<typeof LoginSchema>) => {
