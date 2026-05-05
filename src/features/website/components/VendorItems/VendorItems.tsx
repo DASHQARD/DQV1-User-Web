@@ -1,6 +1,5 @@
-import { useMemo, useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { Icon } from '@/libs'
-import { usePresignedURL } from '@/hooks'
 
 type VendorItemProps = {
   name: string
@@ -22,59 +21,7 @@ export const VendorItems = ({
   branchesWithCards = [],
 }: VendorItemProps) => {
   const roundedRating = Math.round(rating)
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [presignedLogoUrl, setPresignedLogoUrl] = useState<string | null>(null)
-
-  // Determine if we need to fetch presigned URL
-  const needsPresignedURL = useMemo(() => {
-    if (!business_logo) return false
-    if (business_logo.startsWith('http://') || business_logo.startsWith('https://')) return false
-    if (business_logo.startsWith('data:')) return false
-    return true
-  }, [business_logo])
-
-  // Get direct URL for cases that don't need presigned URL
-  const directLogoUrl = useMemo(() => {
-    if (!business_logo) return null
-    if (business_logo.startsWith('http://') || business_logo.startsWith('https://'))
-      return business_logo
-    if (business_logo.startsWith('data:')) return business_logo
-    return null
-  }, [business_logo])
-
-  // Final logo URL - use direct URL if available, otherwise use presigned URL
-  const logoUrl = useMemo(() => {
-    return directLogoUrl || presignedLogoUrl
-  }, [directLogoUrl, presignedLogoUrl])
-
-  // Fetch presigned URL for logo when needed
-  useEffect(() => {
-    if (!needsPresignedURL || !business_logo) {
-      return
-    }
-
-    let cancelled = false
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(business_logo)
-        if (!cancelled) {
-          setPresignedLogoUrl(typeof url === 'string' ? url : (url as any)?.url || url)
-        }
-      } catch (error) {
-        console.error('Failed to fetch logo presigned URL', error)
-        if (!cancelled) {
-          setPresignedLogoUrl(null)
-        }
-      }
-    }
-
-    loadLogo()
-    return () => {
-      cancelled = true
-      // Reset presigned URL when effect is cleaned up (e.g., when business_logo changes)
-      setPresignedLogoUrl(null)
-    }
-  }, [business_logo, needsPresignedURL, fetchPresignedURL])
+  const logoUrl = business_logo || null
 
   // Calculate total cards across all branches
   const totalCards = useMemo(() => {

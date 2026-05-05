@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentType } from 'react'
+import { useMemo, type ComponentType } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Text, Loader, EmptyState, TabbedView } from '@/components'
 import { Icon } from '@/libs'
@@ -6,7 +6,7 @@ import { ROUTES } from '@/utils/constants'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { getImageUrl, getCardBackground, getCardTypeName } from '@/utils/cardDisplay'
 import { EmptyStateImage } from '@/assets/images'
-import { useUserProfile, usePresignedURL } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { vendorQueries } from '../../hooks'
 import { branchQueries } from '@/features/dashboard/branch'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
@@ -22,7 +22,6 @@ type TabId = 'active' | 'expired'
 
 interface ExperienceListContentProps {
   list: any[]
-  imageUrls: Record<number, string>
   addAccountParam: (path: string) => string
   emptyTitle: string
   emptyDescription: string
@@ -31,7 +30,6 @@ interface ExperienceListContentProps {
 
 function ExperienceListContent({
   list,
-  imageUrls,
   addAccountParam,
   emptyTitle,
   emptyDescription,
@@ -56,11 +54,7 @@ function ExperienceListContent({
       {list.map((experience: any) => {
         const cardType = experience.type || experience.card_type || 'dashx'
         const firstImage = experience.images?.[0]?.file_url
-        const presignedUrl = imageUrls[experience.id]
-        const imageSrc =
-          presignedUrl ||
-          (firstImage ? getImageUrl(firstImage) : null) ||
-          getCardBackground(cardType)
+        const imageSrc = (firstImage ? getImageUrl(firstImage) : null) || getCardBackground(cardType)
         const productName = experience.product || experience.card_name || 'Experience'
         const vendorName = experience.vendor_name || 'Vendor'
         return (
@@ -211,51 +205,6 @@ export default function ExperienceOverview() {
     return { activeExperiences: active, expiredExperiences: expired }
   }, [experiencesData])
 
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [imageUrls, setImageUrls] = useState<Record<number, string>>({})
-
-  useEffect(() => {
-    let cancelled = false
-    const fetchUrls = async () => {
-      if (experiencesData.length === 0) {
-        if (!cancelled) setImageUrls({})
-        return
-      }
-      const results = await Promise.all(
-        experiencesData.map(async (exp: any) => {
-          const firstImage = exp.images?.[0]?.file_url
-          if (!firstImage) return { id: exp.id, url: null }
-          if (
-            firstImage.startsWith('http://') ||
-            firstImage.startsWith('https://') ||
-            firstImage.startsWith('data:')
-          ) {
-            return { id: exp.id, url: firstImage }
-          }
-          try {
-            const response = await fetchPresignedURL(firstImage)
-            const url =
-              typeof response === 'string' ? response : ((response as any)?.url ?? response)
-            return { id: exp.id, url: url || null }
-          } catch {
-            return { id: exp.id, url: null }
-          }
-        }),
-      )
-      if (!cancelled) {
-        const map: Record<number, string> = {}
-        results.forEach((r) => {
-          if (r.url) map[r.id] = r.url
-        })
-        setImageUrls(map)
-      }
-    }
-    fetchUrls()
-    return () => {
-      cancelled = true
-    }
-  }, [experiencesData, fetchPresignedURL])
-
   const addAccountParam = useMemo(() => {
     return (path: string) => {
       const separator = path?.includes('?') ? '&' : '?'
@@ -276,7 +225,6 @@ export default function ExperienceOverview() {
           component: () => (
             <ExperienceListContent
               list={activeExperiences}
-              imageUrls={imageUrls}
               addAccountParam={addAccountParam}
               emptyTitle="No active experiences"
               emptyDescription="Active gift cards and experiences will appear here"
@@ -291,7 +239,6 @@ export default function ExperienceOverview() {
           component: () => (
             <ExperienceListContent
               list={expiredExperiences}
-              imageUrls={imageUrls}
               addAccountParam={addAccountParam}
               emptyTitle="No expired experiences"
               emptyDescription="Expired or cancelled experiences will appear here"
@@ -300,7 +247,7 @@ export default function ExperienceOverview() {
           ),
         },
       ],
-      [activeExperiences, expiredExperiences, imageUrls, addAccountParam, isLoadingAny],
+      [activeExperiences, expiredExperiences, addAccountParam, isLoadingAny],
     )
 
   return (

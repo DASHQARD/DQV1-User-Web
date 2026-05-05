@@ -7,7 +7,7 @@ import { FileUploader, Input, CreatableCombobox, Loader } from '@/components'
 import { Button } from '@/components/Button'
 import { useAuth } from '@/features/auth/hooks'
 import { UploadBusinessIDSchema } from '@/utils/schemas'
-import { useUploadFiles, useToast, useUserProfile, usePresignedURL } from '@/hooks'
+import { useUploadFiles, useToast, useUserProfile } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import type { DropdownOption } from '@/types'
 import React from 'react'
@@ -40,60 +40,28 @@ export default function BusinessUploadIDForm() {
   const { useBusinessUploadIDService } = useAuth()
   const { mutateAsync: submitBusinessID, isPending: isSubmitting } = useBusinessUploadIDService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const { mutateAsync: fetchPresignedURL, isPending: isFetchingPresignedURL } = usePresignedURL()
-  const [documentUrls, setDocumentUrls] = React.useState<Record<string, string | null>>({})
   const toast = useToast()
   const form = useForm<z.infer<typeof UploadBusinessIDSchema>>({
     resolver: zodResolver(UploadBusinessIDSchema),
   })
 
+  const documentUrls = React.useMemo(() => {
+    const map: Record<string, string | null> = {}
+    userProfileData?.business_documents?.forEach((doc: any) => {
+      if (doc.file_url) map[doc.type] = doc.file_url
+    })
+    return map
+  }, [userProfileData?.business_documents])
+
   React.useEffect(() => {
-    if (!userProfileData?.business_documents?.length) {
-      return
+    const firstDoc = userProfileData?.business_documents?.[0]
+    if (firstDoc) {
+      form.reset({
+        employer_identification_number: firstDoc.employer_identification_number || '',
+        business_industry: firstDoc.business_industry || '',
+      })
     }
-
-    let cancelled = false
-
-    const loadDocuments = async () => {
-      try {
-        const documentPromises = userProfileData.business_documents.map(async (doc: any) => {
-          const url = await fetchPresignedURL(doc.file_url)
-          return { type: doc.type, url }
-        })
-
-        const results = await Promise.all(documentPromises)
-
-        if (cancelled) return
-
-        const urlsMap: Record<string, string | null> = {}
-        results.forEach(({ type, url }: { type: string; url: string }) => {
-          urlsMap[type] = url
-        })
-
-        setDocumentUrls(urlsMap)
-
-        // Prefill form with existing data
-        const firstDoc = userProfileData.business_documents[0]
-        if (firstDoc) {
-          form.reset({
-            employer_identification_number: firstDoc.employer_identification_number || '',
-            business_industry: firstDoc.business_industry || '',
-          })
-        }
-      } catch (error) {
-        console.error('Failed to fetch business documents', error)
-        if (!cancelled) {
-          toast.error('Unable to fetch existing business documents.')
-        }
-      }
-    }
-
-    loadDocuments()
-
-    return () => {
-      cancelled = true
-    }
-  }, [fetchPresignedURL, toast, userProfileData, form])
+  }, [userProfileData?.business_documents, form])
 
   const isPending = isUploading || isSubmitting
 
@@ -158,41 +126,33 @@ export default function BusinessUploadIDForm() {
 
   if (hasDocuments) {
     return (
-      <>
-        {isFetchingPresignedURL ? (
-          <div className="flex justify-center items-center h-full bg-white">
-            <Loader />
+      <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+        {userProfileData.business_documents.map((doc: any) => (
+          <div key={doc.id}>
+            <p className="text-sm font-medium text-gray-700 mb-2">
+              {doc.type
+                .split('_')
+                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')}
+            </p>
+            <div
+              className={cn(
+                'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center',
+              )}
+            >
+              {documentUrls[doc.type] ? (
+                <img
+                  src={documentUrls[doc.type] ?? ''}
+                  alt={doc.file_name}
+                  className="max-h-48 w-full object-contain"
+                />
+              ) : (
+                <p className="text-sm text-gray-500">No document available</p>
+              )}
+            </div>
           </div>
-        ) : (
-          <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
-            {userProfileData.business_documents.map((doc: any) => (
-              <div key={doc.id}>
-                <p className="text-sm font-medium text-gray-700 mb-2">
-                  {doc.type
-                    .split('_')
-                    .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(' ')}
-                </p>
-                <div
-                  className={cn(
-                    'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center',
-                  )}
-                >
-                  {documentUrls[doc.type] ? (
-                    <img
-                      src={documentUrls[doc.type] ?? ''}
-                      alt={doc.file_name}
-                      className="max-h-48 w-full object-contain"
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-500">Loading image...</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </section>
-        )}
-      </>
+        ))}
+      </section>
     )
   }
 

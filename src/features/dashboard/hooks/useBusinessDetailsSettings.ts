@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useUserProfile, usePresignedURL, usePersistedModalState } from '@/hooks'
+import { useMemo } from 'react'
+import { useUserProfile, usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 
 const BUSINESS_TYPE_LABELS: Record<string, string> = {
@@ -12,36 +12,16 @@ const BUSINESS_TYPE_LABELS: Record<string, string> = {
 export function useBusinessDetailsSettings() {
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const requestBusinessUpdateModal = usePersistedModalState({
     paramName: MODALS.REQUEST_BUSINESS_UPDATE.PARAM_NAME,
   })
 
-  const [logoUrl, setLogoUrl] = useState<string | null>(null)
-
   const business = userProfileData?.business_details?.[0]
 
-  useEffect(() => {
+  const logoUrl = useMemo(() => {
     const logoDocument = userProfileData?.business_documents?.find((doc) => doc.type === 'logo')
-    if (!logoDocument?.file_url) {
-      setLogoUrl(null)
-      return
-    }
-
-    let cancelled = false
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logoDocument.file_url)
-        if (!cancelled) setLogoUrl(url)
-      } catch {
-        if (!cancelled) setLogoUrl(null)
-      }
-    }
-    loadLogo()
-    return () => {
-      cancelled = true
-    }
-  }, [userProfileData?.business_documents, fetchPresignedURL])
+    return logoDocument?.file_url || null
+  }, [userProfileData?.business_documents])
 
   const businessTypeLabel = useMemo(() => {
     if (!business?.type) return business?.type || '—'

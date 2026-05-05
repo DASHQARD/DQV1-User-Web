@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { useUserProfile, usePresignedURL } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { corporateQueries } from './useCorporateQueries'
@@ -16,8 +16,6 @@ export function useCorporateVendorSidebar() {
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [logoUrl, setLogoUrl] = useState<string | null>(null)
 
   const { useGetAllVendorsDetailsService } = vendorQueries()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
@@ -57,30 +55,32 @@ export function useCorporateVendorSidebar() {
     )
   }, [currentVendorId, allVendorsCreatedByCorporate])
 
-  const [vendorLogoUrls, setVendorLogoUrls] = useState<Record<number, string>>({})
-  useEffect(() => {
-    if (allVendorsCreatedByCorporate.length === 0) return
-    const fetchLogos = async () => {
-      const logoPromises = allVendorsCreatedByCorporate.map(
-        async (vendor: { vendor_logo?: string; vendor_id?: number; id?: number }) => {
-          if (!vendor.vendor_logo) return null
-          try {
-            const url = await fetchPresignedURL(vendor.vendor_logo)
-            return { vendorId: vendor.vendor_id ?? vendor.id, url }
-          } catch {
-            return null
-          }
-        },
-      )
-      const results = await Promise.all(logoPromises)
-      const logoMap: Record<number, string> = {}
-      results.forEach((result) => {
-        if (result && result.vendorId != null) logoMap[result.vendorId] = result.url
-      })
-      setVendorLogoUrls(logoMap)
-    }
-    fetchLogos()
-  }, [allVendorsCreatedByCorporate, fetchPresignedURL])
+  const logoUrl = useMemo(() => {
+    const logoDocument = userProfileData?.business_documents?.find(
+      (doc: { type: string }) => doc.type === 'logo',
+    )
+    return logoDocument?.file_url || null
+  }, [userProfileData?.business_documents])
+
+  const vendorLogoUrls = useMemo(() => {
+    const map: Record<number, string> = {}
+    allVendorsCreatedByCorporate.forEach(
+      (vendor: { vendor_logo?: string; vendor_id?: number; id?: number }) => {
+        const vendorId = vendor.vendor_id ?? vendor.id
+        if (vendor.vendor_logo && vendorId != null) map[vendorId] = vendor.vendor_logo
+      },
+    )
+    return map
+  }, [allVendorsCreatedByCorporate])
+
+  const currentVendorLogoUrl = useMemo(() => {
+    const vendorLogo = currentVendor && (currentVendor as { vendor_logo?: string }).vendor_logo
+    if (vendorLogo) return vendorLogo
+    const logoDocument = userProfileData?.business_documents?.find(
+      (doc: { type: string }) => doc.type === 'logo',
+    )
+    return logoDocument?.file_url || null
+  }, [currentVendor, userProfileData?.business_documents])
 
   const userType = (user as { user_type?: string })?.user_type || userProfileData?.user_type
   const isVendor = userType === 'vendor'
@@ -125,30 +125,6 @@ export function useCorporateVendorSidebar() {
     return false
   }, [userType, userProfileData?.corporate_id])
 
-  useEffect(() => {
-    const logoDocument = userProfileData?.business_documents?.find(
-      (doc: { type: string }) => doc.type === 'logo',
-    )
-    if (!logoDocument?.file_url) {
-      setLogoUrl(null)
-      return
-    }
-    let cancelled = false
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logoDocument.file_url)
-        if (!cancelled) setLogoUrl(url)
-      } catch (error) {
-        console.error('Failed to fetch logo presigned URL', error)
-        if (!cancelled) setLogoUrl(null)
-      }
-    }
-    loadLogo()
-    return () => {
-      cancelled = true
-    }
-  }, [userProfileData?.business_documents, fetchPresignedURL])
-
   const corporateBusiness = userProfileData?.business_details?.[0]
   const corporateName = corporateBusiness?.name || 'Corporate Account'
 
@@ -163,42 +139,6 @@ export function useCorporateVendorSidebar() {
     return userProfileData?.business_details?.[0]?.name || 'Vendor Account'
   }, [currentVendor, userProfileData?.business_details])
   const vendorGvid = (currentVendor as { gvid?: string })?.gvid ?? ''
-
-  const [currentVendorLogoUrl, setCurrentVendorLogoUrl] = useState<string | null>(null)
-  useEffect(() => {
-    const vendorLogo = currentVendor && (currentVendor as { vendor_logo?: string }).vendor_logo
-    if (vendorLogo) {
-      let cancelled = false
-      fetchPresignedURL(vendorLogo)
-        .then((url) => {
-          if (!cancelled) setCurrentVendorLogoUrl(url)
-        })
-        .catch(() => {
-          if (!cancelled) setCurrentVendorLogoUrl(null)
-        })
-      return () => {
-        cancelled = true
-      }
-    }
-    const logoDocument = userProfileData?.business_documents?.find(
-      (doc: { type: string }) => doc.type === 'logo',
-    )
-    if (!logoDocument?.file_url) {
-      setCurrentVendorLogoUrl(null)
-      return
-    }
-    let cancelled = false
-    fetchPresignedURL(logoDocument.file_url)
-      .then((url) => {
-        if (!cancelled) setCurrentVendorLogoUrl(url)
-      })
-      .catch(() => {
-        if (!cancelled) setCurrentVendorLogoUrl(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [currentVendor, userProfileData?.business_documents, fetchPresignedURL])
 
   const [isBranchesExpanded, setIsBranchesExpanded] = useState(false)
 

@@ -12,7 +12,7 @@ import type { CardMetricsDetail } from '@/types'
 import { useRedemptionMutation, useCardMetricsDetails } from '@/features/dashboard/hooks'
 import type { CardsRedemptionPayload } from '@/features/dashboard/services/redemptions'
 import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
-import { useDebouncedState, usePresignedURL } from '@/hooks'
+import { useDebouncedState } from '@/hooks'
 import { useUserProfile } from '@/hooks'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
@@ -82,14 +82,12 @@ export function useCardDetailsPage() {
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null)
   const [paginationLimit, setPaginationLimit] = useState(10)
   const [paginationAfter, setPaginationAfter] = useState<string>('')
-  const [cardImageUrls, setCardImageUrls] = useState<Record<string, string>>({})
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { useProcessRedemptionCardsService } = useRedemptionMutation()
   const processRedemptionMutation = useProcessRedemptionCardsService()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
 
   const cardMetricsParams = useMemo(() => {
     if (!validCardType) return undefined
@@ -228,40 +226,15 @@ export function useCardDetailsPage() {
 
   const isLoading = isLoadingCards
 
-  useEffect(() => {
-    if (validCardType !== 'dashx') {
-      setCardImageUrls({})
-      return
-    }
-    const fetchCardImages = async () => {
-      const imagePromises = filteredCards.map(async (card) => {
-        if (!card.images || card.images.length === 0) {
-          return { cardId: card.id ?? card.card_id, url: null as string | null }
-        }
-        try {
-          const firstImage = card.images[0]
-          const response = await fetchPresignedURL(firstImage.file_url)
-          const url =
-            typeof response === 'string'
-              ? response
-              : ((response as { url?: string })?.url ?? response)
-          return { cardId: card.id ?? card.card_id, url }
-        } catch (error) {
-          console.error('Failed to fetch presigned URL for card image:', error)
-          return { cardId: card.id ?? card.card_id, url: null as string | null }
-        }
-      })
-      const results = await Promise.all(imagePromises)
-      const urlMap: Record<string, string> = {}
-      results.forEach((result) => {
-        if (result.url && result.cardId != null) {
-          urlMap[String(result.cardId)] = result.url
-        }
-      })
-      setCardImageUrls(urlMap)
-    }
-    if (filteredCards.length > 0) fetchCardImages()
-  }, [filteredCards, validCardType, fetchPresignedURL])
+  const cardImageUrls = useMemo(() => {
+    const map: Record<string, string> = {}
+    filteredCards.forEach((card) => {
+      if (card.images && card.images.length > 0 && card.images[0].file_url) {
+        map[String(card.id ?? card.card_id)] = card.images[0].file_url
+      }
+    })
+    return map
+  }, [filteredCards])
 
   const handleNextPage = useCallback(() => {
     if (pagination.hasNextPage && pagination.next) {

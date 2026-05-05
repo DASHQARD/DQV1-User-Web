@@ -15,11 +15,6 @@ const uploadFiles = async (data: File[]) => {
   return response.data
 }
 
-const getPresignedURL = async (file: string) => {
-  const response = await axiosClient.post(`/file/generate/signed-url`, { file })
-  return response.data
-}
-
 const getUserProfile = async () => {
   return await getList<UserProfileResponse>(`/users/info`)
 }
@@ -57,7 +52,6 @@ const createTicket = async (data: {
 
 export {
   uploadFiles,
-  getPresignedURL,
   getUserProfile,
   paymentInfo,
   getPaymentInfo,

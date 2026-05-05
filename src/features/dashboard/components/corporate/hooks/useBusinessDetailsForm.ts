@@ -9,7 +9,6 @@ import {
   useCountriesData,
   useUserProfile,
   useUploadFiles,
-  usePresignedURL,
   useToast,
 } from '@/hooks'
 import { BusinessDetailsSchema, UploadBusinessIDSchema } from '@/utils/schemas'
@@ -31,11 +30,9 @@ export function useBusinessDetailsForm() {
   const { mutateAsync: submitBusinessDetails, isPending: isSubmittingDetails } =
     useBusinessDetailsWithDocumentsService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const { mutateAsync: fetchPresignedURL, isPending: isFetchingPresignedURL } = usePresignedURL()
   const toast = useToast()
   const { countries: phoneCountries } = useCountriesData()
 
-  const [documentUrls, setDocumentUrls] = useState<Record<string, string | null>>({})
   const [isSavingProgress, setIsSavingProgress] = useState(false)
 
   const form = useForm<BusinessDetailsFormData>({
@@ -176,38 +173,15 @@ export function useBusinessDetailsForm() {
     }
   }, [saveProgress, toast])
 
-  useEffect(() => {
-    if (!userProfileData?.business_documents?.length) return
+  const documentUrls = useMemo(() => {
+    const map: Record<string, string | null> = {}
+    userProfileData?.business_documents?.forEach((doc) => {
+      if (doc.file_url) map[doc.type] = doc.file_url
+    })
+    return map
+  }, [userProfileData?.business_documents])
 
-    let cancelled = false
-
-    const loadDocuments = async () => {
-      try {
-        const documentPromises = userProfileData.business_documents.map(async (doc) => {
-          const url = await fetchPresignedURL(doc.file_url)
-          return { type: doc.type, url }
-        })
-        const results = await Promise.all(documentPromises)
-        if (cancelled) return
-
-        const urlsMap: Record<string, string | null> = {}
-        results.forEach(({ type, url }) => {
-          urlsMap[type] = url
-        })
-        setDocumentUrls(urlsMap)
-      } catch (error) {
-        console.error('Failed to fetch business documents', error)
-        if (!cancelled) toast.error('Unable to fetch existing business documents.')
-      }
-    }
-
-    loadDocuments()
-    return () => {
-      cancelled = true
-    }
-  }, [fetchPresignedURL, toast, userProfileData])
-
-  const isPending = isSubmittingDetails || isUploading || isFetchingPresignedURL
+  const isPending = isSubmittingDetails || isUploading
 
   useEffect(() => {
     const hasExistingData =
