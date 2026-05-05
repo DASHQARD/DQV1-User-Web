@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { usePresignedURL } from '@/hooks'
+import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import type { BranchInfoResponse } from '../services'
@@ -9,7 +10,9 @@ import { branchQueries } from './useBranchQueries'
 export function useBranchSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { logout } = useAuthStore()
+  const { logout: clearAuthState } = useAuthStore()
+  const { useLogoutService } = useAuth()
+  const { mutateAsync: logoutMutation } = useLogoutService()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
@@ -97,6 +100,14 @@ export function useBranchSidebar() {
   const addAccountParam = (path: string): string => {
     const separator = path?.includes('?') ? '&' : '?'
     return `${path}${separator}account=branch`
+  }
+
+  const logout = () => {
+    logoutMutation(undefined, {
+      onSettled: () => {
+        clearAuthState()
+      },
+    })
   }
 
   return {

@@ -4,6 +4,7 @@ import { jwtDecode } from 'jwt-decode'
 import {
   refreshToken as refreshTokenRequest,
   guestAuthTokenRefresh,
+  logout as logoutRequest,
 } from '@/features/auth/services'
 import { useAuthStore } from '@/stores'
 import { useToast } from './useToast'
@@ -18,7 +19,7 @@ export function useAutoRefreshToken() {
   const refreshToken = useAuthStore((state) => state.refreshToken)
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const authenticate = useAuthStore((state) => state.authenticate)
-  const logout = useAuthStore((state) => state.logout)
+  const clearAuthState = useAuthStore((state) => state.logout)
   const toast = useToast()
   const refreshPromiseRef = useRef<Promise<void> | null>(null)
 
@@ -37,6 +38,19 @@ export function useAutoRefreshToken() {
       } catch (error) {
         console.error('Failed to decode token', error)
         return null
+      }
+    }
+
+    const runLogout = async () => {
+      try {
+        // Guest sessions don't use the /auth/logout endpoint.
+        if (!isGuestAuth) {
+          await logoutRequest()
+        }
+      } catch (error) {
+        console.error('Failed to call logout endpoint', error)
+      } finally {
+        clearAuthState()
       }
     }
 
@@ -72,7 +86,7 @@ export function useAutoRefreshToken() {
         })
       } catch (error) {
         console.error('Failed to refresh token', error)
-        logout()
+        await runLogout()
         toast.error('Session expired. Please log in again.')
       }
     }
@@ -87,17 +101,19 @@ export function useAutoRefreshToken() {
       const sessionExpiresAt = sessionExpSeconds * 1000
       const delay = sessionExpiresAt - Date.now()
 
-      const forceLogout = () => {
-        logout()
+      const forceLogout = async () => {
+        await runLogout()
         toast.error('Session expired. Please log in again.')
       }
 
       if (delay <= 0) {
-        forceLogout()
+        void forceLogout()
         return
       }
 
-      expiryTimeoutId = window.setTimeout(forceLogout, delay)
+      expiryTimeoutId = window.setTimeout(() => {
+        void forceLogout()
+      }, delay)
     }
 
     const scheduleRefresh = () => {
@@ -139,5 +155,5 @@ export function useAutoRefreshToken() {
         window.clearTimeout(expiryTimeoutId)
       }
     }
-  }, [token, refreshToken, isGuestAuth, authenticate, logout, toast])
+  }, [token, refreshToken, isGuestAuth, authenticate, clearAuthState, toast])
 }

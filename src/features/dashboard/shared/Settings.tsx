@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { Text, TabbedView } from '@/components'
+import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { cn } from '@/libs/clsx'
@@ -9,7 +10,18 @@ import { BusinessDetailsSettings } from './BusinessDetailsSettings'
 export default function Settings() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { logout } = useAuthStore()
+  const { logout: clearAuthState } = useAuthStore()
+  const { useLogoutService } = useAuth()
+  const { mutateAsync: logoutMutation } = useLogoutService()
+
+  const logout = () => {
+    logoutMutation(undefined, {
+      onSettled: () => {
+        clearAuthState()
+        navigate(ROUTES.IN_APP.AUTH.LOGIN)
+      },
+    })
+  }
 
   const ACCOUNT_SETTINGS = [
     {
@@ -23,7 +35,6 @@ export default function Settings() {
       path: ROUTES.IN_APP.AUTH.LOGIN,
       onClick: () => {
         logout()
-        navigate(ROUTES.IN_APP.AUTH.LOGIN)
       },
     },
   ]

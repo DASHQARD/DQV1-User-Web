@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { usePersistedModalState, useUserProfile, usePresignedURL } from '@/hooks'
+import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { MODALS } from '@/utils/constants'
@@ -23,7 +24,9 @@ export interface CorporateNavSection {
 export function useCorporateSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { logout } = useAuthStore()
+  const { logout: clearAuthState } = useAuthStore()
+  const { useLogoutService } = useAuth()
+  const { mutateAsync: logoutMutation } = useLogoutService()
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
@@ -204,6 +207,14 @@ export function useCorporateSidebar() {
           !canAccessRestrictedFeatures) ||
         (item.path === ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS && isStatusPending),
     }))
+  }
+
+  const logout = () => {
+    logoutMutation(undefined, {
+      onSettled: () => {
+        clearAuthState()
+      },
+    })
   }
 
   return {

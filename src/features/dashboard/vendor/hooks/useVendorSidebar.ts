@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useUserProfile, usePresignedURL } from '@/hooks'
+import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { vendorQueries } from './useVendorQueries'
@@ -9,7 +10,9 @@ export function useVendorSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { logout, user } = useAuthStore()
+  const { logout: clearAuthState, user } = useAuthStore()
+  const { useLogoutService } = useAuth()
+  const { mutateAsync: logoutMutation } = useLogoutService()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
 
@@ -223,6 +226,14 @@ export function useVendorSidebar() {
     navigate(
       `${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor${vendorId ? `&vendor_id=${vendorId}` : ''}`,
     )
+  }
+
+  const logout = () => {
+    logoutMutation(undefined, {
+      onSettled: () => {
+        clearAuthState()
+      },
+    })
   }
 
   return {
