@@ -282,8 +282,8 @@ export function useAuth() {
 
   function useVerifyLoginOTPService() {
     return useMutation({
-      mutationFn: async (token: string) => {
-        const response = await verifyLoginOTP(token)
+      mutationFn: async (data: { session_id: string; token: string }) => {
+        const response = await verifyLoginOTP(data)
         return response as {
           user: {
             id: number
@@ -394,10 +394,10 @@ export function useAuth() {
     return useMutation({
       mutationFn: async (email: string) => {
         const response = await resendRefreshToken(email)
-        return (response as any).data as { message: string }
+        return (response as any).data as { session_id: string; message?: string }
       },
       onSuccess: (response: any) => {
-        success(response.message || 'Refresh token resent successfully')
+        success(response.message || 'OTP resent. Please check your inbox.')
       },
     })
   }

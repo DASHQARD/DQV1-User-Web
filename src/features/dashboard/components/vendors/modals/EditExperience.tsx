@@ -3,7 +3,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { FileUploader, Input, Combobox, Button, Modal, Text } from '@/components'
-import { useUploadFiles, usePersistedModalState, usePresignedURL, useUserProfile } from '@/hooks'
+import { useUploadFiles, usePersistedModalState, useUserProfile } from '@/hooks'
 import { useToast } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { useVendorMutations, vendorQueries } from '@/features'
@@ -65,7 +65,6 @@ export function EditExperience() {
   const { useUpdateCardService } = useVendorMutations()
   const { mutateAsync: updateCard, isPending: isUpdating } = useUpdateCardService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const { useBranchesService } = vendorQueries()
   const { data: branches } = useBranchesService()
   const { useUpdateBranchExperienceService } = useBranchMutations()
@@ -79,8 +78,6 @@ export function EditExperience() {
 
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [termsFiles, setTermsFiles] = useState<File[]>([])
-  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([])
-  const [existingTermsUrls, setExistingTermsUrls] = useState<string[]>([])
   const [selectedBranches, setSelectedBranches] = useState<string[]>([])
   const [selectedBranchOptions, setSelectedBranchOptions] = useState<
     Array<{ label: string; value: string }>
@@ -121,38 +118,21 @@ export function EditExperience() {
       redemption_branches: [],
     })
   }, [isModalOpen, card, form])
-  // Load existing images and terms
-  useEffect(() => {
-    if (!isModalOpen || !card) return
+  const existingImageUrls = React.useMemo(() => {
+    if (!isModalOpen || !card?.images) return []
+    return (card.images as any[]).map((img: any) => img.file_url).filter(Boolean)
+  }, [isModalOpen, card?.images])
 
-    const loadExistingFiles = async () => {
-      if (card.images && card.images.length > 0) {
-        const imagePromises = card.images.map((img: any) =>
-          fetchPresignedURL(img.file_url).catch(() => null),
-        )
-        const imageResults = await Promise.all(imagePromises)
-        setExistingImageUrls(imageResults.filter(Boolean) as string[])
-      }
-
-      if (card.terms_and_conditions && card.terms_and_conditions.length > 0) {
-        const termsPromises = card.terms_and_conditions.map((term: any) =>
-          fetchPresignedURL(term.file_url).catch(() => null),
-        )
-        const termsResults = await Promise.all(termsPromises)
-        setExistingTermsUrls(termsResults.filter(Boolean) as string[])
-      }
-    }
-
-    loadExistingFiles()
-  }, [isModalOpen, card, fetchPresignedURL])
+  const existingTermsUrls = React.useMemo(() => {
+    if (!isModalOpen || !card?.terms_and_conditions) return []
+    return (card.terms_and_conditions as any[]).map((term: any) => term.file_url).filter(Boolean)
+  }, [isModalOpen, card?.terms_and_conditions])
 
   useEffect(() => {
     if (!isModalOpen) {
       form.reset()
       setImageFiles([])
       setTermsFiles([])
-      setExistingImageUrls([])
-      setExistingTermsUrls([])
       setSelectedBranches([])
       setSelectedBranchOptions([])
     }
@@ -237,11 +217,11 @@ export function EditExperience() {
 
       // API allows only file_url and file_name for images/terms (no id)
       const imagesPayload = uploadedImages.map((img: any) => ({
-        file_url: img.file_url,
+        file_url: img.file_key ?? img.file_url,
         file_name: img.file_name,
       }))
       const termsPayload = uploadedTerms.map((term: any) => ({
-        file_url: term.file_url,
+        file_url: term.file_key ?? term.file_url,
         file_name: term.file_name,
       }))
 
@@ -269,11 +249,11 @@ export function EditExperience() {
         issue_date: data.issue_date,
         expiry_date: data.expiry_date,
         images: uploadedImages.map((img: any) => ({
-          file_url: img.file_url,
+          file_url: img.file_key ?? img.file_url,
           file_name: img.file_name,
         })),
         terms_and_conditions: uploadedTerms.map((img: any) => ({
-          file_url: img.file_url,
+          file_url: img.file_key ?? img.file_url,
           file_name: img.file_name,
         })),
         redemption_branches: [

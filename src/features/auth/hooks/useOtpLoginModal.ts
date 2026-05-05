@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
@@ -16,21 +17,42 @@ export function useOtpLoginModal() {
     paramName: MODAL_NAMES.AUTH.ROOT,
   })
   const email = modal.modalData?.email
+  const [sessionId, setSessionId] = useState<string | null>(() =>
+    sessionStorage.getItem('login_session_id'),
+  )
+
+  useEffect(() => {
+    return () => {
+      sessionStorage.removeItem('login_session_id')
+    }
+  }, [])
 
   const form = useForm<z.infer<typeof VerifyLoginOTPSchema>>({
     resolver: zodResolver(VerifyLoginOTPSchema),
   })
 
   const onSubmit = (data: z.infer<typeof VerifyLoginOTPSchema>) => {
-    mutate(data.otp)
+    if (!sessionId) return
+    mutate({ session_id: sessionId, token: data.otp })
   }
 
   const { resendOtp, formatCountdown, countdown } = useCountdown({
-    sendOtp: () => resendRefreshToken(email || ''),
+    sendOtp: () => {
+      resendRefreshToken(email || '', {
+        onSuccess: (data) => {
+          const newSessionId = data?.session_id
+          if (newSessionId) {
+            sessionStorage.setItem('login_session_id', newSessionId)
+            setSessionId(newSessionId)
+          }
+        },
+      })
+    },
   })
 
   const verifyOtp = (otp: string) => {
-    mutate(otp)
+    if (!sessionId) return
+    mutate({ session_id: sessionId, token: otp })
   }
 
   const goToLogin = () => navigate(ROUTES.IN_APP.AUTH.LOGIN)

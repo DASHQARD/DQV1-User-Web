@@ -1,15 +1,11 @@
-import React from 'react'
 import { Icon } from '@/libs'
 import { Text, Loader } from '@/components'
 import { branchQueries } from '@/features/dashboard/branch'
-import { usePresignedURL } from '@/hooks'
 import { cn } from '@/libs'
 
 export default function BranchPaymentDetails() {
   const { useGetBranchInfoService } = branchQueries()
   const { data: branchInfoData, isLoading } = useGetBranchInfoService()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
 
   // Support both wrapped ({ data: {...} }) and flat ({ branch, ... }) response shapes
   const branchInfo = (branchInfoData as any)?.data ?? branchInfoData
@@ -18,33 +14,7 @@ export default function BranchPaymentDetails() {
   const paymentDetails = branchInfo?.payment_details
   const businessDetails = branchInfo?.business_details
 
-  // Fetch branch logo (from business_details when available)
-  React.useEffect(() => {
-    const logo = businessDetails?.logo
-    if (!logo) {
-      setLogoUrl(null)
-      return
-    }
-
-    let cancelled = false
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logo)
-        if (!cancelled) {
-          setLogoUrl(url)
-        }
-      } catch (error) {
-        console.error('Failed to fetch logo presigned URL', error)
-        if (!cancelled) {
-          setLogoUrl(null)
-        }
-      }
-    }
-    loadLogo()
-    return () => {
-      cancelled = true
-    }
-  }, [businessDetails?.logo, fetchPresignedURL])
+  const logoUrl = businessDetails?.logo || null
 
   if (isLoading) {
     return (

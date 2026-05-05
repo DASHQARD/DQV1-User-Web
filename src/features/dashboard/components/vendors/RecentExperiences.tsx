@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Text, Loader, EmptyState } from '@/components'
 import { Icon } from '@/libs'
@@ -6,7 +6,6 @@ import { ROUTES } from '@/utils/constants'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { getImageUrl, getCardBackground, getCardTypeName } from '@/utils/cardDisplay'
 import { EmptyStateImage } from '@/assets/images'
-import { usePresignedURL } from '@/hooks'
 
 interface RecentExperiencesProps {
   experiences: any[]
@@ -23,53 +22,8 @@ export function RecentExperiences({
   addAccountParam,
 }: RecentExperiencesProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [imageUrls, setImageUrls] = useState<Record<number, string>>({})
 
   const recentExperiences = React.useMemo(() => experiences.slice(0, 10), [experiences])
-
-  useEffect(() => {
-    const list = experiences.slice(0, 10)
-    let cancelled = false
-    const fetchUrls = async () => {
-      if (list.length === 0) {
-        if (!cancelled) setImageUrls({})
-        return
-      }
-      const results = await Promise.all(
-        list.map(async (exp: any) => {
-          const firstImage = exp.images?.[0]?.file_url
-          if (!firstImage) return { id: exp.id, url: null }
-          if (
-            firstImage.startsWith('http://') ||
-            firstImage.startsWith('https://') ||
-            firstImage.startsWith('data:')
-          ) {
-            return { id: exp.id, url: firstImage }
-          }
-          try {
-            const response = await fetchPresignedURL(firstImage)
-            const url =
-              typeof response === 'string' ? response : ((response as any)?.url ?? response)
-            return { id: exp.id, url: url || null }
-          } catch {
-            return { id: exp.id, url: null }
-          }
-        }),
-      )
-      if (!cancelled) {
-        const map: Record<number, string> = {}
-        results.forEach((r) => {
-          if (r.url) map[r.id] = r.url
-        })
-        setImageUrls(map)
-      }
-    }
-    fetchUrls()
-    return () => {
-      cancelled = true
-    }
-  }, [experiences, fetchPresignedURL])
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return
@@ -133,11 +87,8 @@ export function RecentExperiences({
             {recentExperiences.map((experience: any) => {
               const cardType = experience.type || experience.card_type || 'dashx'
               const firstImage = experience.images?.[0]?.file_url
-              const presignedUrl = imageUrls[experience.id]
               const imageSrc =
-                presignedUrl ||
-                (firstImage ? getImageUrl(firstImage) : null) ||
-                getCardBackground(cardType)
+                (firstImage ? getImageUrl(firstImage) : null) || getCardBackground(cardType)
               const productName = experience.product || experience.card_name || 'Experience'
               const vendorName = experience.vendor_name || 'Vendor'
 

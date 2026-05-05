@@ -1,5 +1,5 @@
 import React from 'react'
-import { useUserProfile, useUploadFiles, usePresignedURL, useToast } from '@/hooks'
+import { useUserProfile, useUploadFiles, useToast } from '@/hooks'
 import { useVendorMutations } from '../useVendorMutations'
 
 export function useBusinessLogoSettings() {
@@ -8,36 +8,16 @@ export function useBusinessLogoSettings() {
   const { useUpdateBusinessLogoService } = useVendorMutations()
   const { mutateAsync: updateBusinessLogo, isPending } = useUpdateBusinessLogoService()
   const { mutateAsync: uploadFiles } = useUploadFiles()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const toast = useToast()
 
-  const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
   const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(null)
 
-  React.useEffect(() => {
+  const logoUrl = React.useMemo(() => {
     const logoDoc = userProfileData?.business_documents?.find(
       (doc: { type?: string }) => doc.type === 'logo',
     )
-    if (!logoDoc?.file_url) {
-      setLogoUrl(null)
-      return
-    }
-
-    let cancelled = false
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logoDoc.file_url)
-        if (!cancelled) setLogoUrl(url)
-      } catch (error) {
-        console.error('Failed to fetch logo', error)
-        if (!cancelled) setLogoUrl(null)
-      }
-    }
-    loadLogo()
-    return () => {
-      cancelled = true
-    }
-  }, [userProfileData?.business_documents, fetchPresignedURL])
+    return logoDoc?.file_url || null
+  }, [userProfileData?.business_documents])
 
   const handleFileChange = React.useCallback(
     async (file: File | null) => {

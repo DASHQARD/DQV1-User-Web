@@ -73,8 +73,8 @@ const paymentMethod = async (data: PaymentMethodData) => {
   return await postMethod(`${commonUrl}/payment-details`, data)
 }
 
-const verifyLoginOTP = async (token: string) => {
-  const response = await axiosClient.post(`${commonUrl}/verify-login`, { token })
+const verifyLoginOTP = async (data: { session_id: string; token: string }) => {
+  const response = await axiosClient.post(`${commonUrl}/verify-login`, data)
   return response.data
 }
 

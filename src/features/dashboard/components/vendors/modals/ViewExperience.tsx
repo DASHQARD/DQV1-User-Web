@@ -1,9 +1,8 @@
 import React from 'react'
-import { Modal, Text, Button, Loader } from '@/components'
+import { Modal, Text, Button } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { formatDate, formatCurrency } from '@/utils/format'
-import { usePresignedURL } from '@/hooks'
 import { Icon } from '@/libs'
 
 export function ViewExperience() {
@@ -34,120 +33,13 @@ export function ViewExperience() {
     }
   }, [card])
 
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [imageUrls, setImageUrls] = React.useState<Record<number | string, string>>({})
-  const [termsUrls, setTermsUrls] = React.useState<Record<number | string, string>>({})
-  const [isLoadingImages, setIsLoadingImages] = React.useState(false)
-  const [isLoadingTerms, setIsLoadingTerms] = React.useState(false)
+  const getImageUrl = React.useCallback((image: any) => {
+    return image?.file_url || ''
+  }, [])
 
-  // Fetch presigned URLs for images and terms (same pattern as website CardDetails)
-  React.useEffect(() => {
-    if (!card) {
-      setImageUrls({})
-      setTermsUrls({})
-      setIsLoadingImages(false)
-      setIsLoadingTerms(false)
-      return
-    }
-
-    let cancelled = false
-    const images = card.images || []
-    const terms = card.terms_and_conditions || []
-
-    if (images.length > 0) {
-      setIsLoadingImages(true)
-      const fetchImageUrls = async () => {
-        try {
-          const results = await Promise.all(
-            images.map(async (image: any, index: number) => {
-              if (!image?.file_url) return { key: image.id || index, url: null }
-              try {
-                const response = await fetchPresignedURL(image.file_url)
-                const url =
-                  typeof response === 'string' ? response : (response as any)?.url || response
-                return { key: image.id || image.file_name || index, url }
-              } catch {
-                return { key: image.id || image.file_name || index, url: null }
-              }
-            }),
-          )
-          if (!cancelled) {
-            const urlMap: Record<number | string, string> = {}
-            results.forEach((r) => {
-              if (r.url) urlMap[r.key] = r.url
-            })
-            setImageUrls(urlMap)
-            setIsLoadingImages(false)
-          }
-        } catch {
-          if (!cancelled) setIsLoadingImages(false)
-        }
-      }
-      fetchImageUrls()
-    } else {
-      setImageUrls({})
-      setIsLoadingImages(false)
-    }
-
-    if (terms.length > 0) {
-      setIsLoadingTerms(true)
-      const fetchTermsUrls = async () => {
-        try {
-          const results = await Promise.all(
-            terms.map(async (term: any, index: number) => {
-              if (!term?.file_url) return { key: term.id || index, url: null }
-              try {
-                const response = await fetchPresignedURL(term.file_url)
-                const url =
-                  typeof response === 'string' ? response : (response as any)?.url || response
-                return { key: term.id || term.file_name || index, url }
-              } catch {
-                return { key: term.id || term.file_name || index, url: null }
-              }
-            }),
-          )
-          if (!cancelled) {
-            const urlMap: Record<number | string, string> = {}
-            results.forEach((r) => {
-              if (r.url) urlMap[r.key] = r.url
-            })
-            setTermsUrls(urlMap)
-            setIsLoadingTerms(false)
-          }
-        } catch {
-          if (!cancelled) setIsLoadingTerms(false)
-        }
-      }
-      fetchTermsUrls()
-    } else {
-      setTermsUrls({})
-      setIsLoadingTerms(false)
-    }
-
-    return () => {
-      cancelled = true
-    }
-  }, [card, fetchPresignedURL])
-
-  const getImageUrl = React.useCallback(
-    (image: any, index: number) => {
-      const key = image?.id ?? image?.file_name ?? index
-      if (imageUrls[key]) return imageUrls[key]
-      if (image?.file_url?.startsWith('http://') || image?.file_url?.startsWith('https://'))
-        return image.file_url
-      if (image?.file_url?.startsWith('data:')) return image.file_url
-      return ''
-    },
-    [imageUrls],
-  )
-
-  const getTermUrl = React.useCallback(
-    (term: any, index: number) => {
-      const key = term?.id ?? term?.file_name ?? index
-      return termsUrls[key] || ''
-    },
-    [termsUrls],
-  )
+  const getTermUrl = React.useCallback((term: any) => {
+    return term?.file_url || ''
+  }, [])
 
   if (!card) return null
 
@@ -242,7 +134,7 @@ export function ViewExperience() {
           </>
         )}
 
-        {/* Card images – same pattern as website CardDetails (presigned URLs, loading, fallback) */}
+        {/* Card images */}
         {displayCard && displayCard.images.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -256,7 +148,7 @@ export function ViewExperience() {
             </div>
             <div className="grid grid-cols-3 gap-4">
               {displayCard.images.map((image: any, index: number) => {
-                const imageUrl = getImageUrl(image, index)
+                const imageUrl = getImageUrl(image)
                 const imageAlt =
                   image?.file_name || `${displayCard?.product ?? 'Card'} image ${index + 1}`
                 return (
@@ -265,11 +157,7 @@ export function ViewExperience() {
                     className="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
                     style={{ paddingTop: '100%' }}
                   >
-                    {isLoadingImages ? (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                        <Loader />
-                      </div>
-                    ) : imageUrl ? (
+                    {imageUrl ? (
                       <img
                         src={imageUrl}
                         alt={imageAlt}
@@ -291,7 +179,7 @@ export function ViewExperience() {
           </div>
         )}
 
-        {/* Terms and conditions – presigned URLs */}
+        {/* Terms and conditions */}
         {displayCard && displayCard.termsAndConditions.length > 0 && (
           <div>
             <Text variant="span" className="text-xs text-gray-500">
@@ -299,7 +187,7 @@ export function ViewExperience() {
             </Text>
             <div className="flex flex-col gap-2 mt-2">
               {displayCard.termsAndConditions.map((term: any, index: number) => {
-                const termUrl = getTermUrl(term, index)
+                const termUrl = getTermUrl(term)
                 const key = term?.id ?? index
                 return termUrl ? (
                   <a
@@ -314,11 +202,7 @@ export function ViewExperience() {
                   </a>
                 ) : (
                   <span key={key} className="flex items-center gap-2 text-sm text-gray-500">
-                    {isLoadingTerms ? (
-                      <Loader className="w-5! h-5! [&>img]:w-5! [&>img]:h-5!" />
-                    ) : (
-                      <Icon icon="bi:file-earmark-pdf" className="text-lg shrink-0" />
-                    )}
+                    <Icon icon="bi:file-earmark-pdf" className="text-lg shrink-0" />
                     <span>{term?.file_name || `Terms ${index + 1}`}</span>
                   </span>
                 )

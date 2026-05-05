@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import { usePersistedModalState, useUserProfile, usePresignedURL } from '@/hooks'
+import { vendorQueries } from '@/features/dashboard/vendor'
+import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
-import { ROUTES } from '@/utils/constants'
-import { MODALS } from '@/utils/constants'
+import { MODALS, ROUTES } from '@/utils/constants'
 import { corporateQueries } from './useCorporateQueries'
-import { vendorQueries } from '@/features/dashboard/vendor'
 
 export interface CorporateNavItem {
   path: string
@@ -65,9 +64,23 @@ export function useCorporateSidebar() {
     )
   }, [allVendorsCreatedByCorporate])
 
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [logoUrl, setLogoUrl] = useState<string | null>(null)
-  const [vendorLogoUrls, setVendorLogoUrls] = useState<Record<number, string>>({})
+  const logoUrl = useMemo(() => {
+    const logoDocument = user?.business_documents?.find(
+      (doc: { type: string }) => doc.type === 'logo',
+    )
+    return logoDocument?.file_url || null
+  }, [user?.business_documents])
+
+  const vendorLogoUrls = useMemo(() => {
+    const map: Record<number, string> = {}
+    allVendorsCreatedByCorporate.forEach(
+      (vendor: { vendor_logo?: string; vendor_id?: number; id?: number }) => {
+        const vendorId = vendor.vendor_id ?? vendor.id
+        if (vendor.vendor_logo && vendorId != null) map[vendorId] = vendor.vendor_logo
+      },
+    )
+    return map
+  }, [allVendorsCreatedByCorporate])
 
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
@@ -101,61 +114,6 @@ export function useCorporateSidebar() {
   const canAccessRestrictedFeatures = isOnboardingComplete && isApprovedOrVerified
   const isCorporateAdmin = user?.user_type === 'corporate admin'
   const isStatusPending = user?.status === 'pending'
-
-  useEffect(() => {
-    const logoDocument = user?.business_documents?.find(
-      (doc: { type: string }) => doc.type === 'logo',
-    )
-
-    if (!logoDocument?.file_url) {
-      setLogoUrl(null)
-      return
-    }
-
-    let cancelled = false
-
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logoDocument.file_url)
-        if (!cancelled) setLogoUrl(url)
-      } catch (error) {
-        console.error('Failed to fetch logo presigned URL', error)
-        if (!cancelled) setLogoUrl(null)
-      }
-    }
-
-    loadLogo()
-    return () => {
-      cancelled = true
-    }
-  }, [user?.business_documents, fetchPresignedURL])
-
-  useEffect(() => {
-    if (allVendorsCreatedByCorporate.length === 0) return
-
-    const fetchLogos = async () => {
-      const logoPromises = allVendorsCreatedByCorporate.map(
-        async (vendor: { vendor_logo?: string; vendor_id?: number; id?: number }) => {
-          if (!vendor.vendor_logo) return null
-          try {
-            const url = await fetchPresignedURL(vendor.vendor_logo)
-            return { vendorId: vendor.vendor_id ?? vendor.id, url }
-          } catch {
-            return null
-          }
-        },
-      )
-
-      const results = await Promise.all(logoPromises)
-      const logoMap: Record<number, string> = {}
-      results.forEach((result) => {
-        if (result && result.vendorId != null) logoMap[result.vendorId] = result.url
-      })
-      setVendorLogoUrls(logoMap)
-    }
-
-    fetchLogos()
-  }, [allVendorsCreatedByCorporate, fetchPresignedURL])
 
   const isActive = (path: string) => {
     if (path === '/dashboard') return location.pathname === path

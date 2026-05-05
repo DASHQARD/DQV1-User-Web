@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { usePresignedURL } from '@/hooks'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
@@ -15,9 +14,6 @@ export function useBranchSidebar() {
   const { mutateAsync: logoutMutation } = useLogoutService()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
-  const [logoUrl, setLogoUrl] = useState<string | null>(null)
-
   const { useGetBranchInfoService } = branchQueries()
   const { data: branchInfoResponse } = useGetBranchInfoService()
 
@@ -28,6 +24,8 @@ export function useBranchSidebar() {
   const branchManager = data?.branch_manager
   const paymentDetails = data?.payment_details ?? null
   const businessDetails = data?.business_details
+
+  const logoUrl = businessDetails?.logo || null
 
   const branchName = branch?.branch_name ?? null
   const branchManagerName = branch?.branch_manager_name ?? branchManager?.fullname ?? null
@@ -62,30 +60,6 @@ export function useBranchSidebar() {
     const completedCount = steps.filter(Boolean).length
     return Math.round((completedCount / steps.length) * 100)
   }, [hasManagerDetails, hasPayment])
-
-  useEffect(() => {
-    const logoKey = businessDetails?.logo
-    if (!logoKey) {
-      setLogoUrl(null)
-      return
-    }
-    let cancelled = false
-    const loadLogo = async () => {
-      try {
-        const result = await fetchPresignedURL(logoKey)
-        if (cancelled) return
-        const url =
-          typeof result === 'string' ? result : ((result as { url?: string })?.url ?? null)
-        setLogoUrl(url)
-      } catch {
-        if (!cancelled) setLogoUrl(null)
-      }
-    }
-    loadLogo()
-    return () => {
-      cancelled = true
-    }
-  }, [businessDetails?.logo, fetchPresignedURL])
 
   const isActive = (path: string) => {
     if (path === '/dashboard') return location.pathname === path

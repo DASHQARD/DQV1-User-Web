@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useUserProfile, useUploadFiles, usePresignedURL } from '@/hooks'
+import { useUserProfile, useUploadFiles } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { useAuth } from '@/features/auth'
@@ -17,35 +17,9 @@ export function useUserSidebar() {
   const { data: userProfileData } = useGetUserProfileService()
   const { mutateAsync: updateAvatar, isPending: isUploadingImage } = useUpdateUserAvatarService()
   const { mutateAsync: uploadFiles } = useUploadFiles()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
 
   const [file, setFile] = useState<File | null>(null)
-  const [imageUrl, setImageUrl] = useState<{ imageUrl: string | null } | null>(null)
-
-  useEffect(() => {
-    if (!userProfileData?.avatar) {
-      setImageUrl(null)
-      return
-    }
-    let cancelled = false
-    const loadAvatar = async () => {
-      try {
-        const url = await fetchPresignedURL(userProfileData.avatar!)
-        if (!cancelled) {
-          setImageUrl({
-            imageUrl: typeof url === 'string' ? url : (url as { url?: string })?.url || url,
-          })
-        }
-      } catch (error) {
-        console.error('Failed to fetch avatar', error)
-        if (!cancelled) setImageUrl(null)
-      }
-    }
-    loadAvatar()
-    return () => {
-      cancelled = true
-    }
-  }, [userProfileData?.avatar, fetchPresignedURL])
+  const imageUrl = userProfileData?.avatar ? { imageUrl: userProfileData.avatar } : null
 
   const handleImageUpload = async (selectedFile: File) => {
     try {

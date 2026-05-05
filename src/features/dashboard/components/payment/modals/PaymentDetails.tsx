@@ -1,6 +1,6 @@
 import { Button, Modal, StatusCell, Text } from '@/components'
 import { usePersistedModalState } from '@/hooks'
-import { MODALS, ENV_VARS } from '@/utils/constants'
+import { MODALS } from '@/utils/constants'
 import { formatCurrency } from '@/utils/format'
 import type { PaymentInfoData } from '@/types/user'
 import { Icon } from '@/libs'
@@ -36,19 +36,6 @@ function getCardBackground(type: string) {
     default:
       return DashxBg
   }
-}
-
-// Construct full image URL from file_url
-function getImageUrl(fileUrl: string | undefined) {
-  if (!fileUrl) return ''
-  if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-    return fileUrl
-  }
-  let baseUrl = ENV_VARS.API_BASE_URL
-  if (baseUrl.endsWith('/api/v1')) {
-    baseUrl = baseUrl.replace('/api/v1', '')
-  }
-  return `${baseUrl}/uploads/${fileUrl}`
 }
 
 // Get card type display name
@@ -182,9 +169,7 @@ export function PaymentDetails() {
               <div className="space-y-4">
                 {cartItems.map((item: any, index: number) => {
                   const cardBackground = getCardBackground(item.type || '')
-                  const cardImageUrl = item.images?.[0]?.file_url
-                    ? getImageUrl(item.images[0].file_url)
-                    : null
+                  const cardImageUrl = item.images?.[0]?.file_url || null
                   const recipients = item.recipients || []
 
                   return (

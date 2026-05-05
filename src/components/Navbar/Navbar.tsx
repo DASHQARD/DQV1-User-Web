@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Logo from '../../assets/images/logo-placeholder.png'
 import { ROUTES } from '../../utils/constants'
@@ -10,7 +10,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { Modal } from '@/components'
 import { CartPopoverContent } from '@/components/CartModal'
 import { GuestAddToCartModal } from '@/features/website/components/GuestAddToCartModal'
-import { useUserProfile, usePresignedURL } from '@/hooks'
+import { useUserProfile } from '@/hooks'
 import { DEFAULT_AVATAR_SRC } from '@/components/Avatar/Avatar'
 import { vendorQueries } from '@/features'
 import { branchQueries } from '@/features/dashboard/branch'
@@ -28,14 +28,11 @@ export default function Navbar() {
   const [accountPopoverOpen, setAccountPopoverOpen] = useState(false)
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const { useGetBranchesByVendorIdService } = vendorQueries()
   // const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0)
   const displayName =
     user?.fullname || user?.name || user?.email?.split('@')[0] || user?.username || 'there'
 
-  // State for avatar URL
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   // State for mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -51,36 +48,6 @@ export default function Navbar() {
     currentUserType === 'corporate admin' ||
     currentUserType === 'corporate super admin' ||
     currentUserType === 'corporate'
-
-  // Fetch current avatar from user profile (for regular users)
-  useEffect(() => {
-    if (!isAuthenticated || !isRegularUser || !userProfileData?.avatar) {
-      if (isRegularUser) {
-        setAvatarUrl(null)
-      }
-      return
-    }
-
-    let cancelled = false
-    const loadAvatar = async () => {
-      try {
-        const url = await fetchPresignedURL(userProfileData.avatar!)
-        if (!cancelled) {
-          const avatarUrlValue = typeof url === 'string' ? url : (url as any)?.url || url
-          setAvatarUrl(avatarUrlValue)
-        }
-      } catch (error) {
-        console.error('Failed to fetch avatar', error)
-        if (!cancelled) {
-          setAvatarUrl(null)
-        }
-      }
-    }
-    loadAvatar()
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, isRegularUser, userProfileData?.avatar, fetchPresignedURL])
 
   // Get user type and status (moved up to use in useEffect)
   const userStatus = (user as any)?.status || userProfileData?.status
@@ -108,109 +75,16 @@ export default function Navbar() {
     return branchesData[0]
   }, [branchesData])
 
-  // Fetch corporate logo from business_documents
-  useEffect(() => {
-    if (!isAuthenticated || !isCorporateUser || !userProfileData?.business_documents) {
-      if (isCorporateUser) {
-        setAvatarUrl(null)
-      }
-      return
+  const avatarUrl = useMemo(() => {
+    if (!isAuthenticated) return null
+    if (isRegularUser) return userProfileData?.avatar || null
+    if (isCorporateUser || isVendor) {
+      const logoDocument = userProfileData?.business_documents?.find((doc: any) => doc.type === 'logo')
+      return logoDocument?.file_url || null
     }
-
-    const logoDocument = userProfileData.business_documents.find((doc: any) => doc.type === 'logo')
-
-    if (!logoDocument?.file_url) {
-      setAvatarUrl(null)
-      return
-    }
-
-    let cancelled = false
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logoDocument.file_url)
-        if (!cancelled) {
-          const avatarUrlValue = typeof url === 'string' ? url : (url as any)?.url || url
-          setAvatarUrl(avatarUrlValue)
-        }
-      } catch (error) {
-        console.error('Failed to fetch corporate logo', error)
-        if (!cancelled) {
-          setAvatarUrl(null)
-        }
-      }
-    }
-    loadLogo()
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, isCorporateUser, userProfileData?.business_documents, fetchPresignedURL])
-
-  // Fetch vendor logo from business_documents
-  useEffect(() => {
-    if (!isAuthenticated || !isVendor || !userProfileData?.business_documents) {
-      if (isVendor) {
-        setAvatarUrl(null)
-      }
-      return
-    }
-
-    const logoDocument = userProfileData.business_documents.find((doc: any) => doc.type === 'logo')
-
-    if (!logoDocument?.file_url) {
-      setAvatarUrl(null)
-      return
-    }
-
-    let cancelled = false
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(logoDocument.file_url)
-        if (!cancelled) {
-          const avatarUrlValue = typeof url === 'string' ? url : (url as any)?.url || url
-          setAvatarUrl(avatarUrlValue)
-        }
-      } catch (error) {
-        console.error('Failed to fetch vendor logo', error)
-        if (!cancelled) {
-          setAvatarUrl(null)
-        }
-      }
-    }
-    loadLogo()
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, isVendor, userProfileData?.business_documents, fetchPresignedURL])
-
-  // Fetch branch manager logo from branch info business_details
-  useEffect(() => {
-    if (!isAuthenticated || !isBranchManager || !businessDetails?.logo) {
-      if (isBranchManager) {
-        setAvatarUrl(null)
-      }
-      return
-    }
-
-    let cancelled = false
-    const loadLogo = async () => {
-      try {
-        const url = await fetchPresignedURL(businessDetails.logo)
-        if (!cancelled) {
-          const avatarUrlValue = typeof url === 'string' ? url : (url as any)?.url || url
-          setAvatarUrl(avatarUrlValue)
-        }
-      } catch (error) {
-        console.error('Failed to fetch branch logo', error)
-        if (!cancelled) {
-          setAvatarUrl(null)
-        }
-      }
-    }
-    loadLogo()
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, isBranchManager, businessDetails?.logo, fetchPresignedURL])
+    if (isBranchManager) return businessDetails?.logo || null
+    return null
+  }, [isAuthenticated, isRegularUser, isCorporateUser, isVendor, isBranchManager, userProfileData, businessDetails])
 
   // Menu items based on user type
   const menuItems = useMemo(() => {

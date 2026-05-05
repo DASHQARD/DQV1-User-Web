@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,7 +8,6 @@ import { useAuth } from '@/features/auth/hooks'
 import {
   useUserProfile,
   useUploadFiles,
-  usePresignedURL,
   useToast,
   usePersistedModalState,
 } from '@/hooks'
@@ -91,10 +90,9 @@ export function useOnboardingForm() {
   const { mutateAsync: submitPersonalDetailsWithID, isPending: isSubmittingPersonalDetailsWithID } =
     usePersonalDetailsWithIDService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const { mutateAsync: fetchPresignedURL, isPending: isFetchingPresignedURL } = usePresignedURL()
 
-  const [frontOfIdentification, setFrontOfIdentification] = useState<string | null>(null)
-  const [backOfIdentification, setBackOfIdentification] = useState<string | null>(null)
+  const frontOfIdentification = userProfileData?.id_images?.[0]?.file_url || null
+  const backOfIdentification = userProfileData?.id_images?.[1]?.file_url || null
   const successModal = usePersistedModalState({
     paramName: MODALS.ONBOARDING.PARAM_NAME,
   })
@@ -122,60 +120,16 @@ export function useOnboardingForm() {
   }, [needsOnlyFront, form])
 
   useEffect(() => {
-    if (!userProfileData?.id_images?.length) {
-      if (userProfileData) {
-        form.reset({
-          first_name: userProfileData?.fullname?.split(' ')[0] || '',
-          last_name: userProfileData?.fullname?.split(' ')[1] || '',
-          dob: userProfileData?.dob || '',
-          street_address: userProfileData?.street_address || '',
-          id_type: userProfileData?.id_type || '',
-          id_number: userProfileData?.id_number || '',
-        } as OnboardingFormData)
-      }
-      return
-    }
-
-    let cancelled = false
-
-    const loadImages = async () => {
-      try {
-        const [frontUrl, backUrl] = await Promise.all([
-          userProfileData.id_images[0]
-            ? fetchPresignedURL(userProfileData.id_images[0].file_url)
-            : null,
-          userProfileData.id_images[1]
-            ? fetchPresignedURL(userProfileData.id_images[1].file_url)
-            : null,
-        ])
-
-        if (cancelled) return
-
-        setFrontOfIdentification(frontUrl ?? null)
-        setBackOfIdentification(backUrl ?? null)
-
-        form.reset({
-          first_name: userProfileData?.fullname?.split(' ')[0] || '',
-          last_name: userProfileData?.fullname?.split(' ')[1] || '',
-          dob: userProfileData?.dob || '',
-          street_address: userProfileData?.street_address || '',
-          id_type: userProfileData?.id_type || '',
-          id_number: userProfileData?.id_number || '',
-        } as OnboardingFormData)
-      } catch (error) {
-        console.error('Failed to fetch identification images', error)
-        if (!cancelled) {
-          toast.error('Unable to fetch existing identification images.')
-        }
-      }
-    }
-
-    loadImages()
-
-    return () => {
-      cancelled = true
-    }
-  }, [fetchPresignedURL, toast, userProfileData, form])
+    if (!userProfileData) return
+    form.reset({
+      first_name: userProfileData?.fullname?.split(' ')[0] || '',
+      last_name: userProfileData?.fullname?.split(' ')[1] || '',
+      dob: userProfileData?.dob || '',
+      street_address: userProfileData?.street_address || '',
+      id_type: userProfileData?.id_type || '',
+      id_number: userProfileData?.id_number || '',
+    } as OnboardingFormData)
+  }, [userProfileData, form])
 
   const onSubmit = async (data: OnboardingFormData) => {
     try {
@@ -238,7 +192,6 @@ export function useOnboardingForm() {
     needsOnlyFront,
     isPending,
     isLoading,
-    isFetchingPresignedURL,
     userProfileData,
     onSubmit,
     handleDiscard,
