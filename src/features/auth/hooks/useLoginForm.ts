@@ -13,7 +13,7 @@ export function useLoginForm() {
   const { mutate: verifyEmail, isPending: isVerifyEmailPending } = useVerifyEmailMutation()
   const [searchParams, setSearchParams] = useSearchParams()
   const token = searchParams.get('vtoken')
-  const modal = usePersistedModalState<{ email?: string }>({
+  const modal = usePersistedModalState<{ email?: string; session_id?: string }>({
     paramName: MODAL_NAMES.AUTH.ROOT,
   })
 
@@ -22,13 +22,13 @@ export function useLoginForm() {
     mode: 'onChange',
   })
 
-  const openOtpModalAndClearVtoken = (email: string) => {
+  const openOtpModalAndClearVtoken = (email: string, sessionId?: string) => {
     if (token) {
       const newSearchParams = new URLSearchParams(searchParams)
       newSearchParams.delete('vtoken')
       setSearchParams(newSearchParams, { replace: true })
     }
-    modal.openModal(MODAL_NAMES.AUTH.ROOT, { email })
+    modal.openModal(MODAL_NAMES.AUTH.ROOT, { email, session_id: sessionId })
   }
 
   const onSubmit = (data: z.infer<typeof LoginSchema>) => {
@@ -41,13 +41,15 @@ export function useLoginForm() {
           newSearchParams.delete('vtoken')
           setSearchParams(newSearchParams, { replace: true })
           mutate(payload, {
-            onSuccess: () => openOtpModalAndClearVtoken(payload.email),
+            onSuccess: (response: any) =>
+              openOtpModalAndClearVtoken(payload.email, response?.data?.session_id),
           })
         },
       })
     } else {
       mutate(payload, {
-        onSuccess: () => openOtpModalAndClearVtoken(payload.email),
+        onSuccess: (response: any) =>
+          openOtpModalAndClearVtoken(payload.email, response?.data?.session_id),
       })
     }
   }

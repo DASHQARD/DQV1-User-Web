@@ -12,25 +12,37 @@ export function useOtpLoginModal() {
   const { useVerifyLoginOTPService, useResendRefreshTokenService } = useAuth()
   const { mutate, isPending } = useVerifyLoginOTPService()
   const { mutate: resendRefreshToken } = useResendRefreshTokenService()
-  const modal = usePersistedModalState<{ email?: string }>({
+  const modal = usePersistedModalState<{ email?: string; session_id?: string }>({
     paramName: MODAL_NAMES.AUTH.ROOT,
   })
   const email = modal.modalData?.email
+  const sessionId = modal.modalData?.session_id
 
   const form = useForm<z.infer<typeof VerifyLoginOTPSchema>>({
     resolver: zodResolver(VerifyLoginOTPSchema),
   })
 
   const onSubmit = (data: z.infer<typeof VerifyLoginOTPSchema>) => {
-    mutate(data.otp)
+    if (!sessionId) return
+    mutate({ session_id: sessionId, token: data.otp })
   }
 
   const { resendOtp, formatCountdown, countdown } = useCountdown({
-    sendOtp: () => resendRefreshToken(email || ''),
+    sendOtp: () => {
+      resendRefreshToken(email || '', {
+        onSuccess: (data) => {
+          const newSessionId = data?.session_id
+          if (newSessionId) {
+            modal.openModal(MODAL_NAMES.AUTH.ROOT, { email, session_id: newSessionId })
+          }
+        },
+      })
+    },
   })
 
   const verifyOtp = (otp: string) => {
-    mutate(otp)
+    if (!sessionId) return
+    mutate({ session_id: sessionId, token: otp })
   }
 
   const goToLogin = () => navigate(ROUTES.IN_APP.AUTH.LOGIN)
