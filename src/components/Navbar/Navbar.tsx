@@ -79,12 +79,22 @@ export default function Navbar() {
     if (!isAuthenticated) return null
     if (isRegularUser) return userProfileData?.avatar || null
     if (isCorporateUser || isVendor) {
-      const logoDocument = userProfileData?.business_documents?.find((doc: any) => doc.type === 'logo')
+      const logoDocument = userProfileData?.business_documents?.find(
+        (doc: any) => doc.type === 'logo',
+      )
       return logoDocument?.file_url || null
     }
     if (isBranchManager) return businessDetails?.logo || null
     return null
-  }, [isAuthenticated, isRegularUser, isCorporateUser, isVendor, isBranchManager, userProfileData, businessDetails])
+  }, [
+    isAuthenticated,
+    isRegularUser,
+    isCorporateUser,
+    isVendor,
+    isBranchManager,
+    userProfileData,
+    businessDetails,
+  ])
 
   // Menu items based on user type
   const menuItems = useMemo(() => {
@@ -359,8 +369,11 @@ export default function Navbar() {
                             src={navAvatarDisplaySrc}
                             alt={displayName}
                             className="w-full h-full rounded-full object-cover"
-                            onError={() => {
-                              if (avatarUrl) setAvatarUrl(null)
+                            onError={(e) => {
+                              // Fall back to default avatar when logo/avatar URL fails.
+                              // Keep this handler stateless because avatarUrl is memo-derived.
+                              const img = e.currentTarget as HTMLImageElement | undefined
+                              if (img) img.src = DEFAULT_AVATAR_SRC
                             }}
                           />
                         </div>
@@ -510,8 +523,9 @@ export default function Navbar() {
                             src={navAvatarDisplaySrc}
                             alt={displayName}
                             className="w-full h-full rounded-full object-cover"
-                            onError={() => {
-                              if (avatarUrl) setAvatarUrl(null)
+                            onError={(e) => {
+                              const img = e.currentTarget as HTMLImageElement | undefined
+                              if (img) img.src = DEFAULT_AVATAR_SRC
                             }}
                           />
                         </div>

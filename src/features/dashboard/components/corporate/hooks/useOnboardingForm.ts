@@ -5,12 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks'
-import {
-  useUserProfile,
-  useUploadFiles,
-  useToast,
-  usePersistedModalState,
-} from '@/hooks'
+import { useUserProfile, useUploadFiles, useToast, usePersistedModalState } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { ProfileAndIdentitySchema } from '@/utils/schemas'
 import { MODALS } from '@/utils/constants'
@@ -90,6 +85,7 @@ export function useOnboardingForm() {
   const { mutateAsync: submitPersonalDetailsWithID, isPending: isSubmittingPersonalDetailsWithID } =
     usePersonalDetailsWithIDService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
+  const isFetchingPresignedURL = false
 
   const frontOfIdentification = userProfileData?.id_images?.[0]?.file_url || null
   const backOfIdentification = userProfileData?.id_images?.[1]?.file_url || null
@@ -192,6 +188,7 @@ export function useOnboardingForm() {
     needsOnlyFront,
     isPending,
     isLoading,
+    isFetchingPresignedURL,
     userProfileData,
     onSubmit,
     handleDiscard,
