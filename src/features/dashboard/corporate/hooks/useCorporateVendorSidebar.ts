@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useUserProfile } from '@/hooks'
+import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { corporateQueries } from './useCorporateQueries'
@@ -10,7 +11,9 @@ export function useCorporateVendorSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { logout, user } = useAuthStore()
+  const { logout: clearAuthState, user } = useAuthStore()
+  const { useLogoutService } = useAuth()
+  const { mutateAsync: logoutMutation } = useLogoutService()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
 
@@ -188,6 +191,14 @@ export function useCorporateVendorSidebar() {
     } else {
       navigate(`${ROUTES.IN_APP.DASHBOARD.VENDOR.HOME}?account=vendor&vendor_id=${vendorId}`)
     }
+  }
+
+  const logout = () => {
+    logoutMutation(undefined, {
+      onSettled: () => {
+        clearAuthState()
+      },
+    })
   }
 
   return {

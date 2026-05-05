@@ -14,6 +14,7 @@ import { useUserProfile } from '@/hooks'
 import { DEFAULT_AVATAR_SRC } from '@/components/Avatar/Avatar'
 import { vendorQueries } from '@/features'
 import { branchQueries } from '@/features/dashboard/branch'
+import { useAuth } from '@/features/auth'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -21,7 +22,9 @@ export default function Navbar() {
   // const { cartItems } = useCart()
   const { isOpen: isCartOpen, openCart, closeCart } = useCartStore()
 
-  const { isAuthenticated, user, logout } = useAuthStore()
+  const { isAuthenticated, user, logout: clearAuthState } = useAuthStore()
+  const { useLogoutService } = useAuth()
+  const { mutateAsync: logoutMutation } = useLogoutService()
   const [accountPopoverOpen, setAccountPopoverOpen] = useState(false)
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
@@ -273,6 +276,14 @@ export default function Navbar() {
     isAuthenticated && (isRegularUser || isCorporateUser || isVendor || isBranchManager)
   const navAvatarDisplaySrc = avatarUrl ?? DEFAULT_AVATAR_SRC
 
+  const handleLogout = () => {
+    logoutMutation(undefined, {
+      onSettled: () => {
+        clearAuthState()
+      },
+    })
+  }
+
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200/60 shadow-sm">
@@ -388,7 +399,7 @@ export default function Navbar() {
                       <button
                         type="button"
                         onClick={() => {
-                          logout()
+                          handleLogout()
                           setAccountPopoverOpen(false)
                           navigate(ROUTES.IN_APP.HOME)
                         }}
@@ -531,7 +542,7 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={() => {
-                        logout()
+                        handleLogout()
                         setMobileMenuOpen(false)
                         navigate(ROUTES.IN_APP.HOME)
                       }}

@@ -1,6 +1,7 @@
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { Text, TabbedView } from '@/components'
+import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { cn } from '@/libs/clsx'
@@ -12,7 +13,18 @@ export default function UserSettings() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { logout } = useAuthStore()
+  const { logout: clearAuthState } = useAuthStore()
+  const { useLogoutService } = useAuth()
+  const { mutateAsync: logoutMutation } = useLogoutService()
+
+  const logout = () => {
+    logoutMutation(undefined, {
+      onSettled: () => {
+        clearAuthState()
+        navigate(ROUTES.IN_APP.AUTH.LOGIN)
+      },
+    })
+  }
 
   // Handle path-based routing (e.g., /dashboard/settings/personal-information)
   useEffect(() => {
@@ -41,7 +53,6 @@ export default function UserSettings() {
       path: ROUTES.IN_APP.AUTH.LOGIN,
       onClick: () => {
         logout()
-        navigate(ROUTES.IN_APP.AUTH.LOGIN)
       },
     },
   ]
