@@ -39,6 +39,7 @@ export const ROUTES = {
       RESET_PASSWORD: '/auth/reset-password',
       CREATE_PASSWORD: '/auth/create-password',
       OTP_VERIFICATION: '/auth/otp-verification',
+      VERIFY_EMAIL: '/auth/verify-email',
     },
     DASHBOARD: {
       HOME: '/dashboard',

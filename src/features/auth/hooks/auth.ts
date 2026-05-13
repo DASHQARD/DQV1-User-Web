@@ -24,6 +24,7 @@ import {
   verifyEmail,
   verifyLoginOTP,
   signUp,
+  resendVerification,
   changePassword,
   logout,
   personalDetails,
@@ -98,6 +99,23 @@ export function useAuth() {
         } else {
           error('Verify email failed. Please try again.')
         }
+      },
+    })
+  }
+
+  function useResendVerificationMutation() {
+    return useMutation({
+      mutationFn: resendVerification,
+      onSuccess: (response: any) => {
+        success(
+          response?.data?.message ||
+            'If an account exists for that email, a new verification link has been sent.',
+        )
+      },
+      onError: (err: { status: number; message: string }) => {
+        const errorMessage =
+          err?.message || 'Could not resend verification email. Please try again.'
+        error(errorMessage)
       },
     })
   }
@@ -408,6 +426,7 @@ export function useAuth() {
     setTokenExpired,
     useSignUpMutation,
     useVerifyEmailMutation,
+    useResendVerificationMutation,
     usePersonalDetailsService,
     useUploadUserIDService,
     useVerifyLoginOTPService,

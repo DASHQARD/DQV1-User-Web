@@ -1,5 +1,12 @@
 import type { RouteObject } from 'react-router'
-import { CreateAccount, ForgotPassword, Login, Onboarding, ResetPassword } from '../pages'
+import {
+  CreateAccount,
+  ForgotPassword,
+  Login,
+  Onboarding,
+  ResetPassword,
+  VerifyEmail,
+} from '../pages'
 
 export const authRoutes: RouteObject[] = [
   {
@@ -21,5 +28,9 @@ export const authRoutes: RouteObject[] = [
   {
     path: 'onboarding',
     element: <Onboarding />,
+  },
+  {
+    path: 'verify-email',
+    element: <VerifyEmail />,
   },
 ]

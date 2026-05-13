@@ -28,6 +28,10 @@ const verifyEmail = async (token: string) => {
   return await postMethod(`${commonUrl}/verify-email`, { token })
 }
 
+const resendVerification = async (email: string) => {
+  return await postMethod(`${commonUrl}/resend-verification`, { email })
+}
+
 const login = async (data: LoginData) => {
   return await postMethod(`${commonUrl}/login`, data)
 }
@@ -127,6 +131,7 @@ export {
   login,
   signUp,
   verifyEmail,
+  resendVerification,
   personalDetails,
   personalDetailsWithID,
   uploadUserID,

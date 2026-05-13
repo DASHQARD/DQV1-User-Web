@@ -6,6 +6,12 @@ import { useSignUpForm } from '../../hooks'
 
 vi.mock('../../hooks', () => ({
   useSignUpForm: vi.fn(),
+  useAuth: () => ({
+    useResendVerificationMutation: () => ({
+      mutate: vi.fn(),
+      isPending: false,
+    }),
+  }),
 }))
 
 describe('SignUp (auth)', () => {

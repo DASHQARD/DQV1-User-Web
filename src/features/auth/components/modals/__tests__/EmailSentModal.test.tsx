@@ -9,6 +9,16 @@ vi.mock('@/hooks', () => ({
     closeModal: vi.fn(),
     modalData: { email: 'test@example.com' },
   }),
+  useToast: () => ({ success: vi.fn(), error: vi.fn() }),
+}))
+
+vi.mock('../../../hooks', () => ({
+  useAuth: () => ({
+    useResendVerificationMutation: () => ({
+      mutate: vi.fn(),
+      isPending: false,
+    }),
+  }),
 }))
 
 describe('EmailSentModal', () => {
