@@ -62,36 +62,23 @@ export function useAuth() {
     return useMutation({
       mutationFn: async (token: string) => {
         const response = await verifyEmail(token)
-        return (response as any).data as {
-          user: {
-            id: number
+        // Envelope shape:
+        // { status, statusCode, message, data: { user: { ... } } }
+        // Per spec, no tokens are issued here — login is a separate step.
+        const envelope = response as any
+        return {
+          message: envelope?.message as string | undefined,
+          user: envelope?.data?.user as {
+            id: string
             email: string
             email_verified: boolean
             onboarding_stage: string
             user_type: string
-          }
-          tokens: {
-            accessToken: string
-          }
+          },
         }
       },
-      onSuccess: (response: {
-        user: {
-          id: number
-          email: string
-          email_verified: boolean
-          onboarding_stage: string
-          user_type: string
-        }
-        tokens: {
-          accessToken: string
-        }
-      }) => {
-        const existingRefreshToken = useAuthStore.getState().getRefreshToken()
-        useAuthStore.getState().authenticate({
-          token: response.tokens.accessToken,
-          refreshToken: existingRefreshToken,
-        })
+      onSuccess: (response) => {
+        success(response.message || 'Email verified successfully. You can now log in.')
       },
       onError: (err: { status: number; message: string }) => {
         if (err.status === 401) {
