@@ -66,6 +66,11 @@ export function useSignUpForm() {
     mutate(transformedData, {
       onSuccess: () => {
         emailSentModal.openModal(MODAL_NAMES.AUTH.EMAIL_SENT, { email: data.email })
+        form.reset({
+          country: 'Ghana',
+          country_code: '01',
+          user_type: 'user',
+        })
       },
     })
   }
