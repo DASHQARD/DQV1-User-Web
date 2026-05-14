@@ -1,10 +1,12 @@
 import { Outlet } from 'react-router'
 import { Sidebar } from '../components'
 import { Navbar } from '@/components'
+import { useInactivityLogout } from '@/hooks'
 import { useDashboardLayout } from './useDashboardLayout'
 
 export default function DashboardLayout() {
   useDashboardLayout()
+  useInactivityLogout()
 
   return (
     <div className="no-print relative flex overflow-hidden h-screen">
