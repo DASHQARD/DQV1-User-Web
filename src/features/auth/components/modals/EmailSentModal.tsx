@@ -53,8 +53,17 @@ export default function EmailSentModal() {
   const isOpen = modal.isModalOpen(MODAL_NAMES.AUTH.EMAIL_SENT)
 
   useEffect(() => {
-    if (!isOpen) return
-    setCooldown(readCooldownRemaining(userEmail))
+    if (!isOpen || !userEmail) return
+    // The verification email was just sent (sign-up or unverified-login).
+    // Treat that as the start of the resend cooldown if we don't already have
+    // an active one persisted for this email — otherwise the user can click
+    // "Resend" immediately and see no feedback that another email is in flight.
+    let remaining = readCooldownRemaining(userEmail)
+    if (remaining <= 0) {
+      persistCooldownStart(userEmail)
+      remaining = RESEND_COOLDOWN_SECONDS
+    }
+    setCooldown(remaining)
   }, [isOpen, userEmail])
 
   useEffect(() => {
