@@ -33,6 +33,7 @@ import {
   filterGuestAssignedByType,
   formatBranchLabel,
   mapGuestAssignedCardToVendorCard,
+  pickGuestRedemptionCardId,
   resolveRedemptionCardId,
 } from '@/features/website/utils/guestRedemption'
 
@@ -1081,15 +1082,22 @@ export default function RedemptionPage() {
             return
           }
 
-          const dashGoCardId = String(dashGoCards[0]?.card_id || '')
-          const dashProCardId = String(dashProCards[0]?.card_id || '')
+          const redeemAmount = parseFloat(amount)
+          const activeCardsList = cardType === 'dashgo' ? dashGoCards : dashProCards
+          const redemptionCardId = pickGuestRedemptionCardId(activeCardsList, redeemAmount)
+
+          if (!redemptionCardId) {
+            toast.error('Could not find a gift card to redeem. Please try again.')
+            setIsProcessingRedemption(false)
+            return
+          }
 
           payload = {
             card_type: cardTypeForAPI,
             phone_number: phoneForApi,
-            amount: parseFloat(amount),
+            amount: redeemAmount,
             branch_id: String(selectedBranchId || selectedCard?.branch_id || ''),
-            card_id: cardType === 'dashgo' ? dashGoCardId : dashProCardId,
+            card_id: redemptionCardId,
           }
         } else if (cardType === 'dashpass') {
           const dashPassCards =
@@ -1099,12 +1107,12 @@ export default function RedemptionPage() {
           let dashPassBranchId = ''
 
           if (selectedCard) {
-            dashPassCardId = String(selectedCard.card_id)
+            dashPassCardId = selectedCard.card_id
             dashPassAmount = selectedCard.card_price || 0
             dashPassBranchId = String(selectedBranchId || selectedCard.branch_id || '')
           } else if (dashPassCards.length > 0) {
-            dashPassCardId = String(dashPassCards[0]?.card_id || '')
             dashPassAmount = dashPassCards[0]?.amount || 0
+            dashPassCardId = pickGuestRedemptionCardId(dashPassCards, dashPassAmount)
             dashPassBranchId = String(selectedBranchId || dashPassCards[0]?.branch_id || '')
           }
 
@@ -1132,8 +1140,14 @@ export default function RedemptionPage() {
             phone_number: phoneForApi,
             amount: selectedCard.card_price || 0,
             branch_id: String(selectedBranchId || selectedCard.branch_id || ''),
-            card_id: String(selectedCard.card_id),
+            card_id: selectedCard.card_id,
           }
+        }
+
+        if (!payload.card_id?.trim()) {
+          toast.error('Could not find a gift card to redeem. Please try again.')
+          setIsProcessingRedemption(false)
+          return
         }
 
         if (!isAuthenticated) {
@@ -1143,13 +1157,23 @@ export default function RedemptionPage() {
         }
 
         if (isGuestAuth) {
-          const response = await processGuestCardsRedemptionMutation.mutateAsync({
-            guest_phone: convertToInternationalFormat(getGuestPhoneFromAuth(jwtUser)),
-            branch_id: String(payload.branch_id || ''),
+          const guestRedemptionPayload: {
+            card_type: typeof payload.card_type
+            amount: number
+            card_id: string
+            branch_id?: string
+          } = {
             card_type: payload.card_type,
             amount: payload.amount,
-            card_id: String(payload.card_id || ''),
-          })
+            card_id: String(payload.card_id),
+          }
+          const branchId = String(payload.branch_id || '').trim()
+          if (branchId) {
+            guestRedemptionPayload.branch_id = branchId
+          }
+
+          const response =
+            await processGuestCardsRedemptionMutation.mutateAsync(guestRedemptionPayload)
           if (
             response?.status === 'success' ||
             response?.statusCode === 200 ||
@@ -1544,7 +1568,7 @@ export default function RedemptionPage() {
                                         </Text>
                                       </div>
                                     ) : (
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-136 overflow-y-auto pr-1">
+                                      <div className="flex flex-col gap-3 max-h-136 overflow-y-auto pr-1">
                                         {filteredCards.map((card: VendorCard) => {
                                           const key =
                                             card.cart_item_id != null
@@ -1567,54 +1591,45 @@ export default function RedemptionPage() {
                                                 setSelectedCard(card)
                                                 setSelectedBranchId(card.branch_id || null)
                                               }}
-                                              className={`border-2 rounded-2xl text-left transition-all overflow-hidden bg-white shadow-sm ${
+                                              type="button"
+                                              className={`flex w-full overflow-hidden rounded-xl border-2 bg-white text-left shadow-sm transition-all ${
                                                 isSelected
                                                   ? 'border-primary-500 ring-2 ring-primary-100'
                                                   : 'border-gray-200 hover:border-gray-300'
                                               }`}
                                             >
-                                              <div className="relative h-44 bg-gray-100">
+                                              <div className="relative h-28 w-32 shrink-0 bg-gray-100 sm:h-32 sm:w-40">
                                                 <img
                                                   src={
                                                     card.image_url ||
                                                     getCardBackground(card.card_type)
                                                   }
                                                   alt={card.card_name}
-                                                  className="w-full h-full object-cover"
+                                                  className="h-full w-full object-cover"
                                                   onError={(event) => {
                                                     const target = event.target as HTMLImageElement
                                                     target.src = getCardBackground(card.card_type)
                                                   }}
                                                 />
-                                                <div className="absolute top-3 left-3">
-                                                  <div className="px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-semibold flex items-center gap-1">
-                                                    <Icon icon="bi:briefcase" className="text-sm" />
+                                                <div className="absolute left-2 top-2">
+                                                  <div className="flex items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-semibold text-primary-700">
+                                                    <Icon icon="bi:briefcase" className="text-xs" />
                                                     {getCardTypeName(card.card_type)}
                                                   </div>
                                                 </div>
-                                                <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-white/90 text-primary-700 text-sm font-semibold">
-                                                  {card.currency}{' '}
-                                                  {Number(card.card_price || 0).toLocaleString(
-                                                    undefined,
-                                                    {
-                                                      minimumFractionDigits: 2,
-                                                      maximumFractionDigits: 2,
-                                                    },
-                                                  )}
-                                                </div>
                                               </div>
 
-                                              <div className="p-4">
-                                                <div className="flex items-start justify-between gap-3">
+                                              <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 p-3 sm:p-4">
+                                                <div className="flex items-start justify-between gap-2">
                                                   <Text
                                                     variant="span"
                                                     weight="semibold"
-                                                    className="text-gray-900 text-2xl block"
+                                                    className="line-clamp-2 text-base text-gray-900 sm:text-lg"
                                                   >
                                                     {card.card_name}
                                                   </Text>
                                                   {isSelected && (
-                                                    <div className="w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center shrink-0 mt-1">
+                                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-600">
                                                       <Icon
                                                         icon="bi:check"
                                                         className="text-white text-sm"
@@ -1623,60 +1638,39 @@ export default function RedemptionPage() {
                                                   )}
                                                 </div>
 
-                                                <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                  <div className="h-full w-4/5 bg-primary-600 rounded-full" />
-                                                </div>
 
-                                                <div className="mt-3 flex items-center gap-2 text-gray-500">
-                                                  <Icon icon="bi:calendar3" className="text-base" />
-                                                  <Text variant="span" className="text-sm">
-                                                    Expires {formatExpiryDate(card.expiry_date)}
-                                                  </Text>
-                                                </div>
-
-                                                <div className="my-4 border-t border-gray-200" />
-
-                                                <div className="flex items-end justify-between gap-3">
-                                                  <div className="flex items-center gap-2 min-w-0">
-                                                    <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center shrink-0">
-                                                      <Icon
-                                                        icon="bi:shop"
-                                                        className="text-primary-600 text-base"
-                                                      />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                      <Text
-                                                        variant="span"
-                                                        weight="semibold"
-                                                        className="text-gray-900 block truncate"
-                                                      >
-                                                        {card.vendor_name ||
-                                                          vendorName ||
-                                                          selectedVendor?.vendor_name}
-                                                      </Text>
-                                                      <Text
-                                                        variant="span"
-                                                        className="text-gray-500 text-sm block"
-                                                      >
-                                                        Vendor
-                                                      </Text>
-                                                    </div>
+                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
+                                                  <div className="flex items-center gap-1">
+                                                    <Icon icon="bi:calendar3" className="text-sm" />
+                                                    <Text variant="span" className="text-sm">
+                                                      Expires {formatExpiryDate(card.expiry_date)}
+                                                    </Text>
                                                   </div>
-                                                  <Text
-                                                    variant="span"
-                                                    weight="semibold"
-                                                    className="text-primary-700 text-2xl shrink-0"
-                                                  >
-                                                    {card.currency}{' '}
-                                                    {Number(card.card_price || 0).toLocaleString(
-                                                      undefined,
-                                                      {
-                                                        minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2,
-                                                      },
-                                                    )}
-                                                  </Text>
+                                                  <div className="flex min-w-0 items-center gap-1">
+                                                    <Icon icon="bi:shop" className="shrink-0 text-sm" />
+                                                    <Text variant="span" className="truncate text-sm">
+                                                      {card.vendor_name ||
+                                                        vendorName ||
+                                                        selectedVendor?.vendor_name ||
+                                                        'Vendor'}
+                                                    </Text>
+                                                  </div>
                                                 </div>
+
+                                                <Text
+                                                  variant="span"
+                                                  weight="semibold"
+                                                  className="text-lg text-primary-700 sm:text-xl"
+                                                >
+                                                  {card.currency}{' '}
+                                                  {Number(card.card_price || 0).toLocaleString(
+                                                    undefined,
+                                                    {
+                                                      minimumFractionDigits: 2,
+                                                      maximumFractionDigits: 2,
+                                                    },
+                                                  )}
+                                                </Text>
                                               </div>
                                             </button>
                                           )

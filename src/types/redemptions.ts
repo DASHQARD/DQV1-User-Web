@@ -90,9 +90,9 @@ export interface CardsRedemptionPayload {
   token?: string
 }
 
+/** POST /guest-redemptions/cards — guest identity comes from Bearer token, not body */
 export interface GuestCardsRedemptionPayload {
-  guest_phone: string
-  branch_id: string
+  branch_id?: string
   card_type: 'DashGo' | 'DashPro' | 'DashX' | 'DashPass'
   amount: number
   card_id: string

@@ -105,3 +105,30 @@ export function filterCardsByBranch<T extends { branch_id?: string }>(
   if (selectedBranchId == null) return cards
   return cards.filter((card) => String(card.branch_id ?? '') === String(selectedBranchId))
 }
+
+/** Pick a redeemable gift card id from guest recipient-amounts / assigned-cards payloads */
+export function pickGuestRedemptionCardId(
+  cards: unknown[],
+  redeemAmount?: number,
+): string {
+  if (!Array.isArray(cards) || cards.length === 0) return ''
+
+  const entries = cards
+    .map((raw) => ({
+      raw: raw as Record<string, unknown>,
+      id: resolveRedemptionCardId(raw as Record<string, unknown>),
+      amount: Number((raw as Record<string, unknown>).amount ?? 0),
+    }))
+    .filter((entry) => entry.id !== '')
+
+  if (entries.length === 0) return ''
+
+  const amountNum = Number(redeemAmount) || 0
+  if (amountNum > 0) {
+    const covering = entries.find((entry) => entry.amount >= amountNum)
+    if (covering) return covering.id
+  }
+
+  const sorted = [...entries].sort((a, b) => b.amount - a.amount)
+  return sorted[0]?.id ?? ''
+}
