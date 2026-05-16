@@ -8,7 +8,7 @@ export interface RecipientRow {
 
 export interface CardRecipientAssignment {
   recipientIds: number[]
-  cardId?: number
+  cardId?: number | string
   cardType: string
   vendorId?: string | number
   dashGoAmount?: number

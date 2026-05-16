@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { Icon } from '@iconify/react'
+import { cn } from '@/libs'
 
 interface ImageUploadProps {
   file: File | null
@@ -53,30 +54,31 @@ export default function ImageUpload({
 
   return (
     <div
-      className={`flex bg-gray-200 ${borderRadius} h-[120px] w-[120px] mx-auto relative ${className}`}
+      className={cn(
+        'relative mx-auto shrink-0 overflow-hidden bg-gray-200 h-[120px] w-[120px]',
+        borderRadius,
+        className,
+      )}
     >
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/jpg,image/png,image/webp"
+        accept="image/jpeg,image/jpg,image/png,.jpg,.jpeg,.png"
         className="hidden"
         onChange={handleImageChange}
         disabled={isUploading}
       />
-      <div className={`grid inset-0 m-auto overflow-hidden ${borderRadius}`}>
-        {displayImage ? (
-          <img
-            src={displayImage}
-            alt="profile"
-            className={`w-full h-full object-cover ${borderRadius}`}
-          />
-        ) : (
-          <Icon
-            icon="hugeicons:user"
-            className={`${iconSize} object-cover mx-auto my-auto text-gray-400`}
-          />
-        )}
-      </div>
+      {displayImage ? (
+        <img
+          src={displayImage}
+          alt="profile"
+          className={cn('absolute inset-0 size-full object-cover object-center', borderRadius)}
+        />
+      ) : (
+        <div className="flex size-full items-center justify-center">
+          <Icon icon="hugeicons:user" className={cn(iconSize, 'text-gray-400')} />
+        </div>
+      )}
       <button
         type="button"
         onClick={handleCameraClick}

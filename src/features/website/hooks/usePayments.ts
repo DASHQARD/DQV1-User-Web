@@ -1,23 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
-import {
-  checkout,
-  guestCheckout,
-  getPaymentProviderConfig,
-  getServiceFees,
-} from '../services/payment'
+import type { CheckoutPayload } from '@/types'
+import { checkout, getPaymentProviderConfig, getServiceFees } from '../services/payment'
+import { redirectToCheckoutPaymentPage } from '../utils/checkoutRedirect'
 
-function handleCheckoutSuccess(data: any, queryClient: ReturnType<typeof useQueryClient>) {
-  if (typeof data?.data === 'string') {
-    window.open(data.data, '_blank', 'noopener,noreferrer')
-  } else if (data?.data && typeof data.data === 'object') {
-    const redirectUrl = (data.data as any).redirect_url
-    if (typeof redirectUrl === 'string' && redirectUrl.length > 0) {
-      window.open(redirectUrl, '_blank', 'noopener,noreferrer')
-    }
+async function runCheckoutWithRedirect<T extends CheckoutPayload>(
+  checkoutFn: (data: T) => Promise<unknown>,
+  data: T,
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  const response = await checkoutFn(data)
+  const redirected = redirectToCheckoutPaymentPage(response)
+  if (!redirected) {
+    queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+    queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
   }
-  queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-  queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
+  return response
 }
 
 export function usePayments() {
@@ -26,26 +24,7 @@ export function usePayments() {
 
   function useCheckoutService() {
     return useMutation({
-      mutationFn: checkout,
-      onSuccess: (data: any) => {
-        handleCheckoutSuccess(data, queryClient)
-      },
-      onError: (error: { status: number; message: string }) => {
-        if (error?.status === 429) {
-          toast.error('Too many checkout attempts. Please wait a minute and try again.')
-          return
-        }
-        toast.error(error.message || 'Checkout failed')
-      },
-    })
-  }
-
-  function useGuestCheckoutService() {
-    return useMutation({
-      mutationFn: guestCheckout,
-      onSuccess: (data: any) => {
-        handleCheckoutSuccess(data, queryClient)
-      },
+      mutationFn: (data: CheckoutPayload) => runCheckoutWithRedirect(checkout, data, queryClient),
       onError: (error: { status: number; message: string }) => {
         if (error?.status === 429) {
           toast.error('Too many checkout attempts. Please wait a minute and try again.')
@@ -72,7 +51,6 @@ export function usePayments() {
 
   return {
     useCheckoutService,
-    useGuestCheckoutService,
     usePaymentProviderConfig,
     useServiceFeesConfig,
   }

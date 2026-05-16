@@ -510,7 +510,7 @@ export type GuestAssignRecipientPayload = {
   quantity?: number
 }
 
-/** Base fields for POST /payments/guest/checkout */
+/** @deprecated Use CheckoutPayloadBase with cart_id — guest carts use POST /payments/checkout */
 export type GuestCheckoutPayloadBase = {
   guest_cart_id: number
   full_name: string

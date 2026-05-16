@@ -76,20 +76,24 @@ const refreshAccessToken = async (): Promise<string | null> => {
       throw new Error('Unable to refresh access token')
     }
 
-    useAuthStore.getState().authenticate({
-      token: accessToken,
-      refreshToken: newRefreshToken || refreshTokenValue,
-      isGuestAuth,
-    })
+    const { setToken, setRefreshToken } = useAuthStore.getState()
+    setToken(accessToken)
+    setRefreshToken(newRefreshToken || refreshTokenValue)
     return accessToken
   } catch (error) {
     const reset = useAuthStore.getState().reset
     reset()
-    if (!window.location.pathname.includes('auth')) {
+    const path = window.location.pathname
+    if (!path.includes('auth') && !path.includes('/redeem')) {
       window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN
     }
     throw error
   }
+}
+
+const shouldRedirectToLogin = () => {
+  const path = window.location.pathname
+  return !path.includes('auth') && !path.includes('/redeem')
 }
 
 function errorHandler(error: AxiosError) {
@@ -107,16 +111,14 @@ function errorHandler(error: AxiosError) {
   }
 }
 
-instance.interceptors.request.use((request: any) => {
-  const headers = request.headers
+instance.interceptors.request.use((request: InternalAxiosRequestConfig) => {
   const token = useAuthStore.getState().getToken()
-  return {
-    ...request,
-    headers: {
-      ...headers,
-      Authorization: token ? `Bearer ${token}` : '',
-    },
+  if (token) {
+    request.headers.Authorization = `Bearer ${token}`
+  } else if (request.headers.Authorization) {
+    delete request.headers.Authorization
   }
+  return request
 })
 
 instance.interceptors.response.use(
@@ -140,7 +142,9 @@ instance.interceptors.response.use(
       ) {
         const reset = useAuthStore.getState().reset
         reset()
-        window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN
+        if (shouldRedirectToLogin()) {
+          window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN
+        }
         return errorHandler(error)
       }
 
@@ -148,7 +152,7 @@ instance.interceptors.response.use(
       if (originalRequest._retry) {
         const reset = useAuthStore.getState().reset
         reset()
-        if (!window.location.pathname.includes('auth')) {
+        if (shouldRedirectToLogin()) {
           window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN
         }
         return errorHandler(error)

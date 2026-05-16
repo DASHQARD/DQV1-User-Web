@@ -15,7 +15,7 @@ describe('ImageUpload', () => {
     renderWithProviders(<ImageUpload file={null} onFileChange={() => {}} onUpload={() => {}} />)
     const input = document.querySelector('input[type="file"]')
     expect(input).toBeInTheDocument()
-    expect(input).toHaveAttribute('accept', 'image/jpeg,image/jpg,image/png,image/webp')
+    expect(input).toHaveAttribute('accept', 'image/jpeg,image/jpg,image/png,.jpg,.jpeg,.png')
   })
 
   it('calls onFileChange and onUpload when file is selected', async () => {

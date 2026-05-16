@@ -1,5 +1,5 @@
 import { getMethod, postMethod } from '@/services/requests'
-import type { CheckoutPayload, GuestCheckoutPayload } from '@/types'
+import type { CheckoutPayload } from '@/types'
 
 export interface PaymentProviderConfig {
   id: string
@@ -41,6 +41,7 @@ export const checkout = async (data: CheckoutPayload): Promise<any> => {
   return await postMethod('/payments/checkout', data)
 }
 
-export const guestCheckout = async (data: GuestCheckoutPayload): Promise<any> => {
-  return await postMethod('/payments/guest/checkout', data)
+/** @deprecated Guest checkout uses POST /payments/checkout with cart_id (guest cart detected server-side). */
+export const guestCheckout = async (data: CheckoutPayload): Promise<any> => {
+  return await postMethod('/payments/checkout', data)
 }

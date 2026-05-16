@@ -11,7 +11,6 @@ import { useCartStore } from '@/stores/cart'
 import {
   guestAuthOtpRequest,
   guestAuthOtpVerify,
-  guestAuthTokenRefresh,
 } from '@/features/auth/services'
 import { ensureGuestCartAndAddCard } from '@/features/website/services/cards'
 import {
@@ -158,40 +157,6 @@ export default function GuestAddToCartModal() {
       })
       if (guestName) setGuestContactSessionItem(GUEST_NAME_STORAGE_KEY, guestName)
       if (submittedPhone) setGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY, submittedPhone)
-
-      // Immediately refresh guest token after login to align session lifecycle with backend.
-      if (refreshToken) {
-        try {
-          const refreshResponse = await guestAuthTokenRefresh({ refresh_token: refreshToken })
-          const refreshData = refreshResponse?.data ?? refreshResponse
-          const nextAccessToken =
-            refreshData?.tokens?.access_token ??
-            refreshData?.tokens?.accessToken ??
-            refreshData?.access_token ??
-            refreshData?.accessToken ??
-            refreshData?.data?.access_token ??
-            refreshData?.data?.accessToken
-          const nextRefreshToken =
-            refreshData?.tokens?.refresh_token ??
-            refreshData?.tokens?.refreshToken ??
-            refreshData?.refresh_token ??
-            refreshData?.refreshToken ??
-            refreshData?.data?.refresh_token ??
-            refreshData?.data?.refreshToken ??
-            refreshToken
-
-          if (nextAccessToken) {
-            authenticate({
-              token: nextAccessToken,
-              refreshToken: nextRefreshToken ?? refreshToken,
-              isGuestAuth: true,
-            })
-          }
-        } catch (refreshError) {
-          // Keep the verified session if immediate refresh fails; auto-refresh hook will retry later.
-          console.warn('Guest immediate token refresh failed', refreshError)
-        }
-      }
 
       if (pendingItem.redemptionOnly) {
         useGuestAddToCartModalStore.getState().redemptionOnSuccess?.()

@@ -1,9 +1,8 @@
 import {
-  GUEST_EMAIL_STORAGE_KEY,
-  GUEST_NAME_STORAGE_KEY,
-  GUEST_PHONE_STORAGE_KEY,
-  getGuestContactSessionItem,
-} from '@/utils/constants'
+  getGuestEmailFromAuth,
+  getGuestNameFromAuth,
+  getGuestPhoneFromAuth,
+} from '@/features/website/utils/guestAuth'
 
 export type AssignToSelfContact = {
   name: string
@@ -28,16 +27,11 @@ export function getAssignToSelfContactPrefill(params: {
   const { isGuestAuth, user, userProfileData } = params
 
   if (isGuestAuth) {
-    const u = (user ?? {}) as Record<string, string | undefined>
-    let name = u.guest_name ?? u.fullname ?? ''
-    let email = u.guest_email ?? u.email ?? ''
-    let phone = u.guest_phone ?? u.phone ?? u.phonenumber ?? ''
-
-    if (!name) name = getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY)
-    if (!email) email = getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY)
-    if (!phone) phone = getGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY)
-
-    return { name, email, phone }
+    return {
+      name: getGuestNameFromAuth(user),
+      email: getGuestEmailFromAuth(user),
+      phone: getGuestPhoneFromAuth(user),
+    }
   }
 
   return {

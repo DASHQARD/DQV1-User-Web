@@ -26,9 +26,15 @@ import {
   useRedemptionQueries,
   useRateCard,
 } from '@/features/dashboard/hooks'
-import RedemptionOTPModal from '@/features/website/components/RedemptionOTPModal'
-import { GUEST_PHONE_STORAGE_KEY, ROUTES, getGuestContactSessionItem } from '@/utils/constants'
+import { ROUTES } from '@/utils/constants'
 import { getCardBackground, getCardTypeName, getImageUrl } from '@/utils/cardDisplay'
+import { getGuestPhoneFromAuth } from '@/features/website/utils/guestAuth'
+import {
+  filterGuestAssignedByType,
+  formatBranchLabel,
+  mapGuestAssignedCardToVendorCard,
+  resolveRedemptionCardId,
+} from '@/features/website/utils/guestRedemption'
 
 type RedemptionMethod = 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
@@ -80,12 +86,12 @@ export default function RedemptionPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const queryClient = useQueryClient()
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user: jwtUser } = useAuthStore()
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const openGuestVerifyModal = useGuestAddToCartModalStore((s) => s.open)
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { useGetUserProfileService } = useUserProfile()
-  const { data: user } = useGetUserProfileService()
+  const { data: userProfile } = useGetUserProfileService()
 
   // State management
   const [redemptionMethod, setRedemptionMethod] = useState<RedemptionMethod | ''>('')
@@ -106,12 +112,8 @@ export default function RedemptionPage() {
   const [redeemedCardId, setRedeemedCardId] = useState<string | null>(null)
   const [rating, setRating] = useState<number>(0)
   const [isSubmittingRating, setIsSubmittingRating] = useState(false)
-  const [showOTPModal, setShowOTPModal] = useState(false)
-  const [isVerifyingOTP, setIsVerifyingOTP] = useState(false)
   const [showActionChoiceModal, setShowActionChoiceModal] = useState(false)
   const toast = useToast()
-
-  const getStoredGuestPhone = () => getGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY)
 
   const normalizeToLocalPhone = (value: string) => {
     const digitsOnly = (value || '').replace(/[^0-9]/g, '')
@@ -127,13 +129,12 @@ export default function RedemptionPage() {
   }, [searchParams])
 
   useEffect(() => {
-    // Prefill guest phone in redemption input when available.
     if (isAuthenticated || phoneNumber) return
-    const prefillPhone = normalizeToLocalPhone(getStoredGuestPhone())
+    const prefillPhone = normalizeToLocalPhone(getGuestPhoneFromAuth(jwtUser))
     if (prefillPhone) {
       setPhoneNumber(prefillPhone)
     }
-  }, [isAuthenticated, phoneNumber])
+  }, [isAuthenticated, phoneNumber, jwtUser])
 
   const clearRedeemQueryParam = () => {
     const params = new URLSearchParams(searchParams)
@@ -153,15 +154,7 @@ export default function RedemptionPage() {
   }
 
   const invalidateRedemptionGuestQueries = useCallback(() => {
-    ;[
-      'redemptions-amount-dash-go',
-      'redemptions-amount-dash-pro',
-      'redemptions-amount-dash-x',
-      'redemptions-amount-dash-pass',
-      'guest-assigned-cards',
-    ].forEach((key) => {
-      queryClient.invalidateQueries({ queryKey: [key] })
-    })
+    queryClient.invalidateQueries({ queryKey: ['guest-assigned-cards'] })
   }, [queryClient])
 
   // Get redemption queries hooks
@@ -171,29 +164,19 @@ export default function RedemptionPage() {
     useGetRedemptionsAmountDashXService,
     useGetRedemptionsAmountDashPassService,
     useGetGuestAssignedCardsService,
+    useGetGuestRedemptionsService,
   } = useRedemptionQueries()
-  const {
-    useProcessRedemptionCardsService,
-    useProcessCardsRedemptionService,
-    useProcessGuestCardsRedemptionService,
-    useInitiateRedemptionService,
-  } = useRedemptionMutation()
+  const { useProcessRedemptionCardsService, useProcessGuestCardsRedemptionService } =
+    useRedemptionMutation()
   const processRedemptionMutation = useProcessRedemptionCardsService()
-  const processCardsRedemptionMutation = useProcessCardsRedemptionService()
   const processGuestCardsRedemptionMutation = useProcessGuestCardsRedemptionService()
-  const initiateRedemptionMutation = useInitiateRedemptionService()
   const rateCardMutation = useRateCard()
-
-  /** Guest vendor_id flow: payload to send to /redemptions/cards after OTP verify */
-  const [pendingVendorIdPayload, setPendingVendorIdPayload] =
-    useState<CardsRedemptionPayload | null>(null)
 
   // Get phone number for balance queries
   const userPhoneNumber = isAuthenticated
-    ? (user as any)?.phonenumber ||
-      (user as any)?.phone ||
-      (isGuestAuth ? getStoredGuestPhone() : '') ||
-      ''
+    ? isGuestAuth
+      ? getGuestPhoneFromAuth(jwtUser)
+      : (userProfile as any)?.phonenumber || (userProfile as any)?.phone || ''
     : phoneNumber
 
   // Prepare params for DashGo hook
@@ -260,7 +243,8 @@ export default function RedemptionPage() {
     useGetRedemptionsAmountDashGoService(dashGoParams)
 
   const dashProAmountsEnabled =
-    isAuthenticated ||
+    (isAuthenticated && !isGuestAuth) ||
+    (isGuestAuth && !!(selectedVendorId || selectedBranchId || selectedCard?.branch_id)) ||
     (redemptionMethod === 'vendor_id' &&
       !!dashGoParams?.phone_number &&
       !!(dashGoParams?.vendor_id || dashGoParams?.branch_id))
@@ -274,6 +258,18 @@ export default function RedemptionPage() {
   const { data: guestAssignedCardsResponse } = useGetGuestAssignedCardsService(
     redemptionMethod === 'vendor_id',
   )
+  const { data: guestRedemptionsHistory } = useGetGuestRedemptionsService(
+    isGuestAuth && step === 'success',
+    { limit: 5 },
+  )
+
+  const recentGuestRedemptions = useMemo(() => {
+    if (!guestRedemptionsHistory) return []
+    const list = Array.isArray(guestRedemptionsHistory)
+      ? guestRedemptionsHistory
+      : (guestRedemptionsHistory as { data?: unknown[] })?.data
+    return Array.isArray(list) ? list.slice(0, 5) : []
+  }, [guestRedemptionsHistory])
 
   // Fetch vendors same as Vendors/DashQards: limit 100 when on vendor_id flow
   const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService(
@@ -283,9 +279,22 @@ export default function RedemptionPage() {
 
   const guestAssignedCards = useMemo(() => {
     if (!isGuestAuth) return []
-    const cards = guestAssignedCardsResponse?.data?.cards
+    const cards = guestAssignedCardsResponse?.cards ?? guestAssignedCardsResponse?.data?.cards
     return Array.isArray(cards) ? cards : []
   }, [isGuestAuth, guestAssignedCardsResponse])
+
+  const publicVendorsWithCards = useMemo(() => {
+    if (!vendorsResponse) return []
+    const raw = Array.isArray(vendorsResponse)
+      ? vendorsResponse
+      : (vendorsResponse as any)?.data || []
+    const list = Array.isArray(raw) ? raw : []
+    return list.filter(
+      (v: any) =>
+        v.branches_with_cards?.length > 0 &&
+        v.branches_with_cards.some((b: any) => b.cards && b.cards.length > 0),
+    )
+  }, [vendorsResponse])
 
   // Extract vendors and filter same as Vendors/DashQards: only vendors with branches that have cards
   const vendors = useMemo(() => {
@@ -305,19 +314,12 @@ export default function RedemptionPage() {
           })
         }
       })
-      return Array.from(vendorMap.values())
+      const fromAssigned = Array.from(vendorMap.values())
+      if (fromAssigned.length > 0) return fromAssigned
+      return publicVendorsWithCards
     }
-    if (!vendorsResponse) return []
-    const raw = Array.isArray(vendorsResponse)
-      ? vendorsResponse
-      : (vendorsResponse as any)?.data || []
-    const list = Array.isArray(raw) ? raw : []
-    return list.filter(
-      (v: any) =>
-        v.branches_with_cards?.length > 0 &&
-        v.branches_with_cards.some((b: any) => b.cards && b.cards.length > 0),
-    )
-  }, [isGuestAuth, guestAssignedCards, vendorsResponse])
+    return publicVendorsWithCards
+  }, [isGuestAuth, guestAssignedCards, publicVendorsWithCards])
 
   // Convert to dropdown options (Combobox filters by search internally)
   const vendorOptions: DropdownOption[] = useMemo(() => {
@@ -335,15 +337,19 @@ export default function RedemptionPage() {
       return guestAssignedCards
         .filter((card: any) => String(card.vendor_id ?? '') === String(selectedVendorId))
         .map((card: any) => ({
-          card_id: String(card.gift_card_id || card.card_id || ''),
+          card_id: resolveRedemptionCardId(card),
           card_name: card.product || 'Unknown Card',
           card_type: String(card.card_type || '').toLowerCase(),
           card_price: Number(card.price || card.amount || 0),
-          currency: card.currency || guestAssignedCardsResponse?.data?.currency || 'GHS',
+          currency:
+            card.currency ||
+            guestAssignedCardsResponse?.currency ||
+            guestAssignedCardsResponse?.data?.currency ||
+            'GHS',
           status: 'active',
           branch_id: card.branch_id ? String(card.branch_id) : undefined,
-          branch_name: card.branch_name,
-          branch_location: card.branch_location,
+          branch_name: card.branch_name || card.branch?.name,
+          branch_location: card.branch_location || card.branch?.location,
           vendor_id: card.vendor_id ? String(card.vendor_id) : undefined,
           vendor_name: card.vendor_name,
           recipient_id: card.guest_recipient_id ? String(card.guest_recipient_id) : undefined,
@@ -360,14 +366,14 @@ export default function RedemptionPage() {
         if (branch.cards && Array.isArray(branch.cards)) {
           branch.cards.forEach((card: any) => {
             cards.push({
-              card_id: card.card_id,
+              card_id: resolveRedemptionCardId(card),
               card_name: card.card_name || card.product || 'Unknown Card',
               card_type: card.card_type?.toLowerCase() || '',
               card_price: card.card_price || 0,
               currency: card.currency || 'GHS',
               status: card.status || 'active',
-              branch_id: branch.branch_id,
-              branch_name: branch.branch_name,
+              branch_id: branch.branch_id ? String(branch.branch_id) : undefined,
+              branch_name: branch.branch_name || branch.name,
               branch_location: branch.branch_location,
             })
           })
@@ -407,7 +413,11 @@ export default function RedemptionPage() {
         if (!branchMap.has(card.branch_id)) {
           branchMap.set(card.branch_id, {
             branch_id: card.branch_id,
-            branch_name: card.branch_name || 'Branch',
+            branch_name: formatBranchLabel({
+              branch_id: card.branch_id,
+              branch_name: card.branch_name,
+              branch_location: card.branch_location,
+            }),
             branch_location: card.branch_location || '',
           })
         }
@@ -415,13 +425,16 @@ export default function RedemptionPage() {
       return Array.from(branchMap.values())
     }
     if (!selectedVendor || !selectedVendor.branches_with_cards) return []
-    const branchMap = new Map<number, any>()
+    const branchMap = new Map<string, any>()
     selectedVendor.branches_with_cards.forEach((branch: any) => {
-      if (branch.branch_id && !branchMap.has(branch.branch_id)) {
-        branchMap.set(branch.branch_id, {
-          branch_id: branch.branch_id,
-          branch_name: branch.branch_name,
-          branch_location: branch.branch_location,
+      const hasCards = Array.isArray(branch.cards) && branch.cards.length > 0
+      if (!branch.branch_id || !hasCards) return
+      const branchKey = String(branch.branch_id)
+      if (!branchMap.has(branchKey)) {
+        branchMap.set(branchKey, {
+          branch_id: branchKey,
+          branch_name: formatBranchLabel(branch),
+          branch_location: branch.branch_location || '',
         })
       }
     })
@@ -430,19 +443,29 @@ export default function RedemptionPage() {
 
   // Create branch options for dropdown
   const branchOptions: DropdownOption[] = useMemo(() => {
-    return availableBranches.map((branch) => {
-      const label = branch.branch_location
-        ? `${branch.branch_name} - ${branch.branch_location}`
-        : `${branch.branch_name}`
-      return {
-        label,
-        value: String(branch.branch_id),
-      }
-    })
+    return availableBranches.map((branch) => ({
+      label: formatBranchLabel(branch),
+      value: String(branch.branch_id),
+    }))
   }, [availableBranches])
 
-  // Extract cards from DashX response
+  // Auto-select when only one branch applies
+  useEffect(() => {
+    if (availableBranches.length === 1 && selectedBranchId === null) {
+      setSelectedBranchId(String(availableBranches[0].branch_id))
+    }
+  }, [availableBranches, selectedBranchId])
+
+  const guestAssignedCurrency =
+    guestAssignedCardsResponse?.currency || guestAssignedCardsResponse?.data?.currency || 'GHS'
+
+  // DashX / DashPass: guests use assigned-cards (no balance API per guest spec)
   const dashXCards = useMemo(() => {
+    if (isGuestAuth) {
+      return filterGuestAssignedByType(guestAssignedCards, 'dashx').map((card) =>
+        mapGuestAssignedCardToVendorCard(card, 'dashx', guestAssignedCurrency),
+      )
+    }
     const cards = redemptionsAmountDashX?.data?.cards || redemptionsAmountDashX?.cards
     if (!cards || !Array.isArray(cards)) {
       return []
@@ -467,10 +490,14 @@ export default function RedemptionPage() {
       expiry_date: card.expiry_date,
       description: card.description,
     }))
-  }, [redemptionsAmountDashX])
+  }, [isGuestAuth, guestAssignedCards, guestAssignedCurrency, redemptionsAmountDashX])
 
-  // Extract cards from DashPass response
   const dashPassCards = useMemo(() => {
+    if (isGuestAuth) {
+      return filterGuestAssignedByType(guestAssignedCards, 'dashpass').map((card) =>
+        mapGuestAssignedCardToVendorCard(card, 'dashpass', guestAssignedCurrency),
+      )
+    }
     const cards = redemptionsAmountDashPass?.data?.cards || redemptionsAmountDashPass?.cards
     if (!cards || !Array.isArray(cards)) {
       return []
@@ -495,7 +522,7 @@ export default function RedemptionPage() {
       expiry_date: card.expiry_date,
       description: card.description,
     }))
-  }, [redemptionsAmountDashPass])
+  }, [isGuestAuth, guestAssignedCards, guestAssignedCurrency, redemptionsAmountDashPass])
 
   // Filter cards by selected card type and branch
   const filteredCards = useMemo(() => {
@@ -522,20 +549,19 @@ export default function RedemptionPage() {
   useEffect(() => {
     const fetchBalance = async () => {
       // Get phone number - from user if authenticated, otherwise session + local (guest verify)
-      const userPhoneNumber = isAuthenticated
-        ? (user as any)?.phonenumber ||
-          (user as any)?.phone ||
-          (isGuestAuth ? getStoredGuestPhone() : '') ||
-          ''
-        : getStoredGuestPhone() || phoneNumber
+      const resolvedPhone = isAuthenticated
+        ? isGuestAuth
+          ? getGuestPhoneFromAuth(jwtUser)
+          : (userProfile as any)?.phonenumber || (userProfile as any)?.phone || ''
+        : phoneNumber
 
-      if (!userPhoneNumber) {
+      if (!resolvedPhone) {
         setBalance(null)
         setDashGoBalance(null)
         return
       }
 
-      if (userPhoneNumber.length < 9) {
+      if (resolvedPhone.length < 9) {
         setBalance(null)
         setDashGoBalance(null)
         return
@@ -546,6 +572,17 @@ export default function RedemptionPage() {
         // For vendor ID, fetch balance based on selected card
         if (selectedCard?.card_type) {
           const cardTypeLower = selectedCard.card_type.toLowerCase()
+
+          if (
+            isGuestAuth &&
+            (cardTypeLower === 'dashx' || cardTypeLower === 'dashpass') &&
+            selectedCard.card_price != null
+          ) {
+            setBalanceLoading(false)
+            setBalanceError(null)
+            setBalance(Number(selectedCard.card_price) || 0)
+            return
+          }
 
           // Use hooks for DashGo and DashPro
           if (cardTypeLower === 'dashgo') {
@@ -839,7 +876,8 @@ export default function RedemptionPage() {
     cardType,
     isAuthenticated,
     isGuestAuth,
-    user,
+    jwtUser,
+    userProfile,
     redemptionMethod,
     redemptionsAmountDashGo,
     redemptionsAmountDashPro,
@@ -875,8 +913,6 @@ export default function RedemptionPage() {
     setAmount('')
     setBalance(null)
     setSelectedCard(null)
-    setPendingVendorIdPayload(null)
-    setShowOTPModal(false)
   }
 
   // Handle amount validation
@@ -939,20 +975,18 @@ export default function RedemptionPage() {
         }
       }
 
-      const userPhoneNumber = isAuthenticated
-        ? (user as any)?.phonenumber ||
-          (user as any)?.phone ||
-          (isGuestAuth ? getStoredGuestPhone() : '') ||
-          ''
-        : getStoredGuestPhone() || phoneNumber
+      const guestOrPhone = isGuestAuth
+        ? getGuestPhoneFromAuth(jwtUser)
+        : isAuthenticated
+          ? (userProfile as any)?.phonenumber || (userProfile as any)?.phone || ''
+          : phoneNumber
 
-      if (!userPhoneNumber) {
+      if (!guestOrPhone) {
         toast.error('Phone number is required')
         return
       }
     }
 
-    // Process redemption directly
     await processRedemption()
   }
 
@@ -1001,16 +1035,16 @@ export default function RedemptionPage() {
         return
       }
 
-      // Get phone number (international format for guests: initiate + /redemptions/cards)
       const userPhoneNumber = isAuthenticated
-        ? (user as any)?.phonenumber ||
-          (user as any)?.phone ||
-          (isGuestAuth ? getStoredGuestPhone() : '') ||
-          ''
-        : getStoredGuestPhone() || phoneNumber
-      const phoneForApi = isAuthenticated
-        ? userPhoneNumber
-        : convertToInternationalFormat(userPhoneNumber)
+        ? isGuestAuth
+          ? getGuestPhoneFromAuth(jwtUser)
+          : (userProfile as any)?.phonenumber || (userProfile as any)?.phone || ''
+        : phoneNumber
+      const phoneForApi = isGuestAuth
+        ? convertToInternationalFormat(getGuestPhoneFromAuth(jwtUser))
+        : isAuthenticated
+          ? userPhoneNumber
+          : convertToInternationalFormat(userPhoneNumber)
 
       if (!userPhoneNumber) {
         toast.error('Phone number is required')
@@ -1102,30 +1136,15 @@ export default function RedemptionPage() {
           }
         }
 
-        // Not authenticated guest: /redemptions/initiate → OTP modal → /redemptions/cards with token
         if (!isAuthenticated) {
-          const initiateResponse = await initiateRedemptionMutation.mutateAsync({
-            phone_number: phoneForApi,
-          })
-          if (
-            initiateResponse?.status === 'success' ||
-            initiateResponse?.statusCode === 200 ||
-            initiateResponse?.statusCode === 201
-          ) {
-            setPendingVendorIdPayload(payload)
-            setShowOTPModal(true)
-            setIsProcessingRedemption(false)
-            return
-          }
-          toast.error(initiateResponse?.message || 'Failed to initiate redemption')
+          toast.error('Please verify your phone and email to continue as a guest.')
           setIsProcessingRedemption(false)
           return
         }
 
-        // Authenticated guest: /guest-redemptions/cards (no OTP modal)
         if (isGuestAuth) {
           const response = await processGuestCardsRedemptionMutation.mutateAsync({
-            guest_phone: phoneForApi,
+            guest_phone: convertToInternationalFormat(getGuestPhoneFromAuth(jwtUser)),
             branch_id: String(payload.branch_id || ''),
             card_type: payload.card_type,
             amount: payload.amount,
@@ -1164,48 +1183,6 @@ export default function RedemptionPage() {
     }
   }
 
-  // Handle OTP verification: guest vendor_id → /redemptions/cards with token
-  const handleOTPVerify = async (otp: string) => {
-    if (!otp) {
-      toast.error('Please enter the verification code')
-      return
-    }
-
-    setIsVerifyingOTP(true)
-    try {
-      // Guest vendor_id: complete /redemptions/cards with token (after /redemptions/initiate)
-      if (pendingVendorIdPayload) {
-        const response = await processCardsRedemptionMutation.mutateAsync({
-          ...pendingVendorIdPayload,
-          token: otp,
-        })
-        if (
-          response?.status === 'success' ||
-          response?.statusCode === 200 ||
-          response?.statusCode === 201
-        ) {
-          if (pendingVendorIdPayload.card_id) {
-            setRedeemedCardId(pendingVendorIdPayload.card_id)
-          }
-          setPendingVendorIdPayload(null)
-          setShowOTPModal(false)
-          setStep('success')
-        }
-        return
-      }
-    } catch (error: any) {
-      console.error('Redemption error:', error)
-    } finally {
-      setIsVerifyingOTP(false)
-    }
-  }
-
-  const handleOTPModalClose = () => {
-    setPendingVendorIdPayload(null)
-    setShowOTPModal(false)
-    setIsVerifyingOTP(false)
-  }
-
   const handleResetVendor = () => {
     setSelectedVendor(null)
     setSelectedVendorId('')
@@ -1216,9 +1193,6 @@ export default function RedemptionPage() {
     setAmount('')
     setBalance(null)
     setDashGoBalance(null)
-    setPendingVendorIdPayload(null)
-    setShowOTPModal(false)
-    setIsVerifyingOTP(false)
   }
 
   useEffect(() => {
@@ -1338,8 +1312,6 @@ export default function RedemptionPage() {
                     onClick={() => {
                       setStep('method')
                       setRedemptionMethod('')
-                      setPendingVendorIdPayload(null)
-                      setShowOTPModal(false)
                     }}
                     className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
                   >
@@ -1804,7 +1776,9 @@ export default function RedemptionPage() {
                                     {/* Show message if no balance available (only when balance is null, not when it's 0) - Only for DashGo and DashPro */}
                                     {((cardType === 'dashgo' && dashGoBalance === null) ||
                                       (cardType === 'dashpro' && balance === null)) &&
-                                      (isAuthenticated || getStoredGuestPhone() || phoneNumber) && (
+                                      (isAuthenticated ||
+                                        getGuestPhoneFromAuth(jwtUser) ||
+                                        phoneNumber) && (
                                         <div className="p-4 bg-gray-50 rounded-lg">
                                           <Text variant="span" className="text-gray-600 text-sm">
                                             Unable to fetch balance for{' '}
@@ -1815,7 +1789,7 @@ export default function RedemptionPage() {
 
                                     {/* Show message if phone number not entered */}
                                     {!isAuthenticated &&
-                                      !(getStoredGuestPhone() || phoneNumber).trim() && (
+                                      !(getGuestPhoneFromAuth(jwtUser) || phoneNumber).trim() && (
                                         <div className="p-4 bg-gray-50 rounded-lg">
                                           <Text variant="span" className="text-gray-600 text-sm">
                                             Verify phone &amp; email above to view balance
@@ -1840,7 +1814,7 @@ export default function RedemptionPage() {
                                         (availableBranches.length > 0 &&
                                           selectedBranchId === null))) ||
                                     (!isAuthenticated &&
-                                      !(getStoredGuestPhone() || phoneNumber).trim()) ||
+                                      !(getGuestPhoneFromAuth(jwtUser) || phoneNumber).trim()) ||
                                     isProcessingRedemption
                                   }
                                   loading={isProcessingRedemption}
@@ -1879,6 +1853,24 @@ export default function RedemptionPage() {
                     </div>
                   )}
                   <div className="flex flex-col gap-3">
+                    {isGuestAuth && recentGuestRedemptions.length > 0 && (
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-left">
+                        <Text variant="span" weight="semibold" className="text-gray-800">
+                          Recent redemptions
+                        </Text>
+                        <ul className="mt-2 space-y-1 text-sm text-gray-600">
+                          {recentGuestRedemptions.map((entry: any, index: number) => (
+                            <li key={entry.id ?? entry.redemption_id ?? index}>
+                              {entry.card_type || entry.product || 'Card'} — GHS{' '}
+                              {Number(entry.amount ?? entry.redeemed_amount ?? 0).toFixed(2)}
+                              {entry.created_at
+                                ? ` · ${new Date(entry.created_at).toLocaleDateString()}`
+                                : ''}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {redeemedCardId && (
                       <Button
                         variant="secondary"
@@ -1987,22 +1979,6 @@ export default function RedemptionPage() {
           </div>
         </div>
       </div>
-
-      {/* OTP Modal */}
-      <RedemptionOTPModal
-        isOpen={showOTPModal}
-        onClose={handleOTPModalClose}
-        onVerify={handleOTPVerify}
-        isLoading={isVerifyingOTP}
-        userPhone={
-          isAuthenticated
-            ? (user as any)?.phonenumber ||
-              (user as any)?.phone ||
-              (isGuestAuth ? getStoredGuestPhone() : '') ||
-              ''
-            : getStoredGuestPhone() || phoneNumber
-        }
-      />
 
       <Modal
         isOpen={showActionChoiceModal}

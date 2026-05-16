@@ -1,12 +1,17 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { usePersistedModalState } from '@/hooks'
+import { assignCardToRecipients } from '@/features/dashboard/corporate/services'
+import { usePersistedModalState, useToast } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { corporateMutations, corporateQueries } from '@/features/dashboard/corporate/hooks'
 import type { RecipientRow } from '@/types'
 import type { CardRecipientAssignment } from '@/types/corporate/recipients'
 import type { DropdownOption } from '@/types'
+import {
+  countVendorBranches,
+  getVendorCardsFromBranches,
+} from '@/features/dashboard/corporate/utils/vendorCardsFromBranches'
 
 const STEP_CHOICE = 0
 const INITIAL_STEP_UPLOAD = 1
@@ -30,6 +35,7 @@ function normalizeRecipients(data: any[] | undefined): RecipientRow[] {
 
 export function useBulkPurchaseEmployeesModal() {
   const queryClient = useQueryClient()
+  const { error: toastError } = useToast()
   const navigate = useNavigate()
   const modal = usePersistedModalState({
     paramName: MODALS.BULK_EMPLOYEE_PURCHASE.PARAM_NAME,
@@ -42,7 +48,8 @@ export function useBulkPurchaseEmployeesModal() {
   const [choiceMade, setChoiceMade] = useState<'replace' | 'add' | null>(null)
   const [uploadedRecipients, setUploadedRecipients] = useState<RecipientRow[]>([])
   const [selectedVendorId, setSelectedVendorId] = useState<string>('')
-  const [selectedCardId, setSelectedCardId] = useState<number | null>(null)
+  const [selectedCardId, setSelectedCardId] = useState<number | string | null>(null)
+  const [isSavingToCart, setIsSavingToCart] = useState(false)
   const [selectedCardType, setSelectedCardType] = useState<'dashgo' | 'dashpro' | 'card' | null>(
     null,
   )
@@ -56,10 +63,7 @@ export function useBulkPurchaseEmployeesModal() {
   const {
     useGetAllRecipientsService,
     useGetAllVendorsManagementService,
-    useGetVendorByIdManagementService,
-    useGetCardsService,
     useGetCartsService,
-    useGetCardsByVendorIdForCorporateService,
   } = corporateQueries()
 
   const {
@@ -67,7 +71,6 @@ export function useBulkPurchaseEmployeesModal() {
     useDeleteUnassignedBulkRecipientsService,
     useCreateDashGoAndAssignService,
     useCreateDashProAndAssignService,
-    useAddToCartService,
   } = corporateMutations()
 
   const { data: existingRecipientsResponse, isLoading: existingRecipientsLoading } =
@@ -79,9 +82,9 @@ export function useBulkPurchaseEmployeesModal() {
   }, [existingRecipientsResponse])
   const hasExistingRecipients = isOpen && existingRecipientsList.length > 0
 
-  const { data: vendorsResponse, isLoading: isLoadingVendors } = useGetAllVendorsManagementService(
-    {},
-  )
+  const { data: vendorsResponse, isLoading: isLoadingVendors } = useGetAllVendorsManagementService({
+    limit: 500,
+  })
   const vendorList = useMemo(() => {
     if (!vendorsResponse) return []
     return Array.isArray(vendorsResponse?.data) ? vendorsResponse.data : []
@@ -95,31 +98,22 @@ export function useBulkPurchaseEmployeesModal() {
     [vendorList],
   )
 
-  const { data: selectedVendorData } = useGetVendorByIdManagementService(selectedVendorId || null)
+  const selectedVendorRecord = useMemo(
+    () => vendorList.find((x: any) => String(x.vendor_id ?? x.id) === selectedVendorId),
+    [vendorList, selectedVendorId],
+  )
   const selectedVendor = selectedVendorId ? selectedVendorId : null
   const selectedVendorName = useMemo(() => {
-    const v = vendorList.find((x: any) => String(x.vendor_id ?? x.id) === selectedVendorId)
-    return v?.business_name || v?.vendor_name || ''
-  }, [vendorList, selectedVendorId])
-
-  const { data: cardsResponse } = useGetCardsService()
-  const allCards = useMemo(() => cardsResponse?.data ?? [], [cardsResponse?.data])
-  const { data: vendorCardsResponse } = useGetCardsByVendorIdForCorporateService(
-    selectedVendorId || null,
+    return selectedVendorRecord?.business_name || selectedVendorRecord?.vendor_name || ''
+  }, [selectedVendorRecord])
+  const selectedVendorBranchCount = useMemo(
+    () => countVendorBranches(selectedVendorRecord),
+    [selectedVendorRecord],
   )
-  const vendorCardsFromApi = useMemo(
-    () => vendorCardsResponse?.data ?? [],
-    [vendorCardsResponse?.data],
+  const vendorCards = useMemo(
+    () => getVendorCardsFromBranches(selectedVendorRecord),
+    [selectedVendorRecord],
   )
-  const vendorCards = useMemo(() => {
-    if (vendorCardsFromApi.length > 0) return vendorCardsFromApi
-    return allCards.filter(
-      (c: any) =>
-        String(c.vendor_id) === selectedVendorId &&
-        (c.type || '').toLowerCase() !== 'dashgo' &&
-        (c.type || '').toLowerCase() !== 'dashpro',
-    )
-  }, [allCards, selectedVendorId, vendorCardsFromApi])
 
   const { data: cartsResponse } = useGetCartsService()
   const existingCartItems = useMemo(() => {
@@ -136,8 +130,6 @@ export function useBulkPurchaseEmployeesModal() {
   const deleteUnassignedBulkMutation = useDeleteUnassignedBulkRecipientsService()
   const createDashGoMutation = useCreateDashGoAndAssignService()
   const createDashProMutation = useCreateDashProAndAssignService()
-  const addToCartMutation = useAddToCartService()
-
   const handleClose = useCallback(() => {
     setStep(INITIAL_STEP_UPLOAD)
     setFile(null)
@@ -216,10 +208,13 @@ export function useBulkPurchaseEmployeesModal() {
     setSelectedCardType(null)
   }, [])
 
-  const handleCardSelect = useCallback((cardId: number, type: 'dashgo' | 'dashpro' | 'card') => {
-    setSelectedCardId(cardId)
-    setSelectedCardType(type)
-  }, [])
+  const handleCardSelect = useCallback(
+    (cardId: number | string, type: 'dashgo' | 'dashpro' | 'card') => {
+      setSelectedCardId(cardId)
+      setSelectedCardType(type)
+    },
+    [],
+  )
 
   const handleDashGoSelect = useCallback(() => {
     setSelectedCardType('dashgo')
@@ -323,9 +318,7 @@ export function useBulkPurchaseEmployeesModal() {
     }
 
     if (selectedCardType === 'card' && selectedCardId != null) {
-      const card = allCards.find(
-        (c: any) => c.card_id === selectedCardId || c.id === selectedCardId,
-      )
+      const card = vendorCards.find((c) => String(c.card_id) === String(selectedCardId))
       if (!card) return
       const key = `card-${selectedCardId}`
       setCardRecipientAssignments((prev) => ({
@@ -335,7 +328,7 @@ export function useBulkPurchaseEmployeesModal() {
           cardId: selectedCardId,
           cardType: 'card',
           cardName: card.product ?? 'Card',
-          cardPrice: card.price ?? 0,
+          cardPrice: Number(card.price) || 0,
           cardCurrency: card.currency ?? 'GHS',
         },
       }))
@@ -347,7 +340,7 @@ export function useBulkPurchaseEmployeesModal() {
     selectedCardType,
     selectedCardId,
     dashGoAmount,
-    allCards,
+    vendorCards,
     createDashGoMutation,
     createDashProMutation,
   ])
@@ -355,51 +348,35 @@ export function useBulkPurchaseEmployeesModal() {
   const handleSaveToCart = useCallback(async () => {
     const assignments = Object.values(cardRecipientAssignments)
     if (assignments.length === 0) return
-    const cartIdToUse = cartId ?? undefined
-    for (const a of assignments) {
-      const vendorId = a.vendorId
-      if (a.cardType === 'dashgo' && vendorId != null && a.cardPrice != null) {
-        await new Promise<void>((resolve) => {
-          createDashGoMutation.mutate(
-            {
-              recipient_ids: a.recipientIds,
-              vendor_id: vendorId,
-              product: 'DashGo',
-              description: 'DashGo',
-              price: Number(a.cardPrice),
-              currency: a.cardCurrency ?? 'GHS',
-              issue_date: new Date().toISOString().split('T')[0],
-              redemption_branches: [],
-            },
-            { onSettled: () => resolve() },
-          )
-        })
-      } else if (a.cardType === 'dashpro' && a.cardPrice != null) {
-        await new Promise<void>((resolve) => {
-          createDashProMutation.mutate(
-            {
-              recipient_ids: a.recipientIds,
-              product: 'DashPro',
-              description: 'DashPro',
-              price: Number(a.cardPrice),
-              currency: a.cardCurrency ?? 'GHS',
-              issue_date: new Date().toISOString().split('T')[0],
-            },
-            { onSettled: () => resolve() },
-          )
+
+    const cardAssignments = assignments.filter(
+      (a) => a.cardType === 'card' && a.cardId != null && a.recipientIds.length > 0,
+    )
+    // DashGo / DashPro are persisted when the user clicks Quick Assign
+    if (cardAssignments.length === 0) return
+
+    setIsSavingToCart(true)
+    try {
+      for (const a of cardAssignments) {
+        await assignCardToRecipients({
+          card_id: a.cardId!,
+          recipient_ids: a.recipientIds,
         })
       }
+      await queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+      await queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
+      await queryClient.invalidateQueries({ queryKey: ['all-corporate-recipients'] })
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to save assignments to cart. Please try again.'
+      toastError(message)
+      throw err
+    } finally {
+      setIsSavingToCart(false)
     }
-    if (cartIdToUse != null) {
-      addToCartMutation.mutate({ cart_id: cartIdToUse } as any)
-    }
-  }, [
-    cardRecipientAssignments,
-    cartId,
-    createDashGoMutation,
-    createDashProMutation,
-    addToCartMutation,
-  ])
+  }, [cardRecipientAssignments, queryClient, toastError])
 
   const downloadTemplate = useCallback((url: string) => {
     window.open(url, '_blank')
@@ -432,9 +409,8 @@ export function useBulkPurchaseEmployeesModal() {
     existingCartItems,
     hasExistingCartItems,
     vendorOptions,
-    selectedVendorData,
     selectedVendorName,
-    allCards,
+    selectedVendorBranchCount,
     vendorCards,
     isLoadingVendors,
     downloadTemplate,
@@ -454,7 +430,7 @@ export function useBulkPurchaseEmployeesModal() {
     uploadMutation,
     createDashGoMutation,
     createDashProMutation,
-    addToCartMutation,
+    isSavingToCart,
     hasExistingRecipients,
     existingRecipientsList,
     existingRecipientsLoading,

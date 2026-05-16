@@ -18,8 +18,6 @@ import {
   getGuestAssignedCards,
   getGuestRedemptionsAmountDashGo,
   getGuestRedemptionsAmountDashPro,
-  getGuestRedemptionsAmountDashX,
-  getGuestRedemptionsAmountDashPass,
   getGuestRedemptions,
   type GetRedemptionsAmountDashGoParams,
   getRedemptionsAmountDashX,
@@ -74,7 +72,9 @@ export function useRedemptionQueries() {
           ? getGuestRedemptionsAmountDashGo(params)
           : getRedemptionsAmountDashGo(params),
       enabled: useGuestRecipientApi
-        ? isGuestAuth || !!(params?.phone_number && (params?.branch_id || params?.vendor_id))
+        ? isGuestAuth
+          ? !!(params?.vendor_id || params?.branch_id)
+          : !!(params?.phone_number && (params?.branch_id || params?.vendor_id))
         : !!(params?.branch_id || params?.vendor_id),
     })
   }
@@ -96,13 +96,13 @@ export function useRedemptionQueries() {
     const useGuestRecipientApi = !isAuthenticated || isGuestAuth
     return useQuery({
       queryKey: ['redemptions-amount-dash-x', params, useGuestRecipientApi],
-      queryFn: () =>
-        useGuestRecipientApi
-          ? getGuestRedemptionsAmountDashX(params)
-          : getRedemptionsAmountDashX(params),
-      enabled: useGuestRecipientApi
-        ? isGuestAuth || !!(params?.phone_number && (params?.branch_id || params?.vendor_id))
-        : !!(params?.branch_id || params?.vendor_id),
+      queryFn: () => getRedemptionsAmountDashX(params),
+      // Guests: DashX has no balance endpoint — use GET /guest-redemptions/assigned-cards
+      enabled: isGuestAuth
+        ? false
+        : useGuestRecipientApi
+          ? !!(params?.phone_number && (params?.branch_id || params?.vendor_id))
+          : !!(params?.branch_id || params?.vendor_id),
     })
   }
 
@@ -111,13 +111,12 @@ export function useRedemptionQueries() {
     const useGuestRecipientApi = !isAuthenticated || isGuestAuth
     return useQuery({
       queryKey: ['redemptions-amount-dash-pass', params, useGuestRecipientApi],
-      queryFn: () =>
-        useGuestRecipientApi
-          ? getGuestRedemptionsAmountDashPass(params)
-          : getRedemptionsAmountDashPass(params),
-      enabled: useGuestRecipientApi
-        ? isGuestAuth || !!(params?.phone_number && (params?.branch_id || params?.vendor_id))
-        : !!(params?.branch_id || params?.vendor_id),
+      queryFn: () => getRedemptionsAmountDashPass(params),
+      enabled: isGuestAuth
+        ? false
+        : useGuestRecipientApi
+          ? !!(params?.phone_number && (params?.branch_id || params?.vendor_id))
+          : !!(params?.branch_id || params?.vendor_id),
     })
   }
 
@@ -144,11 +143,14 @@ export function useRedemptionQueries() {
     })
   }
 
-  function useGetGuestRedemptionsService(enabled: boolean = true) {
+  function useGetGuestRedemptionsService(
+    enabled: boolean = true,
+    params?: { limit?: number; after?: string; card_type?: string },
+  ) {
     const { isGuestAuth } = useAuthStore()
     return useQuery({
-      queryKey: ['guest-redemptions'],
-      queryFn: () => getGuestRedemptions(),
+      queryKey: ['guest-redemptions', params],
+      queryFn: () => getGuestRedemptions(params),
       enabled: isGuestAuth && enabled,
     })
   }

@@ -3,21 +3,60 @@ import { useUserProfile } from '@/hooks'
 
 type ProfileShape = {
   user_type?: string
+  status?: string
   onboarding_progress?: {
     current_stage?: string
     personal_details_completed?: boolean
+    upload_id_completed?: boolean
+    business_details_completed?: boolean
+    business_documents_completed?: boolean
     onboarding_completed?: boolean
   }
 }
 
+function isApprovedStatus(status: string | undefined): boolean {
+  return status === 'approved' || status === 'verified'
+}
+
+/** Approved corporate roles can shop once their required onboarding steps are done (may still have onboarding_completed: false). */
+function isApprovedCorporateShoppingReady(profile: ProfileShape): boolean {
+  if (!isApprovedStatus(profile.status)) return false
+
+  const p = profile.onboarding_progress
+  if (!p) return false
+
+  const hasProfileAndId =
+    p.personal_details_completed === true && p.upload_id_completed === true
+
+  if (profile.user_type === 'corporate admin') {
+    return hasProfileAndId
+  }
+
+  if (profile.user_type === 'corporate super admin') {
+    return (
+      hasProfileAndId &&
+      p.business_details_completed === true &&
+      p.business_documents_completed === true
+    )
+  }
+
+  return false
+}
+
 /** Consumer accounts need personal-details stage satisfied; other roles use full onboarding. */
-function isShoppingOnboardingSatisfied(profile: ProfileShape | null | undefined): boolean {
+export function isShoppingOnboardingSatisfied(profile: ProfileShape | null | undefined): boolean {
   const p = profile?.onboarding_progress
   if (!p) return false
   const userType = profile?.user_type
+
   if (userType === 'user') {
     return p.current_stage === 'personal_details' || p.personal_details_completed === true
   }
+
+  if (userType === 'corporate admin' || userType === 'corporate super admin') {
+    return isApprovedCorporateShoppingReady(profile)
+  }
+
   return p.onboarding_completed === true
 }
 

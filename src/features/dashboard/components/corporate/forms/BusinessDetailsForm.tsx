@@ -1,12 +1,16 @@
 import { Button } from '@/components/Button'
 import { Input, FileUploader, CreatableCombobox, Text, Modal, ImageUpload } from '@/components'
 import { BasePhoneInput, RadioGroup, RadioGroupItem } from '@/components'
-import { BUSINESS_INDUSTRY_OPTIONS } from '@/utils/constants'
+import {
+  BUSINESS_FILE_UPLOAD_ACCEPT,
+  BUSINESS_FILE_UPLOAD_HINT,
+  BUSINESS_INDUSTRY_OPTIONS,
+  BUSINESS_TYPE_OPTIONS,
+} from '@/utils/constants'
 import { Controller } from 'react-hook-form'
 import { cn } from '@/libs'
 import LoaderGif from '@/assets/gifs/loader.gif'
 import { useBusinessDetailsForm } from '../hooks/useBusinessDetailsForm'
-import { BUSINESS_TYPE_OPTIONS } from '@/utils/constants'
 
 export default function BusinessDetailsForm() {
   const {
@@ -55,7 +59,7 @@ export default function BusinessDetailsForm() {
                     onUpload={() => {}}
                     isUploading={isPending}
                     currentImageUrl={existingUrl && !value ? existingUrl : undefined}
-                    className="h-[120px]! w-[120px]!"
+                    className="!h-[120px] !w-[120px]"
                   />
                   {error && <p className="text-sm text-red-500">{error.message}</p>}
                 </div>
@@ -251,6 +255,8 @@ export default function BusinessDetailsForm() {
                       onChange={onChange}
                       error={error?.message}
                       id="certificate_of_incorporation"
+                      accept={BUSINESS_FILE_UPLOAD_ACCEPT}
+                      formatHint={BUSINESS_FILE_UPLOAD_HINT}
                     />
                   </div>
                 )
@@ -289,6 +295,8 @@ export default function BusinessDetailsForm() {
                       onChange={onChange}
                       error={error?.message}
                       id="business_license"
+                      accept={BUSINESS_FILE_UPLOAD_ACCEPT}
+                      formatHint={BUSINESS_FILE_UPLOAD_HINT}
                     />
                   </div>
                 )
@@ -327,6 +335,8 @@ export default function BusinessDetailsForm() {
                       onChange={onChange}
                       error={error?.message}
                       id="articles_of_incorporation"
+                      accept={BUSINESS_FILE_UPLOAD_ACCEPT}
+                      formatHint={BUSINESS_FILE_UPLOAD_HINT}
                     />
                   </div>
                 )

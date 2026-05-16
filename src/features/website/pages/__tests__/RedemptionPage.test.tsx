@@ -36,6 +36,7 @@ vi.mock('@/features/dashboard/hooks', () => ({
     useGetRedemptionsAmountDashXService: () => ({ data: null, isLoading: false }),
     useGetRedemptionsAmountDashPassService: () => ({ data: null, isLoading: false }),
     useGetGuestAssignedCardsService: () => ({ data: null, isLoading: false }),
+    useGetGuestRedemptionsService: () => ({ data: null, isLoading: false }),
   }),
   useRedemptionMutation: () => ({
     useProcessRedemptionCardsService: () => ({ mutateAsync: vi.fn() }),

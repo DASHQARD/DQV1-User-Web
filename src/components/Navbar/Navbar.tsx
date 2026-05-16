@@ -483,8 +483,9 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-gray-200 bg-white">
-            <div className="wrapper px-4 py-4 space-y-3">
+          <div className="lg:hidden border-t border-gray-200 bg-white flex flex-col max-h-[calc(100dvh-4.5rem)]">
+            <div className="flex-1 overflow-y-auto">
+              <div className="wrapper px-4 py-4 space-y-3">
               {/* Mobile Navigation Items */}
               <div className="flex flex-col gap-1">
                 {navItems.map((item) => (
@@ -567,25 +568,29 @@ export default function Navbar() {
                     </button>
                   </div>
                 </>
-              ) : (
-                <div className="border-t border-gray-200 pt-3 mt-3 flex flex-col gap-2">
+              ) : null}
+              </div>
+            </div>
+            {!isAuthenticated && (
+              <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-3">
+                <div className="wrapper flex flex-col gap-2">
                   <Link
                     to={ROUTES.IN_APP.AUTH.LOGIN}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 text-gray-700 font-medium hover:bg-gray-50 rounded-lg transition-colors"
+                    className="flex items-center justify-center w-full px-4 py-2.5 text-gray-700 font-medium border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors"
                   >
-                    <span>Login</span>
+                    Login
                   </Link>
                   <Link
                     to={ROUTES.IN_APP.AUTH.REGISTER}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white font-semibold hover:bg-primary-700 rounded-lg transition-colors"
+                    className="flex items-center justify-center w-full px-4 py-2.5 bg-primary-500 text-white font-semibold hover:bg-primary-700 rounded-lg transition-colors"
                   >
-                    <span>Register</span>
+                    Sign up
                   </Link>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
       </nav>

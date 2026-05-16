@@ -210,7 +210,7 @@ export const assignRecipientToCart = async (data: AssignRecipientPayload): Promi
 }
 
 export const assignCardToRecipients = async (data: {
-  card_id: number
+  card_id: number | string
   recipient_ids: number[]
 }): Promise<any> => {
   return await postMethod(`/carts/assign/card/recipients`, data)

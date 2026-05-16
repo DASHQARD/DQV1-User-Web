@@ -1,0 +1,107 @@
+import { getImageUrl } from '@/utils/cardDisplay'
+
+export type GuestVendorCard = {
+  card_id: string
+  card_name: string
+  card_type: string
+  card_price: number
+  currency: string
+  status: string
+  branch_id?: string
+  branch_name?: string
+  branch_location?: string
+  vendor_id?: string
+  vendor_name?: string
+  recipient_id?: string
+  cart_item_id?: string
+  image_url?: string
+  expiry_date?: string
+  description?: string
+}
+
+/** Prefer issued gift card id over catalog product card_id for redemption APIs */
+export function resolveRedemptionCardId(card: Record<string, unknown> | null | undefined): string {
+  if (!card) return ''
+
+  const giftCardId = card.gift_card_id ?? card.gift_card_uuid
+  if (giftCardId != null && String(giftCardId).trim() !== '') {
+    return String(giftCardId)
+  }
+
+  const catalogId = card.card_id ?? card.catalog_card_id
+  const instanceId =
+    card.id ?? card.issued_card_id ?? card.redemption_card_id ?? card.gift_card_instance_id
+
+  if (instanceId != null && catalogId != null && String(instanceId) !== String(catalogId)) {
+    return String(instanceId)
+  }
+  if (instanceId != null && String(instanceId).trim() !== '') {
+    return String(instanceId)
+  }
+  if (catalogId != null && String(catalogId).trim() !== '') {
+    return String(catalogId)
+  }
+  return ''
+}
+
+export function formatBranchLabel(branch: {
+  branch_id?: string | number
+  branch_name?: string | null
+  name?: string | null
+  branch_location?: string | null
+}): string {
+  const name = branch.branch_name ?? branch.name
+  const location = branch.branch_location
+  const id = branch.branch_id != null ? String(branch.branch_id) : ''
+
+  if (name && location) return `${name} — ${location}`
+  if (name) return name
+  if (location) return location
+  if (id) return `Branch ${id.slice(0, 8)}`
+  return 'Branch'
+}
+
+export function mapGuestAssignedCardToVendorCard(
+  card: any,
+  forcedType: 'dashx' | 'dashpass',
+  currency = 'GHS',
+): GuestVendorCard {
+  return {
+    card_id: resolveRedemptionCardId(card),
+    card_name: card.product || card.card_name || 'Unknown Card',
+    card_type: forcedType,
+    card_price: Number(card.price || card.amount || card.card_price || 0),
+    currency: card.currency || currency,
+    status: card.status || card.card_status || 'active',
+    branch_id: card.branch_id ? String(card.branch_id) : undefined,
+    branch_name: card.branch_name || card.branch?.name,
+    branch_location: card.branch_location || card.branch?.location,
+    vendor_id: card.vendor_id ? String(card.vendor_id) : undefined,
+    vendor_name: card.vendor_name,
+    recipient_id: card.guest_recipient_id
+      ? String(card.guest_recipient_id)
+      : card.recipient_id
+        ? String(card.recipient_id)
+        : undefined,
+    cart_item_id: card.cart_item_id != null ? String(card.cart_item_id) : undefined,
+    image_url: card.images?.[0]?.file_url ? getImageUrl(card.images[0].file_url) : undefined,
+    expiry_date: card.expiry_date,
+    description: card.description,
+  }
+}
+
+export function filterGuestAssignedByType(cards: any[], type: 'dashx' | 'dashpass'): any[] {
+  const needle = type === 'dashx' ? 'dashx' : 'dashpass'
+  return cards.filter((card) => {
+    const normalized = String(card.card_type || '').toLowerCase()
+    return normalized.includes(needle)
+  })
+}
+
+export function filterCardsByBranch<T extends { branch_id?: string }>(
+  cards: T[],
+  selectedBranchId: string | null,
+): T[] {
+  if (selectedBranchId == null) return cards
+  return cards.filter((card) => String(card.branch_id ?? '') === String(selectedBranchId))
+}

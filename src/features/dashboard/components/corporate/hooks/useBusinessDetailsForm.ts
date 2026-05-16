@@ -294,11 +294,15 @@ export function useBusinessDetailsForm() {
             },
           },
         )
-      } catch (error) {
-        console.error('Submission failed:', error)
+      } catch (error: unknown) {
+        const message =
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message: unknown }).message)
+            : 'Failed to upload files. Please try again.'
+        toast.error(message)
       }
     },
-    [uploadFiles, submitBusinessDetails, clearProgress, navigate],
+    [uploadFiles, submitBusinessDetails, clearProgress, navigate, toast],
   )
 
   const handleDiscard = useCallback(() => {

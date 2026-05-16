@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback, useState } from 'react'
 import { Button, FileUploader, Modal, Text, Input, Checkbox, Tabs, Combobox } from '@/components'
 import { CardItems } from '@/features/website/components/CardItems/CardItems'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
@@ -11,7 +11,66 @@ import { formatCurrency } from '@/utils/format'
 import { useBulkPurchaseEmployeesModal } from '@/features/dashboard/components/corporate/modals/useBulkPurchaseEmployeesModal'
 import type { RecipientRow, CardRecipientAssignment } from '@/types'
 
-type VendorBranchesResponse = { data: unknown[] }
+type StepGuideProps = {
+  stepLabel: string
+  title: string
+  description: string
+}
+
+function StepGuide({ stepLabel, title, description }: StepGuideProps) {
+  return (
+    <div className="rounded-xl border border-primary-100 bg-primary-50/60 px-4 py-4 space-y-1" role="status">
+      <Text variant="span" className="text-xs font-semibold uppercase tracking-wide text-primary-700">
+        Step {stepLabel}
+      </Text>
+      <Text variant="h6" weight="semibold" className="text-gray-900">
+        {title}
+      </Text>
+      <Text variant="p" className="text-sm text-gray-600 leading-relaxed">
+        {description}
+      </Text>
+    </div>
+  )
+}
+
+function RecipientsPreviewTable({
+  recipients,
+  caption,
+}: {
+  recipients: RecipientRow[]
+  caption?: string
+}) {
+  if (recipients.length === 0) return null
+  return (
+    <div className="space-y-2">
+      {caption && (
+        <Text variant="span" className="text-sm font-medium text-gray-700">
+          {caption}
+        </Text>
+      )}
+      <div className="max-h-[220px] overflow-y-auto border border-gray-200 rounded-lg">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 sticky top-0">
+            <tr>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700">Recipient Name</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700">Email</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700">Phone</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recipients.map((r) => (
+              <tr key={r.id} className="border-t border-gray-200">
+                <td className="px-4 py-2">{r.name}</td>
+                <td className="px-4 py-2">{r.email}</td>
+                <td className="px-4 py-2">{r.phone}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
 
 export function BulkPurchaseEmployees() {
   const modal = usePersistedModalState({
@@ -57,9 +116,8 @@ export function BulkPurchaseEmployeesModal() {
     existingCartItems,
     hasExistingCartItems,
     vendorOptions,
-    selectedVendorData,
     selectedVendorName,
-    allCards,
+    selectedVendorBranchCount,
     vendorCards,
     isLoadingVendors,
     downloadTemplate,
@@ -79,7 +137,7 @@ export function BulkPurchaseEmployeesModal() {
     uploadMutation,
     createDashGoMutation,
     createDashProMutation,
-    addToCartMutation,
+    isSavingToCart,
     hasExistingRecipients,
     existingRecipientsList,
     existingRecipientsLoading,
@@ -90,43 +148,67 @@ export function BulkPurchaseEmployeesModal() {
     deleteUnassignedBulkMutation,
   } = useBulkPurchaseEmployeesModal()
 
+  const [confirmingReplace, setConfirmingReplace] = useState(false)
+
+  const handleModalClose = useCallback(() => {
+    setConfirmingReplace(false)
+    handleClose()
+  }, [handleClose])
+
+  const handleModalCloseAndNavigate = useCallback(
+    (path: string) => {
+      setConfirmingReplace(false)
+      handleCloseAndNavigate(path)
+    },
+    [handleCloseAndNavigate],
+  )
+
   const stepLabels = hasExistingRecipients
     ? [
-        { step: 0, label: 'Choose' },
-        { step: 1, label: 'Upload' },
-        { step: 2, label: 'Select Cards' },
+        { step: 0, label: 'Your list' },
+        { step: 1, label: 'Upload file' },
+        { step: 2, label: 'Assign cards' },
       ]
     : [
-        { step: 1, label: 'Upload' },
-        { step: 2, label: 'Select Cards' },
+        { step: 1, label: 'Upload file' },
+        { step: 2, label: 'Assign cards' },
       ]
+
+  const stepNumberLabel = (s: number) => {
+    const idx = stepLabels.findIndex((x) => x.step === s)
+    return idx >= 0 ? String(idx + 1) : ''
+  }
 
   return (
     <Modal
       isOpen={modal.isModalOpen(MODALS.BULK_EMPLOYEE_PURCHASE.CHILDREN.CREATE)}
-      setIsOpen={handleClose}
+      setIsOpen={handleModalClose}
       title="Bulk Purchase Gift Cards for Employees"
       position="side"
       panelClass="!w-[964px] p-8"
     >
       <div className="p-6 space-y-6 flex flex-col min-h-full">
         {/* Step Indicator */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6 flex w-full min-w-0 items-center">
           {stepLabels.map(({ step: s, label }, idx) => (
             <React.Fragment key={s}>
-              <div className="flex items-center">
+              <div className="flex shrink-0 items-center gap-2">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
                     step >= s ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
                   }`}
                 >
                   {idx + 1}
                 </div>
-                <span className="ml-2 text-sm font-medium">{label}</span>
+                <span className="whitespace-nowrap text-sm font-medium text-gray-900">{label}</span>
               </div>
               {idx < stepLabels.length - 1 && (
                 <div
-                  className={`flex-1 h-0.5 mx-4 ${step > s ? 'bg-primary-600' : 'bg-gray-200'}`}
+                  role="presentation"
+                  aria-hidden
+                  className={`mx-3 h-0.5 min-h-[2px] min-w-8 flex-1 self-center ${
+                    step > s ? 'bg-primary-600' : 'bg-gray-200'
+                  }`}
                 />
               )}
             </React.Fragment>
@@ -136,8 +218,8 @@ export function BulkPurchaseEmployeesModal() {
         {/* Checking for recipients (avoid showing Upload until we know) */}
         {step === 1 && !hasExistingRecipients && existingRecipientsLoading && (
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <Text variant="p" className="text-sm text-gray-600">
-              Checking for existing recipients...
+            <Text variant="p" className="text-sm text-gray-600 text-center max-w-sm">
+              Looking for a saved employee list from a previous bulk purchase…
             </Text>
             <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
           </div>
@@ -146,72 +228,140 @@ export function BulkPurchaseEmployeesModal() {
         {/* Step 0: Existing recipients — Replace all or Add to */}
         {step === 0 && hasExistingRecipients && (
           <div className="space-y-6">
-            <Text variant="p" className="text-sm text-gray-600">
-              You have {existingRecipientsList.length} existing recipient(s). Do you want to replace
-              all recipients or add to the recipients?
-            </Text>
+            <StepGuide
+              stepLabel={stepNumberLabel(0)}
+              title="What should we do with your current employee list?"
+              description="You already have recipients saved from a previous bulk purchase. Choose whether to keep them and add more from Excel, or clear the list and upload a new file. You have not uploaded a new file yet on this screen."
+            />
             {existingRecipientsLoading ? (
               <Text variant="span" className="text-sm text-gray-500">
-                Loading recipients...
+                Loading your saved recipients...
               </Text>
             ) : (
-              <div className="max-h-[240px] overflow-y-auto border border-gray-200 rounded-lg">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 sticky top-0">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                        Recipient Name
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Email</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Phone</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {existingRecipientsList.map((r: RecipientRow) => (
-                      <tr key={r.id} className="border-t border-gray-200">
-                        <td className="px-4 py-2">{r.name}</td>
-                        <td className="px-4 py-2">{r.email}</td>
-                        <td className="px-4 py-2">{r.phone}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <RecipientsPreviewTable
+                recipients={existingRecipientsList}
+                caption={`Current list (${existingRecipientsList.length} employee${existingRecipientsList.length === 1 ? '' : 's'})`}
+              />
+            )}
+
+            {confirmingReplace ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-4">
+                <div className="flex gap-3">
+                  <Icon
+                    icon="bi:exclamation-triangle-fill"
+                    className="text-amber-600 text-xl shrink-0 mt-0.5"
+                  />
+                  <div className="space-y-1">
+                    <Text variant="span" weight="semibold" className="text-amber-900">
+                      Replace entire list?
+                    </Text>
+                    <Text variant="p" className="text-sm text-amber-800">
+                      This removes all {existingRecipientsList.length} saved recipient
+                      {existingRecipientsList.length === 1 ? '' : 's'} from this bulk purchase
+                      session. You will upload a fresh Excel file on the next step. This cannot be
+                      undone.
+                    </Text>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-3 justify-end">
+                  <Button variant="outline" onClick={() => setConfirmingReplace(false)}>
+                    Go back
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-red-300 text-red-700 hover:bg-red-50"
+                    onClick={() => {
+                      setConfirmingReplace(false)
+                      handleReplaceAll()
+                    }}
+                    disabled={deleteUnassignedBulkMutation.isPending}
+                    loading={deleteUnassignedBulkMutation.isPending}
+                  >
+                    Yes, replace list
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={handleAddToRecipients}
+                  className="text-left rounded-xl border-2 border-primary-200 bg-white p-5 hover:border-primary-500 hover:bg-primary-50/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon icon="bi:people-fill" className="text-primary-600 text-lg" />
+                    <Text variant="span" weight="semibold" className="text-gray-900">
+                      Keep & add more
+                    </Text>
+                    <span className="ml-auto text-xs font-medium text-primary-700 bg-primary-100 px-2 py-0.5 rounded-full">
+                      Recommended
+                    </span>
+                  </div>
+                  <Text variant="p" className="text-sm text-gray-600">
+                    Keep everyone in the table above. On the next step you can upload Excel to add
+                    more employees, or skip upload and assign cards right away.
+                  </Text>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setConfirmingReplace(true)}
+                  className="text-left rounded-xl border border-gray-200 bg-white p-5 hover:border-gray-400 hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon icon="bi:arrow-repeat" className="text-gray-600 text-lg" />
+                    <Text variant="span" weight="semibold" className="text-gray-900">
+                      Start over
+                    </Text>
+                  </div>
+                  <Text variant="p" className="text-sm text-gray-600">
+                    Delete the current list and upload a new Excel file from scratch on the next
+                    step.
+                  </Text>
+                </button>
               </div>
             )}
-            <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-              <Button variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleReplaceAll}
-                disabled={deleteUnassignedBulkMutation.isPending}
-                loading={deleteUnassignedBulkMutation.isPending}
-              >
-                Replace all recipients
-              </Button>
-              <Button variant="secondary" onClick={handleAddToRecipients}>
-                Add to the recipients
-              </Button>
-            </div>
+
+            {!confirmingReplace && (
+              <div className="flex justify-end pt-2 border-t border-gray-100">
+                <Button variant="outline" onClick={handleModalClose}>
+                  Cancel
+                </Button>
+              </div>
+            )}
           </div>
         )}
-
         {/* Step 1: Upload Recipients (only when not loading recipients) */}
         {step === 1 && !existingRecipientsLoading && (
           <div className="space-y-6">
-            <div className="space-y-2">
-              {choiceMade === 'add' ? (
-                <Text variant="p" className="text-sm text-gray-600">
-                  You have {uploadedRecipients.length} recipient(s). Upload an Excel file to add
-                  more (optional), or proceed to select cards.
-                </Text>
-              ) : (
-                <Text variant="p" className="text-sm text-gray-600">
-                  Upload an Excel file with recipient details (first name, last name, email, phone
-                  number, message). After uploading, you'll be able to assign gift cards to each
-                  recipient.
-                </Text>
+            <div className="space-y-4">
+              <StepGuide
+                stepLabel={stepNumberLabel(1)}
+                title={
+                  choiceMade === 'add'
+                    ? 'Add more employees (optional)'
+                    : choiceMade === 'replace'
+                      ? 'Upload your new employee list'
+                      : 'Upload employee details'
+                }
+                description={
+                  choiceMade === 'add'
+                    ? `You are keeping ${uploadedRecipients.length} employee${uploadedRecipients.length === 1 ? '' : 's'} from your saved list. Upload an Excel file to add more rows, or use “Proceed to select cards” to skip ahead.`
+                    : choiceMade === 'replace'
+                      ? 'Your previous list was cleared. Upload an Excel file with every employee who should receive a card (first name, last name, email, phone; message optional).'
+                      : 'Upload an Excel file with each employee’s name, email, and phone. After upload you will choose gift cards and assign them to these people.'
+                }
+              />
+              {choiceMade === 'add' && uploadedRecipients.length > 0 && (
+                <RecipientsPreviewTable
+                  recipients={uploadedRecipients}
+                  caption="Employees in your list so far"
+                />
+              )}
+              {choiceMade === 'replace' && (
+                <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+                  Previous recipients were removed. Upload a complete new list below.
+                </div>
               )}
             </div>
 
@@ -262,19 +412,19 @@ export function BulkPurchaseEmployeesModal() {
         {/* Step 2: Browse Vendors & Select Cards */}
         {step === 2 && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <Text variant="h6" weight="semibold" className="text-gray-900">
-                Browse Cards & Assign Recipients ({uploadedRecipients.length} recipients)
-              </Text>
-              {hasExistingCartItems && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 rounded-lg">
-                  <Icon icon="hugeicons:shopping-cart-01" className="w-4 h-4 text-primary-600" />
-                  <Text variant="span" className="text-sm text-primary-700 font-medium">
-                    {existingCartItems.length} item(s) saved in cart
-                  </Text>
-                </div>
-              )}
-            </div>
+            <StepGuide
+              stepLabel={stepNumberLabel(2)}
+              title="Assign gift cards to your employees"
+              description={`${uploadedRecipients.length} employee${uploadedRecipients.length === 1 ? '' : 's'} in your list. Pick a vendor and card type below, set amounts where needed, then choose who receives each card. Save to cart when you are ready, then go to checkout.`}
+            />
+            {hasExistingCartItems && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-primary-50 rounded-lg border border-primary-100 w-fit">
+                <Icon icon="hugeicons:shopping-cart-01" className="w-4 h-4 text-primary-600" />
+                <Text variant="span" className="text-sm text-primary-700 font-medium">
+                  {existingCartItems.length} item(s) already in your cart — you can add more or check out
+                </Text>
+              </div>
+            )}
 
             {/* Show existing cart items summary */}
             {hasExistingCartItems && (
@@ -288,8 +438,8 @@ export function BulkPurchaseEmployeesModal() {
                   </div>
                 </div>
                 <Text variant="p" className="text-sm text-blue-700 mb-2">
-                  You have {existingCartItems.length} item(s) already saved in your cart. You can
-                  continue adding more cards or proceed to checkout.
+                  These assignments are saved. You can keep adding cards for more employees on this
+                  step, or go straight to checkout when you are done.
                 </Text>
                 <div className="mt-3 space-y-2">
                   {existingCartItems.slice(0, 3).map((cart: any, index: number) => (
@@ -342,7 +492,7 @@ export function BulkPurchaseEmployeesModal() {
                         isClearable
                         className="w-full"
                       />
-                      {selectedVendor && selectedVendorData && (
+                      {selectedVendor && (
                         <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg">
                           <div className="flex items-center gap-2">
                             <Icon icon="bi:check-circle-fill" className="text-green-600" />
@@ -350,11 +500,11 @@ export function BulkPurchaseEmployeesModal() {
                               {selectedVendorName}
                             </Text>
                           </div>
-                          {Array.isArray((selectedVendorData as VendorBranchesResponse)?.data) && (
-                            <Text variant="span" className="text-sm text-green-700 block mt-1">
-                              {(selectedVendorData as VendorBranchesResponse).data.length} branch(es) available
-                            </Text>
-                          )}
+                          <Text variant="span" className="text-sm text-green-700 block mt-1">
+                            {selectedVendorBranchCount} branch
+                            {selectedVendorBranchCount === 1 ? '' : 'es'} · {vendorCards.length}{' '}
+                            card{vendorCards.length === 1 ? '' : 's'} available
+                          </Text>
                         </div>
                       )}
                     </div>
@@ -655,20 +805,23 @@ export function BulkPurchaseEmployeesModal() {
 
                 <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
                   <Button variant="outline" onClick={() => setStep(1)}>
-                    Back
+                    Back to upload
                   </Button>
                   {Object.keys(cardRecipientAssignments).length > 0 && (
                     <Button
                       variant="secondary"
                       onClick={async () => {
-                        await handleSaveToCart()
-                        handleCloseAndNavigate('/checkout')
+                        try {
+                          await handleSaveToCart()
+                          handleModalCloseAndNavigate('/checkout')
+                        } catch {
+                          // Toast shown by API layer; stay on modal
+                        }
                       }}
                       disabled={
-                        Object.keys(cardRecipientAssignments).length === 0 ||
-                        addToCartMutation.isPending
+                        Object.keys(cardRecipientAssignments).length === 0 || isSavingToCart
                       }
-                      loading={addToCartMutation.isPending}
+                      loading={isSavingToCart}
                     >
                       Save & Checkout
                     </Button>
@@ -676,7 +829,7 @@ export function BulkPurchaseEmployeesModal() {
                   {Object.keys(cardRecipientAssignments).length === 0 && hasExistingCartItems && (
                     <Button
                       variant="secondary"
-                      onClick={() => handleCloseAndNavigate('/checkout')}
+                      onClick={() => handleModalCloseAndNavigate('/checkout')}
                       disabled={!cartId}
                     >
                       Proceed to Checkout
@@ -866,8 +1019,9 @@ export function BulkPurchaseEmployeesModal() {
                             ? 'DashPro'
                             : selectedCardType === 'card'
                               ? String(
-                                  allCards.find((c: any) => c.card_id === selectedCardId)
-                                    ?.product || 'this Card',
+                                  vendorCards.find(
+                                    (c) => String(c.card_id) === String(selectedCardId),
+                                  )?.product || 'this Card',
                                 )
                               : 'this Card'}
                       </Text>
@@ -1082,14 +1236,17 @@ export function BulkPurchaseEmployeesModal() {
                     <Button
                       variant="secondary"
                       onClick={async () => {
-                        await handleSaveToCart()
-                        handleCloseAndNavigate('/checkout')
+                        try {
+                          await handleSaveToCart()
+                          handleModalCloseAndNavigate('/checkout')
+                        } catch {
+                          // Toast shown by API layer; stay on modal
+                        }
                       }}
                       disabled={
-                        Object.keys(cardRecipientAssignments).length === 0 ||
-                        addToCartMutation.isPending
+                        Object.keys(cardRecipientAssignments).length === 0 || isSavingToCart
                       }
-                      loading={addToCartMutation.isPending}
+                      loading={isSavingToCart}
                     >
                       Save & Checkout
                     </Button>
@@ -1097,7 +1254,7 @@ export function BulkPurchaseEmployeesModal() {
                   {Object.keys(cardRecipientAssignments).length === 0 && hasExistingCartItems && (
                     <Button
                       variant="secondary"
-                      onClick={() => handleCloseAndNavigate('/checkout')}
+                      onClick={() => handleModalCloseAndNavigate('/checkout')}
                       disabled={!cartId}
                     >
                       Proceed to Checkout
@@ -1112,12 +1269,12 @@ export function BulkPurchaseEmployeesModal() {
         {/* Action Buttons - Bottom of Modal (hide while checking for recipients) */}
         {step === 1 && !existingRecipientsLoading && (
           <div className="flex gap-4 justify-end pt-4 border-t border-gray-200 mt-auto">
-            <Button variant="outline" onClick={handleClose}>
+            <Button variant="outline" onClick={handleModalClose}>
               Cancel
             </Button>
             {choiceMade === 'add' && (
               <Button variant="outline" onClick={handleProceedToSelectCards}>
-                Proceed to select cards
+                Skip upload — choose cards
               </Button>
             )}
             <Button
@@ -1126,7 +1283,7 @@ export function BulkPurchaseEmployeesModal() {
               disabled={!file || uploadMutation.isPending}
               loading={uploadMutation.isPending}
             >
-              {choiceMade === 'add' ? 'Upload & Add more' : 'Upload & Continue'}
+              {choiceMade === 'add' ? 'Upload file & add employees' : 'Upload file & continue'}
             </Button>
           </div>
         )}

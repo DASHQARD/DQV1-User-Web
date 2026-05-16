@@ -276,11 +276,12 @@ export function corporateMutations() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
     return useMutation({
-      mutationFn: (data: { card_id: number; recipient_ids: number[] }) =>
+      mutationFn: (data: { card_id: number | string; recipient_ids: number[] }) =>
         assignCardToRecipients(data),
       onSuccess: (response: any) => {
         success(response?.message || 'Card assigned to recipients successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
+        queryClient.invalidateQueries({ queryKey: ['cart-items'] })
         queryClient.invalidateQueries({ queryKey: ['all-corporate-recipients'] })
       },
       onError: (err: any) => {
@@ -296,6 +297,7 @@ export function corporateMutations() {
       mutationFn: createDashGoAndAssign,
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
+        queryClient.invalidateQueries({ queryKey: ['cart-items'] })
         queryClient.invalidateQueries({ queryKey: ['all-corporate-recipients'] })
       },
       onError: (err: any) => {
@@ -312,6 +314,7 @@ export function corporateMutations() {
       onSuccess: (response: any) => {
         success(response?.message || 'DashPro card created and assigned successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
+        queryClient.invalidateQueries({ queryKey: ['cart-items'] })
         queryClient.invalidateQueries({ queryKey: ['all-corporate-recipients'] })
       },
       onError: (err: any) => {

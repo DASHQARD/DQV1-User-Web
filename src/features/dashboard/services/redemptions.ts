@@ -278,8 +278,12 @@ export const getGuestRedemptionsAmountDashPass = async (
   return await getList(`/guest-redemptions/recipient-amounts/dash-pass`, params)
 }
 
-export const getGuestRedemptions = async (): Promise<any> => {
-  return await getList(`/guest-redemptions`)
+export const getGuestRedemptions = async (params?: {
+  limit?: number
+  after?: string
+  card_type?: string
+}): Promise<any> => {
+  return await getList(`/guest-redemptions`, params)
 }
 
 export const getRedemptionsAmountDashX = async (

@@ -32,6 +32,29 @@ export const createGuestCart = async (data: {
   return body as GuestAddCardResponse
 }
 
+/** GET /guest-carts — pending cart for the authenticated guest (optional cart_id). */
+export const getGuestCart = async (query?: {
+  cart_id?: number
+}): Promise<GuestCartApiResponse | null> => {
+  const res = await getList<GuestCartApiResponse | { data?: GuestCartApiResponse }>(
+    '/guest-carts',
+    query,
+  )
+  const payload = (res as { data?: GuestCartApiResponse })?.data ?? res
+  if (!payload || typeof payload !== 'object') return null
+  return payload as GuestCartApiResponse
+}
+
+function resolveGuestCartId(payload: GuestCartApiResponse | GuestAddCardResponse | null): number | undefined {
+  if (!payload) return undefined
+  const cart = (payload as GuestCartApiResponse).cart ?? (payload as { cart?: { id?: number } }).cart
+  const id =
+    cart?.id ??
+    (payload as GuestAddCardResponse).cart_id ??
+    (payload as { data?: { cart_id?: number } }).data?.cart_id
+  return typeof id === 'number' ? id : undefined
+}
+
 /** Create guest cart if needed, then POST /guest-carts/add-card (never /carts). */
 export async function ensureGuestCartAndAddCard(args: {
   card_id: string
@@ -43,14 +66,19 @@ export async function ensureGuestCartAndAddCard(args: {
   const { card_id, guest_name, guest_email, getGuestCartId, setGuestCartId } = args
   let cartId = getGuestCartId() ?? undefined
   if (cartId === undefined) {
+    const existingCart = await getGuestCart()
+    const existingCartId = resolveGuestCartId(existingCart)
+    if (typeof existingCartId === 'number') {
+      setGuestCartId(existingCartId)
+      cartId = existingCartId
+    }
+  }
+  if (cartId === undefined) {
     const createCartResult = await createGuestCart({
       guest_name,
       guest_email,
     })
-    const createdCartId =
-      createCartResult?.cart_id ??
-      (createCartResult as { data?: { cart_id?: number } })?.data?.cart_id ??
-      (createCartResult as { id?: number })?.id
+    const createdCartId = resolveGuestCartId(createCartResult)
     if (typeof createdCartId === 'number') {
       setGuestCartId(createdCartId)
       cartId = createdCartId

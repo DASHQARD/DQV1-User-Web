@@ -128,7 +128,7 @@ describe('Navbar', () => {
       expect(mobileSearch).toHaveTextContent('Search')
 
       expect(mobileMenu!.querySelector('a[href="/auth/login"]')).toHaveTextContent('Login')
-      expect(mobileMenu!.querySelector('a[href="/auth/register"]')).toHaveTextContent('Register')
+      expect(mobileMenu!.querySelector('a[href="/auth/register"]')).toHaveTextContent('Sign up')
     })
 
     it('shows Account section and Sign Out when authenticated', async () => {
