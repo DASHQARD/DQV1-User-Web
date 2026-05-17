@@ -1,14 +1,21 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Input } from '@/components'
-import { Icon } from '@/libs'
-import { ROUTES } from '@/utils/constants/shared'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useToast } from '@/hooks'
+import { Button, BasePhoneInput, Input, PhoneFormatHint } from '@/components'
+import { Icon } from '@/libs'
+import { useCountriesData, useToast } from '@/hooks'
 import { postMethod } from '@/services/requests'
-import { isValidEmailAddress } from '@/utils/schemas/shared'
+import {
+  EXAMPLE_PHONE_PLACEHOLDER,
+  PURCHASE_WHATSAPP_DISPLAY,
+  PURCHASE_WHATSAPP_WA_ME,
+  SUPPORT_PHONE_DISPLAY,
+  SUPPORT_PHONE_E164,
+} from '@/utils/constants'
+import { ROUTES } from '@/utils/constants/shared'
+import { isValidEmailAddress, isValidInternationalPhoneDigits } from '@/utils/schemas/shared'
 
 // Extended schema to include phone and inquiryType
 const ContactFormSchema = z.object({
@@ -16,7 +23,12 @@ const ContactFormSchema = z.object({
   email: z.string().refine((val) => isValidEmailAddress(val), {
     message: 'Invalid email address',
   }),
-  phone: z.string().optional(),
+  phone: z
+    .string()
+    .optional()
+    .refine((val) => !val?.trim() || isValidInternationalPhoneDigits(val), {
+      message: 'Please enter a valid phone number',
+    }),
   inquiryType: z.string().min(1, 'Feedback type is required'),
   subject: z.string().min(1, 'Subject is required'),
   message: z.string().min(1, 'Message is required'),
@@ -33,6 +45,7 @@ export default function ContactPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const toast = useToast()
+  const { countries: phoneCountries } = useCountriesData()
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(ContactFormSchema),
@@ -133,10 +146,10 @@ ${data.message}
                 <div className="flex justify-between items-center pb-3 border-b border-primary-500/10">
                   <strong className="text-primary-500">Phone:</strong>
                   <a
-                    href="tel:+233542022245"
+                    href={`tel:${SUPPORT_PHONE_E164}`}
                     className="text-primary-500 font-semibold hover:underline"
                   >
-                    +233 (0)542 022 245
+                    {SUPPORT_PHONE_DISPLAY}
                   </a>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-primary-500/10">
@@ -149,7 +162,7 @@ ${data.message}
                 </div>
               </div>
               <a
-                href="tel:+233542022245"
+                href={`tel:${SUPPORT_PHONE_E164}`}
                 className="block w-full bg-primary-500 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-full text-center transition-all hover:shadow-lg"
               >
                 <Icon icon="bi:telephone" className="size-5 inline mr-2" />
@@ -157,26 +170,26 @@ ${data.message}
               </a>
             </div>
 
-            {/* Support WhatsApp */}
+            {/* Purchase WhatsApp */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-primary-500/10 hover:shadow-xl transition-all hover:-translate-y-1">
               <div className="w-20 h-20 bg-linear-to-br from-[#25D366] to-[#128C7E] rounded-full flex items-center justify-center mx-auto mb-6">
                 <Icon icon="bi:whatsapp" className="size-10 text-white" />
               </div>
               <h4 className="text-xl font-bold text-primary-500 mb-4 text-center">
-                Support WhatsApp
+                Purchase Line (WhatsApp)
               </h4>
               <p className="text-grey-600 mb-6 text-center">
-                WhatsApp us for comprehensive support and assistance. Perfect for quick support and
-                instant communication.
+                WhatsApp us for purchases and bulk gifting. Perfect for quick quotes and instant
+                communication.
               </p>
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between items-center pb-3 border-b border-primary-500/10">
                   <strong className="text-primary-500">WhatsApp:</strong>
                   <a
-                    href="https://wa.me/233542022245"
+                    href={`https://wa.me/${PURCHASE_WHATSAPP_WA_ME}`}
                     className="text-primary-500 font-semibold hover:underline"
                   >
-                    +233 (0)542 022 245
+                    {PURCHASE_WHATSAPP_DISPLAY}
                   </a>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-primary-500/10">
@@ -189,7 +202,9 @@ ${data.message}
                 </div>
               </div>
               <a
-                href="https://wa.me/233542022245"
+                href={`https://wa.me/${PURCHASE_WHATSAPP_WA_ME}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="block w-full bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold py-3 px-6 rounded-full text-center transition-all hover:shadow-lg"
               >
                 <Icon icon="bi:whatsapp" className="size-5 inline mr-2" />
@@ -324,16 +339,20 @@ ${data.message}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="flex items-center text-sm font-semibold text-primary-500 mb-2">
-                        <Icon icon="bi:telephone-fill" className="size-4 mr-2" />
-                        Phone Number
-                      </label>
-                      <Input
-                        type="tel"
-                        maxLength={15}
-                        placeholder="Enter your phone number (optional)"
-                        {...form.register('phone')}
-                        error={form.formState.errors.phone?.message}
+                      <Controller
+                        control={form.control}
+                        name="phone"
+                        render={({ field: { value, onChange } }) => (
+                          <BasePhoneInput
+                            label="Phone Number"
+                            placeholder={EXAMPLE_PHONE_PLACEHOLDER}
+                            options={phoneCountries}
+                            selectedVal={value}
+                            handleChange={onChange}
+                            error={form.formState.errors.phone?.message}
+                            hint={<PhoneFormatHint />}
+                          />
+                        )}
                       />
                     </div>
 
@@ -391,9 +410,8 @@ ${data.message}
                     type="submit"
                     disabled={isLoading}
                     loading={isLoading}
-                    className="w-full bg-primary-500 hover:bg-primary-700 text-white font-bold py-3 px-6 rounded-full"
-                    icon="bi:send-fill"
-                    iconPosition="left"
+                    variant="secondary"
+                    className="w-full"
                   >
                     {isLoading ? 'Sending...' : 'Send Message'}
                   </Button>
@@ -414,21 +432,23 @@ ${data.message}
                 </p>
                 <div className="space-y-3">
                   <a
-                    href="tel:+233542022245"
+                    href={`tel:${SUPPORT_PHONE_E164}`}
                     className="flex items-center gap-3 p-3 bg-primary-500/5 rounded-lg hover:bg-primary-500/10 transition-colors"
                   >
                     <Icon icon="bi:telephone-fill" className="size-5 text-primary-500" />
                     <span className="text-primary-500 font-semibold">
-                      Support Line: +233 (0)542 022 245
+                      Support Line: {SUPPORT_PHONE_DISPLAY}
                     </span>
                   </a>
                   <a
-                    href="https://wa.me/233542022245"
+                    href={`https://wa.me/${PURCHASE_WHATSAPP_WA_ME}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-3 p-3 bg-[#25D366]/5 rounded-lg hover:bg-[#25D366]/10 transition-colors"
                   >
                     <Icon icon="bi:whatsapp" className="size-5 text-[#25D366]" />
                     <span className="text-[#25D366] font-semibold">
-                      Support WhatsApp: +233 (0)542 022 245
+                      Purchase WhatsApp: {PURCHASE_WHATSAPP_DISPLAY}
                     </span>
                   </a>
                 </div>
@@ -523,7 +543,7 @@ ${data.message}
               </p>
               <div className="flex flex-wrap gap-4">
                 <a
-                  href="tel:+233542022245"
+                  href={`tel:${SUPPORT_PHONE_E164}`}
                   className="bg-white text-primary-500 hover:bg-primary-50 font-semibold py-2 px-6 rounded-full transition-all inline-flex items-center"
                 >
                   <Icon icon="bi:telephone" className="size-4 mr-2" />

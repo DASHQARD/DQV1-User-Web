@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { EXAMPLE_PHONE_E164 } from '@/utils/constants'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import PaymentInfoForm from '../PaymentInfoForm'
 
@@ -43,7 +44,7 @@ describe('PaymentInfoForm', () => {
   it('prefills mobile money when user has momo_accounts', () => {
     mockUseGetUserProfileService.mockReturnValue({
       data: {
-        momo_accounts: [{ provider: 'mtn', momo_number: '233241234567' }],
+        momo_accounts: [{ provider: 'mtn', momo_number: EXAMPLE_PHONE_E164.replace('+', '') }],
       },
     })
     renderWithProviders(<PaymentInfoForm />)

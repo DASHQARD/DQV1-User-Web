@@ -1,5 +1,6 @@
 import { Controller } from 'react-hook-form'
-import { Button, Modal, Input, BasePhoneInput, Text } from '@/components'
+import { Button, Modal, Input, BasePhoneInput, Text, PhoneFormatHint } from '@/components'
+import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { Icon } from '@/libs'
 import { useUpdateBranchManagerInvitationModal } from '@/features/dashboard/vendor/hooks'
 
@@ -62,19 +63,13 @@ export function UpdateBranchManagerInvitationModal() {
               name="branch_manager_phone"
               render={({ field: { onChange, value } }) => (
                 <BasePhoneInput
-                  placeholder="Enter number eg. 5512345678"
+                  placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                   options={phoneCountries}
                   handleChange={onChange}
                   selectedVal={value}
                   label="Phone Number"
                   error={form.formState.errors.branch_manager_phone?.message}
-                  disabled={isUpdating}
-                  hint={
-                    <>
-                      Please enter your number in the format:{' '}
-                      <span className="font-medium">5512345678</span>
-                    </>
-                  }
+                  disabled={isUpdating} hint={<PhoneFormatHint />}
                 />
               )}
             />

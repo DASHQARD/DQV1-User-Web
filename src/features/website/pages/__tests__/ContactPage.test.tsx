@@ -4,6 +4,7 @@ import ContactPage from '../contact/ContactPage'
 
 vi.mock('@/hooks', () => ({
   useToast: () => ({ success: vi.fn(), error: vi.fn() }),
+  useCountriesData: () => ({ countries: [] }),
 }))
 
 vi.mock('@/services/requests', () => ({

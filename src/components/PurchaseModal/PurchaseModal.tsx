@@ -16,7 +16,7 @@ import { Input } from '../Input'
 import type { AssignRecipientPayload, GuestAssignRecipientPayload } from '@/types/responses'
 import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { useAuthStore } from '@/stores'
-import { MODAL_NAMES } from '@/utils/constants'
+import { EXAMPLE_PHONE_PLACEHOLDER_E164, MODAL_NAMES } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '@/features/website/utils/assignToSelfContactPrefill'
 
 export default function PurchaseModal() {
@@ -494,7 +494,9 @@ export default function PurchaseModal() {
                 {...form.register('phone')}
                 error={form.formState.errors.phone?.message}
                 disabled={assignToSelf}
-                placeholder={assignToSelf ? 'Will use your account phone' : '+233559617908'}
+                placeholder={
+                  assignToSelf ? 'Will use your account phone' : EXAMPLE_PHONE_PLACEHOLDER_E164
+                }
               />
             </div>
             <div>

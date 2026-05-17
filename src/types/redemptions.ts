@@ -91,11 +91,34 @@ export interface CardsRedemptionPayload {
 }
 
 /** POST /guest-redemptions/cards — guest identity comes from Bearer token, not body */
-export interface GuestCardsRedemptionPayload {
-  branch_id?: string
-  card_type: 'DashGo' | 'DashPro' | 'DashX' | 'DashPass'
-  amount: number
-  card_id: string
+export type GuestCardsRedemptionPayload =
+  | {
+      card_type: 'DashGo' | 'DashPro'
+      branch_id: string
+      amount: number
+    }
+  | {
+      card_type: 'DashX' | 'DashPass'
+      branch_id: string
+      card_id: string
+    }
+
+export interface GuestCardsRedemptionData {
+  redemption_id?: string
+  transaction_reference?: string
+  redemption_code?: string
+  amount?: number
+  status?: string
+  redemption_date?: string
+  guest_phone?: string
+  vendor_payment?: Record<string, unknown>
+}
+
+export interface GuestCardsRedemptionResponse {
+  status: string
+  statusCode: number
+  message: string
+  data?: GuestCardsRedemptionData
 }
 
 export interface RedemptionResponse {
@@ -105,6 +128,9 @@ export interface RedemptionResponse {
   data?: {
     reference_id?: string
     transaction_id?: string
+    transaction_reference?: string
+    redemption_code?: string
+    redemption_id?: string
     amount?: number
     status?: string
     token?: string

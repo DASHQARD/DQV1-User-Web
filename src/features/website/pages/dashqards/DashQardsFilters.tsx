@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Icon } from '@/libs'
 
 import type { DashQardsTabId, DashQardsVendor } from '../../hooks/useDashQards'
+import { normalizePriceInput, reconcilePriceRange } from '../../utils/priceRangeFilter'
 
 export interface DashQardsFiltersQuery {
   search?: string
@@ -38,20 +39,6 @@ export interface DashQardsFiltersProps {
 
 const SECTION_KEYS = ['cardSelection', 'search', 'vendors', 'priceRange'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
-
-function sanitizeNonNegativePrice(value: string): string | undefined {
-  if (!value) return undefined
-  const parsed = Number(value)
-  if (Number.isNaN(parsed)) return undefined
-  return String(Math.max(0, parsed))
-}
-
-function parsePrice(value?: string): number | null {
-  if (!value) return null
-  const parsed = Number(value)
-  if (Number.isNaN(parsed)) return null
-  return Math.max(0, parsed)
-}
 
 export function DashQardsFilters({
   activeTab,
@@ -342,22 +329,23 @@ export function DashQardsFilters({
                       </span>
                       <input
                         type="number"
+                        inputMode="numeric"
+                        step={1}
                         value={query.min_price || ''}
                         onChange={(e) => {
-                          const nextMin = parsePrice(sanitizeNonNegativePrice(e.target.value))
-                          const currentMax = parsePrice(query.max_price)
-                          const safeMin =
-                            nextMin !== null && currentMax !== null
-                              ? Math.min(nextMin, currentMax)
-                              : nextMin
                           setQuery({
                             ...query,
-                            min_price: safeMin !== null ? String(safeMin) : undefined,
+                            min_price: normalizePriceInput(e.target.value),
+                          })
+                        }}
+                        onBlur={() => {
+                          setQuery({
+                            ...query,
+                            ...reconcilePriceRange(query.min_price, query.max_price),
                           })
                         }}
                         placeholder="0"
                         min={0}
-                        max={query.max_price || undefined}
                         className="w-full pl-7 pr-3 py-2.5 border-2 border-[#e6e6e6] rounded-md text-sm font-medium bg-white transition-colors focus:outline-none focus:border-primary-500 placeholder:text-[#aaa]"
                       />
                     </div>
@@ -373,21 +361,23 @@ export function DashQardsFilters({
                       </span>
                       <input
                         type="number"
+                        inputMode="numeric"
+                        step={1}
                         value={query.max_price || ''}
                         onChange={(e) => {
-                          const nextMax = parsePrice(sanitizeNonNegativePrice(e.target.value))
-                          const currentMin = parsePrice(query.min_price)
-                          const safeMax =
-                            nextMax !== null && currentMin !== null
-                              ? Math.max(nextMax, currentMin)
-                              : nextMax
                           setQuery({
                             ...query,
-                            max_price: safeMax !== null ? String(safeMax) : undefined,
+                            max_price: normalizePriceInput(e.target.value),
+                          })
+                        }}
+                        onBlur={() => {
+                          setQuery({
+                            ...query,
+                            ...reconcilePriceRange(query.min_price, query.max_price),
                           })
                         }}
                         placeholder="1000"
-                        min={query.min_price || 0}
+                        min={0}
                         className="w-full pl-7 pr-3 py-2.5 border-2 border-[#e6e6e6] rounded-md text-sm font-medium bg-white transition-colors focus:outline-none focus:border-primary-500 placeholder:text-[#aaa]"
                       />
                     </div>

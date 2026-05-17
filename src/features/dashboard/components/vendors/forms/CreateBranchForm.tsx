@@ -7,7 +7,9 @@ import {
   RadioGroupItem,
   Text,
   BasePhoneInput,
+  PhoneFormatHint,
 } from '@/components'
+import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { GHANA_BANKS } from '@/assets/data/banks'
 import { Icon } from '@/libs'
 import type { DropdownOption } from '@/types'
@@ -141,18 +143,12 @@ export default function CreateBranchForm() {
           name="branch_manager_phone"
           render={({ field: { value, onChange } }) => (
             <BasePhoneInput
-              placeholder="Enter number eg. 5512345678"
+              placeholder={EXAMPLE_PHONE_PLACEHOLDER}
               options={phoneCountries}
               selectedVal={value}
               handleChange={onChange}
               label="Phone Number"
-              error={form.formState.errors.branch_manager_phone?.message}
-              hint={
-                <>
-                  Please enter your number in the format:{' '}
-                  <span className="font-medium">5512345678</span>
-                </>
-              }
+              error={form.formState.errors.branch_manager_phone?.message} hint={<PhoneFormatHint />}
             />
           )}
         />
@@ -209,18 +205,12 @@ export default function CreateBranchForm() {
               name="mobile_money_number"
               render={({ field: { value, onChange } }) => (
                 <BasePhoneInput
-                  placeholder="Enter number eg. 5512345678"
+                  placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                   options={phoneCountries}
                   selectedVal={value}
                   handleChange={onChange}
                   label="Phone Number"
-                  error={form.formState.errors.mobile_money_number?.message}
-                  hint={
-                    <>
-                      Please enter your number in the format:{' '}
-                      <span className="font-medium">5512345678</span>
-                    </>
-                  }
+                  error={form.formState.errors.mobile_money_number?.message} hint={<PhoneFormatHint />}
                 />
               )}
             />

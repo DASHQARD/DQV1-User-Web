@@ -14,7 +14,11 @@ import { useUserProfile } from '@/hooks'
 import { useCartStore } from '@/stores/cart'
 import { useCart, useGuestCart, useRecipients } from '../../hooks'
 import { useAuthStore } from '@/stores'
-import { GUEST_EMAIL_STORAGE_KEY, getGuestContactSessionItem } from '@/utils/constants'
+import {
+  EXAMPLE_PHONE_PLACEHOLDER_E164,
+  GUEST_EMAIL_STORAGE_KEY,
+  getGuestContactSessionItem,
+} from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
 import { addGuestCard, createGuestDashGo } from '../../services/cards'
 
@@ -571,7 +575,9 @@ export default function DashGoPurchase() {
                   className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
                     assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
                   }`}
-                  placeholder={assignToSelf ? 'Will use your account phone' : '+233559617908'}
+                  placeholder={
+                    assignToSelf ? 'Will use your account phone' : EXAMPLE_PHONE_PLACEHOLDER_E164
+                  }
                 />
                 {errors.recipient_phone && (
                   <p className="mt-1 text-xs text-red-500">{errors.recipient_phone.message}</p>

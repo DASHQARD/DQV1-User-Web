@@ -2,9 +2,9 @@ import React from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button, Modal, Input, Combobox, BasePhoneInput } from '@/components'
+import { Button, Modal, Input, Combobox, BasePhoneInput, PhoneFormatHint } from '@/components'
 import { useCountriesData, usePersistedModalState } from '@/hooks'
-import { MODALS } from '@/utils/constants'
+import { EXAMPLE_PHONE_PLACEHOLDER_SHORT, MODALS } from '@/utils/constants'
 import { Icon } from '@/libs'
 import { InviteAdminSchema } from '@/utils/schemas'
 import { corporateMutations } from '@/features/dashboard/corporate/hooks'
@@ -84,18 +84,12 @@ export function InviteAdmin() {
                 render={({ field: { onChange, value } }) => {
                   return (
                     <BasePhoneInput
-                      placeholder="Enter number"
+                      placeholder={EXAMPLE_PHONE_PLACEHOLDER_SHORT}
                       options={phoneCountries}
                       selectedVal={value}
                       handleChange={onChange}
                       label="Phone Number"
-                      error={form.formState.errors.phone_number?.message}
-                      hint={
-                        <>
-                          Please enter your number in the format:{' '}
-                          <span className="font-medium">5512345678</span>
-                        </>
-                      }
+                      error={form.formState.errors.phone_number?.message} hint={<PhoneFormatHint />}
                     />
                   )
                 }}

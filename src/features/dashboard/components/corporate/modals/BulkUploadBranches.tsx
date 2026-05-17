@@ -4,7 +4,7 @@ import React from 'react'
 import { Button, FileUploader, Modal, Text } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
-import { MODALS } from '@/utils/constants'
+import { EXAMPLE_PHONE_E164, examplePhoneE164AtIndex, MODALS } from '@/utils/constants'
 // import { bulkUploadBranches } from '@/features/dashboard/services/vendor'
 
 export function BulkUploadBranches() {
@@ -62,9 +62,9 @@ function BulkUploadModal({ modal }: { modal: ReturnType<typeof usePersistedModal
 
   // Example CSV content for bulk branch upload
   const exampleCSV = `branch_name,branch_location,branch_manager_name,branch_manager_email,phone_number
-Main Branch,Accra Central,John Doe,john.doe@example.com,+233551234567
-North Branch,Accra North,Jane Smith,jane.smith@example.com,+233551234568
-South Branch,Kumasi,Bob Johnson,bob.johnson@example.com,+233551234569`
+Main Branch,Accra Central,John Doe,john.doe@example.com,${EXAMPLE_PHONE_E164}
+North Branch,Accra North,Jane Smith,jane.smith@example.com,${examplePhoneE164AtIndex(1)}
+South Branch,Kumasi,Bob Johnson,bob.johnson@example.com,${examplePhoneE164AtIndex(2)}`
 
   const downloadExample = () => {
     const blob = new Blob([exampleCSV], { type: 'text/csv' })
@@ -107,7 +107,7 @@ South Branch,Kumasi,Bob Johnson,bob.johnson@example.com,+233551234569`
             </li>
             <li>
               <strong>phone_number</strong> (required) - Phone number of the branch (e.g.,
-              +233551234567)
+              {EXAMPLE_PHONE_E164})
             </li>
           </ul>
         </div>
@@ -156,7 +156,7 @@ South Branch,Kumasi,Bob Johnson,bob.johnson@example.com,+233551234569`
                   <td className="px-3 py-2 text-gray-600 border-r border-gray-300">
                     john.doe@example.com
                   </td>
-                  <td className="px-3 py-2 text-gray-600">+233551234567</td>
+                  <td className="px-3 py-2 text-gray-600">{EXAMPLE_PHONE_E164}</td>
                 </tr>
                 <tr className="border-t border-gray-300">
                   <td className="px-3 py-2 text-gray-600 border-r border-gray-300">North Branch</td>
@@ -165,7 +165,7 @@ South Branch,Kumasi,Bob Johnson,bob.johnson@example.com,+233551234569`
                   <td className="px-3 py-2 text-gray-600 border-r border-gray-300">
                     jane.smith@example.com
                   </td>
-                  <td className="px-3 py-2 text-gray-600">+233551234568</td>
+                  <td className="px-3 py-2 text-gray-600">{examplePhoneE164AtIndex(1)}</td>
                 </tr>
               </tbody>
             </table>

@@ -4,7 +4,7 @@ import { Button, FileUploader, Modal, Text } from '@/components'
 import { useBulkUploadRecipient } from '@/features/dashboard/hooks/useBulkUploadRecipient'
 import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
-import { MODAL_NAMES } from '@/utils/constants'
+import { EXAMPLE_PHONE_E164, MODAL_NAMES } from '@/utils/constants'
 
 export function BulkUploadRecipient() {
   const modal = usePersistedModalState({
@@ -93,7 +93,7 @@ export function BulkUploadRecipient() {
                   <td className="px-3 py-2 text-gray-600 border-r border-gray-300">
                     john.doe@example.com
                   </td>
-                  <td className="px-3 py-2 text-gray-600 border-r border-gray-300">+1234567890</td>
+                  <td className="px-3 py-2 text-gray-600 border-r border-gray-300">{EXAMPLE_PHONE_E164}</td>
                   <td className="px-3 py-2 text-gray-600">Happy Birthday!</td>
                 </tr>
                 <tr className="border-t border-gray-300">

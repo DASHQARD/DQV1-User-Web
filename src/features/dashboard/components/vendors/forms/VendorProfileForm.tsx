@@ -10,7 +10,9 @@ import {
   Combobox,
   BasePhoneInput,
   DateInput,
+  PhoneFormatHint,
 } from '@/components'
+import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { Icon } from '@/libs'
 import type { VendorProfileFormProps } from '@/types'
 import { useVendorProfileForm } from './useVendorProfileForm'
@@ -96,17 +98,11 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
                   <BasePhoneInput
                     label="Vendor phone number"
                     isRequired
-                    placeholder="Enter number e.g. 5512345678"
+                    placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                     options={countries}
                     selectedVal={value ?? ''}
                     handleChange={onChange}
-                    error={form.formState.errors.phone?.message}
-                    hint={
-                      <>
-                        Please enter your number in the format:{' '}
-                        <span className="font-medium">5512345678</span>
-                      </>
-                    }
+                    error={form.formState.errors.phone?.message} hint={<PhoneFormatHint />}
                     disabled={checkboxProfileSameAsCorporate}
                   />
                 </div>

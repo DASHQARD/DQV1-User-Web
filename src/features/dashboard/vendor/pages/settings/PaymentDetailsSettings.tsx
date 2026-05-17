@@ -7,7 +7,9 @@ import {
   RadioGroup,
   RadioGroupItem,
   BasePhoneInput,
+  PhoneFormatHint,
 } from '@/components'
+import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import {
   usePaymentDetailsSettingsForm,
   type PaymentDetailsFormData,
@@ -84,18 +86,12 @@ export function PaymentDetailsSettings() {
               name="mobile_money_number"
               render={({ field: { onChange } }) => (
                 <BasePhoneInput
-                  placeholder="Enter number eg. 5512345678"
+                  placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                   options={phoneCountries}
                   handleChange={onChange}
                   isRequired
                   label="Phone Number"
-                  error={form.formState.errors.mobile_money_number?.message}
-                  hint={
-                    <>
-                      Please enter your number in the format:{' '}
-                      <span className="font-medium">5512345678</span>
-                    </>
-                  }
+                  error={form.formState.errors.mobile_money_number?.message} hint={<PhoneFormatHint />}
                 />
               )}
             />

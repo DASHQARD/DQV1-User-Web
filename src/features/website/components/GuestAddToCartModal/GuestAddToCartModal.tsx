@@ -4,7 +4,8 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { Modal, Button, Text, Input, OTPInput, BasePhoneInput } from '@/components'
+import { Modal, Button, Text, Input, OTPInput, BasePhoneInput, PhoneFormatHint } from '@/components'
+import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { Icon } from '@/libs'
 import { useGuestAddToCartModalStore, useAuthStore } from '@/stores'
 import { useCartStore } from '@/stores/cart'
@@ -296,16 +297,10 @@ export default function GuestAddToCartModal() {
                 <BasePhoneInput
                   label="Phone number"
                   isRequired
-                  placeholder="Enter number e.g. 5512345678"
+                  placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                   selectedVal={value}
                   handleChange={onChange}
-                  error={contactForm.formState.errors.guest_phone?.message}
-                  hint={
-                    <>
-                      Please enter your number in the format:{' '}
-                      <span className="font-medium">5512345678</span>
-                    </>
-                  }
+                  error={contactForm.formState.errors.guest_phone?.message} hint={<PhoneFormatHint />}
                 />
               )}
             />

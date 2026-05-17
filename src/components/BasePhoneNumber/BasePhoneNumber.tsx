@@ -20,7 +20,7 @@ interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, '
 }
 
 /**
- * Normalize "+233-559617908" or "+233559617908" to E.164 "+233559617908"
+ * Normalize "+233-5512345678" or "+2335512345678" to E.164 "+2335512345678"
  * for react-international-phone value prop.
  */
 function toE164(val: string): string {
@@ -29,7 +29,7 @@ function toE164(val: string): string {
 }
 
 /**
- * Return phone number in E.164 format without hyphens (e.g., "+233559617908")
+ * Return phone number in E.164 format without hyphens (e.g., "+2335512345678")
  */
 function toLegacyFormat(phone: string): string {
   if (!phone) return ''

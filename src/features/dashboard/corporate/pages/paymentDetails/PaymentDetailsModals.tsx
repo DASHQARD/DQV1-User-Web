@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { BasePhoneInput, Button, Combobox, Input, Modal, Text } from '@/components'
-import { MOBILE_MONEY_PROVIDERS } from '@/utils/constants'
+import { EXAMPLE_PHONE_PLACEHOLDER, MOBILE_MONEY_PROVIDERS } from '@/utils/constants'
 
 type PaymentForm = {
   payment_method: string
@@ -95,7 +95,7 @@ export function PaymentDetailsModals({
                 placeholder="Select provider"
               />
               <BasePhoneInput
-                placeholder="Enter number eg. 5512345678"
+                placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                 options={countries}
                 selectedVal={addForm.mobile_money_number}
                 handleChange={(value) =>
@@ -200,7 +200,7 @@ export function PaymentDetailsModals({
                 placeholder="Select provider"
               />
               <BasePhoneInput
-                placeholder="Enter number eg. 5512345678"
+                placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                 options={countries}
                 selectedVal={editForm.mobile_money_number}
                 handleChange={(value) =>

@@ -10,6 +10,7 @@ import { MemberOnboardingRecipientBlock } from '@/features/website/components/Me
 import { formatCurrency } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
 import { CHECKOUT_GATEWAY } from '@/features/website/utils/paymentConstants'
+import { EXAMPLE_PHONE_LOCAL } from '@/utils/constants'
 
 const EGNANOW_NETWORK_OPTIONS = [
   { value: 'MTNGH', label: 'MTN' },
@@ -208,7 +209,7 @@ export default function Checkout() {
                             selectedVal={field.value || ''}
                             handleChange={field.onChange}
                             error={userInfoForm.formState.errors.phone_number?.message}
-                            placeholder="0241234567"
+                            placeholder={EXAMPLE_PHONE_LOCAL}
                           />
                         )}
                       />
@@ -428,7 +429,7 @@ export default function Checkout() {
                             selectedVal={field.value || ''}
                             handleChange={field.onChange}
                             error={userInfoForm.formState.errors.phone_number?.message}
-                            placeholder="0241234567"
+                            placeholder={EXAMPLE_PHONE_LOCAL}
                           />
                         )}
                       />

@@ -1,11 +1,12 @@
 import { Button } from '@/components/Button'
 import { Input, FileUploader, CreatableCombobox, Text, Modal, ImageUpload } from '@/components'
-import { BasePhoneInput, RadioGroup, RadioGroupItem } from '@/components'
+import { BasePhoneInput, PhoneFormatHint, RadioGroup, RadioGroupItem } from '@/components'
 import {
   BUSINESS_FILE_UPLOAD_ACCEPT,
   BUSINESS_FILE_UPLOAD_HINT,
   BUSINESS_INDUSTRY_OPTIONS,
   BUSINESS_TYPE_OPTIONS,
+  EXAMPLE_PHONE_PLACEHOLDER,
 } from '@/utils/constants'
 import { Controller } from 'react-hook-form'
 import { cn } from '@/libs'
@@ -123,18 +124,12 @@ export default function BusinessDetailsForm() {
               name="phone"
               render={({ field: { onChange } }) => (
                 <BasePhoneInput
-                  placeholder="Enter number eg. 5512345678"
+                  placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                   options={phoneCountries}
                   isRequired
                   handleChange={onChange}
                   label="Phone Number"
-                  error={form.formState.errors.phone?.message}
-                  hint={
-                    <>
-                      Please enter your number in the format:{' '}
-                      <span className="font-medium">5512345678</span>
-                    </>
-                  }
+                  error={form.formState.errors.phone?.message} hint={<PhoneFormatHint />}
                 />
               )}
             />

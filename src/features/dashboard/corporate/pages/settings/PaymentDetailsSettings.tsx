@@ -9,6 +9,7 @@ import {
   BasePhoneInput,
   Modal,
 } from '@/components'
+import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { Icon } from '@/libs'
 import { usePaymentDetailsSettings } from './usePaymentDetailsSettings'
 
@@ -97,7 +98,7 @@ export function PaymentDetailsSettings() {
                   name="mobile_money_number"
                   render={({ field: { value, onChange } }) => (
                     <BasePhoneInput
-                      placeholder="Enter number eg. 5512345678"
+                      placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                       options={countries}
                       selectedVal={value}
                       handleChange={onChange}

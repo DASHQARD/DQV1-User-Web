@@ -1,4 +1,5 @@
-import { BasePhoneInput, Input, Text } from '@/components'
+import { BasePhoneInput, Input, PhoneFormatHint, Text } from '@/components'
+import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
@@ -64,18 +65,12 @@ export default function SignUpForm() {
             name="phone_number"
             render={({ field: { onChange } }) => (
               <BasePhoneInput
-                placeholder="Enter number eg. 5512345678"
+                placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                 options={phoneCountries}
                 isRequired
                 handleChange={onChange}
                 label="Phone Number"
-                error={form.formState.errors.phone_number?.message}
-                hint={
-                  <>
-                    Please enter your number in the format:{' '}
-                    <span className="font-medium">5512345678</span>
-                  </>
-                }
+                error={form.formState.errors.phone_number?.message} hint={<PhoneFormatHint />}
               />
             )}
           />

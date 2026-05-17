@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { EXAMPLE_PHONE_E164 } from '@/utils/constants'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { BusinessDetailsSettings } from '../BusinessDetailsSettings'
 
@@ -34,7 +35,7 @@ describe('BusinessDetailsSettings (dashboard shared)', () => {
     mockBusiness = {
       name: 'Acme Inc',
       type: 'retail',
-      phone: '+233 24 123 4567',
+      phone: EXAMPLE_PHONE_E164,
       email: 'acme@example.com',
       street_address: '123 Main St',
       digital_address: 'GA-123-4567',

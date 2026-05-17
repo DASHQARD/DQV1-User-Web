@@ -1,5 +1,6 @@
 import { Controller } from 'react-hook-form'
-import { Button, Input, CreatableCombobox, BasePhoneInput } from '@/components'
+import { Button, Input, CreatableCombobox, BasePhoneInput, PhoneFormatHint } from '@/components'
+import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { useBusinessDetailsSettingsForm, type FormValues } from '@/features/dashboard/vendor/hooks'
 
 export function BusinessDetailsSettings() {
@@ -51,20 +52,14 @@ export function BusinessDetailsSettings() {
               const phoneValue = value || ''
               return (
                 <BasePhoneInput
-                  placeholder="Enter number eg. 5512345678"
+                  placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                   options={phoneCountries}
                   handleChange={onChange}
                   isRequired
                   selectedVal={phoneValue}
                   label="Phone Number"
                   error={form.formState.errors.phone?.message}
-                  disabled={isApproved}
-                  hint={
-                    <>
-                      Please enter your number in the format:{' '}
-                      <span className="font-medium">5512345678</span>
-                    </>
-                  }
+                  disabled={isApproved} hint={<PhoneFormatHint />}
                 />
               )
             }}

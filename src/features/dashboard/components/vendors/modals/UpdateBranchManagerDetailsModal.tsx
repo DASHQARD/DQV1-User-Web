@@ -2,7 +2,7 @@ import React from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button, Modal, Input, BasePhoneInput } from '@/components'
+import { Button, Modal, Input, BasePhoneInput, PhoneFormatHint } from '@/components'
 import { usePersistedModalState, useCountriesData } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { Icon } from '@/libs'
@@ -106,13 +106,7 @@ export function UpdateBranchManagerDetailsModal() {
               options={phoneCountries}
               selectedVal={field.value}
               handleChange={field.onChange}
-              error={fieldState.error?.message}
-              hint={
-                <>
-                  Please enter your number in the format:{' '}
-                  <span className="font-medium">5512345678</span>
-                </>
-              }
+              error={fieldState.error?.message} hint={<PhoneFormatHint />}
             />
           )}
         />

@@ -79,8 +79,16 @@ export function useRedemptionMutation() {
       onSuccess: (response: any) => {
         success(response?.message || 'Redemption processed successfully')
         queryClient.invalidateQueries({ queryKey: ['guest-redemptions'] })
+        queryClient.invalidateQueries({ queryKey: ['guest-assigned-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['redemptions-amount-dash-go'] })
+        queryClient.invalidateQueries({ queryKey: ['redemptions-amount-dash-pro'] })
       },
       onError: (err: any) => {
+        if (err?.status === 422) {
+          console.error('[guest-redemption] Request body validation failed:', err?.message)
+          error('Something went wrong, please try again.')
+          return
+        }
         error(err?.message || 'Failed to process redemption. Please try again.')
       },
     })

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button, Input, Modal, BasePhoneInput } from '@/components'
 import { usePersistedModalState, useCountriesData } from '@/hooks'
-import { MODALS } from '@/utils/constants'
+import { EXAMPLE_PHONE_PLACEHOLDER, MODALS } from '@/utils/constants'
 import { CreateRecipientSchema } from '@/utils/schemas/contact'
 import { corporateMutations } from '@/features/dashboard/corporate/hooks'
 
@@ -75,7 +75,7 @@ export function CreateRecipient() {
             name="phone"
             render={({ field: { value, onChange }, fieldState: { error } }) => (
               <BasePhoneInput
-                placeholder="Enter number eg. 5512345678"
+                placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                 options={countries}
                 selectedVal={value || ''}
                 handleChange={onChange}

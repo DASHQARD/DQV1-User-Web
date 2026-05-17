@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button, Input, Modal, Text, BasePhoneInput } from '@/components'
 import { usePersistedModalState, useCountriesData, useToast } from '@/hooks'
-import { MODALS } from '@/utils/constants'
+import { EXAMPLE_PHONE_PLACEHOLDER_E164, MODALS } from '@/utils/constants'
 import { AssignRecipientSchema } from '@/utils/schemas'
 import { corporateMutations, corporateQueries } from '@/features/dashboard/corporate/hooks'
 
@@ -223,7 +223,7 @@ export function CreateDashProModal() {
             name="phone"
             render={({ field: { value, onChange }, fieldState: { error } }) => (
               <BasePhoneInput
-                placeholder="+233559617908"
+                placeholder={EXAMPLE_PHONE_PLACEHOLDER_E164}
                 options={countries}
                 selectedVal={value || ''}
                 handleChange={onChange}

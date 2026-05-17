@@ -16,7 +16,7 @@ import {
 } from '@/components'
 import { useAuth } from '@/features/auth/hooks'
 import { AddBranchSchema } from '@/utils/schemas'
-import { ROUTES, MODALS } from '@/utils/constants'
+import { EXAMPLE_PHONE_PLACEHOLDER, ROUTES, MODALS } from '@/utils/constants'
 import { useUserProfile, usePersistedModalState, useCountriesData } from '@/hooks'
 import React from 'react'
 import { Icon } from '@/libs'
@@ -419,7 +419,7 @@ export default function AddBranchForm() {
                     name="mobile_money_number"
                     render={({ field: { value, onChange } }) => (
                       <BasePhoneInput
-                        placeholder="Enter number eg. 5512345678"
+                        placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                         options={countriesData}
                         selectedVal={value}
                         handleChange={onChange}

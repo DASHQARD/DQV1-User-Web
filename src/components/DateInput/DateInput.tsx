@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react'
 import DatePicker, { type ReactDatePickerCustomHeaderProps } from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 
@@ -35,12 +36,31 @@ export function DateInput(props: Props) {
     maxDate,
     minDate,
     strictParsing,
+    onChange: onChangeProp,
     ...rest
   } = props
+
+  const [isOpen, setIsOpen] = useState(false)
+
+  const closeCalendar = useCallback(() => {
+    setIsOpen(false)
+  }, [])
+
+  const handleChange = useCallback(
+    (date: Date | null) => {
+      onChangeProp?.(date)
+      if (date != null) {
+        setIsOpen(false)
+      }
+    },
+    [onChangeProp],
+  )
+
   return (
     <div>
       {label && <InputLabel htmlFor={id}>{label}</InputLabel>}
       <DatePicker
+        {...rest}
         disabled={disabled}
         selected={value}
         placeholderText={placeholder}
@@ -57,7 +77,14 @@ export function DateInput(props: Props) {
         showMonthDropdown
         showYearDropdown
         dropdownMode="select"
-        {...rest}
+        open={isOpen}
+        shouldCloseOnSelect
+        onInputClick={() => setIsOpen(true)}
+        onCalendarOpen={() => setIsOpen(true)}
+        onCalendarClose={closeCalendar}
+        onClickOutside={closeCalendar}
+        onSelect={closeCalendar}
+        onChange={handleChange}
       />
       <ErrorText error={error} />
     </div>

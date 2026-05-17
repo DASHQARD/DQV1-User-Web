@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { EXAMPLE_PHONE_LOCAL } from '@/utils/constants'
 import { CreateAccountSchema, ForgotPasswordSchema, LoginSchema } from '../auth/auth'
 import { isValidEmailAddress } from '../shared'
 
@@ -43,7 +44,7 @@ describe('auth schemas (login / register / forgot password)', () => {
     const result = CreateAccountSchema.safeParse({
       email,
       password: 'Test123!',
-      phone_number: '5512345678',
+      phone_number: EXAMPLE_PHONE_LOCAL,
       user_type: 'user' as const,
       country: 'Ghana',
       country_code: '+233',

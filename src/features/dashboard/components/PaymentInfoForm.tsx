@@ -10,7 +10,9 @@ import {
   Text,
   BasePhoneInput,
   Checkbox,
+  PhoneFormatHint,
 } from '@/components'
+import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { PaymentInfoSchema } from '@/utils/schemas/payment'
 import { usePaymentInfoService } from '../hooks/usePayment'
 import { useCountriesData } from '@/hooks'
@@ -107,7 +109,7 @@ export default function PaymentInfoForm() {
     const basePayload: any = {}
 
     if (data.payment_method === 'mobile_money') {
-      // BasePhoneInput returns format: "+233-559617908"
+      // BasePhoneInput returns E.164 e.g. "+2335512345678"
       // Extract the number part (after the dash) and strip any non-digit characters
       const phoneValue = data.mobile_money_number || ''
       const numberPart = phoneValue.includes('-') ? phoneValue.split('-')[1] : phoneValue
@@ -194,7 +196,7 @@ export default function PaymentInfoForm() {
                 render={({ field: { value, onChange } }) => {
                   return (
                     <BasePhoneInput
-                      placeholder="Enter number eg. 5512345678"
+                      placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                       options={countries}
                       selectedVal={value}
                       handleChange={onChange}
@@ -204,10 +206,7 @@ export default function PaymentInfoForm() {
                   )
                 }}
               />
-              <p className="text-xs text-gray-500">
-                Please enter your number in the format:{' '}
-                <span className="font-medium">5512345678</span>
-              </p>
+                      <PhoneFormatHint variant="hint" />
             </div>
           </div>
         )}

@@ -1,4 +1,9 @@
 import { getImageUrl } from '@/utils/cardDisplay'
+import type {
+  GuestCardsRedemptionData,
+  GuestCardsRedemptionPayload,
+  GuestCardsRedemptionResponse,
+} from '@/types/redemptions'
 
 export type GuestVendorCard = {
   card_id: string
@@ -131,4 +136,55 @@ export function pickGuestRedemptionCardId(
 
   const sorted = [...entries].sort((a, b) => b.amount - a.amount)
   return sorted[0]?.id ?? ''
+}
+
+/** Round to 2 decimal places (major currency units) */
+export function roundRedemptionAmount(amount: number): number {
+  return Math.round(amount * 100) / 100
+}
+
+/** Positive amount with at most 2 decimal places */
+export function isValidRedemptionAmountInput(value: string): boolean {
+  const trimmed = value.trim()
+  if (!trimmed || parseFloat(trimmed) <= 0) return false
+  return /^\d+(\.\d{1,2})?$/.test(trimmed)
+}
+
+/** Build type-discriminated POST /guest-redemptions/cards body */
+export function buildGuestCardsRedemptionPayload(
+  input:
+    | { card_type: 'DashGo' | 'DashPro'; branch_id: string; amount: number }
+    | { card_type: 'DashX' | 'DashPass'; branch_id: string; card_id: string },
+): GuestCardsRedemptionPayload {
+  const branch_id = input.branch_id.trim()
+  if (input.card_type === 'DashGo' || input.card_type === 'DashPro') {
+    return {
+      card_type: input.card_type,
+      branch_id,
+      amount: roundRedemptionAmount(input.amount),
+    }
+  }
+  if (input.card_type === 'DashX' || input.card_type === 'DashPass') {
+    return {
+      card_type: input.card_type,
+      branch_id,
+      card_id: input.card_id.trim(),
+    }
+  }
+  throw new Error(`Unsupported card type: ${(input as { card_type: string }).card_type}`)
+}
+
+export function isGuestRedemptionSuccess(
+  response: Pick<GuestCardsRedemptionResponse, 'status' | 'statusCode'> | null | undefined,
+): boolean {
+  if (!response) return false
+  if (response.status === 'success') return true
+  const code = response.statusCode
+  return code === 200 || code === 201 || code === 202
+}
+
+export function extractGuestRedemptionSuccess(
+  response: GuestCardsRedemptionResponse,
+): GuestCardsRedemptionData {
+  return response.data ?? {}
 }

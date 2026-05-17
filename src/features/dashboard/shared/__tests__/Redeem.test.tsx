@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+import { EXAMPLE_PHONE_LOCAL } from '@/utils/constants'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import Redeem from '../Redeem'
 
@@ -29,7 +30,7 @@ vi.mock('../../hooks/useRedemptionForm', () => ({
 
 vi.mock('../../hooks/useUserInfo', () => ({
   useUserInfo: () => ({
-    userInfo: { name: 'Test User', phone: '0241234567', email: 'test@example.com' },
+    userInfo: { name: 'Test User', phone: EXAMPLE_PHONE_LOCAL, email: 'test@example.com' },
   }),
 }))
 

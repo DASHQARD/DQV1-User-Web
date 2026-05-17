@@ -13,7 +13,11 @@ import { useCartStore } from '@/stores/cart'
 import { useUserProfile } from '@/hooks'
 import { useRecipients } from '@/features/dashboard/hooks'
 import { useAuthStore } from '@/stores'
-import { GUEST_EMAIL_STORAGE_KEY, getGuestContactSessionItem } from '@/utils/constants'
+import {
+  EXAMPLE_PHONE_PLACEHOLDER_E164,
+  GUEST_EMAIL_STORAGE_KEY,
+  getGuestContactSessionItem,
+} from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
 import { addGuestCard, createGuestDashPro } from '../../services/cards'
 import { useToast } from '@/hooks'
@@ -496,7 +500,9 @@ export default function DashProPurchase() {
                       selectedVal={field.value || ''}
                       handleChange={field.onChange}
                       disabled={assignToSelf}
-                      placeholder={assignToSelf ? 'Will use your account phone' : '+233559617908'}
+                      placeholder={
+                        assignToSelf ? 'Will use your account phone' : EXAMPLE_PHONE_PLACEHOLDER_E164
+                      }
                       error={errors.phone?.message}
                     />
                   )}

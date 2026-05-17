@@ -30,12 +30,18 @@ import { ROUTES } from '@/utils/constants'
 import { getCardBackground, getCardTypeName, getImageUrl } from '@/utils/cardDisplay'
 import { getGuestPhoneFromAuth } from '@/features/website/utils/guestAuth'
 import {
+  buildGuestCardsRedemptionPayload,
+  extractGuestRedemptionSuccess,
   filterGuestAssignedByType,
   formatBranchLabel,
+  isGuestRedemptionSuccess,
+  isValidRedemptionAmountInput,
   mapGuestAssignedCardToVendorCard,
   pickGuestRedemptionCardId,
   resolveRedemptionCardId,
+  roundRedemptionAmount,
 } from '@/features/website/utils/guestRedemption'
+import type { GuestCardsRedemptionData } from '@/types/redemptions'
 
 type RedemptionMethod = 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
@@ -111,6 +117,7 @@ export default function RedemptionPage() {
   const [step, setStep] = useState<'method' | 'details' | 'success' | 'rating'>('method')
   const [isProcessingRedemption, setIsProcessingRedemption] = useState(false)
   const [redeemedCardId, setRedeemedCardId] = useState<string | null>(null)
+  const [redemptionSuccess, setRedemptionSuccess] = useState<GuestCardsRedemptionData | null>(null)
   const [rating, setRating] = useState<number>(0)
   const [isSubmittingRating, setIsSubmittingRating] = useState(false)
   const [showActionChoiceModal, setShowActionChoiceModal] = useState(false)
@@ -916,9 +923,15 @@ export default function RedemptionPage() {
     setSelectedCard(null)
   }
 
-  // Handle amount validation
+  // Handle amount validation (positive, max 2 decimal places)
   const handleAmountChange = (value: string) => {
-    setAmount(value)
+    if (value === '') {
+      setAmount('')
+      return
+    }
+    if (/^\d*\.?\d{0,2}$/.test(value)) {
+      setAmount(value)
+    }
   }
 
   // Handle redemption submission
@@ -955,15 +968,17 @@ export default function RedemptionPage() {
         return
       }
 
-      if (
-        (cardType === 'dashgo' || cardType === 'dashpro') &&
-        (!amount || parseFloat(amount) <= 0)
-      ) {
-        toast.error('Please enter a valid amount')
-        return
-      }
-
       if (cardType === 'dashgo' || cardType === 'dashpro') {
+        if (!isValidRedemptionAmountInput(amount)) {
+          toast.error('Please enter a valid amount (up to 2 decimal places)')
+          return
+        }
+        const redeemAmount = roundRedemptionAmount(parseFloat(amount))
+        const cap = cardType === 'dashgo' ? dashGoBalance : balance
+        if (cap !== null && redeemAmount > cap) {
+          toast.error(`Insufficient ${cardType === 'dashgo' ? 'DashGo' : 'DashPro'} balance`)
+          return
+        }
         const dashGoCards =
           redemptionsAmountDashGo?.data?.cards || redemptionsAmountDashGo?.cards || []
         const dashProCards =
@@ -1028,12 +1043,11 @@ export default function RedemptionPage() {
       }
 
       // For DashGo and DashPro, amount is required
-      if (
-        (cardType === 'dashgo' || cardType === 'dashpro') &&
-        (!amount || parseFloat(amount) <= 0)
-      ) {
-        toast.error('Please enter a valid amount')
-        return
+      if (cardType === 'dashgo' || cardType === 'dashpro') {
+        if (!isValidRedemptionAmountInput(amount)) {
+          toast.error('Please enter a valid amount (up to 2 decimal places)')
+          return
+        }
       }
 
       const userPhoneNumber = isAuthenticated
@@ -1067,6 +1081,71 @@ export default function RedemptionPage() {
 
       setIsProcessingRedemption(true)
       try {
+        if (!isAuthenticated) {
+          toast.error('Please verify your phone and email to continue as a guest.')
+          setIsProcessingRedemption(false)
+          return
+        }
+
+        if (isGuestAuth) {
+          const branchId = String(selectedBranchId ?? selectedCard?.branch_id ?? '').trim()
+          if (!branchId) {
+            toast.error('Please select a branch')
+            setIsProcessingRedemption(false)
+            return
+          }
+
+          if (cardType === 'dashgo' || cardType === 'dashpro') {
+            const dashGoCards =
+              redemptionsAmountDashGo?.data?.cards || redemptionsAmountDashGo?.cards || []
+            const dashProCards =
+              redemptionsAmountDashPro?.data?.cards || redemptionsAmountDashPro?.cards || []
+            const activeCards = cardType === 'dashgo' ? dashGoCards : dashProCards
+            if (activeCards.length === 0) {
+              toast.error(`You have no ${cardTypeForAPI} balance to redeem`)
+              setIsProcessingRedemption(false)
+              return
+            }
+          }
+
+          let guestRedemptionPayload
+          if (cardTypeForAPI === 'DashGo' || cardTypeForAPI === 'DashPro') {
+            guestRedemptionPayload = buildGuestCardsRedemptionPayload({
+              card_type: cardTypeForAPI,
+              branch_id: branchId,
+              amount: roundRedemptionAmount(parseFloat(amount)),
+            })
+          } else {
+            const cardId = String(selectedCard?.card_id ?? '').trim()
+            if (!cardId) {
+              toast.error('Please select a card')
+              setIsProcessingRedemption(false)
+              return
+            }
+            guestRedemptionPayload = buildGuestCardsRedemptionPayload({
+              card_type: cardTypeForAPI,
+              branch_id: branchId,
+              card_id: cardId,
+            })
+          }
+
+          const response =
+            await processGuestCardsRedemptionMutation.mutateAsync(guestRedemptionPayload)
+          if (isGuestRedemptionSuccess(response)) {
+            setRedemptionSuccess(extractGuestRedemptionSuccess(response))
+            const redeemedId =
+              guestRedemptionPayload.card_type === 'DashX' ||
+              guestRedemptionPayload.card_type === 'DashPass'
+                ? guestRedemptionPayload.card_id
+                : selectedCard?.card_id ?? null
+            if (redeemedId) {
+              setRedeemedCardId(redeemedId)
+            }
+            setStep('success')
+          }
+          return
+        }
+
         let payload: CardsRedemptionPayload
 
         if (cardType === 'dashgo' || cardType === 'dashpro') {
@@ -1150,43 +1229,6 @@ export default function RedemptionPage() {
           return
         }
 
-        if (!isAuthenticated) {
-          toast.error('Please verify your phone and email to continue as a guest.')
-          setIsProcessingRedemption(false)
-          return
-        }
-
-        if (isGuestAuth) {
-          const guestRedemptionPayload: {
-            card_type: typeof payload.card_type
-            amount: number
-            card_id: string
-            branch_id?: string
-          } = {
-            card_type: payload.card_type,
-            amount: payload.amount,
-            card_id: String(payload.card_id),
-          }
-          const branchId = String(payload.branch_id || '').trim()
-          if (branchId) {
-            guestRedemptionPayload.branch_id = branchId
-          }
-
-          const response =
-            await processGuestCardsRedemptionMutation.mutateAsync(guestRedemptionPayload)
-          if (
-            response?.status === 'success' ||
-            response?.statusCode === 200 ||
-            response?.statusCode === 201
-          ) {
-            if (payload.card_id) {
-              setRedeemedCardId(payload.card_id)
-            }
-            setStep('success')
-          }
-          return
-        }
-
         // Logged-in: /redemptions/users/cards
         const response = await processRedemptionMutation.mutateAsync(payload)
         if (
@@ -1217,6 +1259,7 @@ export default function RedemptionPage() {
     setAmount('')
     setBalance(null)
     setDashGoBalance(null)
+    setRedemptionSuccess(null)
   }
 
   useEffect(() => {
@@ -1688,6 +1731,8 @@ export default function RedemptionPage() {
                                     </label>
                                     <Input
                                       type="number"
+                                      step="0.01"
+                                      min="0.01"
                                       placeholder="Enter amount to redeem"
                                       value={amount}
                                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -1799,14 +1844,22 @@ export default function RedemptionPage() {
                                   disabled={
                                     !selectedVendor ||
                                     !cardType ||
-                                    // For DashGo and DashPro: require amount
+                                    // For DashGo and DashPro: require valid amount within balance
                                     ((cardType === 'dashgo' || cardType === 'dashpro') &&
-                                      (!amount || parseFloat(amount) <= 0)) ||
+                                      (!isValidRedemptionAmountInput(amount) ||
+                                        (cardType === 'dashgo' &&
+                                          dashGoBalance !== null &&
+                                          parseFloat(amount) > dashGoBalance) ||
+                                        (cardType === 'dashpro' &&
+                                          balance !== null &&
+                                          parseFloat(amount) > balance))) ||
                                     // For DashX and DashPass: require selectedCard and branch if available
                                     ((cardType === 'dashx' || cardType === 'dashpass') &&
                                       (!selectedCard ||
                                         (availableBranches.length > 0 &&
                                           selectedBranchId === null))) ||
+                                    (isGuestAuth &&
+                                      (selectedBranchId === null && !selectedCard?.branch_id)) ||
                                     (!isAuthenticated &&
                                       !(getGuestPhoneFromAuth(jwtUser) || phoneNumber).trim()) ||
                                     isProcessingRedemption
@@ -1836,13 +1889,43 @@ export default function RedemptionPage() {
                   <Text variant="p" className="text-gray-600">
                     {selectedCard
                       ? `${selectedCard.card_name} successfully redeemed`
-                      : `GHS ${parseFloat(amount || '0').toFixed(2)} successfully redeemed`}{' '}
+                      : `GHS ${(redemptionSuccess?.amount ?? parseFloat(amount || '0')).toFixed(2)} successfully redeemed`}{' '}
                     at {vendorName}
                   </Text>
-                  {balance !== null && (
+                  {(redemptionSuccess?.transaction_reference ||
+                    redemptionSuccess?.redemption_code ||
+                    redemptionSuccess?.amount != null) && (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-left space-y-2">
+                      {redemptionSuccess.amount != null && (
+                        <p className="text-sm text-gray-700">
+                          <span className="font-semibold">Amount:</span> GHS{' '}
+                          {Number(redemptionSuccess.amount).toFixed(2)}
+                        </p>
+                      )}
+                      {redemptionSuccess.transaction_reference && (
+                        <p className="text-sm text-gray-700 break-all">
+                          <span className="font-semibold">Receipt #:</span>{' '}
+                          {redemptionSuccess.transaction_reference}
+                        </p>
+                      )}
+                      {redemptionSuccess.redemption_code && (
+                        <p className="text-sm text-gray-700">
+                          <span className="font-semibold">Redemption code:</span>{' '}
+                          {redemptionSuccess.redemption_code}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {balance !== null &&
+                    (cardType === 'dashpro' || cardType === 'dashgo') &&
+                    redemptionSuccess?.amount == null && (
                     <div className="bg-gray-50 rounded-lg p-4">
                       <Text variant="span" className="text-gray-600">
-                        Remaining Balance: GHS {(balance - parseFloat(amount)).toFixed(2)}
+                        Remaining Balance: GHS{' '}
+                        {(
+                          (cardType === 'dashgo' ? (dashGoBalance ?? balance) : balance)! -
+                          parseFloat(amount)
+                        ).toFixed(2)}
                       </Text>
                     </div>
                   )}

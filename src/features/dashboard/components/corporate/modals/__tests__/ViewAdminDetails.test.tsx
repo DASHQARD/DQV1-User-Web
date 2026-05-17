@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+import { EXAMPLE_PHONE_E164 } from '@/utils/constants'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { ViewAdminDetails } from '../ViewAdminDetails'
 
@@ -12,7 +13,7 @@ vi.mock('@/hooks', () => ({
       admin_status: 'active',
       admin_fullname: 'Jane Doe',
       admin_email: 'jane@example.com',
-      phone_number: '+1234567890',
+      phone_number: EXAMPLE_PHONE_E164,
       corporate_name: 'Acme',
       corporate_business_name: 'Acme Inc',
       corporate_email: 'corp@acme.com',

@@ -1,4 +1,5 @@
 export * from './shared'
+export * from './phone'
 export * from './generate-dotted-pagination'
 export * from './cards'
 export * from './idType'

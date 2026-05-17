@@ -3,8 +3,7 @@ import { Button, Input, Checkbox, Modal } from '@/components'
 import { BasePhoneInput, FileUploader } from '@/components'
 import { Text } from '@/components'
 import { usePersistedModalState } from '@/hooks'
-import { MODALS } from '@/utils/constants'
-import { BUSINESS_TYPE_OPTIONS } from '@/utils/constants'
+import { BUSINESS_TYPE_OPTIONS, EXAMPLE_PHONE_LOCAL, MODALS } from '@/utils/constants'
 import {
   useRequestBusinessUpdateModal,
   UPDATABLE_FIELDS,
@@ -111,7 +110,7 @@ export function RequestBusinessUpdateModal() {
                 <div className="sm:col-span-2">
                   <BasePhoneInput
                     label="Phone number"
-                    placeholder="e.g. 5512345678"
+                    placeholder={`e.g. ${EXAMPLE_PHONE_LOCAL}`}
                     options={phoneCountries}
                     handleChange={(v) => setProposedValue('phone', v)}
                     selectedVal={(proposed.phone as string) ?? ''}

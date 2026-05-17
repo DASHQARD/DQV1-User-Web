@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { bulkAssignRecipients } from '@/features/dashboard/services/recipients'
 import { useToast } from '@/hooks'
+import { EXAMPLE_PHONE_E164, examplePhoneE164AtIndex } from '@/utils/constants'
 
 export function useBulkUploadRecipient() {
   const queryClient = useQueryClient()
@@ -17,9 +18,9 @@ export function useBulkUploadRecipient() {
   })
 
   const exampleCSV = `name,email,phone,message
-John Doe,john.doe@example.com,+1234567890,Happy Birthday!
-Jane Smith,jane.smith@example.com,+0987654321,Thank you for your service
-Bob Johnson,bob.johnson@example.com,+1122334455,`
+John Doe,john.doe@example.com,${EXAMPLE_PHONE_E164},Happy Birthday!
+Jane Smith,jane.smith@example.com,${examplePhoneE164AtIndex(1)},Thank you for your service
+Bob Johnson,bob.johnson@example.com,${examplePhoneE164AtIndex(2)},`
 
   const downloadExample = () => {
     const blob = new Blob([exampleCSV], { type: 'text/csv' })

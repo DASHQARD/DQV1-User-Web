@@ -10,6 +10,7 @@ import type {
   DashProRedemptionPayload,
   DashProRedemptionForUserPayload,
   GuestCardsRedemptionPayload,
+  GuestCardsRedemptionResponse,
   InitiateRedemptionPayload,
   CardsRedemptionPayload,
   RedemptionResponse,
@@ -183,9 +184,9 @@ export const processCardsRedemption = async (
 
 export const processGuestCardsRedemption = async (
   data: GuestCardsRedemptionPayload,
-): Promise<RedemptionResponse> => {
+): Promise<GuestCardsRedemptionResponse> => {
   const response = await axiosClient.post(`/guest-redemptions/cards`, data)
-  return response as unknown as RedemptionResponse
+  return response as unknown as GuestCardsRedemptionResponse
 }
 
 // Get redemptions list
@@ -331,6 +332,8 @@ export type {
   InitiateRedemptionPayload,
   CardsRedemptionPayload,
   GuestCardsRedemptionPayload,
+  GuestCardsRedemptionResponse,
+  GuestCardsRedemptionData,
   RedemptionResponse,
   UpdateRedemptionStatusPayload,
   GetRedemptionsParams,

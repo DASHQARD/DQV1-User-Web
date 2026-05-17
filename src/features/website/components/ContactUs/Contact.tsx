@@ -6,6 +6,12 @@ import { Icon } from '@/libs'
 import { createTicket } from '@/services'
 import { useToast } from '@/hooks'
 
+import {
+  PURCHASE_WHATSAPP_DISPLAY,
+  PURCHASE_WHATSAPP_WA_ME,
+  SUPPORT_PHONE_DISPLAY_SHORT,
+  SUPPORT_PHONE_E164,
+} from '@/utils/constants'
 import { ContactUsSchema } from '@/utils/schemas'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -91,10 +97,10 @@ export default function Contact() {
                   <div className="flex flex-col gap-1">
                     <p className="text-grey-500 text-xs">Support Line</p>
                     <a
-                      href="tel:+233542022245"
+                      href={`tel:${SUPPORT_PHONE_E164}`}
                       className="text-primary-500 font-bold hover:underline"
                     >
-                      +233 54 202 2245
+                      {SUPPORT_PHONE_DISPLAY_SHORT}
                     </a>
                   </div>
                 </section>
@@ -105,12 +111,12 @@ export default function Contact() {
                   <div className="flex flex-col gap-1">
                     <p className="text-grey-500 text-xs">Purchase Line (WhatsApp)</p>
                     <a
-                      href="https://wa.me/233566080362"
+                      href={`https://wa.me/${PURCHASE_WHATSAPP_WA_ME}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary-500 font-bold hover:underline"
                     >
-                      +233 56 608 0362
+                      {PURCHASE_WHATSAPP_DISPLAY}
                     </a>
                   </div>
                 </section>
@@ -215,7 +221,6 @@ export default function Contact() {
               <Button
                 type="submit"
                 className="w-full mt-6"
-                variant="secondary"
                 icon="bi:send-fill"
                 iconPosition="left"
                 loading={isSubmitting}

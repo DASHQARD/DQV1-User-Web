@@ -11,9 +11,10 @@ import {
   RadioGroupItem,
   BasePhoneInput,
   Loader,
+  PhoneFormatHint,
 } from '@/components'
 import { Icon } from '@/libs'
-import { MODALS } from '@/utils/constants'
+import { EXAMPLE_PHONE_PLACEHOLDER, MODALS } from '@/utils/constants'
 import { getStatusVariant } from '@/utils/helpers/common'
 import { useBranchDetailsModal } from '@/features/dashboard/vendor/hooks'
 
@@ -276,7 +277,7 @@ export function BranchDetailsModal() {
                         name="mobile_money_number"
                         render={({ field: { value, onChange } }) => (
                           <BasePhoneInput
-                            placeholder="Enter number eg. 5512345678"
+                            placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                             options={countries || []}
                             selectedVal={value}
                             handleChange={onChange}
@@ -285,10 +286,7 @@ export function BranchDetailsModal() {
                           />
                         )}
                       />
-                      <p className="text-xs text-gray-500">
-                        Please enter your number in the format:{' '}
-                        <span className="font-medium">5512345678</span>
-                      </p>
+                      <PhoneFormatHint variant="hint" />
                     </div>
                   </div>
                 )}
