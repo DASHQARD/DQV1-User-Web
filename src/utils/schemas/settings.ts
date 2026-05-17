@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { getRequiredEmailSchema, getRequiredStringSchema } from './shared'
+import { personalInformationFieldsSchema } from './personalInformation'
 
 export const UpdateBusinessDetailsSchema = z.object({
   id: z.number(),
@@ -26,10 +27,4 @@ export const SettingsSchema = z.object({
   reason: z.string().optional(),
 })
 
-export const PersonalInformationSchema = z.object({
-  full_name: getRequiredStringSchema('Full Name'),
-  street_address: getRequiredStringSchema('Street Address'),
-  dob: getRequiredStringSchema('Date of Birth'),
-  id_type: getRequiredStringSchema('ID Type'),
-  id_number: getRequiredStringSchema('ID Number'),
-})
+export const PersonalInformationSchema = personalInformationFieldsSchema

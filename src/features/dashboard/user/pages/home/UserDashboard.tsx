@@ -41,6 +41,7 @@ export default function UserDashboard() {
   // Form for onboarding
   const onboardingForm = useForm<PersonalInformationFormData>({
     resolver: zodResolver(PersonalInformationSchema),
+    mode: 'onChange',
     defaultValues: {
       full_name: user?.fullname || '',
       street_address: user?.street_address || '',

@@ -111,6 +111,7 @@ export function PersonalInformationSettings() {
                   value={field.value}
                   onChange={(e: { target: { value: string } }) => {
                     field.onChange(e.target.value)
+                    void form.trigger(['id_type', 'id_number'])
                   }}
                   error={error?.message}
                 />
@@ -125,7 +126,7 @@ export function PersonalInformationSettings() {
             </label>
             <Input
               type="text"
-              placeholder="Enter your ID number"
+              placeholder="e.g. GHA-123456789-0"
               {...form.register('id_number')}
               error={form.formState.errors.id_number?.message}
             />

@@ -1,9 +1,16 @@
 import { z } from 'zod'
 import {
+  personalInformationDobSchema,
+  personalInformationIdNumberSchema,
+  personalInformationIdTypeSchema,
+  personalInformationStreetAddressSchema,
+} from '../personalInformation'
+import {
   getRequiredAlphaNumericStringSchema,
   getRequiredEmailSchema,
   getRequiredStringSchema,
 } from '../shared'
+import { validatePersonalInformationIdNumber } from '@/utils/validation/personalInformation'
 
 export { ChangePasswordSchema } from './changePassword'
 
@@ -40,14 +47,16 @@ export const ResetPasswordSchema = z
     path: ['confirmPassword'],
   })
 
-export const OnboardingSchema = z.object({
-  first_name: getRequiredStringSchema('First Name'),
-  last_name: getRequiredStringSchema('Last Name'),
-  street_address: getRequiredStringSchema('Street Address'),
-  dob: getRequiredStringSchema('Date of Birth'),
-  id_type: getRequiredStringSchema('ID Type'),
-  id_number: getRequiredStringSchema('ID Number'),
-})
+export const OnboardingSchema = z
+  .object({
+    first_name: getRequiredStringSchema('First Name'),
+    last_name: getRequiredStringSchema('Last Name'),
+    street_address: personalInformationStreetAddressSchema,
+    dob: personalInformationDobSchema,
+    id_type: personalInformationIdTypeSchema,
+    id_number: personalInformationIdNumberSchema,
+  })
+  .superRefine(validatePersonalInformationIdNumber)
 
 export const UploadUserIDSchema = z.object({
   front_id: z

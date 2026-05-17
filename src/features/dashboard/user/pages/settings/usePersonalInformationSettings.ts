@@ -17,6 +17,7 @@ export function usePersonalInformationSettings() {
 
   const form = useForm<PersonalInformationFormData>({
     resolver: zodResolver(PersonalInformationSchema),
+    mode: 'onChange',
     defaultValues: {
       full_name: userProfileData?.fullname || '',
       street_address: userProfileData?.street_address || '',

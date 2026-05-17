@@ -9,28 +9,7 @@ import { useUserProfile, useUploadFiles, useToast, usePersistedModalState } from
 import { useAuthStore } from '@/stores'
 import { ProfileAndIdentitySchema } from '@/utils/schemas'
 import { MODALS } from '@/utils/constants'
-
-function getAgeFromDateOfBirth(dobString: string): number | null {
-  if (!dobString || typeof dobString !== 'string') return null
-  const trimmed = dobString.trim()
-  let birth: Date
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    birth = new Date(trimmed + 'T12:00:00')
-  } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
-    const [a, b, year] = trimmed.split('/').map(Number)
-    const month = Math.min(a, b) - 1
-    const day = Math.max(a, b)
-    birth = new Date(year, month, day)
-  } else {
-    birth = new Date(trimmed)
-  }
-  if (Number.isNaN(birth.getTime())) return null
-  const today = new Date()
-  let age = today.getFullYear() - birth.getFullYear()
-  const monthDiff = today.getMonth() - birth.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--
-  return age
-}
+import { getAgeFromDateOfBirth } from '@/utils/validation/personalInformation'
 
 const dynamicSchema = (() => {
   const baseSchema = ProfileAndIdentitySchema.omit({ back_id: true }).extend({
