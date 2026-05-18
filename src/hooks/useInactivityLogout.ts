@@ -28,7 +28,7 @@ type Options = {
  * Logs the authenticated user out after a period of inactivity.
  *
  * - Listens for mouse / keyboard / touch / scroll activity and resets a timer.
- * - On expiry, calls the backend `/auth/logout` (skipped for guest sessions),
+ * - On expiry, calls `/auth/logout` or `/guest-auth/logout` based on session type,
  *   clears local auth state and the react-query cache, then redirects to login.
  * - No-ops when unauthenticated or in the test environment.
  */
@@ -41,7 +41,6 @@ export function useInactivityLogout({
   const { error } = useToast()
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const clearAuthState = useAuthStore((state) => state.logout)
 
   const timerRef = useRef<number | null>(null)
@@ -49,10 +48,7 @@ export function useInactivityLogout({
 
   const handleLogout = useCallback(async () => {
     try {
-      // Guest sessions don't use the /auth/logout endpoint (mirrors useAutoRefreshToken).
-      if (!isGuestAuth) {
-        await logoutRequest()
-      }
+      await logoutRequest()
     } catch (err) {
       console.error('Failed to call logout endpoint on inactivity:', err)
     } finally {
@@ -61,7 +57,7 @@ export function useInactivityLogout({
       error?.('You have been logged out due to inactivity.')
       navigate(redirectTo, { replace: true })
     }
-  }, [clearAuthState, error, isGuestAuth, navigate, queryClient, redirectTo])
+  }, [clearAuthState, error, navigate, queryClient, redirectTo])
 
   const resetTimer = useCallback(() => {
     if (timerRef.current !== null) {

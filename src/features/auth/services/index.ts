@@ -1,4 +1,5 @@
 import { axiosClient } from '@/libs'
+import { useAuthStore } from '@/stores'
 import { getList, postMethod } from '@/services/requests'
 import type {
   BusinessDetailsData,
@@ -48,7 +49,15 @@ const changePassword = async (data: ChangePasswordData) => {
   return await postMethod(`${commonUrl}/change-password`, data)
 }
 
+const guestAuthLogout = async () => {
+  return await postMethod('/guest-auth/logout')
+}
+
 const logout = async () => {
+  const { isGuestAuth } = useAuthStore.getState()
+  if (isGuestAuth) {
+    return guestAuthLogout()
+  }
   return await postMethod(`${commonUrl}/logout`)
 }
 
@@ -151,4 +160,5 @@ export {
   guestAuthOtpRequest,
   guestAuthOtpVerify,
   guestAuthTokenRefresh,
+  guestAuthLogout,
 }

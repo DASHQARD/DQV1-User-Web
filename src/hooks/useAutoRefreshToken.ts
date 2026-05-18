@@ -43,10 +43,7 @@ export function useAutoRefreshToken() {
 
     const runLogout = async () => {
       try {
-        // Guest sessions don't use the /auth/logout endpoint.
-        if (!isGuestAuth) {
-          await logoutRequest()
-        }
+        await logoutRequest()
       } catch (error) {
         console.error('Failed to call logout endpoint', error)
       } finally {
