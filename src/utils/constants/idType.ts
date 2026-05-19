@@ -5,3 +5,9 @@ export const ID_TYPE_OPTIONS = [
   // { value: 'voters_id', label: "Voter's ID" },
   { value: 'ghana_card', label: 'Ghana Card' },
 ] as const
+
+/** ID types accepted on corporate onboarding and vendor profile flows */
+export const CORPORATE_ONBOARDING_ID_TYPE_OPTIONS = [
+  { value: 'national_id', label: 'National ID' },
+  { value: 'passport', label: 'Passport' },
+] as const

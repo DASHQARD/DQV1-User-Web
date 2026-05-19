@@ -9,6 +9,7 @@ export function useGuestCart(query?: Record<string, any>) {
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const getGuestCartId = useAuthStore((state) => state.getGuestCartId)
   const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
+  const setGuestCartUuid = useAuthStore((state) => state.setGuestCartUuid)
   const { success, error: toastError } = useToast()
 
   const guestCartQuery = useQuery({
@@ -24,11 +25,15 @@ export function useGuestCart(query?: Record<string, any>) {
 
   useEffect(() => {
     if (!isGuestAuth || cartItems.length === 0) return
-    const firstCartId = cartItems[0]?.cart_id
-    if (typeof firstCartId === 'number' && getGuestCartId() == null) {
-      setGuestCartId(firstCartId)
+    const firstCart = cartItems[0]
+    if (typeof firstCart?.cart_id === 'number' && getGuestCartId() == null) {
+      setGuestCartId(firstCart.cart_id)
     }
-  }, [isGuestAuth, cartItems, getGuestCartId, setGuestCartId])
+    const uuid = firstCart?.guest_cart_uuid
+    if (uuid?.trim()) {
+      setGuestCartUuid(uuid.trim())
+    }
+  }, [isGuestAuth, cartItems, getGuestCartId, setGuestCartId, setGuestCartUuid])
 
   const deleteCartItemMutation = useMutation({
     mutationFn: (cart_item_id: string | number) => deleteGuestCartItem({ cart_item_id }),

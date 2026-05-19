@@ -50,6 +50,7 @@ export default function GuestAddToCartModal() {
   const authenticate = useAuthStore((s) => s.authenticate)
   const getGuestCartId = useAuthStore((s) => s.getGuestCartId)
   const setGuestCartId = useAuthStore((s) => s.setGuestCartId)
+  const setGuestCartUuid = useAuthStore((s) => s.setGuestCartUuid)
   const openCart = useCartStore((s) => s.openCart)
 
   const [step, setStep] = useState<Step>('choice')
@@ -183,6 +184,7 @@ export default function GuestAddToCartModal() {
         guest_email: guestEmail,
         getGuestCartId,
         setGuestCartId,
+        setGuestCartUuid,
       })
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
       openCart()

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { OnboardingSchema } from '@/utils/schemas/auth/auth'
 import { PersonalInformationSchema } from '@/utils/schemas/settings'
 
 import {
@@ -62,6 +63,32 @@ describe('personalInformation validation', () => {
       const result = PersonalInformationSchema.safeParse({
         ...validPayload,
         full_name: 'Amara',
+      })
+      expect(result.success).toBe(false)
+    })
+  })
+
+  describe('OnboardingSchema (corporate)', () => {
+    const validCorporatePayload = {
+      first_name: 'Amara',
+      last_name: 'Akwa',
+      street_address: '12 Independence Avenue',
+      dob: '2000-02-15',
+      id_type: 'national_id',
+      id_number: 'GHA-123456789-0',
+    }
+
+    it('accepts national_id and passport id types', () => {
+      expect(OnboardingSchema.safeParse(validCorporatePayload).success).toBe(true)
+      expect(
+        OnboardingSchema.safeParse({ ...validCorporatePayload, id_type: 'passport' }).success,
+      ).toBe(true)
+    })
+
+    it('rejects ghana_card on corporate onboarding', () => {
+      const result = OnboardingSchema.safeParse({
+        ...validCorporatePayload,
+        id_type: 'ghana_card',
       })
       expect(result.success).toBe(false)
     })

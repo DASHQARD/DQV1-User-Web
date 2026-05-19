@@ -97,6 +97,7 @@ export function useCardItem(props: CardItemHookProps) {
             guest_email: guestEmail.trim(),
             getGuestCartId,
             setGuestCartId,
+            setGuestCartUuid: useAuthStore.getState().setGuestCartUuid,
           })
           queryClient.invalidateQueries({ queryKey: ['cart-items'] })
           openCart()

@@ -88,9 +88,9 @@ export default function Checkout() {
     setBulkFile,
     allRecipientsAssigned,
     recipientActionsBlocked,
-    kowriCheckoutData,
-    isKowriPromptModalOpen,
-    setIsKowriPromptModalOpen,
+    paymentPromptData,
+    isPaymentPromptModalOpen,
+    setIsPaymentPromptModalOpen,
   } = useCheckout()
 
   const showPaymentMethodSection =
@@ -602,8 +602,8 @@ export default function Checkout() {
       <PurchaseModal />
 
       <Modal
-        isOpen={isKowriPromptModalOpen}
-        setIsOpen={setIsKowriPromptModalOpen}
+        isOpen={isPaymentPromptModalOpen}
+        setIsOpen={setIsPaymentPromptModalOpen}
         title="Payment Prompt Sent"
         panelClass="max-w-md"
       >
@@ -622,7 +622,7 @@ export default function Checkout() {
             </div>
           </div>
 
-          {kowriCheckoutData && (
+          {paymentPromptData && (
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
               <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
                 <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
@@ -630,43 +630,43 @@ export default function Checkout() {
                 </p>
               </div>
               <div className="divide-y divide-gray-100">
-                {kowriCheckoutData.receipt_number && (
+                {paymentPromptData.receipt_number && (
                   <div className="flex items-start justify-between gap-3 px-4 py-3">
                     <span className="text-sm text-gray-500">Receipt</span>
                     <span className="text-sm font-semibold text-gray-900">
-                      {kowriCheckoutData.receipt_number}
+                      {paymentPromptData.receipt_number}
                     </span>
                   </div>
                 )}
-                {kowriCheckoutData.merchant_order_id && (
+                {paymentPromptData.merchant_order_id && (
                   <div className="flex items-start justify-between gap-3 px-4 py-3">
                     <span className="text-sm text-gray-500">Order ID</span>
                     <span className="max-w-[220px] wrap-break-word text-right text-sm font-medium text-gray-800">
-                      {kowriCheckoutData.merchant_order_id}
+                      {paymentPromptData.merchant_order_id}
                     </span>
                   </div>
                 )}
-                {kowriCheckoutData.transaction_id && (
+                {paymentPromptData.transaction_id && (
                   <div className="flex items-start justify-between gap-3 px-4 py-3">
                     <span className="text-sm text-gray-500">Transaction ID</span>
                     <span className="max-w-[220px] wrap-break-word text-right text-sm font-medium text-gray-800">
-                      {kowriCheckoutData.transaction_id}
+                      {paymentPromptData.transaction_id}
                     </span>
                   </div>
                 )}
-                {kowriCheckoutData.status && (
+                {paymentPromptData.status && (
                   <div className="flex items-center justify-between gap-3 px-4 py-3">
                     <span className="text-sm text-gray-500">Status</span>
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        kowriCheckoutData.status.toUpperCase() === 'SUCCESS'
+                        String(paymentPromptData.status).toUpperCase() === 'SUCCESS'
                           ? 'bg-green-100 text-green-700'
-                          : kowriCheckoutData.status.toUpperCase() === 'FAILED'
+                          : String(paymentPromptData.status).toUpperCase() === 'FAILED'
                             ? 'bg-red-100 text-red-700'
                             : 'bg-amber-100 text-amber-700'
                       }`}
                     >
-                      {kowriCheckoutData.status}
+                      {paymentPromptData.status}
                     </span>
                   </div>
                 )}
@@ -675,7 +675,7 @@ export default function Checkout() {
           )}
 
           <div className="flex justify-end border-t border-gray-100 pt-4">
-            <Button variant="secondary" onClick={() => setIsKowriPromptModalOpen(false)}>
+            <Button variant="secondary" onClick={() => setIsPaymentPromptModalOpen(false)}>
               Close
             </Button>
           </div>

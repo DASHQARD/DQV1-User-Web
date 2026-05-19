@@ -13,6 +13,7 @@ import {
   PhoneFormatHint,
 } from '@/components'
 import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
+import { CORPORATE_ONBOARDING_ID_TYPE_OPTIONS } from '@/utils/constants/idType'
 import { Icon } from '@/libs'
 import type { VendorProfileFormProps } from '@/types'
 import { useVendorProfileForm } from './useVendorProfileForm'
@@ -189,10 +190,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
                   placeholder="Select your ID type"
                   {...field}
                   error={error?.message}
-                  options={[
-                    { label: 'National ID', value: 'national_id' },
-                    { label: 'Passport', value: 'passport' },
-                  ]}
+                  options={[...CORPORATE_ONBOARDING_ID_TYPE_OPTIONS]}
                   isDisabled={checkboxProfileSameAsCorporate}
                 />
               )}

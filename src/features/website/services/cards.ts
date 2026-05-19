@@ -45,7 +45,9 @@ export const getGuestCart = async (query?: {
   return payload as GuestCartApiResponse
 }
 
-function resolveGuestCartId(payload: GuestCartApiResponse | GuestAddCardResponse | null): number | undefined {
+export function resolveGuestCartId(
+  payload: GuestCartApiResponse | GuestAddCardResponse | null,
+): number | undefined {
   if (!payload) return undefined
   const cart = (payload as GuestCartApiResponse).cart ?? (payload as { cart?: { id?: number } }).cart
   const id =
@@ -55,6 +57,33 @@ function resolveGuestCartId(payload: GuestCartApiResponse | GuestAddCardResponse
   return typeof id === 'number' ? id : undefined
 }
 
+export function resolveGuestCartUuid(
+  payload: GuestCartApiResponse | GuestAddCardResponse | null,
+): string | undefined {
+  if (!payload) return undefined
+  const cart = (payload as GuestCartApiResponse).cart
+  const uuid =
+    cart?.uuid ??
+    (payload as GuestCartApiResponse).uuid ??
+    (payload as { data?: { uuid?: string } }).data?.uuid
+  return typeof uuid === 'string' && uuid.trim() ? uuid.trim() : undefined
+}
+
+function syncGuestCartIds(
+  payload: GuestCartApiResponse | GuestAddCardResponse | null,
+  setGuestCartId: (id: number | null) => void,
+  setGuestCartUuid: (uuid: string | null) => void,
+) {
+  const id = resolveGuestCartId(payload)
+  if (typeof id === 'number') {
+    setGuestCartId(id)
+  }
+  const uuid = resolveGuestCartUuid(payload)
+  if (uuid) {
+    setGuestCartUuid(uuid)
+  }
+}
+
 /** Create guest cart if needed, then POST /guest-carts/add-card (never /carts). */
 export async function ensureGuestCartAndAddCard(args: {
   card_id: string
@@ -62,27 +91,22 @@ export async function ensureGuestCartAndAddCard(args: {
   guest_email: string
   getGuestCartId: () => number | null
   setGuestCartId: (id: number | null) => void
+  setGuestCartUuid: (uuid: string | null) => void
 }): Promise<GuestAddCardResponse> {
-  const { card_id, guest_name, guest_email, getGuestCartId, setGuestCartId } = args
+  const { card_id, guest_name, guest_email, getGuestCartId, setGuestCartId, setGuestCartUuid } = args
   let cartId = getGuestCartId() ?? undefined
   if (cartId === undefined) {
     const existingCart = await getGuestCart()
-    const existingCartId = resolveGuestCartId(existingCart)
-    if (typeof existingCartId === 'number') {
-      setGuestCartId(existingCartId)
-      cartId = existingCartId
-    }
+    syncGuestCartIds(existingCart, setGuestCartId, setGuestCartUuid)
+    cartId = resolveGuestCartId(existingCart)
   }
   if (cartId === undefined) {
     const createCartResult = await createGuestCart({
       guest_name,
       guest_email,
     })
-    const createdCartId = resolveGuestCartId(createCartResult)
-    if (typeof createdCartId === 'number') {
-      setGuestCartId(createdCartId)
-      cartId = createdCartId
-    }
+    syncGuestCartIds(createCartResult, setGuestCartId, setGuestCartUuid)
+    cartId = resolveGuestCartId(createCartResult)
   }
 
   const addResult = await addGuestCard({
@@ -92,11 +116,7 @@ export async function ensureGuestCartAndAddCard(args: {
     quantity: 1,
     ...(cartId !== undefined && { cart_id: cartId }),
   })
-  const nextCartId =
-    addResult?.cart_id ?? (addResult as { data?: { cart_id?: number } })?.data?.cart_id
-  if (typeof nextCartId === 'number') {
-    setGuestCartId(nextCartId)
-  }
+  syncGuestCartIds(addResult, setGuestCartId, setGuestCartUuid)
   return addResult
 }
 
@@ -173,6 +193,7 @@ export const getGuestCartItems = async (
   const { cart, items } = payload
   const normalized: CartListResponse = {
     cart_id: cart.id,
+    guest_cart_uuid: cart.uuid ?? resolveGuestCartUuid(payload),
     cart_status: cart.status,
     cart_created_at: cart.created_at,
     cart_updated_at: cart.updated_at,

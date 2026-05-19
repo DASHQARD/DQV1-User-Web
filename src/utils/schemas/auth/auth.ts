@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import {
+  corporateOnboardingIdTypeSchema,
   personalInformationDobSchema,
   personalInformationIdNumberSchema,
-  personalInformationIdTypeSchema,
   personalInformationStreetAddressSchema,
 } from '../personalInformation'
 import {
@@ -53,7 +53,7 @@ export const OnboardingSchema = z
     last_name: getRequiredStringSchema('Last Name'),
     street_address: personalInformationStreetAddressSchema,
     dob: personalInformationDobSchema,
-    id_type: personalInformationIdTypeSchema,
+    id_type: corporateOnboardingIdTypeSchema,
     id_number: personalInformationIdNumberSchema,
   })
   .superRefine(validatePersonalInformationIdNumber)

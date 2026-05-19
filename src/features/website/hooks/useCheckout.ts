@@ -19,9 +19,16 @@ import {
 import { getCardBackground, getImageUrl, getCardTypeName } from '@/utils/cardDisplay'
 import type { CartListResponse } from '@/types/responses'
 import type { FlattenedCartItem } from '@/types'
-import type { CheckoutPayloadBase } from '@/types/responses'
+import type { CheckoutPayloadBase, GuestCheckoutPayloadBase } from '@/types/responses'
+import type { CheckoutPayload, GuestCheckoutPayload } from '@/types'
 import { CHECKOUT_GATEWAY } from '@/features/website/utils/paymentConstants'
-import { extractKowriCheckoutPromptData } from '@/features/website/utils/checkoutRedirect'
+import {
+  appendGatewayFields,
+  isHostedRedirectGateway,
+  roundCheckoutAmount,
+} from '@/features/website/utils/checkoutPayload'
+import type { CheckoutFollowUp } from '@/features/website/utils/checkoutRedirect'
+import { getGuestCart, resolveGuestCartUuid } from '@/features/website/services/cards'
 import {
   GUEST_EMAIL_STORAGE_KEY,
   GUEST_NAME_STORAGE_KEY,
@@ -52,8 +59,20 @@ export function useCheckout() {
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { useCheckoutService, usePaymentProviderConfig, useServiceFeesConfig } = usePayments()
-  const { mutateAsync: checkoutMutation, isPending: isCheckingOut } = useCheckoutService()
+  const guestCartRefetch = guestCart.refetch
+  const { useCheckoutService, useGuestCheckoutService, usePaymentProviderConfig, useServiceFeesConfig } =
+    usePayments()
+  const { mutateAsync: checkoutMutation, isPending: isMemberCheckingOut } = useCheckoutService()
+  const { mutateAsync: guestCheckoutMutation, isPending: isGuestCheckingOut } = useGuestCheckoutService(
+    {
+      onCartRefetch: () => {
+        void guestCartRefetch()
+      },
+    },
+  )
+  const isCheckingOut = isGuestAuth ? isGuestCheckingOut : isMemberCheckingOut
+  const setGuestCartUuid = useAuthStore((s) => s.setGuestCartUuid)
+  const getGuestCartUuid = useAuthStore((s) => s.getGuestCartUuid)
   const { data: paymentProviderConfig } = usePaymentProviderConfig()
   const { data: serviceFeesConfig } = useServiceFeesConfig()
 
@@ -104,8 +123,8 @@ export function useCheckout() {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
   const [isMissingRecipientsModalOpen, setIsMissingRecipientsModalOpen] = useState(false)
   const [bulkFile, setBulkFile] = useState<File | null>(null)
-  const [kowriCheckoutData, setKowriCheckoutData] = useState<any | null>(null)
-  const [isKowriPromptModalOpen, setIsKowriPromptModalOpen] = useState(false)
+  const [paymentPromptData, setPaymentPromptData] = useState<Record<string, unknown> | null>(null)
+  const [isPaymentPromptModalOpen, setIsPaymentPromptModalOpen] = useState(false)
 
   const modal = usePersistedModalState({
     paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
@@ -186,6 +205,30 @@ export function useCheckout() {
     })
   }, [displayCartItems, recipientsByCartItem])
 
+  const applyCheckoutFollowUp = useCallback((followUp: CheckoutFollowUp) => {
+    if (followUp.type === 'momo_prompt') {
+      setPaymentPromptData(followUp.data)
+      setIsPaymentPromptModalOpen(true)
+    }
+  }, [])
+
+  const resolveGuestCartUuidForCheckout = useCallback(async (): Promise<string | null> => {
+    const fromCart = activeCartItems[0]?.guest_cart_uuid
+    if (fromCart?.trim()) {
+      setGuestCartUuid(fromCart.trim())
+      return fromCart.trim()
+    }
+    const stored = getGuestCartUuid()
+    if (stored?.trim()) return stored.trim()
+    const cartResponse = await getGuestCart()
+    const uuid = resolveGuestCartUuid(cartResponse)
+    if (uuid) {
+      setGuestCartUuid(uuid)
+      return uuid
+    }
+    return null
+  }, [activeCartItems, getGuestCartUuid, setGuestCartUuid])
+
   const handleCheckout = useCallback(async () => {
     if (recipientActionsBlocked) {
       toast.error('Complete onboarding in your dashboard before checkout.')
@@ -206,17 +249,85 @@ export function useCheckout() {
     const paymentValues = paymentForm.getValues()
     const paymentMethod = paymentValues.payment_method_type ?? 'mobile_money'
     const phone = userValues.phone_number ?? ''
+    const amountDue = roundCheckoutAmount(checkoutAmountDue)
 
-    const base: CheckoutPayloadBase = {
+    const runMutation = async (payload: CheckoutPayload | GuestCheckoutPayload) => {
+      const result = isGuestAuth
+        ? await guestCheckoutMutation(payload as GuestCheckoutPayload)
+        : await checkoutMutation(payload as CheckoutPayload)
+      applyCheckoutFollowUp(result.followUp)
+      return result
+    }
+
+    if (isGuestAuth) {
+      const guestCartUuid = await resolveGuestCartUuidForCheckout()
+      if (!guestCartUuid) {
+        toast.error('Could not load your cart. Please refresh the page and try again.')
+        void guestCartRefetch()
+        return
+      }
+
+      const guestBase: GuestCheckoutPayloadBase = {
+        guest_cart_id: guestCartUuid,
+        full_name: userValues.full_name,
+        email: userValues.email,
+        phone_number: userValues.phone_number,
+        amount_due: amountDue,
+      }
+
+      if (isHostedRedirectGateway(gateway)) {
+        await runMutation(guestBase)
+        return
+      }
+
+      if (gateway === CHECKOUT_GATEWAY.EGNANOW) {
+        if (paymentMethod === 'mobile_money') {
+          const valid = await paymentForm.trigger('paypartner_code')
+          if (!valid) return
+          if (!paymentValues.paypartner_code) return
+        } else if (paymentMethod === 'card') {
+          const valid = await paymentForm.trigger([
+            'card_number',
+            'expiry_month',
+            'expiry_year',
+            'cvv',
+          ])
+          if (!valid) return
+          const { card_number, expiry_month, expiry_year, cvv } = paymentForm.getValues()
+          if (!card_number || expiry_month == null || expiry_year == null || !cvv) return
+        }
+        await runMutation(
+          appendGatewayFields(guestBase, gateway, paymentMethod, phone, paymentValues) as GuestCheckoutPayload,
+        )
+        return
+      }
+
+      if (gateway === CHECKOUT_GATEWAY.KOWRI) {
+        if (paymentMethod === 'mobile_money') {
+          const valid = await paymentForm.trigger('kowri_provider')
+          if (!valid) return
+          if (!paymentValues.kowri_provider) return
+        }
+        await runMutation(
+          appendGatewayFields(guestBase, gateway, paymentMethod, phone, paymentValues) as GuestCheckoutPayload,
+        )
+        return
+      }
+
+      await runMutation(guestBase)
+      return
+    }
+
+    const memberBase: CheckoutPayloadBase = {
       cart_id: firstCart.cart_id,
       full_name: userValues.full_name,
       email: userValues.email,
       phone_number: userValues.phone_number,
-      amount_due: checkoutAmountDue,
+      amount_due: amountDue,
     }
 
-    if (gateway === CHECKOUT_GATEWAY.PAYSTACK || !gateway) {
-      await checkoutMutation(base)
+    if (isHostedRedirectGateway(gateway)) {
+      await runMutation(memberBase)
       return
     }
 
@@ -224,17 +335,8 @@ export function useCheckout() {
       if (paymentMethod === 'mobile_money') {
         const valid = await paymentForm.trigger('paypartner_code')
         if (!valid) return
-        const paypartner = paymentValues.paypartner_code
-        if (!paypartner) return
-        await checkoutMutation({
-          ...base,
-          payment_method_type: 'mobile_money',
-          msisdn: phone,
-          paypartner_code: paypartner,
-        })
-        return
-      }
-      if (paymentMethod === 'card') {
+        if (!paymentValues.paypartner_code) return
+      } else if (paymentMethod === 'card') {
         const valid = await paymentForm.trigger([
           'card_number',
           'expiry_month',
@@ -244,44 +346,26 @@ export function useCheckout() {
         if (!valid) return
         const { card_number, expiry_month, expiry_year, cvv } = paymentForm.getValues()
         if (!card_number || expiry_month == null || expiry_year == null || !cvv) return
-        await checkoutMutation({
-          ...base,
-          payment_method_type: 'card',
-          card_number,
-          expiry_month: Number(expiry_month),
-          expiry_year: Number(expiry_year),
-          cvv,
-        })
-        return
       }
+      await runMutation(
+        appendGatewayFields(memberBase, gateway, paymentMethod, phone, paymentValues) as CheckoutPayload,
+      )
+      return
     }
 
     if (gateway === CHECKOUT_GATEWAY.KOWRI) {
       if (paymentMethod === 'mobile_money') {
         const valid = await paymentForm.trigger('kowri_provider')
         if (!valid) return
-        const kowriProvider = paymentValues.kowri_provider
-        if (!kowriProvider) return
-        const response = await checkoutMutation({
-          ...base,
-          payment_method_type: 'mobile_money',
-          msisdn: phone,
-          kowri_provider: kowriProvider,
-        })
-        const kowriData = extractKowriCheckoutPromptData(response)
-        if (kowriData) {
-          setKowriCheckoutData(kowriData)
-          setIsKowriPromptModalOpen(true)
-        }
-        return
+        if (!paymentValues.kowri_provider) return
       }
-      if (paymentMethod === 'card') {
-        await checkoutMutation({ ...base, payment_method_type: 'card' })
-        return
-      }
+      await runMutation(
+        appendGatewayFields(memberBase, gateway, paymentMethod, phone, paymentValues) as CheckoutPayload,
+      )
+      return
     }
 
-    await checkoutMutation(base)
+    await runMutation(memberBase)
   }, [
     isGuestAuth,
     activeCartItems,
@@ -290,9 +374,13 @@ export function useCheckout() {
     paymentForm,
     checkoutGateway,
     checkoutMutation,
+    guestCheckoutMutation,
     itemsMissingRecipients,
     recipientActionsBlocked,
     toast,
+    applyCheckoutFollowUp,
+    resolveGuestCartUuidForCheckout,
+    guestCartRefetch,
   ])
 
   const bulkAssignMutation = useMutation({
@@ -370,8 +458,14 @@ export function useCheckout() {
     setIsMissingRecipientsModalOpen,
     bulkFile,
     setBulkFile,
-    kowriCheckoutData,
-    isKowriPromptModalOpen,
-    setIsKowriPromptModalOpen,
+    paymentPromptData,
+    isPaymentPromptModalOpen,
+    setIsPaymentPromptModalOpen,
+    /** @deprecated use paymentPromptData */
+    kowriCheckoutData: paymentPromptData,
+    /** @deprecated use isPaymentPromptModalOpen */
+    isKowriPromptModalOpen: isPaymentPromptModalOpen,
+    /** @deprecated use setIsPaymentPromptModalOpen */
+    setIsKowriPromptModalOpen: setIsPaymentPromptModalOpen,
   }
 }

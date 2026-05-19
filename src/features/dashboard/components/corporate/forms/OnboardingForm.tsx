@@ -2,6 +2,7 @@ import { Controller } from 'react-hook-form'
 import { Combobox, Input, Text, FileUploader, Loader, Modal, DateInput } from '@/components'
 import { Button } from '@/components/Button'
 import { cn } from '@/libs'
+import { CORPORATE_ONBOARDING_ID_TYPE_OPTIONS } from '@/utils/constants/idType'
 import { useOnboardingForm } from '../hooks/useOnboardingForm'
 
 export default function OnboardingForm() {
@@ -116,10 +117,7 @@ export default function OnboardingForm() {
                 placeholder="Enter your ID type"
                 {...field}
                 error={form.formState.errors.id_type?.message}
-                options={[
-                  { label: 'National ID', value: 'national_id' },
-                  { label: 'Passport', value: 'passport' },
-                ]}
+                options={[...CORPORATE_ONBOARDING_ID_TYPE_OPTIONS]}
               />
             )}
           />

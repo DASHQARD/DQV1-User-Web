@@ -3,6 +3,7 @@ export const CHECKOUT_GATEWAY = {
   EGNANOW: 'egnanow',
   KOWRI: 'kowri',
   PAYSTACK: 'paystack',
+  EXPRESSPAY: 'expresspay',
 } as const
 
 /** Egnanow mobile money paypartner codes */

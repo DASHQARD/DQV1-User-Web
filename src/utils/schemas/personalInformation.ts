@@ -1,11 +1,16 @@
 import { z } from 'zod'
 
+import { CORPORATE_ONBOARDING_ID_TYPE_OPTIONS } from '@/utils/constants/idType'
 import {
   ID_TYPE_VALUES,
   isValidDateOfBirth,
   isValidStreetAddress,
   validatePersonalInformationIdNumber,
 } from '@/utils/validation/personalInformation'
+
+const CORPORATE_ONBOARDING_ID_TYPE_VALUES = CORPORATE_ONBOARDING_ID_TYPE_OPTIONS.map(
+  (option) => option.value,
+)
 
 import { getRequiredStringSchema } from './shared'
 
@@ -33,6 +38,11 @@ export const personalInformationDobSchema = getRequiredStringSchema('Date of Bir
 )
 
 export const personalInformationIdTypeSchema = idTypeEnum
+
+export const corporateOnboardingIdTypeSchema = z.enum(
+  CORPORATE_ONBOARDING_ID_TYPE_VALUES as [string, ...string[]],
+  { message: 'Select a valid ID type' },
+)
 
 export const personalInformationIdNumberSchema = getRequiredStringSchema('ID Number')
 

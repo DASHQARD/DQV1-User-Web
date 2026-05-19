@@ -1,5 +1,5 @@
 import { getMethod, postMethod } from '@/services/requests'
-import type { CheckoutPayload } from '@/types'
+import type { CheckoutPayload, GuestCheckoutPayload } from '@/types'
 
 export interface PaymentProviderConfig {
   id: string
@@ -37,11 +37,11 @@ export const getServiceFees = async (): Promise<ServiceFeeConfig> => {
   return res?.data ?? (res as unknown as ServiceFeeConfig)
 }
 
-export const checkout = async (data: CheckoutPayload): Promise<any> => {
+export const checkout = async (data: CheckoutPayload): Promise<unknown> => {
   return await postMethod('/payments/checkout', data)
 }
 
-/** @deprecated Guest checkout uses POST /payments/checkout with cart_id (guest cart detected server-side). */
-export const guestCheckout = async (data: CheckoutPayload): Promise<any> => {
-  return await postMethod('/payments/checkout', data)
+/** Guest cart checkout — POST /payments/guest/checkout (Bearer guest token). */
+export const guestCheckout = async (data: GuestCheckoutPayload): Promise<unknown> => {
+  return await postMethod('/payments/guest/checkout', data)
 }

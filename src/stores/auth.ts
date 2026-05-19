@@ -14,8 +14,10 @@ type State = {
   isAuthenticated: boolean
   /** True when authenticated via guest OTP; use guest-auth/token/refresh for refresh */
   isGuestAuth: boolean
-  /** Guest cart id after first add; used for subsequent guest-carts/add-card calls */
+  /** Guest cart numeric id — used for guest-carts/add-card when required */
   guestCartId: number | null
+  /** Guest cart UUID — required for POST /payments/guest/checkout */
+  guestCartUuid: string | null
 }
 
 type Actions = {
@@ -31,6 +33,8 @@ type Actions = {
   setRefreshToken: (newToken: string | null) => void
   setGuestCartId: (cartId: number | null) => void
   getGuestCartId: () => State['guestCartId']
+  setGuestCartUuid: (uuid: string | null) => void
+  getGuestCartUuid: () => State['guestCartUuid']
   logout: () => void
 }
 
@@ -50,6 +54,7 @@ const initialState: State = {
   user: null,
   isGuestAuth: false,
   guestCartId: null,
+  guestCartUuid: null,
 }
 
 const authStore: StateCreator<State & Actions> = (set, get) => ({
@@ -82,12 +87,15 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
       isAuthenticated: false,
       isGuestAuth: false,
       guestCartId: null,
+      guestCartUuid: null,
     })
   },
   getToken: () => get().token,
   getRefreshToken: () => get().refreshToken,
   setGuestCartId: (cartId) => set({ guestCartId: cartId }),
   getGuestCartId: () => get().guestCartId,
+  setGuestCartUuid: (uuid) => set({ guestCartUuid: uuid }),
+  getGuestCartUuid: () => get().guestCartUuid,
   setToken: (newToken: string) =>
     set({
       token: newToken,

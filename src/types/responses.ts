@@ -175,6 +175,8 @@ export type CartItemResponse = {
 export type CartListResponse = {
   cart_created_at: string
   cart_id: number
+  /** Guest cart UUID for POST /payments/guest/checkout */
+  guest_cart_uuid?: string
   cart_status: string
   cart_updated_at: string
   item_count: string
@@ -215,6 +217,7 @@ export type GuestAddCardResponse = {
 export type GuestCartApiResponse = {
   cart: {
     id: number
+    uuid?: string
     guest_phone: string
     guest_name: string
     guest_email: string
@@ -223,6 +226,8 @@ export type GuestCartApiResponse = {
     created_at: string
     updated_at: string
   }
+  /** Some responses expose uuid at the root */
+  uuid?: string
   items: Array<{
     cart_item_id: number
     cart_item: {
@@ -510,9 +515,9 @@ export type GuestAssignRecipientPayload = {
   quantity?: number
 }
 
-/** @deprecated Use CheckoutPayloadBase with cart_id — guest carts use POST /payments/checkout */
+/** POST /payments/guest/checkout — guest_cart_id is the cart UUID from GET /guest-carts */
 export type GuestCheckoutPayloadBase = {
-  guest_cart_id: number
+  guest_cart_id: string
   full_name: string
   email: string
   phone_number: string
