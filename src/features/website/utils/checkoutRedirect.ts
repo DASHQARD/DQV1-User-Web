@@ -1,8 +1,29 @@
+export type PaymentPromptData = {
+  receipt_number?: string
+  merchant_order_id?: string
+  transaction_id?: string
+  status?: string
+  message?: string
+}
+
 export type CheckoutFollowUp =
   | { type: 'redirected' }
-  | { type: 'momo_prompt'; data: Record<string, unknown> }
+  | { type: 'momo_prompt'; data: PaymentPromptData }
   | { type: 'eganow_3ds'; html: string }
   | { type: 'none' }
+
+function toPaymentPromptData(data: Record<string, unknown>): PaymentPromptData {
+  return {
+    receipt_number:
+      typeof data.receipt_number === 'string' ? data.receipt_number : undefined,
+    merchant_order_id:
+      typeof data.merchant_order_id === 'string' ? data.merchant_order_id : undefined,
+    transaction_id:
+      typeof data.transaction_id === 'string' ? data.transaction_id : undefined,
+    status: data.status != null ? String(data.status) : undefined,
+    message: typeof data.message === 'string' ? data.message : undefined,
+  }
+}
 
 function getResponseData(response: unknown): Record<string, unknown> | null {
   if (!response || typeof response !== 'object') return null
@@ -125,7 +146,7 @@ export function processCheckoutResponse(response: unknown): CheckoutFollowUp {
 
   const momoData = extractMomoCheckoutPromptData(response)
   if (momoData) {
-    return { type: 'momo_prompt', data: momoData }
+    return { type: 'momo_prompt', data: toPaymentPromptData(momoData) }
   }
 
   return { type: 'none' }

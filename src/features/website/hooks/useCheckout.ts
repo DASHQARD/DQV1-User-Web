@@ -27,7 +27,10 @@ import {
   isHostedRedirectGateway,
   roundCheckoutAmount,
 } from '@/features/website/utils/checkoutPayload'
-import type { CheckoutFollowUp } from '@/features/website/utils/checkoutRedirect'
+import type {
+  CheckoutFollowUp,
+  PaymentPromptData,
+} from '@/features/website/utils/checkoutRedirect'
 import { getGuestCart, resolveGuestCartUuid } from '@/features/website/services/cards'
 import {
   GUEST_EMAIL_STORAGE_KEY,
@@ -123,7 +126,7 @@ export function useCheckout() {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
   const [isMissingRecipientsModalOpen, setIsMissingRecipientsModalOpen] = useState(false)
   const [bulkFile, setBulkFile] = useState<File | null>(null)
-  const [paymentPromptData, setPaymentPromptData] = useState<Record<string, unknown> | null>(null)
+  const [paymentPromptData, setPaymentPromptData] = useState<PaymentPromptData | null>(null)
   const [isPaymentPromptModalOpen, setIsPaymentPromptModalOpen] = useState(false)
 
   const modal = usePersistedModalState({

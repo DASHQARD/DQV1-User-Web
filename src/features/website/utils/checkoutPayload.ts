@@ -1,4 +1,3 @@
-import type { CheckoutPayload, GuestCheckoutPayload } from '@/types'
 import { CHECKOUT_GATEWAY } from './paymentConstants'
 
 export function roundCheckoutAmount(amount: number): number {
