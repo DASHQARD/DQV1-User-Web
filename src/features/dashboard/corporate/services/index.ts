@@ -161,13 +161,8 @@ export const getCorporatePaymentDetails = async () => {
   return await getList(`/payment-details`)
 }
 
-export const getAllCorporatePayments = async (_params?: Record<string, any>): Promise<any> => {
-  void _params
-  // const queryString = getQueryString(params)
-  // const fullUrl = queryString ? `/payments/users?${queryString}` : `/payments/users`
-  const response = await axiosClient.get(`/payments/users`)
-  // Axios interceptor already returns response.data, so response here is the API response body
-  // which has { data: [...], pagination: {...}, status: ..., etc }
+export const getAllCorporatePayments = async (params?: Record<string, any>): Promise<any> => {
+  const response = await axiosClient.get(`/payments/users`, { params })
   return response
 }
 

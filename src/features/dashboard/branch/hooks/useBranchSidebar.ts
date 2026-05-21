@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { usePresignedMediaUrl } from '@/hooks'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
@@ -25,7 +26,7 @@ export function useBranchSidebar() {
   const paymentDetails = data?.payment_details ?? null
   const businessDetails = data?.business_details
 
-  const logoUrl = businessDetails?.logo || null
+  const { url: logoUrl } = usePresignedMediaUrl(businessDetails?.logo)
 
   const branchName = branch?.branch_name ?? null
   const branchManagerName = branch?.branch_manager_name ?? branchManager?.fullname ?? null

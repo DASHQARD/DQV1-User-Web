@@ -37,6 +37,7 @@ export default function AllAdmins() {
           currentAfter={query.after}
           previousCursor={pagination?.previous}
           onSetAfter={allAdminsHandleSetAfter}
+          searchPlaceholder="Search by name"
           filterBy={{
             simpleSelects: [{ label: 'status', options: OPTIONS.CORPORATE_ADMIN_STATUS }],
             // date: [{ queryKey: 'dateFrom', label: 'Date range' }],

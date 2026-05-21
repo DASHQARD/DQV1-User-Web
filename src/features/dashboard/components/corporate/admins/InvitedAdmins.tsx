@@ -38,6 +38,7 @@ export default function InvitedAdmins() {
           currentAfter={invitedQuery.after}
           previousCursor={invitedPagination?.previous}
           onSetAfter={invitedHandleSetAfter}
+          searchPlaceholder="Search by name"
           filterBy={{
             simpleSelects: [
               { label: 'status', options: OPTIONS.CORPORATE_ADMIN_INVITATION_STATUS },

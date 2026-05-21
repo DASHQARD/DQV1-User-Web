@@ -25,7 +25,9 @@ import {
   addGuestCard,
   createGuestDashGo,
   extractGiftCardIdFromGuestCreate,
+  extractGuestCardRecordId,
   extractGuestCreateCartMeta,
+  getGuestCardSingle,
 } from '../../services/cards'
 
 const QRPlaceholder = () => {
@@ -243,6 +245,13 @@ export default function DashGoPurchase() {
       if (!cardId) {
         console.error('Failed to get card ID from response')
         return
+      }
+
+      if (isGuestAuth) {
+        const guestCardRecordId = extractGuestCardRecordId(createResponse)
+        if (guestCardRecordId) {
+          await getGuestCardSingle({ guest_card_id: guestCardRecordId })
+        }
       }
 
       let cartItemId: string | number | null = null

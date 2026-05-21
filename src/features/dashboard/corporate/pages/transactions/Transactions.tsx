@@ -10,6 +10,7 @@ import { corporateQueries } from '../../hooks'
 import type { QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
 import { OPTIONS } from '@/utils/constants/filter'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 
 export default function Transactions() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
@@ -23,8 +24,7 @@ export default function Transactions() {
     if (query.status) params.status = query.status
     if ((query as Record<string, unknown>).type)
       params.type = (query as Record<string, unknown>).type
-    if (query.dateFrom) params.date_from = query.dateFrom
-    if (query.dateTo) params.date_to = query.dateTo
+    appendDateRangeApiParams(params, query)
     return params
   }, [query])
 

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
+import type { GetUserPaymentsParams } from '@/types'
 import { paymentInfo, getPaymentInfo, getPaymentById } from '@/services'
 import { useAuthStore } from '@/stores'
 
@@ -15,10 +16,10 @@ export function usePaymentInfoService() {
     })
   }
 
-  function useGetPaymentByIdService() {
+  function useGetPaymentByIdService(params?: GetUserPaymentsParams) {
     return useQuery({
-      queryKey: ['get-payment-by-id', user?.user_id],
-      queryFn: getPaymentById,
+      queryKey: ['get-payment-by-id', user?.user_id, params],
+      queryFn: () => getPaymentById(params),
       enabled: !!user?.user_id && user?.user_type === 'user',
     })
   }

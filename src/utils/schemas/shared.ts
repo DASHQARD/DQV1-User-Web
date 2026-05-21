@@ -87,10 +87,22 @@ export function isValidInternationalPhoneDigits(
 }
 
 export function getRequiredInternationalPhoneSchema(label: string = 'Phone number') {
-  return getRequiredStringSchema(label).refine(
-    (val) => isValidInternationalPhoneDigits(val),
-    INVALID_PHONE_MESSAGE,
-  )
+  return z.string().superRefine((val, ctx) => {
+    const trimmed = val.trim()
+    if (!trimmed || isDialCodeOnlyPhone(trimmed)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${label} is required`,
+      })
+      return
+    }
+    if (!isValidInternationalPhoneDigits(trimmed)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: INVALID_PHONE_MESSAGE,
+      })
+    }
+  })
 }
 
 export function getOptionalInternationalPhoneSchema() {

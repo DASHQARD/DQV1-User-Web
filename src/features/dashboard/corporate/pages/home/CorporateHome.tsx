@@ -6,6 +6,7 @@ import {
   RecentTransactions,
   CompleteCorporateWidget,
   CorporateAccountStatusBanner,
+  CreateVendorAccount,
 } from '@/features/dashboard/components'
 import { useCorporateHome } from '../../hooks/useCorporateHome'
 
@@ -28,6 +29,8 @@ export default function CorporateHome() {
     getNextStepName,
     navigateToProfileStep,
     navigateToBusinessStep,
+    isCorporateSuperAdmin,
+    openCreateVendorAccount,
   } = useCorporateHome()
 
   return (
@@ -262,6 +265,43 @@ export default function CorporateHome() {
           </div>
         )} */}
 
+        {isCorporateSuperAdmin && (
+          <div
+            className={cn(
+              'bg-white border border-gray-100 rounded-2xl shadow-lg p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between',
+              !canAccessRestrictedFeatures && 'opacity-60',
+            )}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#402D87]/10 text-[#402D87] flex items-center justify-center shrink-0">
+                <Icon icon="bi:shop" className="text-2xl" />
+              </div>
+              <div>
+                <Text variant="h4" weight="semibold" className="text-gray-900">
+                  Vendor accounts
+                </Text>
+                <Text variant="p" className="text-sm text-gray-600 mt-1 max-w-xl">
+                  Create and manage vendor accounts linked to your corporate workspace.
+                </Text>
+                {!canAccessRestrictedFeatures && (
+                  <Text variant="span" className="text-xs text-gray-500 mt-2 block">
+                    Complete onboarding and get approved to create vendor accounts.
+                  </Text>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="secondary"
+              className="shrink-0 flex items-center gap-2 rounded-full"
+              onClick={openCreateVendorAccount}
+              disabled={!canAccessRestrictedFeatures}
+            >
+              <Icon icon="bi:plus-circle" className="text-lg" />
+              Create a vendor account
+            </Button>
+          </div>
+        )}
+
         {/* Metrics Cards */}
         {!isLoading && (
           <div className="group relative bg-[#702DFF] rounded-2xl p-6 shadow-lg shadow-[#402D87]/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#402D87]/30 overflow-hidden">
@@ -359,6 +399,7 @@ export default function CorporateHome() {
           </div>
         )}
       </section>
+      {isCorporateSuperAdmin && <CreateVendorAccount />}
     </div>
   )
 }

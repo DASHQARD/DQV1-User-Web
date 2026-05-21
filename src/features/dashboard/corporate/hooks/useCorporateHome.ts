@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { vendorQueries } from '@/features/dashboard/vendor'
 import { useUserProfile, usePersistedModalState } from '@/hooks'
 import { ROUTES, MODALS } from '@/utils/constants'
 
+import { corporateQueries } from './useCorporateQueries'
 import { useDashboardMetrics } from './useDashboardMetrics'
 
 export function useCorporateHome() {
@@ -16,26 +16,23 @@ export function useCorporateHome() {
     isLoading: isUserProfileLoading,
     isFetching: isUserProfileFetching,
   } = useGetUserProfileService()
-  const { useGetAllVendorsDetailsService } = vendorQueries()
-  const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
+  const { useGetAllVendorsManagementService } = corporateQueries()
+  const { data: allVendorsResponse } = useGetAllVendorsManagementService({ limit: 100 })
   const vendorAccountModal = usePersistedModalState<{ user?: unknown }>({
     paramName: MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_VENDOR_ACCOUNT,
   })
 
   const myVendorAccounts = useMemo(() => {
-    const vendorsData = Array.isArray(allVendorsDetails)
-      ? allVendorsDetails
-      : ((allVendorsDetails as { data?: unknown[] })?.data ?? [])
-    return vendorsData.filter(
-      (v: { corporate_user_id?: number }) => v.corporate_user_id === userProfileData?.id,
-    ) as Array<{
+    if (!allVendorsResponse) return []
+    const vendorsData = Array.isArray(allVendorsResponse?.data) ? allVendorsResponse.data : []
+    return vendorsData as Array<{
       id?: number
       vendor_name?: string
       business_name?: string
       approval_status?: string
       status?: string
     }>
-  }, [allVendorsDetails, userProfileData?.id])
+  }, [allVendorsResponse])
 
   const addAccountParam = (path: string): string => {
     const separator = path?.includes('?') ? '&' : '?'
@@ -43,6 +40,7 @@ export function useCorporateHome() {
   }
 
   const isCorporateAdmin = userProfileData?.user_type === 'corporate admin'
+  const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
   const isOnboardingStatusLoading =
     (isUserProfileLoading || isUserProfileFetching) && !userProfileData
 
@@ -131,6 +129,7 @@ export function useCorporateHome() {
     isLoading,
     isOnboardingStatusLoading,
     isCorporateAdmin,
+    isCorporateSuperAdmin,
     onboardingProgress: {
       ...onboardingProgress,
       hasProfileAndID,

@@ -1,36 +1,51 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderWithProviders } from '@/test/test-utils'
+import { renderWithProviders, screen } from '@/test/test-utils'
 import MyCards from '../my-cards/MyCards'
 
-vi.mock('@/features/dashboard/hooks/useCards', () => ({
-  useGiftCardMetrics: () => ({
-    data: { DashX: 0, DashGo: 0, DashPass: 0, DashPro: 0 },
+const { mockUseGiftCardMetrics } = vi.hoisted(() => ({
+  mockUseGiftCardMetrics: vi.fn().mockReturnValue({
+    data: { data: { DashX: 0, DashGo: 0, DashPass: 0, DashPro: 0 } },
     isLoading: false,
   }),
 }))
 
-vi.mock('@/assets/svgs/Dashx_bg.svg', () => ({ default: '/dashx-bg.svg' }))
-vi.mock('@/assets/svgs/dashgo_bg.svg', () => ({ default: '/dashgo-bg.svg' }))
-vi.mock('@/assets/svgs/dashpro_bg.svg', () => ({ default: '/dashpro-bg.svg' }))
-vi.mock('@/assets/images/dashpass_bg.png', () => ({ default: '/dashpass-bg.png' }))
+vi.mock('@/features/dashboard/hooks/useCards', () => ({
+  useGiftCardMetrics: mockUseGiftCardMetrics,
+}))
 
 describe('MyCards (user)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    mockUseGiftCardMetrics.mockReturnValue({
+      data: { data: { DashX: 0, DashGo: 0, DashPass: 0, DashPro: 0 } },
+      isLoading: false,
+    })
   })
 
   it('renders My Cards title', () => {
-    const { getByText } = renderWithProviders(<MyCards />)
-    expect(getByText('My Cards')).toBeInTheDocument()
+    renderWithProviders(<MyCards />)
+    expect(screen.getByText('My Cards')).toBeInTheDocument()
   })
 
   it('renders view your purchased gift cards description', () => {
-    const { getByText } = renderWithProviders(<MyCards />)
-    expect(getByText('View your purchased gift cards')).toBeInTheDocument()
+    renderWithProviders(<MyCards />)
+    expect(screen.getByText('View your purchased gift cards')).toBeInTheDocument()
   })
 
-  it('renders empty state when no cards', () => {
-    const { getByText } = renderWithProviders(<MyCards />)
-    expect(getByText('No cards purchased yet')).toBeInTheDocument()
+  it('renders dashboard-style gift card tiles', () => {
+    renderWithProviders(<MyCards />)
+    expect(screen.getByText('DashX')).toBeInTheDocument()
+    expect(screen.getByText('DashGo')).toBeInTheDocument()
+    expect(screen.getByText('DashPro')).toBeInTheDocument()
+    expect(screen.getByText('DashPass')).toBeInTheDocument()
+  })
+
+  it('shows DashPro as formatted balance not card count', () => {
+    mockUseGiftCardMetrics.mockReturnValue({
+      data: { data: { DashX: 0, DashGo: 0, DashPass: 0, DashPro: 1000 } },
+      isLoading: false,
+    })
+    renderWithProviders(<MyCards />)
+    expect(screen.getByText('GHS 1,000.00')).toBeInTheDocument()
+    expect(screen.queryByText(/1000 cards/i)).not.toBeInTheDocument()
   })
 })

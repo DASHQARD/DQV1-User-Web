@@ -10,6 +10,11 @@ import type {
   GuestAssignRecipientPayload,
   GuestUpdateCartItemPayload,
   GuestDeleteCartItemParams,
+  GuestGetCartRecipientsParams,
+  GuestUpdateRecipientPayload,
+  GuestDeleteRecipientParams,
+  GuestGetCardsParams,
+  GuestGetCardSingleParams,
 } from '@/types/responses'
 
 export const addToCart = async (data: AddToCartPayload): Promise<any> => {
@@ -185,6 +190,16 @@ export function unwrapPostResponsePayload(response: unknown): Record<string, unk
     }
   }
   return layer
+}
+
+/** Guest card row id from POST /guest-cards/dash-go or /guest-cards/dash-pro create responses. */
+export function extractGuestCardRecordId(response: unknown): string | null {
+  const payload = unwrapPostResponsePayload(response)
+  if (!payload) return null
+  const guestCard = payload.guest_card as Record<string, unknown> | undefined
+  const raw = guestCard?.id ?? payload.guest_card_id
+  if (raw == null || raw === '') return null
+  return String(raw)
 }
 
 /** Gift card UUID from POST /guest-cards/dash-go or /guest-cards/dash-pro create responses. */
@@ -418,6 +433,41 @@ export const deleteGuestCartItem = async (params: GuestDeleteCartItemParams): Pr
     params: { cart_item_id: params.cart_item_id },
   })
   return res
+}
+
+/** GET /guest-cards — list cards created by the authenticated guest */
+export const getGuestCards = async (params?: GuestGetCardsParams): Promise<unknown> => {
+  return await getList('/guest-cards', params)
+}
+
+/** GET /guest-cards/single — single guest card by guest_card_id */
+export const getGuestCardSingle = async (params: GuestGetCardSingleParams): Promise<unknown> => {
+  return await getList('/guest-cards/single', params)
+}
+
+/** GET /guest-carts/recipients — recipients for a guest cart item (identity from Bearer token) */
+export const getGuestCartRecipients = async (
+  params: GuestGetCartRecipientsParams,
+): Promise<unknown[]> => {
+  const res = await getList('/guest-carts/recipients', {
+    cart_item_id: params.cart_item_id,
+  })
+  if (Array.isArray(res)) return res
+  const data = (res as { data?: unknown })?.data
+  return Array.isArray(data) ? data : []
+}
+
+/** PATCH /guest-carts/recipients — update a guest cart recipient */
+export const updateGuestRecipient = async (
+  data: GuestUpdateRecipientPayload,
+): Promise<{ status: string; message: string }> => {
+  const res = await patchMethod('/guest-carts/recipients', data)
+  return res as unknown as { status: string; message: string }
+}
+
+/** DELETE /guest-carts/recipients — remove a guest cart recipient */
+export const deleteGuestRecipient = async (params: GuestDeleteRecipientParams): Promise<void> => {
+  await axiosClient.delete('/guest-carts/recipients', { params })
 }
 
 /** POST /guest-carts/recipients — assign a recipient to a guest cart item */

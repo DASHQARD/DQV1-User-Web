@@ -24,7 +24,9 @@ import {
   addGuestCard,
   createGuestDashPro,
   extractGiftCardIdFromGuestCreate,
+  extractGuestCardRecordId,
   extractGuestCreateCartMeta,
+  getGuestCardSingle,
 } from '../../services/cards'
 import { useToast } from '@/hooks'
 
@@ -185,6 +187,13 @@ export default function DashProPurchase() {
         console.error('Failed to get card ID from response')
         toast.error('Failed to create DashPro card. Please try again.')
         return
+      }
+
+      if (isGuestAuth) {
+        const guestCardRecordId = extractGuestCardRecordId(cardResponse)
+        if (guestCardRecordId) {
+          await getGuestCardSingle({ guest_card_id: guestCardRecordId })
+        }
       }
 
       let cartItemId: string | number | null = null

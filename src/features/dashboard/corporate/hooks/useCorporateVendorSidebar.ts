@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { useUserProfile } from '@/hooks'
+import { useBusinessLogoUrl, usePresignedMediaUrl, useUserProfile } from '@/hooks'
+import { getBusinessLogoFileKey } from '@/utils/businessLogo'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { corporateQueries } from './useCorporateQueries'
-import { vendorQueries } from '@/features/dashboard/vendor'
 
 export function useCorporateVendorSidebar() {
   const location = useLocation()
@@ -20,18 +20,18 @@ export function useCorporateVendorSidebar() {
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
 
-  const { useGetAllVendorsDetailsService } = vendorQueries()
-  const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
+  const {
+    useGetAllVendorsManagementService,
+    useGetCorporateBranchesListService,
+    useGetCorporateBranchesByVendorIdService,
+    useGetCorporatePaymentsService,
+  } = corporateQueries()
+  const { data: allVendorsResponse } = useGetAllVendorsManagementService({ limit: 100 })
 
   const allVendorsCreatedByCorporate = useMemo(() => {
-    const vendorsData = Array.isArray(allVendorsDetails)
-      ? allVendorsDetails
-      : ((allVendorsDetails as { data?: unknown[] })?.data ?? [])
-    const corporateId = userProfileData?.id ?? (user as { id?: string })?.id
-    return (
-      vendorsData as { corporate_user_id?: string; vendor_id?: number; id?: number }[]
-    ).filter((vendor) => String(vendor.corporate_user_id) === String(corporateId))
-  }, [allVendorsDetails, userProfileData?.id, user])
+    if (!allVendorsResponse) return []
+    return Array.isArray(allVendorsResponse?.data) ? allVendorsResponse.data : []
+  }, [allVendorsResponse])
 
   const hasVendorsPendingVerification = useMemo(() => {
     return (
@@ -58,12 +58,7 @@ export function useCorporateVendorSidebar() {
     )
   }, [currentVendorId, allVendorsCreatedByCorporate])
 
-  const logoUrl = useMemo(() => {
-    const logoDocument = userProfileData?.business_documents?.find(
-      (doc: { type: string }) => doc.type === 'logo',
-    )
-    return logoDocument?.file_url || null
-  }, [userProfileData?.business_documents])
+  const { url: logoUrl } = useBusinessLogoUrl(userProfileData)
 
   const vendorLogoUrls = useMemo(() => {
     const map: Record<number, string> = {}
@@ -76,25 +71,18 @@ export function useCorporateVendorSidebar() {
     return map
   }, [allVendorsCreatedByCorporate])
 
-  const currentVendorLogoUrl = useMemo(() => {
+  const currentVendorLogoKey = useMemo(() => {
     const vendorLogo = currentVendor && (currentVendor as { vendor_logo?: string }).vendor_logo
-    if (vendorLogo) return vendorLogo
-    const logoDocument = userProfileData?.business_documents?.find(
-      (doc: { type: string }) => doc.type === 'logo',
-    )
-    return logoDocument?.file_url || null
-  }, [currentVendor, userProfileData?.business_documents])
+    return vendorLogo || getBusinessLogoFileKey(userProfileData)
+  }, [currentVendor, userProfileData])
+
+  const { url: currentVendorLogoUrl } = usePresignedMediaUrl(currentVendorLogoKey)
 
   const userType = (user as { user_type?: string })?.user_type || userProfileData?.user_type
   const isVendor = userType === 'vendor'
   const isCorporateSuperAdmin = userType === 'corporate super admin'
   const displayName = 'Vendor'
 
-  const {
-    useGetCorporateBranchesListService,
-    useGetCorporateBranchesByVendorIdService,
-    useGetCorporatePaymentsService,
-  } = corporateQueries()
   const { data: corporateBranchesList } = useGetCorporateBranchesListService()
   const { data: corporateBranchesByVendor } = useGetCorporateBranchesByVendorIdService(
     currentVendorId ?? null,

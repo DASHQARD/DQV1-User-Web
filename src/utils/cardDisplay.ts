@@ -1,4 +1,5 @@
 import { ENV_VARS } from '@/utils/constants'
+import { isAbsoluteMediaUrl } from '@/utils/resolveSignedUrl'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
 import DashpassBg from '@/assets/images/dashpass_bg.png'
@@ -18,6 +19,32 @@ export function getCardBackground(type: string | undefined): string {
     default:
       return DashxBg
   }
+}
+
+/** True when the value is a storage key that must be resolved via signed-url API. */
+export function isCardStorageFileKey(fileUrl: string | undefined): boolean {
+  if (!fileUrl?.trim()) return false
+  const trimmed = fileUrl.trim()
+  if (isAbsoluteMediaUrl(trimmed)) return false
+  if (trimmed.startsWith('uploads/') || trimmed.startsWith('/uploads/')) return false
+  return true
+}
+
+/**
+ * Split card media into either a direct URL (absolute or legacy /uploads path)
+ * or a storage key for presigned URL resolution.
+ */
+export function getCardMediaSource(fileUrl: string | undefined): {
+  directUrl: string
+  storageKey: string | null
+} {
+  if (!fileUrl?.trim()) return { directUrl: '', storageKey: null }
+  const trimmed = fileUrl.trim()
+  if (isAbsoluteMediaUrl(trimmed)) return { directUrl: trimmed, storageKey: null }
+  if (trimmed.startsWith('uploads/') || trimmed.startsWith('/uploads/')) {
+    return { directUrl: getImageUrl(trimmed), storageKey: null }
+  }
+  return { directUrl: '', storageKey: trimmed }
 }
 
 export function getImageUrl(fileUrl: string | undefined): string {

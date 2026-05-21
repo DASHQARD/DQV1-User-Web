@@ -1,6 +1,10 @@
 import { axiosClient } from '@/libs'
-import type { UserProfileResponse, PaymentInfoData, PaymentResponse } from '@/types'
+import type { UserProfileResponse, PaymentInfoData, PaymentResponse, GetUserPaymentsParams } from '@/types'
 import { getList } from './requests'
+
+const getPresignedURL = async (file: string) => {
+  return await axiosClient.post(`/file/generate/signed-url`, { file })
+}
 
 const uploadFiles = async (data: File[]) => {
   const formData = new FormData()
@@ -29,10 +33,9 @@ const getPaymentInfo = async () => {
   return response
 }
 
-const getPaymentById = async () => {
-  // const response = await axiosClient.get<PaymentInfoData>(`/payments/users/${id}`)
-  const response = await axiosClient.get<PaymentInfoData>(`/payments/users`)
-  return response.data
+const getPaymentById = async (params?: GetUserPaymentsParams) => {
+  const response = await axiosClient.get<PaymentResponse>(`/payments/users`, { params })
+  return response
 }
 
 const updateUserAvatar = async (data: { file_url: string }) => {
@@ -52,6 +55,7 @@ const createTicket = async (data: {
 
 export {
   uploadFiles,
+  getPresignedURL,
   getUserProfile,
   paymentInfo,
   getPaymentInfo,

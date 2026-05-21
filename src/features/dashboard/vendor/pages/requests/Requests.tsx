@@ -7,6 +7,7 @@ import {
   vendorRequestListCsvHeaders,
 } from '@/features/dashboard/components/vendors/tableConfigs'
 import { DEFAULT_QUERY } from '@/utils/constants'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 import type { QueryType } from '@/types'
 import { useReducerSpread, useUserProfile } from '@/hooks'
 import { vendorQueries } from '../../hooks'
@@ -34,8 +35,7 @@ export default function Requests() {
     const params: Record<string, any> = {}
     if (query.search) params.search = query.search
     if (query.status) params.status = query.status
-    if (query.dateFrom) params.date_from = query.dateFrom
-    if (query.dateTo) params.date_to = query.dateTo
+    appendDateRangeApiParams(params, query)
     return params
   }, [query])
 

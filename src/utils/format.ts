@@ -108,6 +108,22 @@ export function formatDate(dateString: string | Date | null | undefined): string
   }).format(dateObj)
 }
 
+/** Compact date and time for tables (e.g. "May 21, 2026, 2:28 AM"). */
+export function formatDateTime(dateString: string | Date | null | undefined): string {
+  if (!dateString) return 'N/A'
+  const dateObj = typeof dateString === 'string' ? new Date(dateString) : dateString
+  if (isNaN(dateObj.getTime())) return 'N/A'
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(dateObj)
+}
+
 /**
  * Format date as full date with time (e.g., "Monday, January 15, 2024 at 14:30")
  */

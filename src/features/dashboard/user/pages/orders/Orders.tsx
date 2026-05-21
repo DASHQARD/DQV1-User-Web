@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { PaginatedTable, Text } from '@/components'
 import type { QueryType } from '@/types'
 import { DEFAULT_QUERY } from '@/utils/constants'
@@ -7,12 +7,35 @@ import { usePaymentInfoService } from '@/features/dashboard/hooks'
 import { PaymentDetails, paymentListColumns } from '@/features/dashboard/components'
 import { paymentListCsvHeaders } from '@/features/dashboard/components/payment/tableConfigs/payment'
 import { OPTIONS } from '@/utils/constants/filter'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 
 export default function Orders() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
 
+  const params = useMemo(() => {
+    const apiParams: Record<string, string | number> = {
+      limit: query.limit || 10,
+    }
+
+    if (query.after) {
+      apiParams.after = query.after
+    }
+
+    if (query.status) {
+      apiParams.status = query.status
+    }
+
+    appendDateRangeApiParams(apiParams, query)
+
+    if (query.search) {
+      apiParams.search = query.search
+    }
+
+    return apiParams
+  }, [query])
+
   const { useGetPaymentByIdService } = usePaymentInfoService()
-  const { data: paymentResponse, isLoading } = useGetPaymentByIdService()
+  const { data: paymentResponse, isLoading } = useGetPaymentByIdService(params)
 
   const response = paymentResponse as any
   const paymentsArray = Array.isArray(response)
@@ -57,11 +80,11 @@ export default function Orders() {
         total={estimatedTotal}
         query={query}
         setQuery={setQuery}
-        searchPlaceholder="Search orders by order number, card type, or status..."
+        searchPlaceholder="Search orders by receipt number"
         printTitle="Orders"
         csvHeaders={paymentListCsvHeaders}
         filterBy={{
-          simpleSelects: [{ label: 'status', options: OPTIONS.TRANSACTION_STATUS }],
+          simpleSelects: [{ label: 'status', options: OPTIONS.PAYMENT_STATUS }],
           date: [{ queryKey: 'dateFrom', label: 'Date range' }],
         }}
         onNextPage={handleNextPage}

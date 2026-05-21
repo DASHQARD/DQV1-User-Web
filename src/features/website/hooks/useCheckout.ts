@@ -43,6 +43,7 @@ import {
   getGuestPhoneFromAuth,
 } from '@/features/website/utils/guestAuth'
 import { useMemberMustCompleteOnboardingForCustomCards } from './useMemberMustCompleteOnboardingForCustomCards'
+import { useGuestRecipientsByCartItems } from './useGuestQueries'
 
 /** Checkout-specific flattened cart item (one row per quantity unit, with quantity_index) */
 export type CheckoutFlattenedCartItem = FlattenedCartItem & {
@@ -171,8 +172,43 @@ export function useCheckout() {
     return flattened
   }, [activeCartItems])
 
+  const guestCheckoutCartItemIds = useMemo(
+    () =>
+      isGuestAuth
+        ? [
+            ...new Set(
+              displayCartItems
+                .map((item) => item.cart_item_id)
+                .filter((id): id is string | number => id != null && id !== ''),
+            ),
+          ]
+        : [],
+    [displayCartItems, isGuestAuth],
+  )
+
+  const { recipientsByCartItem: guestRecipientsByCartItem } = useGuestRecipientsByCartItems(
+    guestCheckoutCartItemIds,
+    isGuestAuth,
+  )
+
   const recipientsByCartItem = useMemo(() => {
     const map: Record<string, any[]> = {}
+    if (isGuestAuth) {
+      displayCartItems.forEach((item) => {
+        const cid = item.cart_item_id
+        if (cid == null || cid === '') return
+        const key = `${cid}-${item.quantity_index ?? 0}`
+        const all = guestRecipientsByCartItem[String(cid)] ?? []
+        const idx = item.quantity_index ?? 0
+        const cardType = item.type?.toLowerCase()
+        if (cardType === 'dashgo') {
+          map[key] = idx === 0 ? all : []
+        } else {
+          map[key] = all[idx] != null ? [all[idx]] : []
+        }
+      })
+      return map
+    }
     activeCartItems.forEach((cart: CartListResponse) => {
       if (!cart.items) return
       const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
@@ -186,7 +222,7 @@ export function useCheckout() {
       })
     })
     return map
-  }, [activeCartItems])
+  }, [activeCartItems, displayCartItems, isGuestAuth, guestRecipientsByCartItem])
 
   const totalAmount = useMemo(
     () => activeCartItems.reduce((sum, cart) => sum + parseFloat(cart.total_amount || '0'), 0),

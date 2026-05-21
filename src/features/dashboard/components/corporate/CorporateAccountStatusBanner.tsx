@@ -23,7 +23,7 @@ const COPY: Record<
   pending_approval: {
     title: 'Your account is under review',
     description:
-      'Your profile is complete. We will review your information within 24 to 48 hours. Some features (e.g. Create vendor account, Purchases, Vendor Invitations, All Vendors) will become available after your account is approved. You can still view your dashboard.',
+      'Your profile is complete. We will review your information within 24 to 48 hours. Some features (e.g. Create vendor account, Purchases, Vendor Invitations) will become available after your account is approved. You can still view your dashboard.',
     icon: 'bi:clock-history',
     variant: 'warning',
   },

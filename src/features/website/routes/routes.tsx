@@ -1,4 +1,5 @@
 import type { RouteObject } from 'react-router'
+import { GuestRouteGuard } from '@/components'
 import {
   AboutUs,
   CardDetails,
@@ -6,6 +7,8 @@ import {
   ContactPage,
   FaqPage,
   DashQards,
+  GuestCardsPage,
+  GuestOrdersPage,
   LandingPage,
   OrdersPage,
   PrivacyPolicy,
@@ -64,6 +67,22 @@ export const websiteRoutes: RouteObject[] = [
   {
     path: 'redeem',
     element: <RedemptionPage />,
+  },
+  {
+    path: 'guest/cards',
+    element: (
+      <GuestRouteGuard>
+        <GuestCardsPage />
+      </GuestRouteGuard>
+    ),
+  },
+  {
+    path: 'guest/orders',
+    element: (
+      <GuestRouteGuard>
+        <GuestOrdersPage />
+      </GuestRouteGuard>
+    ),
   },
   {
     path: 'terms-of-service',

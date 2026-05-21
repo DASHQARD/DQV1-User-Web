@@ -63,3 +63,49 @@ export function resolveGiftCardAmount(value: string): number {
   if (parsed === null) return GIFT_CARD_AMOUNT_MIN
   return clampGiftCardAmount(parsed)
 }
+
+/** Formatted amount for card preview (always within min/max, 2 decimal places). */
+export function formatGiftCardAmountPreview(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === '.') return '0.00'
+
+  const normalized = normalizeGiftCardAmountInput(value)
+  const parsed = parseGiftCardAmountInput(normalized)
+  const amount =
+    parsed !== null ? clampGiftCardAmount(parsed) : GIFT_CARD_AMOUNT_MIN
+
+  return amount.toLocaleString('en-GH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+export function isGiftCardAmountSubmittable(value: string): boolean {
+  const parsed = parseGiftCardAmountInput(normalizeGiftCardAmountInput(value))
+  return (
+    parsed !== null && parsed >= GIFT_CARD_AMOUNT_MIN && parsed <= GIFT_CARD_AMOUNT_MAX
+  )
+}
+
+export function getGiftCardAmountValidationMessage(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const normalized = normalizeGiftCardAmountInput(value)
+  const parsed = parseGiftCardAmountInput(normalized)
+
+  if (parsed === null) {
+    return 'Enter a valid amount (up to 2 decimal places)'
+  }
+  if (parsed < GIFT_CARD_AMOUNT_MIN) {
+    return `Minimum amount is GHS ${GIFT_CARD_AMOUNT_MIN}`
+  }
+  if (parsed > GIFT_CARD_AMOUNT_MAX) {
+    return `Maximum amount is GHS ${GIFT_CARD_AMOUNT_MAX.toLocaleString('en-GH')}`
+  }
+  return null
+}
+
+export function giftCardAmountRangeHint(currency = 'GHS'): string {
+  return `${currency} ${GIFT_CARD_AMOUNT_MIN.toLocaleString('en-GH')} – ${GIFT_CARD_AMOUNT_MAX.toLocaleString('en-GH')}`
+}

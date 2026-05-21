@@ -68,33 +68,32 @@ export default function UserSidebar() {
         {!isCollapsed && (
           <div className="p-4">
             {/* Workspace Card */}
-            <div className="rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-200/60 shadow-sm p-4 mb-4">
-              {/* Top Section - Workspace Info */}
-              <div className="flex items-center gap-3">
-                <div className="relative shrink-0">
-                  <ImageUpload
-                    file={file}
-                    onFileChange={setFile}
-                    onUpload={handleImageUpload}
-                    isUploading={isUploadingImage}
-                    currentImageUrl={imageUrl?.imageUrl ?? undefined}
-                    className="!h-12 !w-12 !rounded-full shrink-0"
-                  />
-                </div>
-                <div className="flex-1 flex flex-col gap-1 min-w-0">
+            <div className="rounded-xl border border-gray-200/80 bg-white p-4 mb-4 shadow-sm">
+              <div className="flex items-center gap-4">
+                <ImageUpload
+                  file={file}
+                  onFileChange={setFile}
+                  onUpload={handleImageUpload}
+                  isUploading={isUploadingImage}
+                  currentImageUrl={imageUrl?.imageUrl ?? undefined}
+                  size="sm"
+                />
+                <div className="min-w-0 flex-1">
                   <Text
                     variant="span"
                     weight="bold"
-                    className="block text-sm text-gray-900 truncate leading-tight"
+                    className="block truncate text-sm leading-tight text-gray-900"
                   >
                     {userProfileData?.fullname || 'Personal Account'}
                   </Text>
                   <button
-                    onClick={() => navigate(ROUTES.IN_APP.DASHBOARD.SETTINGS.PERSONAL_INFORMATION)}
-                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary-600 transition-colors w-fit"
+                    type="button"
+                    onClick={() =>
+                      navigate(ROUTES.IN_APP.DASHBOARD.SETTINGS.PERSONAL_INFORMATION)
+                    }
+                    className="mt-1 text-xs font-medium text-primary-600 transition-colors hover:text-primary-700"
                   >
-                    <Icon icon="bi:pencil" className="text-xs" />
-                    <span>Edit</span>
+                    Edit profile
                   </button>
                 </div>
               </div>

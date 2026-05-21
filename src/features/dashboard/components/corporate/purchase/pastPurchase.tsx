@@ -3,6 +3,7 @@ import { PaginatedTable } from '@/components/Table'
 import { purchaseListCsvHeaders, purchasesListColumns } from '@/features/dashboard/components'
 import { OPTIONS } from '@/utils/constants/filter'
 import { DEFAULT_QUERY } from '@/utils/constants'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 import { useReducerSpread } from '@/hooks'
 import { Text } from '@/components'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks'
@@ -20,7 +21,7 @@ export default function PastPurchase() {
     if (query.after) params.after = query.after
     if (query.status) params.status = query.status
     if (query.search) params.search = query.search
-    // Add other query parameters as needed (type, date_from, date_to, min_amount, max_amount, currency, etc.)
+    appendDateRangeApiParams(params, query)
     return params
   }, [query])
 

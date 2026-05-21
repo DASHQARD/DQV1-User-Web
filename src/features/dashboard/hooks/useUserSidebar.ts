@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useUserProfile, useUploadFiles } from '@/hooks'
+import { useUserProfile, useUploadFiles, usePresignedMediaUrl } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { useAuth } from '@/features/auth'
@@ -8,7 +8,7 @@ import { useAuth } from '@/features/auth'
 export function useUserSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { logout } = useAuthStore()
+  const { logout: clearAuthState } = useAuthStore()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const { useGetUserProfileService, useUpdateUserAvatarService } = useUserProfile()
@@ -17,9 +17,10 @@ export function useUserSidebar() {
   const { data: userProfileData } = useGetUserProfileService()
   const { mutateAsync: updateAvatar, isPending: isUploadingImage } = useUpdateUserAvatarService()
   const { mutateAsync: uploadFiles } = useUploadFiles()
+  const { url: avatarUrl } = usePresignedMediaUrl(userProfileData?.avatar)
 
   const [file, setFile] = useState<File | null>(null)
-  const imageUrl = userProfileData?.avatar ? { imageUrl: userProfileData.avatar } : null
+  const imageUrl = avatarUrl ? { imageUrl: avatarUrl } : null
 
   const handleImageUpload = async (selectedFile: File) => {
     try {
@@ -46,12 +47,8 @@ export function useUserSidebar() {
 
   const handleLogout = () => {
     logoutMutation(undefined, {
-      onSuccess: () => {
-        logout()
-        navigate(ROUTES.IN_APP.AUTH.LOGIN)
-      },
-      onError: () => {
-        logout()
+      onSettled: () => {
+        clearAuthState()
         navigate(ROUTES.IN_APP.AUTH.LOGIN)
       },
     })
@@ -60,7 +57,6 @@ export function useUserSidebar() {
   return {
     location,
     navigate,
-    logout,
     isCollapsed,
     setIsCollapsed,
     userProfileData,

@@ -41,6 +41,8 @@ import {
   resolveRedemptionCardId,
   roundRedemptionAmount,
 } from '@/features/website/utils/guestRedemption'
+import { parseGuestAssignedCardsResponse } from '@/features/website/utils/guestAssignedCards'
+import { parseGuestRedemptionsResponse } from '@/features/website/utils/guestRedemptionsHistory'
 import type { GuestCardsRedemptionData } from '@/types/redemptions'
 
 type RedemptionMethod = 'vendor_id'
@@ -272,11 +274,7 @@ export default function RedemptionPage() {
   )
 
   const recentGuestRedemptions = useMemo(() => {
-    if (!guestRedemptionsHistory) return []
-    const list = Array.isArray(guestRedemptionsHistory)
-      ? guestRedemptionsHistory
-      : (guestRedemptionsHistory as { data?: unknown[] })?.data
-    return Array.isArray(list) ? list.slice(0, 5) : []
+    return parseGuestRedemptionsResponse(guestRedemptionsHistory).items.slice(0, 5)
   }, [guestRedemptionsHistory])
 
   // Fetch vendors same as Vendors/DashQards: limit 100 when on vendor_id flow
@@ -285,11 +283,15 @@ export default function RedemptionPage() {
     redemptionMethod === 'vendor_id' && isAuthenticated,
   )
 
+  const guestAssignedPayload = useMemo(
+    () => parseGuestAssignedCardsResponse(guestAssignedCardsResponse),
+    [guestAssignedCardsResponse],
+  )
+
   const guestAssignedCards = useMemo(() => {
     if (!isGuestAuth) return []
-    const cards = guestAssignedCardsResponse?.cards ?? guestAssignedCardsResponse?.data?.cards
-    return Array.isArray(cards) ? cards : []
-  }, [isGuestAuth, guestAssignedCardsResponse])
+    return guestAssignedPayload.cards
+  }, [isGuestAuth, guestAssignedPayload.cards])
 
   const publicVendorsWithCards = useMemo(() => {
     if (!vendorsResponse) return []
@@ -349,11 +351,7 @@ export default function RedemptionPage() {
           card_name: card.product || 'Unknown Card',
           card_type: String(card.card_type || '').toLowerCase(),
           card_price: Number(card.price || card.amount || 0),
-          currency:
-            card.currency ||
-            guestAssignedCardsResponse?.currency ||
-            guestAssignedCardsResponse?.data?.currency ||
-            'GHS',
+          currency: card.currency || guestAssignedPayload.currency || 'GHS',
           status: 'active',
           branch_id: card.branch_id ? String(card.branch_id) : undefined,
           branch_name: card.branch_name || card.branch?.name,
@@ -404,13 +402,7 @@ export default function RedemptionPage() {
     }
 
     return cards
-  }, [
-    isGuestAuth,
-    guestAssignedCards,
-    guestAssignedCardsResponse,
-    selectedVendor,
-    selectedVendorId,
-  ])
+  }, [isGuestAuth, guestAssignedCards, guestAssignedPayload.currency, selectedVendor, selectedVendorId])
 
   // Extract unique branches from vendor
   const availableBranches = useMemo(() => {
@@ -464,8 +456,7 @@ export default function RedemptionPage() {
     }
   }, [availableBranches, selectedBranchId])
 
-  const guestAssignedCurrency =
-    guestAssignedCardsResponse?.currency || guestAssignedCardsResponse?.data?.currency || 'GHS'
+  const guestAssignedCurrency = guestAssignedPayload.currency || 'GHS'
 
   // DashX / DashPass: guests use assigned-cards (no balance API per guest spec)
   const dashXCards = useMemo(() => {
@@ -1936,12 +1927,13 @@ export default function RedemptionPage() {
                           Recent redemptions
                         </Text>
                         <ul className="mt-2 space-y-1 text-sm text-gray-600">
-                          {recentGuestRedemptions.map((entry: any, index: number) => (
-                            <li key={entry.id ?? entry.redemption_id ?? index}>
+                          {recentGuestRedemptions.map((entry, index) => (
+                            <li key={entry.redemption_id ?? entry.transaction_reference ?? index}>
                               {entry.card_type || entry.product || 'Card'} — GHS{' '}
-                              {Number(entry.amount ?? entry.redeemed_amount ?? 0).toFixed(2)}
-                              {entry.created_at
-                                ? ` · ${new Date(entry.created_at).toLocaleDateString()}`
+                              {Number(entry.amount ?? 0).toFixed(2)}
+                              {entry.status ? ` · ${entry.status}` : ''}
+                              {entry.redemption_date
+                                ? ` · ${new Date(entry.redemption_date).toLocaleDateString()}`
                                 : ''}
                             </li>
                           ))}

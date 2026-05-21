@@ -70,6 +70,13 @@ const removePageFromQuery = (query: QueryType): Omit<QueryType, 'page'> => {
   return queryWithoutPage
 }
 
+/** Reset cursor pagination when filters/search change. */
+const removeCursorFromQuery = (query: QueryType) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { page, after, ...rest } = query as QueryType & { page?: number; after?: string }
+  return rest
+}
+
 export function PaginatedTable({
   data,
   loading,
@@ -145,10 +152,9 @@ export function PaginatedTable({
   const handleDateRangeChange = React.useCallback(
     (dates: [Date | null, Date | null]) => {
       const [start, end] = dates
-      const queryWithoutPage = removePageFromQuery(query)
       setQuery({
-        ...queryWithoutPage,
-        page: 1,
+        ...removeCursorFromQuery(query),
+        after: '',
         dateFrom: start ? dayjs(start).format('YYYY-MM-DD') : '',
         dateTo: end ? dayjs(end).format('YYYY-MM-DD') : '',
       } as QueryType)
@@ -222,8 +228,7 @@ export function PaginatedTable({
           <DebouncedSearch
             value={query.search}
             onChange={(value) => {
-              const queryWithoutPage = removePageFromQuery(query)
-              setQuery({ ...queryWithoutPage, search: value } as QueryType)
+              setQuery({ ...removeCursorFromQuery(query), search: value } as QueryType)
             }}
             placeholder={searchPlaceholder ?? 'Search...'}
             className="md:w-[343px]"
@@ -255,9 +260,8 @@ export function PaginatedTable({
               ].map((option) => ({
                 label: option.label,
                 onClickFn: () => {
-                  const queryWithoutPage = removePageFromQuery(query)
                   setQuery({
-                    ...queryWithoutPage,
+                    ...removeCursorFromQuery(query),
                     [item.label]: option.value,
                   } as QueryType)
                 },

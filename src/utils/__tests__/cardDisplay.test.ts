@@ -4,7 +4,7 @@ vi.mock('@/utils/constants', () => ({
   ENV_VARS: { API_BASE_URL: 'https://api.example.com/api/v1' },
 }))
 
-import { getCardFileUrl, getImageUrl, isPdfFile } from '../cardDisplay'
+import { getCardFileUrl, getCardMediaSource, getImageUrl, isCardStorageFileKey, isPdfFile } from '../cardDisplay'
 
 describe('cardDisplay file URLs', () => {
   it('returns absolute URLs unchanged', () => {
@@ -18,6 +18,12 @@ describe('cardDisplay file URLs', () => {
     expect(getImageUrl('/uploads/vendor/terms.pdf')).toBe(
       'https://api.example.com/uploads/vendor/terms.pdf',
     )
+  })
+
+  it('treats storage keys as presigned media', () => {
+    const key = '1779334283870-logo.jpg'
+    expect(isCardStorageFileKey(key)).toBe(true)
+    expect(getCardMediaSource(key)).toEqual({ directUrl: '', storageKey: key })
   })
 
   it('detects PDF files for preview', () => {

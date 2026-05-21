@@ -1,5 +1,9 @@
 export const OPTIONS = {
   TRANSACTION_STATUS: ['pending', 'processing', 'failed', 'successful', 'cancelled', 'rejected'],
+  /** Matches redemption API status values (e.g. GET /redemptions/users). */
+  REDEMPTION_STATUS: ['pending', 'success', 'failed'],
+  /** Matches user payments API status values (e.g. GET /payments/users). */
+  PAYMENT_STATUS: ['pending', 'paid'],
   DATE_RANGE: ['daily', 'weekly', 'monthly', 'all time'],
   SAVINGS_STATUS: ['pending', 'ongoing', 'completed'],
   USER_TYPE: ['individual', 'agent', 'merchant'],

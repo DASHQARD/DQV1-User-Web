@@ -8,6 +8,7 @@ import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
 import { usePayments } from './usePayments'
 import { usePersistedModalState, useToast } from '@/hooks'
 import { useMemberMustCompleteOnboardingForCustomCards } from './useMemberMustCompleteOnboardingForCustomCards'
+import { useGuestRecipientsByCartItems } from './useGuestQueries'
 import { MODAL_NAMES } from '@/utils/constants'
 import { getCardBackground, getImageUrl } from '@/utils/cardDisplay'
 import type { CartListResponse } from '@/types/responses'
@@ -75,6 +76,12 @@ export function useViewBag() {
     cardProduct?: string
     cardCurrency?: string
     amount?: number
+    recipient_id?: string | number
+    recipient_name?: string
+    recipient_phone?: string
+    recipient_email?: string
+    message?: string
+    assign_to_self?: boolean
   }>({
     paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
   })
@@ -113,16 +120,36 @@ export function useViewBag() {
     return flattened
   }, [activeCartItems])
 
+  const guestCartItemIds = useMemo(
+    () =>
+      isGuestAuth
+        ? displayCartItems
+            .map((item) => item.cart_item_id)
+            .filter((id): id is string | number => id != null && id !== '')
+        : [],
+    [displayCartItems, isGuestAuth],
+  )
+
+  const { recipientsByCartItem: guestRecipientsByCartItem } = useGuestRecipientsByCartItems(
+    guestCartItemIds,
+    isGuestAuth,
+  )
+
   const recipientsByCartItem = useMemo(() => {
     const map: Record<string, any[]> = {}
     displayCartItems.forEach((item) => {
       const cid = item.cart_item_id
-      if (cid != null && cid !== '') {
-        map[String(cid)] = item.recipients ?? []
+      if (cid == null || cid === '') return
+      const key = String(cid)
+      if (isGuestAuth) {
+        const fromApi = guestRecipientsByCartItem[key]
+        map[key] = fromApi?.length ? fromApi : (item.recipients ?? [])
+      } else {
+        map[key] = item.recipients ?? []
       }
     })
     return map
-  }, [displayCartItems])
+  }, [displayCartItems, isGuestAuth, guestRecipientsByCartItem])
 
   const subtotalFromApi = useMemo(
     () => activeCartItems.reduce((sum, cart) => sum + parseFloat(cart.total_amount || '0'), 0),
@@ -179,6 +206,30 @@ export function useViewBag() {
     [modal, recipientActionsBlocked],
   )
 
+  const handleEditRecipient = useCallback(
+    (item: FlattenedCartItem, recipient: Record<string, unknown>) => {
+      if (recipientActionsBlocked) return
+      const amount = parseFloat(
+        String(recipient.amount ?? recipient.recipient_amount ?? item.amount ?? '0'),
+      )
+      const recipientId = resolveRecipientDeleteId(recipient)
+      modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
+        cart_item_id: item.cart_item_id!,
+        cardType: item.type,
+        cardProduct: item.product,
+        cardCurrency: item.currency || 'GHS',
+        amount,
+        recipient_id: recipientId ?? undefined,
+        recipient_name: String(recipient.name ?? recipient.recipient_name ?? ''),
+        recipient_phone: String(recipient.phone ?? recipient.recipient_phone ?? ''),
+        recipient_email: String(recipient.email ?? recipient.recipient_email ?? ''),
+        message: String(recipient.message ?? ''),
+        assign_to_self: Boolean(recipient.assign_to_self),
+      })
+    },
+    [modal, recipientActionsBlocked],
+  )
+
   const handleDeleteRecipient = useCallback((recipient: any) => {
     setRecipientToDelete(recipient)
     setIsDeleteModalOpen(true)
@@ -214,6 +265,7 @@ export function useViewBag() {
     handleQuantityChange,
     isUpdating,
     handleAddRecipient,
+    handleEditRecipient,
     handleDeleteRecipient,
     confirmDeleteRecipient,
     isDeleteModalOpen,

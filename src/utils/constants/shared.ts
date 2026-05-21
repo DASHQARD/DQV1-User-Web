@@ -132,6 +132,11 @@ export const ROUTES = {
     FAQ: '/faq',
     PURCHASE: '/purchase',
     REDEEM: '/redeem',
+    VIEW_BAG: '/view-bag',
+    GUEST: {
+      CARDS: '/guest/cards',
+      ORDERS: '/guest/orders',
+    },
     LOGIN: '/login',
     SIGNUP: '/signup',
     VENDORS: '/vendors',

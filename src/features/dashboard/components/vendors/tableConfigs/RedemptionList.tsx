@@ -1,6 +1,6 @@
-import { DateCell, CurrencyCell, StatusCell } from '@/components'
+import { DateTimeCell, CurrencyCell, StatusCell } from '@/components'
 import type { CsvHeader } from '@/types'
-import { formatDate } from '@/utils/format'
+import { formatDateTime } from '@/utils/format'
 // import { RedemptionActionCell } from './RedemptionActionCell'
 
 export const redemptionListColumns = [
@@ -30,9 +30,9 @@ export const redemptionListColumns = [
     cell: CurrencyCell,
   },
   {
-    header: 'Date',
+    header: 'Date & Time',
     accessorKey: 'redemption_date',
-    cell: DateCell,
+    cell: DateTimeCell,
   },
   {
     header: 'Status',
@@ -77,8 +77,8 @@ export const redemptionListCsvHeaders: Array<CsvHeader> = [
     accessor: 'status',
   },
   {
-    name: 'Date',
+    name: 'Date & Time',
     accessor: 'redemption_date',
-    transform: (value) => formatDate(value),
+    transform: (value) => formatDateTime(value),
   },
 ]

@@ -304,6 +304,8 @@ export default function DashQards() {
                             type={card.type || cardData.card_type || 'dashx'}
                             updated_at={card.updated_at || card.created_at || ''}
                             vendor_id={card.vendor_id || cardData.vendor_id || 0}
+                            logo={card.logo ?? cardData.logo}
+                            logo_key={card.logo_key ?? cardData.logo_key}
                           />
                         )
                       })}

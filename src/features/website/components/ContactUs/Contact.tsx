@@ -220,6 +220,7 @@ export default function Contact() {
 
               <Button
                 type="submit"
+                variant="secondary"
                 className="w-full mt-6"
                 icon="bi:send-fill"
                 iconPosition="left"

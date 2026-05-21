@@ -3,11 +3,14 @@ import { useToast } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { deleteCartItem } from '../services/cart'
 import { deleteRecipient } from '@/features/dashboard/services'
+import { useRecipients } from '@/features/dashboard/hooks/useRecipients'
 
 export function useViewBagMutations() {
   const queryClient = useQueryClient()
   const toast = useToast()
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
+  const { useDeleteGuestRecipientService } = useRecipients()
+  const deleteGuestRecipientMutation = useDeleteGuestRecipientService()
 
   // Delete cart item mutation
   const deleteCartItemMutation = useMutation({
@@ -21,22 +24,33 @@ export function useViewBagMutations() {
     },
   })
 
-  // Delete recipient mutation
-  const deleteRecipientMutation = useMutation({
+  const deleteMemberRecipientMutation = useMutation({
     mutationFn: deleteRecipient,
     onSuccess: () => {
       toast.success('Recipient removed successfully')
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-      if (isGuestAuth) {
-        queryClient.invalidateQueries({ queryKey: ['cart-items', 'guest'] })
-      } else {
-        queryClient.invalidateQueries({ queryKey: ['cart-all-recipients'] })
-      }
+      queryClient.invalidateQueries({ queryKey: ['cart-all-recipients'] })
     },
     onError: (error: any) => {
       toast.error(error?.message || 'Failed to remove recipient')
     },
   })
+
+  const deleteRecipientMutation = {
+    mutate: (
+      recipientId: string | number,
+      options?: Parameters<typeof deleteMemberRecipientMutation.mutate>[1],
+    ) => {
+      if (isGuestAuth) {
+        deleteGuestRecipientMutation.mutate(recipientId, options)
+      } else {
+        deleteMemberRecipientMutation.mutate(recipientId, options)
+      }
+    },
+    isPending: isGuestAuth
+      ? deleteGuestRecipientMutation.isPending
+      : deleteMemberRecipientMutation.isPending,
+  }
 
   return {
     deleteCartItemMutation,

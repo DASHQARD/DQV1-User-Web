@@ -34,7 +34,7 @@ export default function Recipients() {
             <div className="flex items-center gap-2">
               {(estimatedTotal ?? 0) > 0 && (
                 <Button
-                  variant="secondary"
+                  variant="danger"
                   className="flex items-center gap-2"
                   onClick={() => clearUnassigned()}
                   disabled={isClearingUnassigned}

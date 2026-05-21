@@ -4,6 +4,7 @@ import { corporateQueries } from '../../corporate/hooks'
 import { useAuthStore } from '@/stores'
 import { usePersistedModalState } from '@/hooks'
 import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 import AllAdmins from '../../components/corporate/admins/AllAdmins'
 import InvitedAdmins from '../../components/corporate/admins/InvitedAdmins'
 
@@ -24,8 +25,7 @@ export function useCorporateAdmins() {
     if (query.after) apiParams.after = query.after
     if (query.search) apiParams.search = query.search
     if ((query as any).status) apiParams.status = (query as any).status
-    if (query.dateFrom) apiParams.date_from = query.dateFrom
-    if (query.dateTo) apiParams.date_to = query.dateTo
+    appendDateRangeApiParams(apiParams, query)
     return apiParams
   }, [query])
 
@@ -36,8 +36,7 @@ export function useCorporateAdmins() {
     if (invitedQuery.after) apiParams.after = invitedQuery.after
     if (invitedQuery.search) apiParams.search = invitedQuery.search
     if ((invitedQuery as any).status) apiParams.status = (invitedQuery as any).status
-    if (invitedQuery.dateFrom) apiParams.date_from = invitedQuery.dateFrom
-    if (invitedQuery.dateTo) apiParams.date_to = invitedQuery.dateTo
+    appendDateRangeApiParams(apiParams, invitedQuery)
     return apiParams
   }, [invitedQuery])
 

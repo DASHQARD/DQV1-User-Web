@@ -37,7 +37,18 @@ export function useBusinessDetailsForm() {
 
   const form = useForm<BusinessDetailsFormData>({
     resolver: zodResolver(CombinedBusinessSchema),
-    mode: 'onChange',
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
+    defaultValues: {
+      name: '',
+      phone: '',
+      email: '',
+      street_address: '',
+      digital_address: '',
+      registration_number: '',
+      employer_identification_number: '',
+      business_industry: '',
+    },
   })
 
   const saveProgress = useCallback(async () => {
@@ -210,9 +221,6 @@ export function useBusinessDetailsForm() {
           articles_of_incorporation: savedProgress.articles_of_incorporation as File | undefined,
           logo: savedProgress.logo as File | undefined,
         })
-        setTimeout(() => {
-          void form.trigger()
-        }, 200)
         toast.success('Saved progress loaded. Continue where you left off.')
       }
     }

@@ -4,6 +4,7 @@ import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType } from '@/types'
 import { useReducerSpread } from '@/hooks'
 import { OPTIONS } from '@/utils/constants/filter'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 import { useRedemptionQueries } from '@/features/dashboard/hooks'
 import { userRedemptionsColumns, userRedemptionsCsvHeaders } from '@/features/dashboard/components'
 
@@ -28,13 +29,7 @@ export default function UserRedemptions() {
       apiParams.status = query.status
     }
 
-    if (query.dateFrom) {
-      apiParams.dateFrom = query.dateFrom
-    }
-
-    if (query.dateTo) {
-      apiParams.dateTo = query.dateTo
-    }
+    appendDateRangeApiParams(apiParams, query, 'camel')
 
     return apiParams
   }, [query])
@@ -95,7 +90,7 @@ export default function UserRedemptions() {
               filterBy={{
                 simpleSelects: [
                   { label: 'card_type', options: OPTIONS.CARD_TYPE },
-                  { label: 'status', options: OPTIONS.TRANSACTION_STATUS },
+                  { label: 'status', options: OPTIONS.REDEMPTION_STATUS },
                 ],
                 date: [{ queryKey: 'dateFrom', label: 'Date range' }],
               }}

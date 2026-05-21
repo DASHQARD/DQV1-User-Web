@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Button, Modal, Text, Tabs, Input, Loader } from '@/components'
+import { Button, Modal, Text, Tabs, Loader, GiftCardAmountField } from '@/components'
 import { DebouncedSearch } from '@/components/SearchBox'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
@@ -11,6 +11,7 @@ import { Icon } from '@/libs'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import { vendorQueries } from '@/features/dashboard/vendor'
 import { corporateQueries } from '@/features/dashboard/corporate'
+import { formatGiftCardAmountPreview, isGiftCardAmountSubmittable } from '@/utils/giftCardAmount'
 
 type TabType = 'purchases' | 'vendors' | 'dashpro'
 type CardType = 'card' | 'dashgo'
@@ -93,7 +94,7 @@ export function IndividualPurchaseModal() {
     if (!selectedCard && !selectedCardType) return
 
     if (selectedCardType === 'dashgo') {
-      if (!dashGoAmount || parseFloat(dashGoAmount) <= 0) return
+      if (!isGiftCardAmountSubmittable(dashGoAmount)) return
       // TODO: Handle DashGo individual purchase creation
       // console.log('Creating DashGo purchase for vendor:', selectedVendor, 'amount:', dashGoAmount)
     } else {
@@ -212,7 +213,7 @@ export function IndividualPurchaseModal() {
                         <div className="flex items-start justify-between">
                           <div className="text-xl font-black tracking-[0.3em]">DASHGO</div>
                           <div className="text-right text-xl font-semibold">
-                            GHS {dashGoAmount || '0.00'}
+                            GHS {formatGiftCardAmountPreview(dashGoAmount)}
                           </div>
                         </div>
                         <div className="flex items-end justify-between">
@@ -246,32 +247,17 @@ export function IndividualPurchaseModal() {
                       </Text>
                     </div>
 
-                    {/* Amount Input */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Enter Amount
-                      </label>
-                      <div className="relative">
-                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-primary-500">
-                          GHS
-                        </span>
-                        <Input
-                          type="number"
-                          value={dashGoAmount}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setDashGoAmount(e.target.value)
-                          }
-                          placeholder="0.00"
-                          className="w-full rounded-lg border border-gray-200 px-4 py-3 pl-16 text-lg font-semibold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-                        />
-                      </div>
-                    </div>
+                    <GiftCardAmountField
+                      id="individual-dashgo-amount"
+                      value={dashGoAmount}
+                      onChange={setDashGoAmount}
+                    />
 
                     {/* Action Button */}
                     <Button
                       variant="secondary"
                       onClick={handleDashGoSelect}
-                      disabled={!dashGoAmount || parseFloat(dashGoAmount || '0') <= 0}
+                      disabled={!isGiftCardAmountSubmittable(dashGoAmount)}
                       className="w-full"
                     >
                       Select DashGo
@@ -342,7 +328,7 @@ export function IndividualPurchaseModal() {
               variant="secondary"
               onClick={handleConfirm}
               disabled={
-                selectedCardType === 'dashgo' && (!dashGoAmount || parseFloat(dashGoAmount) <= 0)
+                selectedCardType === 'dashgo' && !isGiftCardAmountSubmittable(dashGoAmount)
               }
             >
               Confirm Purchase

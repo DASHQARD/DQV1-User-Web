@@ -45,7 +45,7 @@ export const CORPORATE_NAV_ITEMS = [
       },
       {
         path: ROUTES.IN_APP.DASHBOARD.CORPORATE.ALL_VENDORS,
-        label: 'All Vendors',
+        label: 'Vendors',
         icon: 'bi:shop',
       },
       // {

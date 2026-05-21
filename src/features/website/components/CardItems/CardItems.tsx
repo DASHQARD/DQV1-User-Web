@@ -2,12 +2,13 @@ import { Icon } from '@/libs'
 import { Text } from '@/components'
 import { useCardItem } from '../../hooks/useCardItem'
 import type { FeaturedCardProps } from '@/types'
-import { getImageUrl } from '@/utils/cardDisplay'
 import { formatDate } from '@/utils/format'
+import { VendorLogoImage } from '../VendorLogo/VendorLogoImage'
+import { CardItemImage } from './CardItemImage'
+import type { VendorLogoFields } from '@/utils/vendorLogo'
 
 export const CardItems = (props: FeaturedCardProps) => {
   const {
-    cardBackground,
     displayPrice,
     handleCardClick,
     product,
@@ -15,7 +16,10 @@ export const CardItems = (props: FeaturedCardProps) => {
     branch_name,
   } = useCardItem(props)
   const firstImageUrl = (props as any)?.images?.[0]?.file_url as string | undefined
-  const cardImage = getImageUrl(firstImageUrl) || cardBackground
+  const vendorLogo: VendorLogoFields = {
+    logo: props.logo,
+    logo_key: props.logo_key,
+  }
 
   return (
     <article
@@ -31,8 +35,9 @@ export const CardItems = (props: FeaturedCardProps) => {
       }}
     >
       <div className="relative aspect-video bg-gray-100 overflow-hidden">
-        <img
-          src={cardImage}
+        <CardItemImage
+          fileUrl={firstImageUrl}
+          cardType={props.type}
           alt={`${product} card background`}
           className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
         />
@@ -70,8 +75,14 @@ export const CardItems = (props: FeaturedCardProps) => {
           )}
         </div>
         <div className="flex items-center gap-2 pt-1.5 border-t border-gray-100">
-          <div className="w-6 h-6 rounded-full bg-[#402D87]/10 flex items-center justify-center shrink-0">
-            <Icon icon="bi:shop" className="text-[#402D87] text-[10px]" />
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#402D87]/10">
+            <VendorLogoImage
+              vendor={vendorLogo}
+              name={vendor_name || branch_name || 'Vendor'}
+              className="h-full w-full object-cover"
+              iconClassName="text-[#402D87] text-[10px]"
+              fallbackIcon="bi:shop"
+            />
           </div>
           <div className="min-w-0 flex-1">
             <Text variant="span" weight="semibold" className="text-gray-900 block text-xs truncate">

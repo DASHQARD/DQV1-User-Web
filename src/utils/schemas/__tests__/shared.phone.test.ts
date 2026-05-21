@@ -29,7 +29,11 @@ describe('phone validation helpers', () => {
 
   it('getRequiredInternationalPhoneSchema rejects incomplete numbers', () => {
     const schema = getRequiredInternationalPhoneSchema('Phone')
-    expect(schema.safeParse('+233').success).toBe(false)
+    const dialCodeOnly = schema.safeParse('+233')
+    expect(dialCodeOnly.success).toBe(false)
+    if (!dialCodeOnly.success) {
+      expect(dialCodeOnly.error.issues[0]?.message).toBe('Phone is required')
+    }
     expect(schema.safeParse('+2335596178').success).toBe(false)
     expect(schema.safeParse(EXAMPLE_PHONE_E164).success).toBe(true)
   })

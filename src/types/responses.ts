@@ -134,6 +134,8 @@ export type PublicCardResponse = {
   recipient_count: string
   images: CardImageResponse[]
   terms_and_conditions: CardFileResponse[]
+  logo?: string | null
+  logo_key?: string | null
 }
 
 export type CartItemImage = {
@@ -505,7 +507,6 @@ export type GuestDeleteCartItemParams = {
 
 /** Payload for POST /guest-carts/recipients */
 export type GuestAssignRecipientPayload = {
-  // guest_phone: string
   cart_item_id: string | number
   assign_to_self: boolean
   amount: number
@@ -514,6 +515,35 @@ export type GuestAssignRecipientPayload = {
   recipient_email?: string
   message?: string
   quantity?: number
+}
+
+/** Query params for GET /guest-carts/recipients — guest phone comes from Bearer token */
+export type GuestGetCartRecipientsParams = {
+  cart_item_id: string | number
+}
+
+/** Payload for PATCH /guest-carts/recipients — guest phone comes from Bearer token */
+export type GuestUpdateRecipientPayload = {
+  recipient_id: number | string
+  recipient_name?: string
+  recipient_phone?: string
+  recipient_email?: string
+  message?: string
+}
+
+/** Query params for DELETE /guest-carts/recipients — guest phone comes from Bearer token */
+export type GuestDeleteRecipientParams = {
+  recipient_id: number | string
+}
+
+/** Query params for GET /guest-cards */
+export type GuestGetCardsParams = {
+  card_type?: 'DashGo' | 'DashPro'
+}
+
+/** Query params for GET /guest-cards/single */
+export type GuestGetCardSingleParams = {
+  guest_card_id: number | string
 }
 
 /** POST /payments/guest/checkout — guest_cart_id is the cart UUID from GET /guest-carts */

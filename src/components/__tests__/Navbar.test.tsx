@@ -38,13 +38,20 @@ vi.mock('@/stores', () => ({
 
 const mockUseGetUserProfileService = vi.fn().mockReturnValue({ data: null })
 const mockFetchPresignedURL = vi.fn()
-vi.mock('@/hooks', () => ({
-  useUserProfile: () => ({
-    useGetUserProfileService: mockUseGetUserProfileService,
-  }),
+vi.mock('@/hooks/useUploadFiles', () => ({
   usePresignedURL: () => ({ mutateAsync: mockFetchPresignedURL }),
-  useToast: () => ({ toast: vi.fn(), success: vi.fn(), error: vi.fn() }),
+  useUploadFiles: () => ({ mutateAsync: vi.fn() }),
 }))
+vi.mock('@/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/hooks')>()
+  return {
+    ...actual,
+    useUserProfile: () => ({
+      useGetUserProfileService: mockUseGetUserProfileService,
+    }),
+    useToast: () => ({ toast: vi.fn(), success: vi.fn(), error: vi.fn() }),
+  }
+})
 
 const mockUseGetBranchesByVendorIdService = vi.fn().mockReturnValue({ data: null })
 const mockUseGetBranchInfoService = vi.fn().mockReturnValue({ data: null })
@@ -210,9 +217,9 @@ describe('Navbar', () => {
       expect(mockNavigate).toHaveBeenCalledWith(ROUTES.IN_APP.DASHBOARD.HOME)
     })
 
-    it('shows avatar fallback icon when no avatar URL', () => {
+    it('shows default avatar image when no avatar URL', () => {
       renderWithProviders(<Navbar />)
-      expect(screen.queryByRole('img', { name: 'Jane Doe' })).not.toBeInTheDocument()
+      expect(screen.getByRole('img', { name: 'Jane Doe' })).toHaveAttribute('src', expect.any(String))
       expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument()
     })
 
@@ -231,7 +238,7 @@ describe('Navbar', () => {
       )
     })
 
-    it('avatar img onError clears avatar URL and shows fallback', async () => {
+    it('avatar img onError falls back to default avatar image', async () => {
       mockUseGetUserProfileService.mockReturnValue({
         data: { avatar: 'avatar-key', user_type: 'user' },
       })
@@ -245,7 +252,10 @@ describe('Navbar', () => {
         img.dispatchEvent(new Event('error', { bubbles: true }))
       })
       await waitFor(() => {
-        expect(screen.queryByRole('img', { name: 'Jane Doe' })).not.toBeInTheDocument()
+        expect(screen.getByRole('img', { name: 'Jane Doe' })).toHaveAttribute(
+          'src',
+          expect.stringContaining('pinimg.com'),
+        )
       })
     })
   })
@@ -441,6 +451,24 @@ describe('Navbar', () => {
         'src',
         'https://example.com/corp-logo.png',
       )
+    })
+
+    it('shows corporate logo from business_details when documents omit logo', async () => {
+      mockUseGetUserProfileService.mockReturnValue({
+        data: {
+          user_type: 'corporate',
+          status: 'pending',
+          business_details: [{ logo: 'corp-details-logo-key', name: 'Fuse' }],
+        },
+      })
+      mockFetchPresignedURL.mockResolvedValue('https://example.com/corp-details-logo.png')
+      renderWithProviders(<Navbar />)
+      await waitFor(() => {
+        expect(screen.getByRole('img', { name: 'Corp User' })).toHaveAttribute(
+          'src',
+          'https://example.com/corp-details-logo.png',
+        )
+      })
     })
   })
 })

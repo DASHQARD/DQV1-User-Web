@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useUserProfile, usePersistedModalState } from '@/hooks'
+import { useBusinessLogoUrl, useUserProfile, usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 
 const BUSINESS_TYPE_LABELS: Record<string, string> = {
@@ -18,10 +18,7 @@ export function useBusinessDetailsSettings() {
 
   const business = userProfileData?.business_details?.[0]
 
-  const logoUrl = useMemo(() => {
-    const logoDocument = userProfileData?.business_documents?.find((doc) => doc.type === 'logo')
-    return logoDocument?.file_url || null
-  }, [userProfileData?.business_documents])
+  const { url: logoUrl } = useBusinessLogoUrl(userProfileData)
 
   const businessTypeLabel = useMemo(() => {
     if (!business?.type) return business?.type || '—'

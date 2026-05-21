@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   clampGiftCardAmount,
+  formatGiftCardAmountPreview,
   GIFT_CARD_AMOUNT_MAX,
+  isGiftCardAmountSubmittable,
   normalizeGiftCardAmountInput,
   parseGiftCardAmountInput,
   resolveGiftCardAmount,
@@ -27,5 +29,21 @@ describe('giftCardAmount', () => {
     expect(clampGiftCardAmount(0)).toBe(1)
     expect(clampGiftCardAmount(50_000)).toBe(GIFT_CARD_AMOUNT_MAX)
     expect(clampGiftCardAmount(Number.NaN)).toBe(1)
+  })
+
+  it('formatGiftCardAmountPreview clamps out-of-range values for display', () => {
+    expect(formatGiftCardAmountPreview('')).toBe('0.00')
+    expect(formatGiftCardAmountPreview('500')).toBe('500.00')
+    expect(formatGiftCardAmountPreview('99999')).toBe('10,000.00')
+    expect(formatGiftCardAmountPreview('10000000000000000000000')).toBe('10,000.00')
+  })
+
+  it('isGiftCardAmountSubmittable enforces min and max', () => {
+    expect(isGiftCardAmountSubmittable('')).toBe(false)
+    expect(isGiftCardAmountSubmittable('0.50')).toBe(false)
+    expect(isGiftCardAmountSubmittable('1')).toBe(true)
+    expect(isGiftCardAmountSubmittable('10000')).toBe(true)
+    expect(isGiftCardAmountSubmittable('99999')).toBe(true)
+    expect(isGiftCardAmountSubmittable('0')).toBe(false)
   })
 })

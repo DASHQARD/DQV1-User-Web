@@ -4,19 +4,19 @@ import { getQueryString } from '@/utils/helpers'
 
 const VENDOR_MANAGEMENT_BASE = '/vendor-management'
 
-/** GET /vendor-management/invitations — list vendor invitations (search, dateFrom, dateTo, status: pending | accepted | expired | cancelled) */
+/** GET /vendor-management/invitations — list vendor invitations (search, date_from, date_to, status: pending | accepted | expired | cancelled) */
 export const getVendorInvitations = async (params?: {
   search?: string
-  dateFrom?: string
-  dateTo?: string
+  date_from?: string
+  date_to?: string
   status?: string
   limit?: number
   after?: string
 }): Promise<any> => {
   const query: Record<string, string | number | undefined> = {}
   if (params?.search != null && params.search !== '') query.search = params.search
-  if (params?.dateFrom) query.dateFrom = params.dateFrom
-  if (params?.dateTo) query.dateTo = params.dateTo
+  if (params?.date_from) query.date_from = params.date_from
+  if (params?.date_to) query.date_to = params.date_to
   if (params?.status) query.status = params.status
   if (params?.limit) query.limit = params.limit
   if (params?.after) query.after = params.after
@@ -33,24 +33,34 @@ export const cancelVendorInvitation = async (data: { invitation_id: number }): P
   return await patchMethod(`${VENDOR_MANAGEMENT_BASE}/cancel-invitation`, data)
 }
 
-/** GET /vendors/all/details — public-style vendor listing with details */
+/** GET /vendor-management/all-vendors — vendors linked to the authenticated corporate user */
 export const getAllVendorsManagement = async (params?: {
   search?: string
-  dateFrom?: string
-  dateTo?: string
+  date_from?: string
+  date_to?: string
   status?: string
+  approval_status?: string
+  relationship_type?: string
+  column?: string
+  direction?: string
   limit?: number
   after?: string
 }): Promise<any> => {
   const query: Record<string, string | number | undefined> = {}
   if (params?.search != null && params.search !== '') query.search = params.search
-  if (params?.dateFrom) query.dateFrom = params.dateFrom
-  if (params?.dateTo) query.dateTo = params.dateTo
+  if (params?.date_from) query.date_from = params.date_from
+  if (params?.date_to) query.date_to = params.date_to
   if (params?.status) query.status = params.status
+  if (params?.approval_status) query.approval_status = params.approval_status
+  if (params?.relationship_type) query.relationship_type = params.relationship_type
+  if (params?.column) query.column = params.column
+  if (params?.direction) query.direction = params.direction
   if (params?.limit) query.limit = params.limit
   if (params?.after) query.after = params.after
   const queryString = getQueryString(query)
-  const fullUrl = queryString ? `/vendors/all/details?${queryString}` : `/vendors/all/details`
+  const fullUrl = queryString
+    ? `${VENDOR_MANAGEMENT_BASE}/all-vendors?${queryString}`
+    : `${VENDOR_MANAGEMENT_BASE}/all-vendors`
   const response = await axiosClient.get(fullUrl)
   return response
 }

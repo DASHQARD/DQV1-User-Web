@@ -22,6 +22,7 @@ export default function ViewBag() {
     handleQuantityChange,
     isUpdating,
     handleAddRecipient,
+    handleEditRecipient,
     handleDeleteRecipient,
     confirmDeleteRecipient,
     isDeleteModalOpen,
@@ -315,6 +316,14 @@ export default function ViewBag() {
                                       </span>
                                     )}
                                   </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEditRecipient(item, recipient)}
+                                    className="text-[#402D87] hover:text-[#402D87]/80 p-1"
+                                    aria-label="Edit recipient"
+                                  >
+                                    <Icon icon="bi:pencil" className="text-sm" />
+                                  </button>
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteRecipient(recipient)}

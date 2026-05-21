@@ -1,8 +1,14 @@
 import { useEffect, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores'
-import { getGuestCartItems, updateGuestCartItem, deleteGuestCartItem } from '../services/cards'
+import {
+  getGuestCartItems,
+  updateGuestCartItem,
+  deleteGuestCartItem,
+  getGuestCardSingle,
+} from '../services/cards'
 import { useToast } from '@/hooks'
+import { useGuestQueries } from './useGuestQueries'
 
 export function useGuestCart(query?: Record<string, any>) {
   const queryClient = useQueryClient()
@@ -11,6 +17,8 @@ export function useGuestCart(query?: Record<string, any>) {
   const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
   const setGuestCartUuid = useAuthStore((state) => state.setGuestCartUuid)
   const { success, error: toastError } = useToast()
+  const { useGetGuestCardsService } = useGuestQueries()
+  const { data: guestCreatedCards = [] } = useGetGuestCardsService()
 
   const guestCartQuery = useQuery({
     queryKey: ['cart-items', 'guest', query],
@@ -59,6 +67,8 @@ export function useGuestCart(query?: Record<string, any>) {
 
   return {
     cartItems,
+    guestCreatedCards,
+    getGuestCardSingle,
     isLoading: guestCartQuery.isLoading,
     isFetching: guestCartQuery.isFetching,
     deleteCartItem: deleteCartItemMutation.mutate,

@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import { vendorQueries } from '@/features/dashboard/vendor'
-import { usePersistedModalState, useUserProfile } from '@/hooks'
+import { useBusinessLogoUrl, usePersistedModalState, useUserProfile } from '@/hooks'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { MODALS, ROUTES } from '@/utils/constants'
@@ -30,10 +29,8 @@ export function useCorporateSidebar() {
   const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
 
-  const { useGetAllVendorsDetailsService } = vendorQueries()
-  const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
-
-  const { useGetRequestsCorporateService } = corporateQueries()
+  const { useGetAllVendorsManagementService, useGetRequestsCorporateService } = corporateQueries()
+  const { data: allVendorsResponse } = useGetAllVendorsManagementService({ limit: 100 })
   const { data: requestsCorporateResponse } = useGetRequestsCorporateService({ limit: 100 })
 
   const pendingRequestsCount = useMemo(() => {
@@ -45,13 +42,9 @@ export function useCorporateSidebar() {
   }, [requestsCorporateResponse])
 
   const allVendorsCreatedByCorporate = useMemo(() => {
-    const vendorsData = Array.isArray(allVendorsDetails)
-      ? allVendorsDetails
-      : ((allVendorsDetails as { data?: unknown[] })?.data ?? [])
-    return vendorsData.filter(
-      (vendor: { corporate_user_id?: number }) => vendor.corporate_user_id === user?.id,
-    )
-  }, [allVendorsDetails, user?.id])
+    if (!allVendorsResponse) return []
+    return Array.isArray(allVendorsResponse?.data) ? allVendorsResponse.data : []
+  }, [allVendorsResponse])
 
   const hasVendorsPendingVerification = useMemo(() => {
     return allVendorsCreatedByCorporate.some(
@@ -64,12 +57,7 @@ export function useCorporateSidebar() {
     )
   }, [allVendorsCreatedByCorporate])
 
-  const logoUrl = useMemo(() => {
-    const logoDocument = user?.business_documents?.find(
-      (doc: { type: string }) => doc.type === 'logo',
-    )
-    return logoDocument?.file_url || null
-  }, [user?.business_documents])
+  const { url: logoUrl } = useBusinessLogoUrl(user)
 
   const vendorLogoUrls = useMemo(() => {
     const map: Record<number, string> = {}

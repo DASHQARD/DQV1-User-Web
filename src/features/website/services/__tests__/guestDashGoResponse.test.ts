@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   extractGiftCardIdFromGuestCreate,
+  extractGuestCardRecordId,
   extractGuestCreateCartMeta,
   unwrapPostResponsePayload,
 } from '../cards'
@@ -42,6 +43,11 @@ describe('guest card create response parsing (DashGo / DashPro)', () => {
     const payload = unwrapPostResponsePayload({ data: guestDashGoSuccessBody })
     expect(payload?.gift_card).toBeDefined()
     expect(payload?.cart).toBeDefined()
+  })
+
+  it('extracts guest card record id for GET /guest-cards/single', () => {
+    const axiosLike = { data: guestDashGoSuccessBody }
+    expect(extractGuestCardRecordId(axiosLike)).toBe('019e4812-eb7f-7ccc-8149-ba26137583d4')
   })
 
   it('extracts gift card id for add-card / assign flows', () => {

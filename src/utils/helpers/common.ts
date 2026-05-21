@@ -11,6 +11,26 @@ export function getQueryString(obj?: Record<string, any>) {
     .join('&')
 }
 
+export type DateRangeApiParamStyle = 'snake' | 'camel'
+
+/**
+ * Map PaginatedTable date filter (camelCase UI) to API query params.
+ * Most list endpoints use snake_case; redemptions use camelCase.
+ */
+export function appendDateRangeApiParams(
+  target: Record<string, unknown>,
+  source: { dateFrom?: string; dateTo?: string },
+  style: DateRangeApiParamStyle = 'snake',
+): void {
+  if (style === 'camel') {
+    if (source.dateFrom) target.dateFrom = source.dateFrom
+    if (source.dateTo) target.dateTo = source.dateTo
+    return
+  }
+  if (source.dateFrom) target.date_from = source.dateFrom
+  if (source.dateTo) target.date_to = source.dateTo
+}
+
 export function sentenceCase(str: string) {
   return str?.replace(/\.\s+([a-z])[^\\.]|^(\s*[a-z])[^\\.]/g, (s) =>
     s.replace(/([a-z])/, (s) => s.toUpperCase()),

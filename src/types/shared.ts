@@ -161,6 +161,10 @@ export type FeaturedCardProps = {
   updated_at: string
   vendor_id: number
   vendor_name: string
+  /** From GET /vendors/all/details — pre-signed S3 URL */
+  logo?: string | null
+  /** From GET /vendors/all/details — storage key fallback */
+  logo_key?: string | null
   buttonText?: string
   onGetQard?: () => void
 }

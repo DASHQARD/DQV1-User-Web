@@ -12,6 +12,10 @@ import {
   countVendorBranches,
   getVendorCardsFromBranches,
 } from '@/features/dashboard/corporate/utils/vendorCardsFromBranches'
+import {
+  isGiftCardAmountSubmittable,
+  resolveGiftCardAmount,
+} from '@/utils/giftCardAmount'
 
 const STEP_CHOICE = 0
 const INITIAL_STEP_UPLOAD = 1
@@ -105,6 +109,18 @@ export function useBulkPurchaseEmployeesModal() {
   const selectedVendor = selectedVendorId ? selectedVendorId : null
   const selectedVendorName = useMemo(() => {
     return selectedVendorRecord?.business_name || selectedVendorRecord?.vendor_name || ''
+  }, [selectedVendorRecord])
+  const selectedVendorLogo = useMemo(() => {
+    const record = selectedVendorRecord as
+      | { logo?: string; logo_key?: string; vendor_logo?: string; business_logo?: string }
+      | undefined
+    if (!record) return null
+    return {
+      logo: record.logo ?? null,
+      logo_key: record.logo_key ?? null,
+      vendor_logo: record.vendor_logo ?? null,
+      business_logo: record.business_logo ?? null,
+    }
   }, [selectedVendorRecord])
   const selectedVendorBranchCount = useMemo(
     () => countVendorBranches(selectedVendorRecord),
@@ -250,9 +266,9 @@ export function useBulkPurchaseEmployeesModal() {
     if (recipientIds.length === 0) return
 
     const vendorId = selectedVendorId || undefined
-    const amount = dashGoAmount ? parseFloat(dashGoAmount) : 0
+    const amount = resolveGiftCardAmount(dashGoAmount)
 
-    if (selectedCardType === 'dashgo' && vendorId && amount > 0) {
+    if (selectedCardType === 'dashgo' && vendorId && isGiftCardAmountSubmittable(dashGoAmount)) {
       createDashGoMutation.mutate(
         {
           recipient_ids: recipientIds,
@@ -286,7 +302,7 @@ export function useBulkPurchaseEmployeesModal() {
       return
     }
 
-    if (selectedCardType === 'dashpro' && amount > 0) {
+    if (selectedCardType === 'dashpro' && isGiftCardAmountSubmittable(dashGoAmount)) {
       createDashProMutation.mutate(
         {
           recipient_ids: recipientIds,
@@ -410,6 +426,7 @@ export function useBulkPurchaseEmployeesModal() {
     hasExistingCartItems,
     vendorOptions,
     selectedVendorName,
+    selectedVendorLogo,
     selectedVendorBranchCount,
     vendorCards,
     isLoadingVendors,

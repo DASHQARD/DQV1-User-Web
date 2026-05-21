@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { usePersistedModalState, useReducerSpread, useUserProfile } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { DEFAULT_QUERY } from '@/utils/constants'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 import type { QueryType, GetBranchManagerInvitationsQuery } from '@/types'
 import { vendorQueries } from '../../hooks'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
@@ -25,8 +26,7 @@ export function useBranchManagers() {
     if (query.after) params.after = query.after
     if (query.search) params.search = query.search
     if ((query as any).status) params.status = (query as any).status
-    if (query.dateFrom) params.dateFrom = query.dateFrom
-    if (query.dateTo) params.dateTo = query.dateTo
+    appendDateRangeApiParams(params as Record<string, unknown>, query)
     if (isCorporateSwitchedToVendor && vendorIdFromUrl) params.vendor_id = vendorIdFromUrl
     return params
   }, [query, isCorporateSwitchedToVendor, vendorIdFromUrl])
@@ -38,8 +38,7 @@ export function useBranchManagers() {
     if (query.after) params.after = query.after
     if (query.search) params.search = query.search
     if ((query as any).status) params.status = (query as any).status
-    if (query.dateFrom) params.dateFrom = query.dateFrom
-    if (query.dateTo) params.dateTo = query.dateTo
+    appendDateRangeApiParams(params as Record<string, unknown>, query)
     return params
   }, [query])
 

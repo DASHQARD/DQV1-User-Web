@@ -100,8 +100,8 @@ export interface GetBranchManagerInvitationsQuery {
   after?: string
   search?: string
   status?: string
-  dateFrom?: string
-  dateTo?: string
+  date_from?: string
+  date_to?: string
 }
 
 export interface CancelBranchManagerInvitationPayload {

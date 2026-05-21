@@ -17,8 +17,8 @@ export const getCardsByVendorId = async (opts: {
   search?: string
   status?: string
   card_type?: string
-  dateFrom?: string
-  dateTo?: string
+  date_from?: string
+  date_to?: string
 }): Promise<any> => {
   const { vendor_id, ...queryParams } = opts
   const queryString = getQueryString({ ...queryParams, vendor_id })

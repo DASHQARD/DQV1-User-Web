@@ -49,7 +49,9 @@ export const PartnerVendors = () => {
                     name={vendor.business_name || 'Unnamed Vendor'}
                     branches={vendor.branches_with_cards?.length || 0}
                     rating={4.5}
-                    business_logo={(vendor as any).business_logo || null}
+                    logo={(vendor as { logo?: string }).logo}
+                    logo_key={(vendor as { logo_key?: string }).logo_key}
+                    business_logo={(vendor as { business_logo?: string }).business_logo}
                     businessAddress={(vendor as any).business_address}
                     businessCountry={(vendor as any).business_country}
                     branchesWithCards={vendor.branches_with_cards || []}

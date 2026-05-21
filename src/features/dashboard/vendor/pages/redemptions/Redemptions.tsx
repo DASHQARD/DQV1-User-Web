@@ -6,6 +6,7 @@ import { DEFAULT_QUERY } from '@/utils/constants'
 import type { QueryType } from '@/types'
 import { useReducerSpread, useUserProfile } from '@/hooks'
 import { OPTIONS } from '@/utils/constants/filter'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 import { useRedemptionQueries } from '@/features/dashboard/hooks'
 import { branchQueries } from '@/features/dashboard/branch/hooks'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
@@ -27,8 +28,7 @@ export default function Redemptions() {
     if (query.after) apiParams.after = query.after
     if ((query as any).card_type) apiParams.card_type = (query as any).card_type
     if ((query as any).phone_number) apiParams.phone_number = (query as any).phone_number
-    if (query.dateFrom) apiParams.dateFrom = query.dateFrom
-    if (query.dateTo) apiParams.dateTo = query.dateTo
+    appendDateRangeApiParams(apiParams, query, 'camel')
     if ((query as any).status) apiParams.status = (query as any).status
     return apiParams
   }, [query])
@@ -127,7 +127,7 @@ export default function Redemptions() {
             filterBy={{
               simpleSelects: [
                 { label: 'card_type', options: OPTIONS.CARD_TYPE },
-                { label: 'status', options: OPTIONS.TRANSACTION_STATUS },
+                { label: 'status', options: OPTIONS.REDEMPTION_STATUS },
               ],
               date: [{ queryKey: 'dateFrom', label: 'Date range' }],
             }}

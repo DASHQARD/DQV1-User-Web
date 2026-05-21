@@ -11,11 +11,13 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { Modal } from '@/components'
 import { CartPopoverContent } from '@/components/CartModal'
 import { GuestAddToCartModal } from '@/features/website/components/GuestAddToCartModal'
-import { useUserProfile } from '@/hooks'
+import { useUserProfile, usePresignedMediaUrl } from '@/hooks'
+import { getBusinessLogoFileKey } from '@/utils/businessLogo'
 import { DEFAULT_AVATAR_SRC } from '@/components/Avatar/Avatar'
 import { vendorQueries } from '@/features'
 import { branchQueries } from '@/features/dashboard/branch'
 import { useAuth } from '@/features/auth'
+import { getGuestNameFromAuth } from '@/features/website/utils/guestAuth'
 
 /** Whether a website nav item should appear selected for the current path. */
 function isWebsiteNavItemActive(pathname: string, itemPath: string): boolean {
@@ -39,7 +41,7 @@ export default function Navbar() {
   // const { cartItems } = useCart()
   const { isOpen: isCartOpen, openCart, closeCart } = useCartStore()
 
-  const { isAuthenticated, user, logout: clearAuthState } = useAuthStore()
+  const { isAuthenticated, isGuestAuth, user, logout: clearAuthState } = useAuthStore()
   const { useLogoutService } = useAuth()
   const { mutateAsync: logoutMutation } = useLogoutService()
   const [accountPopoverOpen, setAccountPopoverOpen] = useState(false)
@@ -47,8 +49,9 @@ export default function Navbar() {
   const { data: userProfileData } = useGetUserProfileService()
   const { useGetBranchesByVendorIdService } = vendorQueries()
   // const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0)
-  const displayName =
-    user?.fullname || user?.name || user?.email?.split('@')[0] || user?.username || 'there'
+  const displayName = isGuestAuth
+    ? getGuestNameFromAuth(user) || 'Guest'
+    : user?.fullname || user?.name || user?.email?.split('@')[0] || user?.username || 'there'
 
   // State for mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -92,14 +95,11 @@ export default function Navbar() {
     return branchesData[0]
   }, [branchesData])
 
-  const avatarUrl = useMemo(() => {
+  const avatarFileKey = useMemo(() => {
     if (!isAuthenticated) return null
     if (isRegularUser) return userProfileData?.avatar || null
     if (isCorporateUser || isVendor) {
-      const logoDocument = userProfileData?.business_documents?.find(
-        (doc: any) => doc.type === 'logo',
-      )
-      return logoDocument?.file_url || null
+      return getBusinessLogoFileKey(userProfileData)
     }
     if (isBranchManager) return businessDetails?.logo || null
     return null
@@ -113,8 +113,40 @@ export default function Navbar() {
     businessDetails,
   ])
 
+  const { url: avatarUrl } = usePresignedMediaUrl(avatarFileKey)
+
   // Menu items based on user type
   const menuItems = useMemo(() => {
+    if (isGuestAuth) {
+      return [
+        {
+          label: 'Gift Cards',
+          icon: 'bi:bag-heart',
+          path: ROUTES.IN_APP.DASHQARDS,
+        },
+        {
+          label: 'View Bag',
+          icon: 'bi:bag',
+          path: ROUTES.IN_APP.VIEW_BAG,
+        },
+        {
+          label: 'Cards',
+          icon: 'bi:credit-card-2-front',
+          path: ROUTES.IN_APP.GUEST.CARDS,
+        },
+        {
+          label: 'My Orders',
+          icon: 'bi:gift',
+          path: ROUTES.IN_APP.GUEST.ORDERS,
+        },
+        {
+          label: 'Redemptions',
+          icon: 'bi:arrow-left-right',
+          path: ROUTES.IN_APP.REDEEM,
+        },
+      ]
+    }
+
     // Branch manager menu items
     if (isBranchManager) {
       return [
@@ -266,6 +298,7 @@ export default function Navbar() {
       // },
     ]
   }, [
+    isGuestAuth,
     isCorporateAdmin,
     isCorporateSuperAdmin,
     isCorporate,
@@ -304,7 +337,9 @@ export default function Navbar() {
   ]
 
   const showNavProfileImage =
-    isAuthenticated && (isRegularUser || isCorporateUser || isVendor || isBranchManager)
+    isAuthenticated &&
+    !isGuestAuth &&
+    (isRegularUser || isCorporateUser || isVendor || isBranchManager)
   const navAvatarDisplaySrc = avatarUrl ?? DEFAULT_AVATAR_SRC
 
   const handleLogout = () => {

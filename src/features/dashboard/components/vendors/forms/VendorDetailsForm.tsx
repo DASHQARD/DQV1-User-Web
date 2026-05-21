@@ -68,7 +68,7 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
                   file={value ?? null}
                   onFileChange={(f) => onChange(f ?? null)}
                   onUpload={() => {}}
-                  className="!h-[120px] !w-[120px]"
+                  size="md"
                 />
                 {error?.message && <p className="text-sm text-red-500">{error.message}</p>}
               </div>

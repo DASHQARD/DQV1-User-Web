@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { usePersistedModalState, useReducerSpread } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 import { PastPurchase } from '../../components/corporate/purchase'
 import { corporateQueries } from '../../corporate/hooks'
 
@@ -32,8 +33,7 @@ export function usePurchaseManagement() {
     if (query.after) params.after = query.after
     if (query.status) params.status = query.status
     if ((query as any).type) params.type = (query as any).type
-    if (query.dateFrom) params.date_from = query.dateFrom
-    if (query.dateTo) params.date_to = query.dateTo
+    appendDateRangeApiParams(params, query)
     return params
   }, [query])
 

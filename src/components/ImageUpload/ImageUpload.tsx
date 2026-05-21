@@ -3,13 +3,35 @@ import React from 'react'
 import { Icon } from '@iconify/react'
 import { cn } from '@/libs'
 
+type ImageUploadSize = 'sm' | 'md'
+
 interface ImageUploadProps {
   file: File | null
   onFileChange: (file: File | null) => void
   onUpload: (file: File) => void
   isUploading?: boolean
   currentImageUrl?: string
+  /** sm: compact avatar (sidebar). md: larger profile/logo picker (default). */
+  size?: ImageUploadSize
   className?: string
+}
+
+const SIZE_STYLES: Record<
+  ImageUploadSize,
+  { box: string; placeholderIcon: string; useOverlay: boolean; badge: string }
+> = {
+  sm: {
+    box: 'h-14 w-14',
+    placeholderIcon: 'text-2xl',
+    useOverlay: true,
+    badge: 'h-6 w-6',
+  },
+  md: {
+    box: 'h-[120px] w-[120px]',
+    placeholderIcon: 'text-5xl',
+    useOverlay: false,
+    badge: 'h-9 w-9 bottom-1.5 right-1.5',
+  },
 }
 
 export default function ImageUpload({
@@ -18,9 +40,11 @@ export default function ImageUpload({
   onUpload,
   isUploading = false,
   currentImageUrl,
+  size = 'md',
   className = '',
 }: Readonly<ImageUploadProps>) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const styles = SIZE_STYLES[size]
 
   function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = event.target.files?.[0]
@@ -28,38 +52,42 @@ export default function ImageUpload({
       onFileChange(selectedFile)
       onUpload(selectedFile)
     }
+    event.target.value = ''
   }
 
-  function handleCameraClick() {
-    fileInputRef.current?.click()
-  }
-
-  const displayImage = React.useMemo(() => {
-    if (file) {
-      return URL.createObjectURL(file)
+  function handleTriggerClick() {
+    if (!isUploading) {
+      fileInputRef.current?.click()
     }
-    return currentImageUrl
-  }, [file, currentImageUrl])
+  }
 
-  // Check if custom size is provided via className
-  const hasSmallSize =
-    className.includes('h-10') ||
-    className.includes('w-10') ||
-    className.includes('h-12') ||
-    className.includes('w-12')
-  const isRounded = className.includes('rounded-full')
-  const iconSize = hasSmallSize ? 'text-lg' : 'text-[48px]'
-  const buttonSize = hasSmallSize ? 'h-5 w-5 bottom-0 right-0' : 'h-8 w-8 bottom-1 -right-1'
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null)
+      return
+    }
+    const objectUrl = URL.createObjectURL(file)
+    setPreviewUrl(objectUrl)
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [file])
+
+  const displayImage = previewUrl ?? currentImageUrl
+  const [imageError, setImageError] = React.useState(false)
+
+  React.useEffect(() => {
+    setImageError(false)
+  }, [displayImage])
+
+  const showImage = Boolean(displayImage) && !imageError
+
+  const isRounded =
+    className.includes('rounded-full') || size === 'sm' || !className.includes('rounded-')
   const borderRadius = isRounded ? 'rounded-full' : 'rounded-xl'
 
   return (
-    <div
-      className={cn(
-        'relative mx-auto shrink-0 overflow-hidden bg-gray-200 h-[120px] w-[120px]',
-        borderRadius,
-        className,
-      )}
-    >
+    <div className={cn('relative shrink-0', styles.box, className)}>
       <input
         ref={fileInputRef}
         type="file"
@@ -67,28 +95,81 @@ export default function ImageUpload({
         className="hidden"
         onChange={handleImageChange}
         disabled={isUploading}
+        aria-label="Upload profile photo"
       />
-      {displayImage ? (
-        <img
-          src={displayImage}
-          alt="profile"
-          className={cn('absolute inset-0 size-full object-cover object-center', borderRadius)}
-        />
-      ) : (
-        <div className="flex size-full items-center justify-center">
-          <Icon icon="hugeicons:user" className={cn(iconSize, 'text-gray-400')} />
-        </div>
-      )}
+
       <button
         type="button"
-        onClick={handleCameraClick}
+        onClick={handleTriggerClick}
         disabled={isUploading}
-        className={`absolute ${buttonSize} border-2 border-white bg-[#8ac1ba] rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed z-20`}
+        aria-label={isUploading ? 'Uploading photo' : 'Change profile photo'}
+        className={cn(
+          'group relative size-full overflow-hidden border border-gray-200 bg-gray-100',
+          'transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
+          'disabled:cursor-not-allowed disabled:opacity-70',
+          borderRadius,
+        )}
       >
-        {isUploading ? (
-          <Icon icon="hugeicons:loading-01" className="text-white text-base m-auto animate-spin" />
+        {showImage ? (
+          <img
+            src={displayImage!}
+            alt=""
+            className={cn('absolute inset-0 size-full object-cover object-center', borderRadius)}
+            onError={() => setImageError(true)}
+          />
         ) : (
-          <Icon icon="hugeicons:camera-01" className="text-white text-base m-auto" />
+          <span
+            className={cn(
+              'flex size-full items-center justify-center bg-linear-to-br from-gray-100 to-gray-200',
+              borderRadius,
+            )}
+          >
+            <Icon icon="bi:person-fill" className={cn(styles.placeholderIcon, 'text-gray-400')} />
+          </span>
+        )}
+
+        {styles.useOverlay ? (
+          <span
+            className={cn(
+              'absolute inset-0 flex flex-col items-center justify-center gap-0.5 transition-colors',
+              borderRadius,
+              isUploading ? 'bg-black/50' : 'bg-black/0 group-hover:bg-black/45',
+            )}
+          >
+            {isUploading ? (
+              <Icon
+                icon="bi:arrow-repeat"
+                className="size-5 animate-spin text-white"
+                aria-hidden
+              />
+            ) : (
+              <>
+                <Icon
+                  icon="bi:camera-fill"
+                  className="size-4 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  aria-hidden
+                />
+                <span className="text-[10px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  Change
+                </span>
+              </>
+            )}
+          </span>
+        ) : (
+          <span
+            className={cn(
+              'absolute flex items-center justify-center rounded-full border-2 border-white bg-primary-600 text-white shadow-md',
+              'transition-transform group-hover:scale-105',
+              styles.badge,
+              isUploading && 'bg-primary-700',
+            )}
+          >
+            {isUploading ? (
+              <Icon icon="bi:arrow-repeat" className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <Icon icon="bi:camera-fill" className="size-4" aria-hidden />
+            )}
+          </span>
         )}
       </button>
     </div>

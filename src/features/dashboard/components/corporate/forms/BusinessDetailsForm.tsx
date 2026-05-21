@@ -1,6 +1,9 @@
+import { useRef } from 'react'
 import { Button } from '@/components/Button'
 import { Input, FileUploader, CreatableCombobox, Text, Modal, ImageUpload } from '@/components'
 import { BasePhoneInput, PhoneFormatHint, RadioGroup, RadioGroupItem } from '@/components'
+import { isDialCodeOnlyPhone } from '@/utils/schemas/shared'
+import { getVisibleFieldError } from '@/utils/showFieldError'
 import {
   BUSINESS_FILE_UPLOAD_ACCEPT,
   BUSINESS_FILE_UPLOAD_HINT,
@@ -14,6 +17,7 @@ import LoaderGif from '@/assets/gifs/loader.gif'
 import { useBusinessDetailsForm } from '../hooks/useBusinessDetailsForm'
 
 export default function BusinessDetailsForm() {
+  const phoneDialCodeSynced = useRef(false)
   const {
     form,
     documentUrls,
@@ -60,7 +64,7 @@ export default function BusinessDetailsForm() {
                     onUpload={() => {}}
                     isUploading={isPending}
                     currentImageUrl={existingUrl && !value ? existingUrl : undefined}
-                    className="!h-[120px] !w-[120px]"
+                    size="md"
                   />
                   {error && <p className="text-sm text-red-500">{error.message}</p>}
                 </div>
@@ -122,14 +126,26 @@ export default function BusinessDetailsForm() {
             <Controller
               control={form.control}
               name="phone"
-              render={({ field: { onChange } }) => (
+              render={({ field: { onChange, value, ref, onBlur } }) => (
                 <BasePhoneInput
+                  ref={ref}
                   placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                   options={phoneCountries}
                   isRequired
-                  handleChange={onChange}
+                  selectedVal={value ?? ''}
+                  handleChange={(phone) => {
+                    const normalized = phone?.trim() ?? ''
+                    if (!phoneDialCodeSynced.current && isDialCodeOnlyPhone(normalized)) {
+                      phoneDialCodeSynced.current = true
+                      return
+                    }
+                    phoneDialCodeSynced.current = true
+                    onChange(phone)
+                  }}
                   label="Phone Number"
-                  error={form.formState.errors.phone?.message} hint={<PhoneFormatHint />}
+                  error={getVisibleFieldError(form, 'phone')}
+                  hint={<PhoneFormatHint />}
+                  onBlur={onBlur}
                 />
               )}
             />

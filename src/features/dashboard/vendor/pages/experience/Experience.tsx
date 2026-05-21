@@ -17,6 +17,7 @@ import type { QueryType } from '@/types'
 import { vendorQueries } from '../../hooks'
 import { branchQueries } from '@/features/dashboard/branch'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 
 export default function Experience() {
   const [query, setQuery] = useReducerSpread<QueryType>(DEFAULT_QUERY)
@@ -31,8 +32,7 @@ export default function Experience() {
     if (query.search) apiParams.search = query.search
     if ((query as any).status) apiParams.status = (query as any).status
     if ((query as any).card_type) apiParams.card_type = (query as any).card_type
-    if (query.dateFrom) apiParams.dateFrom = query.dateFrom
-    if (query.dateTo) apiParams.dateTo = query.dateTo
+    appendDateRangeApiParams(apiParams, query)
     return apiParams
   }, [query])
 

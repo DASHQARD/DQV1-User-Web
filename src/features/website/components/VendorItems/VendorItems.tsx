@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { Icon } from '@/libs'
+import { VendorLogoImage } from '../VendorLogo/VendorLogoImage'
+import type { VendorLogoFields } from '@/utils/vendorLogo'
 
-type VendorItemProps = {
+type VendorItemProps = VendorLogoFields & {
   name: string
   branches?: number
   rating?: number
-  business_logo?: string | null
   businessAddress?: string
   businessCountry?: string
   branchesWithCards?: any[]
@@ -15,13 +16,16 @@ export const VendorItems = ({
   name,
   branches = 0,
   rating = 4.5,
+  logo,
+  logo_key,
   business_logo,
+  vendor_logo,
   businessAddress,
   businessCountry,
   branchesWithCards = [],
 }: VendorItemProps) => {
   const roundedRating = Math.round(rating)
-  const logoUrl = business_logo || null
+  const vendorLogo: VendorLogoFields = { logo, logo_key, business_logo, vendor_logo }
 
   // Calculate total cards across all branches
   const totalCards = useMemo(() => {
@@ -35,11 +39,7 @@ export const VendorItems = ({
       {/* Logo/Badge Section */}
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-primary-500/10 to-primary-600/10 ring-1 ring-primary-500/20 overflow-hidden">
-          {logoUrl ? (
-            <img src={logoUrl} alt={name} className="h-full w-full rounded-xl object-cover" />
-          ) : (
-            <Icon icon="bi:building" className="size-7 text-primary-600" />
-          )}
+          <VendorLogoImage vendor={vendorLogo} name={name} />
         </div>
         <div className="flex flex-col items-end gap-1.5 flex-1 min-w-0">
           <span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 ring-1 ring-primary-200 whitespace-nowrap">

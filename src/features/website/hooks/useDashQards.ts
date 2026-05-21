@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import type { PublicCardResponse } from '@/types/responses'
 
+import { enrichCardsWithVendorLogos } from '@/features/website/utils/enrichCardsWithVendorLogos'
 import { usePublicCatalog } from './website'
 import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
 
@@ -50,7 +51,8 @@ function getNormalizedRange(minRaw: string | undefined, maxRaw: string | undefin
 export function useDashQards() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<DashQardsTabId>('dashx')
-  const { publicCards, query, setQuery, cardTabs, priceRanges } = usePublicCatalog()
+  const { publicCards, query, setQuery, cardTabs, priceRanges, vendors: vendorsCatalog } =
+    usePublicCatalog()
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { data: vendorsResponse } = usePublicVendorsService({ limit: 100 })
 
@@ -83,8 +85,11 @@ export function useDashQards() {
       : Array.isArray((publicCards as { data?: unknown[] })?.data)
         ? (publicCards as { data: unknown[] }).data
         : []
-    return cards as PublicCardResponse[]
-  }, [publicCards])
+    return enrichCardsWithVendorLogos(
+      cards as PublicCardResponse[],
+      vendorsCatalog,
+    ) as PublicCardResponse[]
+  }, [publicCards, vendorsCatalog])
 
   const filterCardByPrice = useCallback(
     (card: PublicCardResponse) => {

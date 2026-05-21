@@ -113,6 +113,15 @@ export type PaymentResponse = {
   data: PaymentInfoData[]
 }
 
+export type GetUserPaymentsParams = {
+  limit?: number
+  after?: string
+  status?: string
+  date_from?: string
+  date_to?: string
+  search?: string
+}
+
 export type UpdateUserInfoPayload = {
   full_name: string
   dob: string

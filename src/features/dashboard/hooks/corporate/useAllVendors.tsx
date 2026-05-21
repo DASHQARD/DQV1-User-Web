@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react'
 import { useReducerSpread } from '@/hooks'
 import { corporateQueries } from '../../corporate/hooks'
 import { DEFAULT_QUERY } from '@/utils/constants'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 
 export function useAllVendors() {
   const [query, setQuery] = useReducerSpread(DEFAULT_QUERY)
@@ -14,8 +15,17 @@ export function useAllVendors() {
     if (query.after) params.after = query.after
     if (query.search) params.search = query.search
     if (query.status) params.status = query.status
-    if (query.dateFrom) params.dateFrom = query.dateFrom
-    if (query.dateTo) params.dateTo = query.dateTo
+    if ((query as { approval_status?: string }).approval_status) {
+      params.approval_status = (query as { approval_status?: string }).approval_status
+    }
+    if ((query as { relationship_type?: string }).relationship_type) {
+      params.relationship_type = (query as { relationship_type?: string }).relationship_type
+    }
+    if ((query as { column?: string }).column) params.column = (query as { column?: string }).column
+    if ((query as { direction?: string }).direction) {
+      params.direction = (query as { direction?: string }).direction
+    }
+    appendDateRangeApiParams(params, query)
     return params
   }, [query])
 

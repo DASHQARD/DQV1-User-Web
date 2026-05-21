@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react'
 import { useReducerSpread } from '@/hooks'
 import { corporateQueries } from '../../corporate/hooks'
 import { DEFAULT_QUERY } from '@/utils/constants'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 
 export function useVendorInvitations() {
   const [query, setQuery] = useReducerSpread(DEFAULT_QUERY)
@@ -14,8 +15,7 @@ export function useVendorInvitations() {
     if (query.after) params.after = query.after
     if (query.search) params.search = query.search
     if (query.status) params.status = query.status
-    if (query.dateFrom) params.dateFrom = query.dateFrom
-    if (query.dateTo) params.dateTo = query.dateTo
+    appendDateRangeApiParams(params, query)
     return params
   }, [query])
 

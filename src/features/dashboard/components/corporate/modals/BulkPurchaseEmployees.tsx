@@ -1,13 +1,27 @@
 import React, { useCallback, useState } from 'react'
-import { Button, FileUploader, Modal, Text, Input, Checkbox, Tabs, Combobox } from '@/components'
+import {
+  Button,
+  FileUploader,
+  Modal,
+  Text,
+  Checkbox,
+  Tabs,
+  Combobox,
+  GiftCardAmountField,
+} from '@/components'
 import { CardItems } from '@/features/website/components/CardItems/CardItems'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import DashProBg from '@/assets/svgs/dashpro_bg.svg'
 import RecipientTemplate from '@/assets/recipient_template.xlsx?url'
 import { usePersistedModalState } from '@/hooks'
+import { VendorLogoImage } from '@/features/website/components/VendorLogo/VendorLogoImage'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
 import { formatCurrency } from '@/utils/format'
+import {
+  formatGiftCardAmountPreview,
+  isGiftCardAmountSubmittable,
+} from '@/utils/giftCardAmount'
 import { useBulkPurchaseEmployeesModal } from '@/features/dashboard/components/corporate/modals/useBulkPurchaseEmployeesModal'
 import type { RecipientRow, CardRecipientAssignment } from '@/types'
 
@@ -117,6 +131,7 @@ export function BulkPurchaseEmployeesModal() {
     hasExistingCartItems,
     vendorOptions,
     selectedVendorName,
+    selectedVendorLogo,
     selectedVendorBranchCount,
     vendorCards,
     isLoadingVendors,
@@ -524,7 +539,7 @@ export function BulkPurchaseEmployeesModal() {
                             <div className="flex items-start justify-between">
                               <div className="text-xl font-black tracking-[0.3em]">DASHPRO</div>
                               <div className="text-right text-xl font-semibold">
-                                GHS {dashGoAmount || '0.00'}
+                                GHS {formatGiftCardAmountPreview(dashGoAmount)}
                               </div>
                             </div>
                             <div className="flex items-end justify-between">
@@ -557,32 +572,17 @@ export function BulkPurchaseEmployeesModal() {
                           </Text>
                         </div>
 
-                        {/* Amount Input */}
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Enter Amount
-                          </label>
-                          <div className="relative">
-                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-primary-500">
-                              GHS
-                            </span>
-                            <Input
-                              type="number"
-                              value={dashGoAmount}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                setDashGoAmount(e.target.value)
-                              }
-                              placeholder="0.00"
-                              className="w-full rounded-lg border border-gray-200 px-4 py-3 pl-16 text-lg font-semibold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-                            />
-                          </div>
-                        </div>
+                        <GiftCardAmountField
+                          id="dashpro-amount"
+                          value={dashGoAmount}
+                          onChange={setDashGoAmount}
+                        />
 
                         {/* Action Button */}
                         <Button
                           variant="secondary"
                           onClick={handleDashProSelect}
-                          disabled={!dashGoAmount || parseFloat(dashGoAmount || '0') <= 0}
+                          disabled={!isGiftCardAmountSubmittable(dashGoAmount)}
                           className="w-full"
                         >
                           Quick Assign
@@ -697,8 +697,7 @@ export function BulkPurchaseEmployeesModal() {
                         onClick={handleSaveCardAssignment}
                         disabled={
                           selectedRecipients.size === 0 ||
-                          !dashGoAmount ||
-                          parseFloat(dashGoAmount || '0') <= 0
+                          !isGiftCardAmountSubmittable(dashGoAmount)
                         }
                         loading={createDashProMutation.isPending}
                       >
@@ -872,7 +871,7 @@ export function BulkPurchaseEmployeesModal() {
                             <div className="flex items-start justify-between">
                               <div className="text-xl font-black tracking-[0.3em]">DASHGO</div>
                               <div className="text-right text-xl font-semibold">
-                                GHS {dashGoAmount || '0.00'}
+                                GHS {formatGiftCardAmountPreview(dashGoAmount)}
                               </div>
                             </div>
                             <div className="flex items-end justify-between">
@@ -886,13 +885,22 @@ export function BulkPurchaseEmployeesModal() {
 
                       {/* Right Column - DashGo Details and Actions */}
                       <div className="space-y-4">
-                        <div>
-                          <Text variant="h3" weight="semibold" className="text-gray-900">
-                            DashGo Gift Card
-                          </Text>
-                          <Text variant="p" className="text-sm text-gray-600">
-                            Vendor: {selectedVendorName}
-                          </Text>
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-white p-1.5 shadow-sm">
+                            <VendorLogoImage
+                              vendor={selectedVendorLogo}
+                              name={selectedVendorName}
+                              className="h-full w-full object-contain"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <Text variant="h3" weight="semibold" className="text-gray-900">
+                              DashGo Gift Card
+                            </Text>
+                            <Text variant="p" className="text-sm text-gray-600">
+                              Vendor: {selectedVendorName}
+                            </Text>
+                          </div>
                         </div>
 
                         <div>
@@ -907,32 +915,17 @@ export function BulkPurchaseEmployeesModal() {
                           </Text>
                         </div>
 
-                        {/* Amount Input */}
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Enter Amount
-                          </label>
-                          <div className="relative">
-                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-primary-500">
-                              GHS
-                            </span>
-                            <Input
-                              type="number"
-                              value={dashGoAmount}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                setDashGoAmount(e.target.value)
-                              }
-                              placeholder="0.00"
-                              className="w-full rounded-lg border border-gray-200 px-4 py-3 pl-16 text-lg font-semibold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-                            />
-                          </div>
-                        </div>
+                        <GiftCardAmountField
+                          id="dashgo-amount"
+                          value={dashGoAmount}
+                          onChange={setDashGoAmount}
+                        />
 
                         {/* Action Button */}
                         <Button
                           variant="secondary"
                           onClick={handleDashGoSelect}
-                          disabled={!dashGoAmount || parseFloat(dashGoAmount || '0') <= 0}
+                          disabled={!isGiftCardAmountSubmittable(dashGoAmount)}
                           className="w-full"
                         >
                           Quick Assign
@@ -1120,10 +1113,8 @@ export function BulkPurchaseEmployeesModal() {
                         onClick={handleSaveCardAssignment}
                         disabled={
                           selectedRecipients.size === 0 ||
-                          (selectedCardType === 'dashgo' &&
-                            (!dashGoAmount || parseFloat(dashGoAmount) <= 0)) ||
-                          (selectedCardType === 'dashpro' &&
-                            (!dashGoAmount || parseFloat(dashGoAmount) <= 0))
+                          ((selectedCardType === 'dashgo' || selectedCardType === 'dashpro') &&
+                            !isGiftCardAmountSubmittable(dashGoAmount))
                         }
                         loading={createDashGoMutation.isPending || createDashProMutation.isPending}
                       >

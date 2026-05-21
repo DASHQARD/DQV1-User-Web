@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { useUserProfile } from '@/hooks'
+import { useBusinessLogoUrl, usePresignedMediaUrl, useUserProfile } from '@/hooks'
+import { getBusinessLogoFileKey } from '@/utils/businessLogo'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
@@ -89,12 +90,7 @@ export function useVendorSidebar() {
     )
   }, [currentVendorId, vendorsCreatedByCorporate])
 
-  const logoUrl = useMemo(() => {
-    const logoDocument = userProfileData?.business_documents?.find(
-      (doc: { type: string }) => doc.type === 'logo',
-    )
-    return logoDocument?.file_url || null
-  }, [userProfileData?.business_documents])
+  const { url: logoUrl } = useBusinessLogoUrl(userProfileData)
 
   const vendorLogoUrls = useMemo(() => {
     const map: Record<number, string> = {}
@@ -106,13 +102,12 @@ export function useVendorSidebar() {
     return map
   }, [vendorsCreatedByCorporate])
 
-  const currentVendorLogoUrl = useMemo(() => {
-    const logoSource = (currentVendor as { vendor_logo?: string })?.vendor_logo
-      ? (currentVendor as { vendor_logo: string }).vendor_logo
-      : userProfileData?.business_documents?.find((doc: { type: string }) => doc.type === 'logo')
-          ?.file_url
-    return logoSource || null
-  }, [currentVendor, userProfileData?.business_documents])
+  const currentVendorLogoKey = useMemo(() => {
+    const vendorLogo = (currentVendor as { vendor_logo?: string })?.vendor_logo
+    return vendorLogo || getBusinessLogoFileKey(userProfileData)
+  }, [currentVendor, userProfileData])
+
+  const { url: currentVendorLogoUrl } = usePresignedMediaUrl(currentVendorLogoKey)
 
   const vendorsToSwitchTo = useMemo(() => {
     if (!currentVendorId) return vendorsCreatedByCorporate

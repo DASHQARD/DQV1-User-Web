@@ -27,6 +27,12 @@ export default function PurchaseModal() {
     cardProduct?: string
     cardCurrency?: string
     amount?: number
+    recipient_id?: string | number
+    recipient_name?: string
+    recipient_phone?: string
+    recipient_email?: string
+    message?: string
+    assign_to_self?: boolean
   }>({
     paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
   })
@@ -35,10 +41,20 @@ export default function PurchaseModal() {
   const [assignToSelf, setAssignToSelf] = React.useState(true)
   const isGuestAuth = useAuthStore((s) => s.isGuestAuth)
   const user = useAuthStore((s) => s.user)
-  const { useAssignRecipientService, useAssignGuestRecipientService } = useRecipients()
+  const {
+    useAssignRecipientService,
+    useAssignGuestRecipientService,
+    useUpdateGuestRecipientService,
+  } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()
   const assignGuestRecipientMutation = useAssignGuestRecipientService()
-  const activeMutation = isGuestAuth ? assignGuestRecipientMutation : assignRecipientMutation
+  const updateGuestRecipientMutation = useUpdateGuestRecipientService()
+  const isEditingGuestRecipient = Boolean(isGuestAuth && modal.modalData?.recipient_id)
+  const activeMutation = isEditingGuestRecipient
+    ? updateGuestRecipientMutation
+    : isGuestAuth
+      ? assignGuestRecipientMutation
+      : assignRecipientMutation
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
@@ -160,9 +176,13 @@ export default function PurchaseModal() {
 
   React.useEffect(() => {
     if (modalData) {
-      form.setValue('assign_to_self', assignToSelf)
-      if (assignToSelf) {
-        // Set values explicitly to ensure they're visible
+      const editing = Boolean(modalData.recipient_id)
+      const selfAssign = editing ? Boolean(modalData.assign_to_self) : assignToSelf
+      if (editing) {
+        setAssignToSelf(selfAssign)
+      }
+      form.setValue('assign_to_self', selfAssign)
+      if (selfAssign) {
         const contact = getAssignToSelfContactPrefill({
           isGuestAuth,
           user,
@@ -171,15 +191,21 @@ export default function PurchaseModal() {
         form.setValue('name', contact.name)
         form.setValue('phone', contact.phone)
         form.setValue('email', contact.email)
-        form.setValue('message', '')
-        form.setValue('amount', initialAmount)
+        form.setValue('message', modalData.message ?? '')
+        form.setValue('amount', Math.round(Number(modalData.amount ?? initialAmount) * 100) / 100)
+      } else if (editing) {
+        form.setValue('name', modalData.recipient_name ?? '')
+        form.setValue('phone', modalData.recipient_phone ?? '')
+        form.setValue('email', modalData.recipient_email ?? '')
+        form.setValue('message', modalData.message ?? '')
+        form.setValue('amount', Math.round(Number(modalData.amount ?? initialAmount) * 100) / 100)
       } else {
-        // Clear fields when not assigning to self
         form.setValue('name', '')
         form.setValue('phone', '')
         form.setValue('email', '')
+        form.setValue('message', '')
       }
-      if (modalData.amount != null && !assignToSelf) {
+      if (modalData.amount != null && !selfAssign && !editing) {
         form.setValue('amount', Math.round(Number(modalData.amount) * 100) / 100)
       }
     }
@@ -218,9 +244,24 @@ export default function PurchaseModal() {
     }
 
     if (isGuestAuth) {
-      // const guestPhone = (guestUser as any)?.guest_phone ?? ''
+      const recipientId = modal.modalData?.recipient_id
+      if (recipientId != null && recipientId !== '') {
+        updateGuestRecipientMutation.mutate({
+          recipient_id: recipientId,
+          ...(!data.assign_to_self && data.name?.trim()
+            ? { recipient_name: data.name.trim() }
+            : {}),
+          ...(!data.assign_to_self && data.email?.trim()
+            ? { recipient_email: data.email.trim() }
+            : {}),
+          ...(!data.assign_to_self && data.phone?.trim()
+            ? { recipient_phone: data.phone.trim() }
+            : {}),
+          message: data.message || '',
+        })
+        return
+      }
       const guestPayload: GuestAssignRecipientPayload = {
-        // guest_phone: guestPhone,
         cart_item_id: currentCartItemId,
         assign_to_self: data.assign_to_self,
         amount: data.amount,

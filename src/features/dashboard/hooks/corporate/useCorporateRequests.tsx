@@ -4,6 +4,7 @@ import { corporateQueries } from '../../corporate/hooks'
 import { useAuthStore } from '@/stores'
 import { usePersistedModalState } from '@/hooks'
 import { DEFAULT_QUERY, MODALS } from '@/utils/constants'
+import { appendDateRangeApiParams } from '@/utils/helpers'
 
 export function useCorporateRequests() {
   //   const { state } = useSearch()
@@ -29,8 +30,7 @@ export function useCorporateRequests() {
     if (query.after) params.after = query.after
     if (query.search) params.search = query.search
     if (query.status) params.status = query.status
-    if (query.dateFrom) params.date_from = query.dateFrom
-    if (query.dateTo) params.date_to = query.dateTo
+    appendDateRangeApiParams(params, query)
     return params
   }, [query])
 
