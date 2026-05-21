@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { FileUploader, Input, Combobox, Button, Modal, Text } from '@/components'
+import { FileUploader, Input, Combobox, Button, Modal, Text, GiftCardPriceFormField } from '@/components'
 import { useUploadFiles, usePersistedModalState, useUserProfile } from '@/hooks'
 import { useToast } from '@/hooks'
 import { MODALS } from '@/utils/constants'
@@ -92,7 +92,10 @@ export function EditExperience() {
       product: card?.product || '',
       description: card?.description || '',
       type: card?.type || '',
-      price: Number(card?.base_price ?? card?.price) || 0,
+      price: (() => {
+        const parsed = Number(card?.base_price ?? card?.price)
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+      })(),
       currency: card?.currency || 'GHS',
       issue_date: card?.issue_date ? card.issue_date.split('T')[0] : '',
       expiry_date: card?.expiry_date ? card.expiry_date.split('T')[0] : '',
@@ -109,7 +112,10 @@ export function EditExperience() {
       product: card.product,
       description: card.description,
       type: card.type,
-      price: Number(card.base_price ?? card.price) || 0,
+      price: (() => {
+        const parsed = Number(card.base_price ?? card.price)
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+      })(),
       currency: card.currency || 'GHS',
       issue_date: card.issue_date ? card.issue_date.split('T')[0] : '',
       expiry_date: card.expiry_date ? card.expiry_date.split('T')[0] : '',
@@ -348,13 +354,10 @@ export function EditExperience() {
           error={form.formState.errors.description?.message}
         />
 
-        <Input
+        <GiftCardPriceFormField
+          control={form.control}
+          name="price"
           iconBefore={<span className="text-gray-400 font-medium">GHS</span>}
-          label="Price"
-          type="number"
-          step="0.01"
-          placeholder="0.00"
-          {...form.register('price', { valueAsNumber: true })}
           error={form.formState.errors.price?.message}
         />
 

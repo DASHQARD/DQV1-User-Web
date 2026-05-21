@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQueryClient } from '@tanstack/react-query'
 import { Modal, Button, Text, Input, OTPInput, BasePhoneInput, PhoneFormatHint } from '@/components'
+import { getApiErrorMessage } from '@/utils/apiError'
 import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { Icon } from '@/libs'
 import { useGuestAddToCartModalStore, useAuthStore } from '@/stores'
@@ -131,7 +132,7 @@ export default function GuestAddToCartModal() {
       setStep('otp')
       toast.success('Verification code sent to your phone')
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to send code. Please try again.')
+      toast.error(getApiErrorMessage(err, 'Failed to send code. Please try again.'))
     } finally {
       setIsRequestingOtp(false)
     }
@@ -204,7 +205,7 @@ export default function GuestAddToCartModal() {
       handleClose()
       toast.success('Item added to cart')
     } catch (err: any) {
-      toast.error(err?.message || 'Verification failed. Please try again.')
+      toast.error(getApiErrorMessage(err, 'Verification failed. Please try again.'))
     } finally {
       setIsVerifyingOtp(false)
     }

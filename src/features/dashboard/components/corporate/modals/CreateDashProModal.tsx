@@ -2,7 +2,7 @@ import React from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button, Input, Modal, Text, BasePhoneInput } from '@/components'
+import { Button, Input, Modal, Text, BasePhoneInput, GiftCardPriceFormField } from '@/components'
 import { usePersistedModalState, useCountriesData, useToast } from '@/hooks'
 import { EXAMPLE_PHONE_PLACEHOLDER_E164, MODALS } from '@/utils/constants'
 import { AssignRecipientSchema } from '@/utils/schemas'
@@ -64,7 +64,7 @@ export function CreateDashProModal() {
       phone: '',
       email: '',
       message: '',
-      amount: 0,
+      amount: undefined,
     },
   })
 
@@ -185,28 +185,14 @@ export function CreateDashProModal() {
           </Text>
         </div>
 
-        {/* Amount Field */}
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-gray-700">
-            Amount <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-primary-500">
-              GHS
-            </span>
-            <Input
-              type="number"
-              min={1}
-              max={10000}
-              step="0.01"
-              placeholder="0.00"
-              {...register('amount', { valueAsNumber: true })}
-              error={errors.amount?.message}
-              disabled={isPending}
-              className="pl-16"
-            />
-          </div>
-        </div>
+        <GiftCardPriceFormField
+          control={control}
+          name="amount"
+          label="Amount"
+          disabled={isPending}
+          error={errors.amount?.message}
+          iconBefore={<span className="text-gray-400 font-medium">GHS</span>}
+        />
 
         {/* Recipient's Full Name */}
         <div>

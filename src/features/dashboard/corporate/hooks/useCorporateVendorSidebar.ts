@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useBusinessLogoUrl, usePresignedMediaUrl, useUserProfile } from '@/hooks'
 import { getBusinessLogoFileKey } from '@/utils/businessLogo'
@@ -6,6 +6,11 @@ import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { corporateQueries } from './useCorporateQueries'
+import {
+  getVendorOnboardingProgress,
+  isVendorNavItemDisabled,
+  isVendorSettingsDisabled,
+} from '@/features/dashboard/utils/vendorOnboardingProgress'
 
 export function useCorporateVendorSidebar() {
   const location = useLocation()
@@ -90,7 +95,6 @@ export function useCorporateVendorSidebar() {
   useGetCorporatePaymentsService()
 
   const corporateBranches = currentVendorId ? corporateBranchesByVendor : corporateBranchesList
-  console.log('corporateBranches', corporateBranches)
   const branchesArray = useMemo(() => {
     if (!corporateBranches) return []
     return Array.isArray(corporateBranches)
@@ -98,17 +102,32 @@ export function useCorporateVendorSidebar() {
       : (corporateBranches as { data?: unknown[] })?.data || []
   }, [corporateBranches])
 
-  const discoveryScore = useMemo(() => {
-    const progress = userProfileData?.onboarding_progress
-    if (!progress) return 0
-    const hasProfileAndID = progress.personal_details_completed && progress.upload_id_completed
-    const hasBusinessDetailsAndDocs =
-      progress.business_details_completed && progress.business_documents_completed
-    const hasBranches = branchesArray.length > 0
-    const completedCount =
-      (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0) + (hasBranches ? 1 : 0)
-    return Math.round((completedCount / 3) * 100)
-  }, [userProfileData?.onboarding_progress, branchesArray.length])
+  const isCorporateSwitchedToVendor = Boolean(currentVendorId)
+
+  const vendorOnboarding = useMemo(() => {
+    return getVendorOnboardingProgress({
+      userProfile: userProfileData,
+      branchesCount: branchesArray.length,
+      isBranchManager: false,
+      isCorporateSwitchedToVendor,
+    })
+  }, [userProfileData, branchesArray.length, isCorporateSwitchedToVendor])
+
+  const discoveryScore = vendorOnboarding.progressPercentage
+  const hasFirstBranch = branchesArray.length > 0
+
+  const getIsNavItemDisabled = useCallback(
+    (path: string) =>
+      isVendorNavItemDisabled(path, {
+        isOnboardingComplete: vendorOnboarding.isComplete,
+        hasFirstBranch,
+      }),
+    [vendorOnboarding.isComplete, hasFirstBranch],
+  )
+
+  const isSettingsDisabled = isVendorSettingsDisabled({
+    isOnboardingComplete: vendorOnboarding.isComplete,
+  })
 
   const canAccessCorporate = useMemo(() => {
     if (userType === 'corporate_vendor' || userType === 'corporate super admin') return true
@@ -214,6 +233,8 @@ export function useCorporateVendorSidebar() {
     vendorGvid,
     branchesArray,
     discoveryScore,
+    getIsNavItemDisabled,
+    isSettingsDisabled,
     canAccessCorporate,
     isBranchesExpanded,
     setIsBranchesExpanded,

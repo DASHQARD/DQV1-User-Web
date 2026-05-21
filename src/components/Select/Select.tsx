@@ -62,17 +62,28 @@ export const Select = React.memo(
       innerClassName,
       onChange,
       onBlur,
+      onValueChange: onValueChangeProp,
       renderValue = DefaultValue,
       loading,
     } = props
 
-    const { onValueChange, onElementBlur } = useHookFormInputRef({
+    const { onValueChange: onValueChangeHook, onElementBlur } = useHookFormInputRef({
       name,
       value,
       onChange: onChange as unknown as (e: Event) => void,
       onBlur: onBlur as unknown as (e: Event) => void,
       ref: ref as React.Ref<HTMLInputElement>,
     })
+
+    const handleValueChange = React.useCallback(
+      (newValue: string) => {
+        onValueChangeProp?.(newValue)
+        if (onChange) {
+          onValueChangeHook(newValue)
+        }
+      },
+      [onValueChangeProp, onChange, onValueChangeHook],
+    )
 
     const currentOption = options.find((option) => option.value === value)
 
@@ -83,7 +94,7 @@ export const Select = React.memo(
         {label ? <InputLabel htmlFor={props.name}>{label}</InputLabel> : null}
 
         {/* INNER */}
-        <Root value={value} onValueChange={onValueChange} name={name} disabled={disabled}>
+        <Root value={value} onValueChange={handleValueChange} name={name} disabled={disabled}>
           <Trigger
             data-testid={`select-${label ?? ''}`}
             data-value={value}
@@ -140,7 +151,7 @@ export const Select = React.memo(
               <li key={option.value}>
                 <button
                   type="button"
-                  onClick={() => onValueChange(option.value)}
+                  onClick={() => handleValueChange(option.value)}
                   data-testid={`option-${option.value}`}
                 >
                   {option.label}

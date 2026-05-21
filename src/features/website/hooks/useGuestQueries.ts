@@ -6,13 +6,7 @@ import {
   getGuestCartRecipients,
 } from '../services/cards'
 import type { GuestGetCardsParams } from '@/types/responses'
-
-function normalizeGuestCardsList(response: unknown): unknown[] {
-  if (!response) return []
-  if (Array.isArray(response)) return response
-  const data = (response as { data?: unknown })?.data
-  return Array.isArray(data) ? data : []
-}
+import { parseGuestCreatedCardsResponse } from '../utils/guestCreatedCards'
 
 export function useGuestQueries() {
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
@@ -20,7 +14,7 @@ export function useGuestQueries() {
   function useGetGuestCardsService(params?: GuestGetCardsParams, enabled = true) {
     return useQuery({
       queryKey: ['guest-cards', params],
-      queryFn: async () => normalizeGuestCardsList(await getGuestCards(params)),
+      queryFn: async () => parseGuestCreatedCardsResponse(await getGuestCards(params)),
       enabled: isGuestAuth && enabled,
     })
   }

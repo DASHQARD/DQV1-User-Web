@@ -1,6 +1,54 @@
-/** Min/max gift card amounts (GHS) used across DashGo / DashPro flows. */
+import { z } from 'zod'
+
+/** Min/max gift card amounts (GHS) used across DashGo / DashPro and vendor card flows. */
 export const GIFT_CARD_AMOUNT_MIN = 1
 export const GIFT_CARD_AMOUNT_MAX = 10_000
+
+/** Zod schema for gift card / experience price fields. */
+export const giftCardPriceSchema = z
+  .number({ message: 'Amount must be a number' })
+  .min(
+    GIFT_CARD_AMOUNT_MIN,
+    `Minimum amount is GHS ${GIFT_CARD_AMOUNT_MIN.toLocaleString('en-GH')}`,
+  )
+  .max(
+    GIFT_CARD_AMOUNT_MAX,
+    `Maximum amount is GHS ${GIFT_CARD_AMOUNT_MAX.toLocaleString('en-GH')}`,
+  )
+
+function preprocessGiftCardPriceValue(val: unknown): unknown {
+  if (val === '' || val === undefined || val === null) return undefined
+  if (typeof val === 'number' && Number.isNaN(val)) return undefined
+  if (typeof val === 'string') {
+    const trimmed = val.trim()
+    if (!trimmed) return undefined
+    const parsed = Number(trimmed)
+    return Number.isNaN(parsed) ? undefined : parsed
+  }
+  return val
+}
+
+/** For react-hook-form number fields — treats empty / NaN as missing before min/max checks. */
+export const giftCardPriceFieldSchema = z.preprocess(
+  preprocessGiftCardPriceValue,
+  giftCardPriceSchema,
+) as z.ZodType<number>
+
+/** Display value for number inputs (empty instead of a leading 0). */
+export function toGiftCardPriceInputValue(value: unknown): string {
+  if (value === '' || value === undefined || value === null) return ''
+  if (typeof value === 'number') {
+    if (Number.isNaN(value) || value === 0) return ''
+    return String(value)
+  }
+  return ''
+}
+
+export function fromGiftCardPriceInputChange(raw: string): number | undefined {
+  if (raw === '') return undefined
+  const parsed = Number(raw)
+  return Number.isNaN(parsed) ? undefined : parsed
+}
 
 /**
  * Parse amount input without scientific notation from oversized digit strings.

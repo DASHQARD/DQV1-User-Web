@@ -2,14 +2,23 @@ import { useEffect, useState } from 'react'
 import { usePresignedURL } from './useUploadFiles'
 import { isAbsoluteMediaUrl, resolveSignedUrlFromResponse } from '@/utils/resolveSignedUrl'
 
+type UsePresignedMediaUrlOptions = {
+  /** When false, skips the signed-url request (e.g. before vendor onboarding is complete). */
+  enabled?: boolean
+}
+
 /** Resolves a storage file key to a browser-loadable URL via POST /file/generate/signed-url. */
-export function usePresignedMediaUrl(fileKey: string | null | undefined) {
+export function usePresignedMediaUrl(
+  fileKey: string | null | undefined,
+  options?: UsePresignedMediaUrlOptions,
+) {
   const { mutateAsync: fetchPresignedURL } = usePresignedURL()
   const [url, setUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const enabled = options?.enabled !== false
 
   useEffect(() => {
-    if (!fileKey) {
+    if (!enabled || !fileKey) {
       setUrl(null)
       setIsLoading(false)
       return
@@ -42,7 +51,7 @@ export function usePresignedMediaUrl(fileKey: string | null | undefined) {
     return () => {
       cancelled = true
     }
-  }, [fileKey, fetchPresignedURL])
+  }, [fileKey, fetchPresignedURL, enabled])
 
   return { url, isLoading }
 }

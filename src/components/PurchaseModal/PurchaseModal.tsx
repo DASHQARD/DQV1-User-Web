@@ -14,11 +14,17 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { BasePhoneInput } from '../BasePhoneNumber/BasePhoneNumber'
 import { Input } from '../Input'
+import { GiftCardPriceFormField } from '../GiftCardPriceFormField'
 import type { AssignRecipientPayload, GuestAssignRecipientPayload } from '@/types/responses'
 import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { EXAMPLE_PHONE_PLACEHOLDER, MODAL_NAMES, PURCHASE_WHATSAPP_HI_PROMPT } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '@/features/website/utils/assignToSelfContactPrefill'
+
+function resolveModalAmount(amount: number | null | undefined): number | undefined {
+  if (amount == null || amount <= 0) return undefined
+  return Math.round(Number(amount) * 100) / 100
+}
 
 export default function PurchaseModal() {
   const modal = usePersistedModalState<{
@@ -64,9 +70,7 @@ export default function PurchaseModal() {
   const cardType = modalData?.cardType || 'dashpro'
   const cardProduct = modalData?.cardProduct || ''
   const cardCurrency = modalData?.cardCurrency || 'GHS'
-  const initialAmountRaw = Number(modalData?.amount ?? 0)
-  // DashPro amount input uses step=0.01; round to 2dp to avoid browser step validation errors
-  const initialAmount = Math.round(initialAmountRaw * 100) / 100
+  const initialAmount = resolveModalAmount(modalData?.amount)
 
   const form = useForm<z.infer<typeof AssignRecipientSchema>>({
     resolver: zodResolver(AssignRecipientSchema),
@@ -76,7 +80,7 @@ export default function PurchaseModal() {
       phone: '',
       email: '',
       message: '',
-      amount: initialAmount,
+      amount: initialAmount as number | undefined,
     },
   })
 
@@ -192,21 +196,27 @@ export default function PurchaseModal() {
         form.setValue('phone', contact.phone)
         form.setValue('email', contact.email)
         form.setValue('message', modalData.message ?? '')
-        form.setValue('amount', Math.round(Number(modalData.amount ?? initialAmount) * 100) / 100)
+        const amount = resolveModalAmount(modalData.amount ?? initialAmount)
+        if (amount !== undefined) form.setValue('amount', amount)
+        else form.resetField('amount')
       } else if (editing) {
         form.setValue('name', modalData.recipient_name ?? '')
         form.setValue('phone', modalData.recipient_phone ?? '')
         form.setValue('email', modalData.recipient_email ?? '')
         form.setValue('message', modalData.message ?? '')
-        form.setValue('amount', Math.round(Number(modalData.amount ?? initialAmount) * 100) / 100)
+        const amount = resolveModalAmount(modalData.amount ?? initialAmount)
+        if (amount !== undefined) form.setValue('amount', amount)
+        else form.resetField('amount')
       } else {
         form.setValue('name', '')
         form.setValue('phone', '')
         form.setValue('email', '')
         form.setValue('message', '')
       }
-      if (modalData.amount != null && !selfAssign && !editing) {
-        form.setValue('amount', Math.round(Number(modalData.amount) * 100) / 100)
+      if (!selfAssign && !editing) {
+        const amount = resolveModalAmount(modalData.amount)
+        if (amount !== undefined) form.setValue('amount', amount)
+        else form.resetField('amount')
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted to avoid unnecessary re-runs
@@ -469,22 +479,18 @@ export default function PurchaseModal() {
               </p>
             </div>
             <div className="max-w-md space-y-4">
-              <div className="relative">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-primary-500">
-                  {cardCurrency}
-                </span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={10000}
-                  step="0.01"
-                  {...form.register('amount', { valueAsNumber: true })}
-                  error={form.formState.errors.amount?.message}
-                  placeholder="0.00"
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 pl-16 text-lg font-semibold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-                  required
-                />
-              </div>
+              <GiftCardPriceFormField
+                control={form.control}
+                name="amount"
+                label="Enter Amount"
+                error={form.formState.errors.amount?.message}
+                showRangeHint={false}
+                placeholder="0.00"
+                iconBefore={
+                  <span className="font-semibold text-primary-500">{cardCurrency}</span>
+                }
+                className="[&_input]:rounded-lg [&_input]:border-gray-200 [&_input]:px-4 [&_input]:py-3 [&_input]:pl-16 [&_input]:text-lg [&_input]:font-semibold"
+              />
               <div className="flex flex-wrap gap-2">
                 {quickAmounts.map((value) => (
                   <button

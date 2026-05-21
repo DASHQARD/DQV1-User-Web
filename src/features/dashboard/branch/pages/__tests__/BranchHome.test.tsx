@@ -11,6 +11,11 @@ vi.mock('@/features/dashboard/branch/hooks/useBranchHome', () => ({
 
 vi.mock('@/features/dashboard/components', () => ({
   CompleteVendorWidget: () => null,
+  RecentExperiences: ({ experiences }: { experiences: unknown[] }) => (
+    <div data-testid="recent-experiences">
+      My Experiences ({experiences.length})
+    </div>
+  ),
 }))
 
 vi.mock('@/features/dashboard/branch/metricCards', () => ({

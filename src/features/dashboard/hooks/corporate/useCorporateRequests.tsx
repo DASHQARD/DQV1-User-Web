@@ -29,7 +29,6 @@ export function useCorporateRequests() {
     }
     if (query.after) params.after = query.after
     if (query.search) params.search = query.search
-    if (query.status) params.status = query.status
     appendDateRangeApiParams(params, query)
     return params
   }, [query])

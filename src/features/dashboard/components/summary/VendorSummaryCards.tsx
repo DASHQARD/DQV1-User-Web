@@ -1,12 +1,15 @@
 import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 
-import { Text, Loader } from '@/components'
+import { Text, Loader, Tooltip, TooltipTrigger, TooltipContent } from '@/components'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
 import { vendorQueries } from '@/features'
 import { useAuthStore } from '@/stores'
 import { useUserProfile } from '@/hooks'
+import { useVendorOnboardingProgress } from '@/features/dashboard/hooks/useVendorOnboardingProgress'
+import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
+import { VENDOR_NAV_DISABLED_TOOLTIP } from '@/features/dashboard/components/sidebar/VendorSidebarNavItem'
 
 /** Card type background colors (from brand assets: Dashx_bg, dashpro_bg, dashpass, dashgo_bg) */
 const CARD_TYPE_BG: Record<string, string> = {
@@ -26,6 +29,10 @@ export default function VendorSummaryCards() {
   const { data: userProfileData } = useGetUserProfileService()
   const userType = (user as any)?.user_type || userProfileData?.user_type
   const isBranchManager = userType === 'branch'
+
+  const { getIsNavItemDisabled } = useVendorOnboardingProgress()
+  const { isOperationalAccessEnabled } = useVendorOperationalAccess()
+  const isExperienceDisabled = getIsNavItemDisabled(ROUTES.IN_APP.DASHBOARD.VENDOR.EXPERIENCE)
 
   const { useGetVendorCardCountsService } = vendorQueries()
   const { data: vendorCardCountsData, isLoading: isLoadingVendorCounts } =
@@ -67,6 +74,10 @@ export default function VendorSummaryCards() {
     const separator = path?.includes('?') ? '&' : '?'
     const base = `${path}${separator}account=vendor`
     return vendorIdFromUrl ? `${base}&vendor_id=${vendorIdFromUrl}` : base
+  }
+
+  if (!isOperationalAccessEnabled) {
+    return null
   }
 
   if (isLoading) {
@@ -113,16 +124,30 @@ export default function VendorSummaryCards() {
                   </div>
                   <div className="mt-2 flex items-center justify-end gap-1.5">
                     <span className="text-white/90 text-xs">View All</span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        navigate(addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.EXPERIENCE))
-                      }
-                      aria-label="View all experiences"
-                      className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-900 hover:bg-white/90 transition-colors no-print"
-                    >
-                      <Icon icon="bi:arrow-right-short" className="text-base" />
-                    </button>
+                    {isExperienceDisabled ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            aria-label="View all experiences"
+                            className="w-8 h-8 rounded-full bg-white/60 flex items-center justify-center text-gray-500 cursor-not-allowed no-print"
+                          >
+                            <Icon icon="bi:arrow-right-short" className="text-base" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>{VENDOR_NAV_DISABLED_TOOLTIP}</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.EXPERIENCE))
+                        }
+                        aria-label="View all experiences"
+                        className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-900 hover:bg-white/90 transition-colors no-print"
+                      >
+                        <Icon icon="bi:arrow-right-short" className="text-base" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

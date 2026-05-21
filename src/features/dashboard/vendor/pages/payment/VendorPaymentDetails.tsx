@@ -3,6 +3,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Text } from '@/components'
 import { Icon } from '@/libs'
 import { useCountriesData, useUserProfile, useToast } from '@/hooks'
+import { VendorAccountStatusBanner } from '@/features/dashboard/components/vendors/VendorAccountStatusBanner'
+import { useVendorOnboardingProgress } from '@/features/dashboard/hooks/useVendorOnboardingProgress'
+import {
+  canFetchVendorPaymentDetails,
+  hasVendorPaymentDetails,
+  isVendorPendingAdminApproval,
+} from '@/features/dashboard/utils/vendorAccountStatus'
 import {
   addPaymentDetails,
   getPaymentDetails,
@@ -49,10 +56,18 @@ export default function VendorPaymentDetails() {
     sort_code: 'string',
   })
 
+  const { isComplete: isOnboardingComplete } = useVendorOnboardingProgress()
+  const hasExistingPaymentDetails = hasVendorPaymentDetails(userProfile)
+  const canFetchPaymentDetails = canFetchVendorPaymentDetails(userProfile)
+  const showPendingApprovalBanner = isVendorPendingAdminApproval(
+    userProfile,
+    isOnboardingComplete,
+  )
+
   const { data: myPaymentDetails, isLoading: isLoadingMyPaymentDetails } = useQuery({
     queryKey: ['vendor-payment-details'],
     queryFn: getPaymentDetails,
-    enabled: userProfile?.user_type !== 'branch',
+    enabled: userProfile?.user_type !== 'branch' && canFetchPaymentDetails,
   })
   const paymentDetailsData = myPaymentDetails?.data || myPaymentDetails || {}
   const mobileMoneyAccounts = Array.isArray(paymentDetailsData?.mobile_money_accounts)
@@ -67,6 +82,7 @@ export default function VendorPaymentDetails() {
     onSuccess: (response) => {
       success(response?.message || 'Payment details added successfully')
       queryClient.invalidateQueries({ queryKey: ['vendor-payment-details'] })
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] })
     },
     onError: (err: any) => error(err?.message || 'Failed to add payment details'),
   })
@@ -76,6 +92,7 @@ export default function VendorPaymentDetails() {
     onSuccess: (response) => {
       success(response?.message || 'Payment details updated successfully')
       queryClient.invalidateQueries({ queryKey: ['vendor-payment-details'] })
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] })
     },
     onError: (err: any) => error(err?.message || 'Failed to update payment details'),
   })
@@ -85,6 +102,7 @@ export default function VendorPaymentDetails() {
     onSuccess: (response) => {
       success(response?.message || 'Payment details deleted successfully')
       queryClient.invalidateQueries({ queryKey: ['vendor-payment-details'] })
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] })
     },
     onError: (err: any) => error(err?.message || 'Failed to delete payment details'),
   })
@@ -163,11 +181,27 @@ export default function VendorPaymentDetails() {
       <Text variant="h2" weight="semibold" className="text-primary-900">
         Payment Details
       </Text>
+
+      {showPendingApprovalBanner && (
+        <VendorAccountStatusBanner
+          status={userProfile?.status}
+          hasRemainingSetupSteps={!isOnboardingComplete}
+        />
+      )}
+
+      {hasExistingPaymentDetails && !canFetchPaymentDetails && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+          Payment details are saved on your profile. Full payout management will be available after
+          a DashQard administrator approves your account.
+        </div>
+      )}
       <div className="flex justify-end">
         <div className="flex items-center gap-3">
-          <Button variant="danger" onClick={() => setIsDeleteAllModalOpen(true)}>
-            Delete All Payment Methods
-          </Button>
+          {canFetchPaymentDetails && (
+            <Button variant="danger" onClick={() => setIsDeleteAllModalOpen(true)}>
+              Delete All Payment Methods
+            </Button>
+          )}
           <Button variant="secondary" onClick={() => setIsAddModalOpen(true)}>
             Add Payment Details
           </Button>

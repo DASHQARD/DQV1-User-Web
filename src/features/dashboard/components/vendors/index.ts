@@ -1,6 +1,8 @@
 export * from './modals'
 export * from './tableConfigs'
 export { default as CompleteVendorWidget } from './CompleteVendorWidget'
+export { default as VendorOnboardingBanner } from './VendorOnboardingBanner'
+export { VendorAccountStatusBanner } from './VendorAccountStatusBanner'
 export { RecentExperiences } from './RecentExperiences'
 export { RecentBranches } from './RecentBranches'
 export { BranchMetricsCards } from './BranchMetricsCards'

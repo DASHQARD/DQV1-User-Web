@@ -3,6 +3,7 @@ import {
   getRequiredEmailSchema,
   getRequiredInternationalPhoneSchema,
   getRequiredStringSchema,
+  isDialCodeOnlyPhone,
   isValidInternationalPhoneDigits,
   INVALID_PHONE_MESSAGE,
 } from '../shared'
@@ -101,11 +102,10 @@ export const CreateBranchFormSchema = z
   })
   .refine(
     (data) => {
-      // If payment_method is mobile_money, provider and number are required
-      if (data.payment_method === 'mobile_money') {
-        return !!(data.mobile_money_provider && data.mobile_money_number)
-      }
-      return true
+      if (data.payment_method !== 'mobile_money') return true
+      const momoNumber = data.mobile_money_number?.trim() ?? ''
+      const hasMomoNumber = Boolean(momoNumber && !isDialCodeOnlyPhone(momoNumber))
+      return Boolean(data.mobile_money_provider && hasMomoNumber)
     },
     {
       message: 'Mobile Money Provider and Mobile Money Number are required',
@@ -113,10 +113,12 @@ export const CreateBranchFormSchema = z
     },
   )
   .refine(
-    (data) =>
-      data.payment_method !== 'mobile_money' ||
-      !data.mobile_money_number ||
-      isValidInternationalPhoneDigits(data.mobile_money_number),
+    (data) => {
+      if (data.payment_method !== 'mobile_money') return true
+      const momoNumber = data.mobile_money_number?.trim() ?? ''
+      if (!momoNumber || isDialCodeOnlyPhone(momoNumber)) return true
+      return isValidInternationalPhoneDigits(momoNumber)
+    },
     { message: INVALID_PHONE_MESSAGE, path: ['mobile_money_number'] },
   )
   .refine(

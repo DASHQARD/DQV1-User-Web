@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore, useGuestAddToCartModalStore } from '@/stores'
 import { useCart } from './useCart'
 import { useCartStore } from '@/stores/cart'
+import { getApiErrorMessage } from '@/utils/apiError'
 import { formatCurrency } from '@/utils/format'
 import { getCardBackground, getCardTypeName } from '@/utils/cardDisplay'
 import { ensureGuestCartAndAddCard } from '@/features/website/services/cards'
@@ -104,8 +105,7 @@ export function useCardItem(props: CardItemHookProps) {
           queryClient.invalidateQueries({ queryKey: ['cart-items'] })
           openCart()
         } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : 'Failed to add item to cart'
-          toast.error(message)
+          toast.error(getApiErrorMessage(err, 'Failed to add item to cart'))
         }
         return
       }

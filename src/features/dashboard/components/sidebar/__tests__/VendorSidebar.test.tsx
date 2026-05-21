@@ -33,6 +33,8 @@ vi.mock('@/features/dashboard/vendor/hooks', () => ({
     isBranchActive: () => false,
     addAccountParam: (path: string) => `${path}?account=vendor`,
     handleSwitchToVendor: vi.fn(),
+    getIsNavItemDisabled: () => false,
+    isSettingsDisabled: false,
   }),
 }))
 

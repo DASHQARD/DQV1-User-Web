@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { FileUploader, Input, Combobox, Button, Text } from '@/components'
+import { FileUploader, Input, Combobox, Button, Text, GiftCardPriceFormField } from '@/components'
 import { useUploadFiles } from '@/hooks'
 import { useToast } from '@/hooks'
 import { usePersistedModalState, useUserProfile } from '@/hooks'
@@ -56,7 +56,7 @@ export default function CreateExperienceForm() {
       product: '',
       description: '',
       type: '',
-      price: 0,
+      price: undefined,
       currency: 'GHS',
       issue_date: '',
       expiry_date: '',
@@ -319,13 +319,11 @@ export default function CreateExperienceForm() {
         error={form.formState.errors.description?.message}
       />
 
-      <Input
+      <GiftCardPriceFormField
+        control={form.control}
+        name="price"
         iconBefore={<span className="text-gray-400 font-medium">GHS</span>}
-        label="Price"
-        type="number"
-        step="0.01"
-        placeholder="0.00"
-        {...form.register('price', { valueAsNumber: true })}
+        disabled={isPending}
         error={form.formState.errors.price?.message}
       />
 

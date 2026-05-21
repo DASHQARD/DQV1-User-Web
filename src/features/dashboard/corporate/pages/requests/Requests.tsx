@@ -8,7 +8,6 @@ import {
   VendorRequestDetails,
 } from '@/features/dashboard/components'
 import { useCorporateRequests } from '@/features/dashboard/hooks'
-import { OPTIONS } from '@/utils/constants/filter'
 
 export default function Requests() {
   const {
@@ -50,7 +49,6 @@ export default function Requests() {
               previousCursor={pagination?.previous}
               onSetAfter={handleSetAfter}
               filterBy={{
-                simpleSelects: [{ label: 'status', options: OPTIONS.REQUEST_STATUS }],
                 date: [{ queryKey: 'dateFrom', label: 'Date range' }],
               }}
             />

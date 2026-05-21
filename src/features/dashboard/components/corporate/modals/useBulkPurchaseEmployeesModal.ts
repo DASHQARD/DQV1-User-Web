@@ -87,7 +87,7 @@ export function useBulkPurchaseEmployeesModal() {
   const hasExistingRecipients = isOpen && existingRecipientsList.length > 0
 
   const { data: vendorsResponse, isLoading: isLoadingVendors } = useGetAllVendorsManagementService({
-    limit: 500,
+    limit: 100,
   })
   const vendorList = useMemo(() => {
     if (!vendorsResponse) return []

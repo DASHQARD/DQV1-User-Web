@@ -1,6 +1,10 @@
 import React from 'react'
 import { useUserProfile } from '@/hooks'
 import { vendorQueries } from '@/features'
+import {
+  getBranchOnboardingProgress,
+  isBranchOnboardingComplete,
+} from '../utils/branchOnboardingProgress'
 import { branchQueries } from './useBranchQueries'
 
 const RECENT_REDEMPTIONS_LIMIT = 5
@@ -48,31 +52,13 @@ export function useBranchHome() {
     return `${path}${separator}account=branch`
   }, [])
 
-  const branchOnboardingProgress = React.useMemo(() => {
-    const hasPersonalDetails =
-      Boolean(userProfileData?.fullname) &&
-      Boolean(userProfileData?.street_address) &&
-      Boolean(userProfileData?.dob) &&
-      Boolean(userProfileData?.id_type) &&
-      Boolean(userProfileData?.id_number)
-
-    const hasIDImages = Boolean(userProfileData?.id_images?.length)
-    const hasPaymentDetails =
-      Boolean(userProfileData?.momo_accounts?.length) ||
-      Boolean(userProfileData?.bank_accounts?.length)
-
-    return {
-      hasPersonalDetails,
-      hasIDImages,
-      hasPersonalDetailsAndID: hasPersonalDetails && hasIDImages,
-      hasPaymentDetails,
-    }
-  }, [userProfileData])
+  const branchOnboardingProgress = React.useMemo(
+    () => getBranchOnboardingProgress(userProfileData as Record<string, unknown> | undefined),
+    [userProfileData],
+  )
 
   const branchOnboardingComplete = React.useMemo(
-    () =>
-      branchOnboardingProgress.hasPersonalDetailsAndID &&
-      branchOnboardingProgress.hasPaymentDetails,
+    () => isBranchOnboardingComplete(branchOnboardingProgress),
     [branchOnboardingProgress],
   )
 

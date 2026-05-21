@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { giftCardPriceFieldSchema } from '../../giftCardAmount'
 import { getRequiredStringSchema } from '../shared'
 
 export const CreateExperienceSchema = z
@@ -6,15 +7,16 @@ export const CreateExperienceSchema = z
     product: getRequiredStringSchema('Product'),
     description: getRequiredStringSchema('Description'),
     type: getRequiredStringSchema('Type'),
-    price: z.number({ message: 'Price must be a number' }).positive('Price must be greater than 0'),
+    price: giftCardPriceFieldSchema,
     currency: getRequiredStringSchema('Currency'),
     issue_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Issue date must be in YYYY-MM-DD format'),
     expiry_date: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expiry date must be in YYYY-MM-DD format'),
-    redemption_branches: z.array(
-      z.object({ branch_id: z.string().min(1, 'Branch ID is required') }),
-    ),
+    redemption_branches: z
+      .array(z.object({ branch_id: z.string().min(1, 'Branch ID is required') }))
+      .optional()
+      .default([]),
     images: z
       .array(
         z.object({

@@ -41,6 +41,8 @@ import {
   getVendorByIdManagement,
 } from '../services'
 import { getCards } from '@/features/dashboard/services/cards'
+import { canFetchVendorPaymentDetails } from '@/features/dashboard/utils/vendorAccountStatus'
+import { useUserProfile } from '@/hooks'
 import { useAuthStore } from '@/stores'
 
 // Backend vendor/branch IDs are GUID-like but not strict UUID v1-v5.
@@ -181,10 +183,15 @@ export function corporateQueries() {
     })
   }
 
-  function useGetPaymentDetailsService() {
+  function useGetPaymentDetailsService(options?: { enabled?: boolean }) {
+    const { useGetUserProfileService } = useUserProfile()
+    const { data: userProfile } = useGetUserProfileService()
+    const canFetchPaymentDetails = canFetchVendorPaymentDetails(userProfile)
+
     return useQuery({
       queryKey: ['corporate-payment-details'],
       queryFn: getPaymentDetails,
+      enabled: options?.enabled !== false && canFetchPaymentDetails,
     })
   }
 
@@ -404,6 +411,7 @@ export function corporateQueries() {
     return useQuery({
       queryKey: ['all-vendors-management', params],
       queryFn: () => getAllVendorsManagement(params),
+      enabled: params !== undefined,
     })
   }
 

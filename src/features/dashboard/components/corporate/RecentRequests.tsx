@@ -1,12 +1,14 @@
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/libs'
-import { Text, Tag } from '@/components'
+import { Text, Tag, Tooltip, TooltipTrigger, TooltipContent } from '@/components'
 import { ROUTES } from '@/utils/constants'
 import { useAuthStore } from '@/stores'
 import { getStatusVariant } from '@/utils/helpers'
 import { corporateQueries } from '../../corporate'
 import { formatDate } from '@/utils/format'
+import { useVendorOnboardingProgress } from '@/features/dashboard/hooks/useVendorOnboardingProgress'
+import { VENDOR_NAV_DISABLED_TOOLTIP } from '@/features/dashboard/components/sidebar/VendorSidebarNavItem'
 
 export default function RecentRequests() {
   const [searchParams] = useSearchParams()
@@ -25,6 +27,9 @@ export default function RecentRequests() {
   const requestsResponse =
     isCorporateSuperAdmin && vendorIdFromUrl ? vendorRequestsResponse : corporateRequestsResponse
 
+  const { getIsNavItemDisabled } = useVendorOnboardingProgress()
+  const isRequestsDisabled = getIsNavItemDisabled(ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS)
+
   const recentRequests = useMemo(() => {
     if (!requestsResponse) return []
     return Array.isArray(requestsResponse)
@@ -42,12 +47,23 @@ export default function RecentRequests() {
           Requests
         </h5>
 
-        <Link
-          to={`${ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS}?account=vendor${vendorIdFromUrl ? `&vendor_id=${vendorIdFromUrl}` : ''}`}
-          className="text-[#402D87] no-underline text-sm font-medium flex items-center transition-colors duration-200 hover:text-[#2d1a72]"
-        >
-          View all <Icon icon="bi:arrow-right" className="ml-1" />
-        </Link>
+        {isRequestsDisabled ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-gray-400 text-sm font-medium flex items-center cursor-not-allowed">
+                View all <Icon icon="bi:arrow-right" className="ml-1" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{VENDOR_NAV_DISABLED_TOOLTIP}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Link
+            to={`${ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS}?account=vendor${vendorIdFromUrl ? `&vendor_id=${vendorIdFromUrl}` : ''}`}
+            className="text-[#402D87] no-underline text-sm font-medium flex items-center transition-colors duration-200 hover:text-[#2d1a72]"
+          >
+            View all <Icon icon="bi:arrow-right" className="ml-1" />
+          </Link>
+        )}
       </div>
 
       <div className="px-6 pb-6">

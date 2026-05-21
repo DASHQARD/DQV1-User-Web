@@ -2,6 +2,7 @@ import { useMemo, useCallback, useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 
+import { getApiErrorMessage } from '@/utils/apiError'
 import {
   getCardBackground as getCardBg,
   getCardFileUrl,
@@ -122,8 +123,7 @@ export function useCardDetails(): UseCardDetailsReturn {
           queryClient.invalidateQueries({ queryKey: ['cart-items'] })
           openCart()
         } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : 'Failed to add to cart'
-          toast.error(message)
+          toast.error(getApiErrorMessage(err, 'Failed to add to cart'))
         }
         return
       }

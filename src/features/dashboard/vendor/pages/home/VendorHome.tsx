@@ -4,11 +4,15 @@ import { Text } from '@/components'
 import {
   VendorSummaryCards,
   CompleteVendorWidget,
+  VendorOnboardingBanner,
+  VendorAccountStatusBanner,
   RecentRequests,
   RecentExperiences,
   RecentBranches,
 } from '@/features/dashboard/components'
 import { useUserProfile } from '@/hooks'
+import { useVendorOnboardingProgress } from '@/features/dashboard/hooks/useVendorOnboardingProgress'
+import { isVendorPendingAdminApproval } from '@/features/dashboard/utils/vendorAccountStatus'
 import { vendorQueries } from '@/features'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 // import { useRedemptionQueries } from '@/features/dashboard/hooks'
@@ -20,6 +24,11 @@ export default function VendorHome() {
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
+  const { isComplete: isVendorOnboardingComplete } = useVendorOnboardingProgress()
+  const showPendingApprovalBanner = isVendorPendingAdminApproval(
+    userProfileData,
+    isVendorOnboardingComplete,
+  )
   const { useGetBranchesByVendorIdService, useGetCardsByVendorIdService } = vendorQueries()
   const {
     useGetCorporateBranchesListService,
@@ -149,6 +158,15 @@ export default function VendorHome() {
         <Text variant="h2" weight="semibold">
           Vendor Dashboard
         </Text>
+
+        {showPendingApprovalBanner && (
+          <VendorAccountStatusBanner
+            status={userProfileData?.status}
+            hasRemainingSetupSteps={!isVendorOnboardingComplete}
+          />
+        )}
+
+        <VendorOnboardingBanner />
 
         {/* <div className="group relative bg-linear-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10 overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-blue-400/20 to-transparent rounded-bl-full" />

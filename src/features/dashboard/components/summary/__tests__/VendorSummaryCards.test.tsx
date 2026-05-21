@@ -25,6 +25,22 @@ vi.mock('@/features', () => ({
   }),
 }))
 
+vi.mock('@/features/dashboard/hooks/useVendorOnboardingProgress', () => ({
+  useVendorOnboardingProgress: () => ({
+    getIsNavItemDisabled: () => false,
+    isSettingsDisabled: false,
+    isComplete: true,
+  }),
+}))
+
+vi.mock('@/features/dashboard/hooks/useVendorOperationalAccess', () => ({
+  useVendorOperationalAccess: () => ({
+    isOperationalAccessEnabled: true,
+    isOnboardingComplete: true,
+    isLoading: false,
+  }),
+}))
+
 vi.mock('@/features/dashboard/corporate/hooks/useCorporateQueries', () => ({
   corporateQueries: () => ({
     useGetCorporateSuperAdminCardsService: () => ({ data: [], isLoading: false }),

@@ -21,7 +21,7 @@ export default function VendorsProfile() {
   const vendor_id = searchParams.get('vendor_id') || ''
   const { usePublicVendorsService } = usePublicCatalogQueries()
   const { data: vendorDetailsResponse, isLoading: isLoadingVendor } = usePublicVendorsService(
-    vendor_id ? { vendor_id, limit: 500 } : undefined,
+    vendor_id ? { vendor_id, limit: 100 } : undefined,
     !!vendor_id,
   )
 

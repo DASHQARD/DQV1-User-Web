@@ -26,6 +26,7 @@ import {
   type GetRedemptionsAmountDashPassParams,
 } from '../../services/redemptions'
 import { useAuthStore } from '@/stores'
+import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
 
 export function useRedemptionQueries() {
   function useSearchVendorsService(params?: SearchVendorsParams) {
@@ -53,12 +54,13 @@ export function useRedemptionQueries() {
   function useGetVendorRedemptionsService(params?: GetVendorRedemptionsParams) {
     const { user } = useAuthStore()
     const isBranch = user?.user_type === 'branch'
+    const { isOperationalAccessEnabled } = useVendorOperationalAccess()
 
     // Only enable if user profile is loaded and user is NOT a branch manager
     return useQuery({
       queryKey: ['vendor-redemptions', params],
       queryFn: () => getVendorRedemptions(params),
-      enabled: !isBranch,
+      enabled: !isBranch && isOperationalAccessEnabled,
     })
   }
 
@@ -128,9 +130,12 @@ export function useRedemptionQueries() {
   }
 
   function useGetVendorRedemptionsListService(params?: GetVendorRedemptionsListParams) {
+    const { isOperationalAccessEnabled } = useVendorOperationalAccess()
+
     return useQuery({
       queryKey: ['vendor-redemptions-list', params],
       queryFn: () => getVendorRedemptionsList(params),
+      enabled: isOperationalAccessEnabled,
     })
   }
 

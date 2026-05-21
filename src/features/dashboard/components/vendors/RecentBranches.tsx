@@ -1,12 +1,17 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Text, Loader } from '@/components'
+import { Text, Loader, Tooltip, TooltipTrigger, TooltipContent } from '@/components'
 import { Icon } from '@/libs'
 import { cn } from '@/libs'
 import { ROUTES } from '@/utils/constants'
 import type { RecentBranchesProps } from '@/types'
+import { useVendorOnboardingProgress } from '@/features/dashboard/hooks/useVendorOnboardingProgress'
+
+const BRANCHES_DISABLED_TOOLTIP = 'Create your first branch to access this section'
 
 export function RecentBranches({ branches, isLoading, addAccountParam }: RecentBranchesProps) {
+  const { getIsNavItemDisabled } = useVendorOnboardingProgress()
+  const isBranchesDisabled = getIsNavItemDisabled(ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES)
   const recentBranches = React.useMemo(() => {
     return branches.slice(0, 5)
   }, [branches])
@@ -33,12 +38,15 @@ export function RecentBranches({ branches, isLoading, addAccountParam }: RecentB
           </div>
         ) : (
           <div className="space-y-3">
-            {recentBranches.map((branch: any) => (
-              <Link
-                key={branch.id}
-                to={addAccountParam(`${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}/${branch.id}`)}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
-              >
+            {recentBranches.map((branch: any) => {
+              const branchRowClassName = cn(
+                'flex items-center justify-between p-4 border border-gray-200 rounded-lg',
+                isBranchesDisabled
+                  ? 'opacity-60 cursor-not-allowed'
+                  : 'hover:bg-gray-50 transition-colors group',
+              )
+              const branchRow = (
+                <>
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="w-10 h-10 rounded-lg bg-[#402D87]/10 flex items-center justify-center shrink-0">
                     <Icon icon="bi:building" className="text-[#402D87]" />
@@ -72,19 +80,55 @@ export function RecentBranches({ branches, isLoading, addAccountParam }: RecentB
                   )}
                   <Icon
                     icon="bi:chevron-right"
-                    className="text-gray-400 group-hover:text-[#402D87] transition-colors"
+                    className={cn(
+                      'text-gray-400 transition-colors',
+                      !isBranchesDisabled && 'group-hover:text-[#402D87]',
+                    )}
                   />
                 </div>
-              </Link>
-            ))}
+                </>
+              )
+
+              if (isBranchesDisabled) {
+                return (
+                  <Tooltip key={branch.id}>
+                    <TooltipTrigger asChild>
+                      <div className={branchRowClassName}>{branchRow}</div>
+                    </TooltipTrigger>
+                    <TooltipContent>{BRANCHES_DISABLED_TOOLTIP}</TooltipContent>
+                  </Tooltip>
+                )
+              }
+
+              return (
+                <Link
+                  key={branch.id}
+                  to={addAccountParam(`${ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES}/${branch.id}`)}
+                  className={branchRowClassName}
+                >
+                  {branchRow}
+                </Link>
+              )
+            })}
             {branches.length > 5 && (
               <div className="text-center pt-2">
-                <Link
-                  to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES)}
-                  className="text-[#402D87] text-sm font-medium hover:text-[#2d1a72] transition-colors"
-                >
-                  View all {branches.length} branches
-                </Link>
+                {isBranchesDisabled ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-gray-400 text-sm font-medium cursor-not-allowed">
+                        View all {branches.length} branches
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>{BRANCHES_DISABLED_TOOLTIP}</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Link
+                    to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES)}
+                    className="text-[#402D87] text-sm font-medium hover:text-[#2d1a72] transition-colors"
+                  >
+                    View all {branches.length} branches
+                  </Link>
+                )}
               </div>
             )}
           </div>

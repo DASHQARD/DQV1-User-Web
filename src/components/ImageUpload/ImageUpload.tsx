@@ -30,7 +30,7 @@ const SIZE_STYLES: Record<
     box: 'h-[120px] w-[120px]',
     placeholderIcon: 'text-5xl',
     useOverlay: false,
-    badge: 'h-9 w-9 bottom-1.5 right-1.5',
+    badge: 'h-9 w-9 -bottom-0.5 -right-0.5',
   },
 }
 
@@ -87,7 +87,7 @@ export default function ImageUpload({
   const borderRadius = isRounded ? 'rounded-full' : 'rounded-xl'
 
   return (
-    <div className={cn('relative shrink-0', styles.box, className)}>
+    <div className={cn('relative shrink-0 overflow-visible', styles.box, className)}>
       <input
         ref={fileInputRef}
         type="file"
@@ -104,29 +104,31 @@ export default function ImageUpload({
         disabled={isUploading}
         aria-label={isUploading ? 'Uploading photo' : 'Change profile photo'}
         className={cn(
-          'group relative size-full overflow-hidden border border-gray-200 bg-gray-100',
+          'group relative size-full border border-gray-200 bg-gray-100',
           'transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
           'disabled:cursor-not-allowed disabled:opacity-70',
           borderRadius,
         )}
       >
-        {showImage ? (
-          <img
-            src={displayImage!}
-            alt=""
-            className={cn('absolute inset-0 size-full object-cover object-center', borderRadius)}
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <span
-            className={cn(
-              'flex size-full items-center justify-center bg-linear-to-br from-gray-100 to-gray-200',
-              borderRadius,
-            )}
-          >
-            <Icon icon="bi:person-fill" className={cn(styles.placeholderIcon, 'text-gray-400')} />
-          </span>
-        )}
+        <span className={cn('absolute inset-0 overflow-hidden', borderRadius)}>
+          {showImage ? (
+            <img
+              src={displayImage!}
+              alt=""
+              className={cn('size-full object-cover object-center', borderRadius)}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <span
+              className={cn(
+                'flex size-full items-center justify-center bg-linear-to-br from-gray-100 to-gray-200',
+                borderRadius,
+              )}
+            >
+              <Icon icon="bi:person-fill" className={cn(styles.placeholderIcon, 'text-gray-400')} />
+            </span>
+          )}
+        </span>
 
         {styles.useOverlay ? (
           <span
@@ -158,16 +160,16 @@ export default function ImageUpload({
         ) : (
           <span
             className={cn(
-              'absolute flex items-center justify-center rounded-full border-2 border-white bg-primary-600 text-white shadow-md',
-              'transition-transform group-hover:scale-105',
+              'absolute z-10 flex items-center justify-center rounded-full border-2 border-white bg-primary-500 shadow-md',
+              'transition-transform group-hover:scale-105 group-hover:bg-primary-700',
               styles.badge,
               isUploading && 'bg-primary-700',
             )}
           >
             {isUploading ? (
-              <Icon icon="bi:arrow-repeat" className="size-4 animate-spin" aria-hidden />
+              <Icon icon="bi:arrow-repeat" className="size-4 shrink-0 text-white animate-spin" aria-hidden />
             ) : (
-              <Icon icon="bi:camera-fill" className="size-4" aria-hidden />
+              <Icon icon="bi:camera-fill" className="size-4 shrink-0 text-white" aria-hidden />
             )}
           </span>
         )}

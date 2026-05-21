@@ -34,10 +34,10 @@ export default function Requests() {
   const queryParams = React.useMemo(() => {
     const params: Record<string, any> = {}
     if (query.search) params.search = query.search
-    if (query.status) params.status = query.status
+    if (!isCorporateSuperAdmin && query.status) params.status = query.status
     appendDateRangeApiParams(params, query)
     return params
-  }, [query])
+  }, [query, isCorporateSuperAdmin])
 
   const { data: vendorRequestsResponse, isLoading: isLoadingVendorRequests } =
     useGetRequestsVendorService(isCorporateSuperAdmin && vendorIdFromUrl ? undefined : queryParams)

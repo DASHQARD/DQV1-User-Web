@@ -29,6 +29,7 @@ import {
   getGuestCardSingle,
 } from '../../services/cards'
 import { useToast } from '@/hooks'
+import { getApiErrorMessage, isGuestAmountThresholdMessage } from '@/utils/apiError'
 
 export default function DashProPurchase() {
   const [isCardFlipped, setIsCardFlipped] = React.useState(false)
@@ -53,6 +54,7 @@ export default function DashProPurchase() {
     handleSubmit,
     formState: { errors },
     setValue,
+    setError,
   } = form
 
   // Watch form values for card preview
@@ -77,16 +79,6 @@ export default function DashProPurchase() {
   const assignRecipientMutation = useAssignRecipientService()
   const assignGuestRecipientMutation = useAssignGuestRecipientService()
   const toast = useToast()
-
-  const getGuestErrorMessage = (error: any) => {
-    return (
-      error?.response?.data?.message ||
-      error?.response?.data?.error ||
-      error?.response?.data?.errors?.[0]?.message ||
-      error?.message ||
-      'Something went wrong'
-    )
-  }
 
   // Sync assignToSelf state with form value
   React.useEffect(() => {
@@ -296,9 +288,13 @@ export default function DashProPurchase() {
 
       toast.success('DashPro gift card added to cart')
       openCart()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating DashPro card and assigning recipient:', error)
-      toast.error(getGuestErrorMessage(error))
+      const message = getApiErrorMessage(error)
+      if (isGuestAmountThresholdMessage(message)) {
+        setError('amount', { type: 'server', message })
+      }
+      toast.error(message)
     }
   }
 

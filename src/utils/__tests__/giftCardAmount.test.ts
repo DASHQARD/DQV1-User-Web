@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   clampGiftCardAmount,
   formatGiftCardAmountPreview,
+  fromGiftCardPriceInputChange,
   GIFT_CARD_AMOUNT_MAX,
   isGiftCardAmountSubmittable,
   normalizeGiftCardAmountInput,
   parseGiftCardAmountInput,
   resolveGiftCardAmount,
+  toGiftCardPriceInputValue,
 } from '../giftCardAmount'
 
 describe('giftCardAmount', () => {
@@ -36,6 +38,17 @@ describe('giftCardAmount', () => {
     expect(formatGiftCardAmountPreview('500')).toBe('500.00')
     expect(formatGiftCardAmountPreview('99999')).toBe('10,000.00')
     expect(formatGiftCardAmountPreview('10000000000000000000000')).toBe('10,000.00')
+  })
+
+  it('toGiftCardPriceInputValue shows empty instead of zero default', () => {
+    expect(toGiftCardPriceInputValue(0)).toBe('')
+    expect(toGiftCardPriceInputValue(undefined)).toBe('')
+    expect(toGiftCardPriceInputValue(250)).toBe('250')
+  })
+
+  it('fromGiftCardPriceInputChange maps empty string to undefined', () => {
+    expect(fromGiftCardPriceInputChange('')).toBeUndefined()
+    expect(fromGiftCardPriceInputChange('500')).toBe(500)
   })
 
   it('isGiftCardAmountSubmittable enforces min and max', () => {

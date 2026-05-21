@@ -30,7 +30,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
   return (
     <AnimatePresence>
       <motion.div
-        className="flex flex-col gap-6 max-w-[448px] w-full"
+        className="flex w-full flex-col gap-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}

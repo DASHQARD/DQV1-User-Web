@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom'
 import { Button, Text } from '@/components'
 import { Icon } from '@/libs'
 import { useCountriesData, useUserProfile, useToast } from '@/hooks'
+import { hasVendorPaymentDetails } from '@/features/dashboard/utils/vendorOnboardingProgress'
 import { ROUTES } from '@/utils/constants'
 import {
   addPaymentDetails,
@@ -46,10 +47,12 @@ export function CorporatePaymentDetails() {
     sort_code: 'string',
   })
 
+  const hasExistingPaymentDetails = hasVendorPaymentDetails(userProfile)
+
   const { data: myPaymentDetails, isLoading: isLoadingMyPaymentDetails } = useQuery({
     queryKey: ['corp-admin-payment-details'],
     queryFn: getPaymentDetails,
-    enabled: isCorporateSuperAdmin,
+    enabled: isCorporateSuperAdmin && hasExistingPaymentDetails,
   })
   const paymentDetailsData = myPaymentDetails?.data || myPaymentDetails || {}
   const mobileMoneyAccounts = Array.isArray(paymentDetailsData?.mobile_money_accounts)

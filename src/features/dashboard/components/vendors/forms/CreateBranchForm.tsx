@@ -13,6 +13,7 @@ import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { GHANA_BANKS } from '@/assets/data/banks'
 import { Icon } from '@/libs'
 import type { DropdownOption } from '@/types'
+import { getVisibleFieldError } from '@/utils/showFieldError'
 import { useCreateBranchForm } from './useCreateBranchForm'
 
 export default function CreateBranchForm() {
@@ -73,7 +74,7 @@ export default function CreateBranchForm() {
         <Controller
           control={form.control}
           name="country"
-          render={({ field, fieldState: { error } }) => (
+          render={({ field }) => (
             <Combobox
               label="Country"
               options={[
@@ -91,7 +92,7 @@ export default function CreateBranchForm() {
                   : []),
               ]}
               value={field.value || undefined}
-              error={error?.message}
+              error={getVisibleFieldError(form, 'country')}
               placeholder="Select country"
               isDisabled={true}
             />
@@ -102,7 +103,7 @@ export default function CreateBranchForm() {
           label="Branch Name"
           placeholder="Enter branch name"
           {...form.register('branch_name')}
-          error={form.formState.errors.branch_name?.message}
+          error={getVisibleFieldError(form, 'branch_name')}
           disabled={isFormDisabled}
         />
 
@@ -110,7 +111,7 @@ export default function CreateBranchForm() {
           label="Branch Location"
           placeholder="Enter branch location/address"
           {...form.register('branch_location')}
-          error={form.formState.errors.branch_location?.message}
+          error={getVisibleFieldError(form, 'branch_location')}
           disabled={isFormDisabled}
         />
       </section>
@@ -125,7 +126,7 @@ export default function CreateBranchForm() {
           label="Branch Manager Name"
           placeholder="Enter manager full name"
           {...form.register('branch_manager_name')}
-          error={form.formState.errors.branch_manager_name?.message}
+          error={getVisibleFieldError(form, 'branch_manager_name')}
           disabled={isFormDisabled}
         />
 
@@ -134,7 +135,7 @@ export default function CreateBranchForm() {
           placeholder="Enter manager email"
           type="email"
           {...form.register('branch_manager_email')}
-          error={form.formState.errors.branch_manager_email?.message}
+          error={getVisibleFieldError(form, 'branch_manager_email')}
           disabled={isFormDisabled}
         />
 
@@ -148,7 +149,7 @@ export default function CreateBranchForm() {
               selectedVal={value}
               handleChange={onChange}
               label="Phone Number"
-              error={form.formState.errors.branch_manager_phone?.message} hint={<PhoneFormatHint />}
+              error={getVisibleFieldError(form, 'branch_manager_phone')} hint={<PhoneFormatHint />}
             />
           )}
         />
@@ -163,7 +164,7 @@ export default function CreateBranchForm() {
         <Controller
           control={form.control}
           name="payment_method"
-          render={({ field: { value, onChange }, fieldState: { error } }) => (
+          render={({ field: { value, onChange } }) => (
             <div className="flex flex-col gap-3">
               <RadioGroup value={value || ''} onValueChange={onChange} className="flex gap-6">
                 <div className="flex items-center gap-2">
@@ -179,7 +180,9 @@ export default function CreateBranchForm() {
                   </Text>
                 </div>
               </RadioGroup>
-              {error && <p className="text-sm text-red-500">{error.message}</p>}
+              {getVisibleFieldError(form, 'payment_method') && (
+                <p className="text-sm text-red-500">{getVisibleFieldError(form, 'payment_method')}</p>
+              )}
             </div>
           )}
         />
@@ -189,12 +192,12 @@ export default function CreateBranchForm() {
             <Controller
               control={form.control}
               name="mobile_money_provider"
-              render={({ field, fieldState: { error } }) => (
+              render={({ field }) => (
                 <Combobox
                   label="Mobile Money Provider"
                   options={mobileMoneyProviders as DropdownOption[]}
                   {...field}
-                  error={error?.message}
+                  error={getVisibleFieldError(form, 'mobile_money_provider')}
                   placeholder="Select provider"
                 />
               )}
@@ -210,7 +213,7 @@ export default function CreateBranchForm() {
                   selectedVal={value}
                   handleChange={onChange}
                   label="Phone Number"
-                  error={form.formState.errors.mobile_money_number?.message} hint={<PhoneFormatHint />}
+                  error={getVisibleFieldError(form, 'mobile_money_number')} hint={<PhoneFormatHint />}
                 />
               )}
             />
@@ -222,12 +225,12 @@ export default function CreateBranchForm() {
             <Controller
               control={form.control}
               name="bank_name"
-              render={({ field, fieldState: { error } }) => (
+              render={({ field }) => (
                 <Combobox
                   label="Bank Name"
                   options={GHANA_BANKS.map((bank) => ({ label: bank.name, value: bank.name }))}
                   {...field}
-                  error={error?.message}
+                  error={getVisibleFieldError(form, 'bank_name')}
                   placeholder="Select bank"
                 />
               )}
@@ -238,14 +241,14 @@ export default function CreateBranchForm() {
                 label="Bank Branch"
                 placeholder="Enter bank branch"
                 {...form.register('branch')}
-                error={form.formState.errors.branch?.message}
+                error={getVisibleFieldError(form, 'branch')}
               />
 
               <Input
                 label="Account Number"
                 placeholder="Enter account number"
                 {...form.register('account_number')}
-                error={form.formState.errors.account_number?.message}
+                error={getVisibleFieldError(form, 'account_number')}
               />
 
               <Input
@@ -253,7 +256,7 @@ export default function CreateBranchForm() {
                 label="Account Name"
                 placeholder="Enter account holder name"
                 {...form.register('account_name')}
-                error={form.formState.errors.account_name?.message}
+                error={getVisibleFieldError(form, 'account_name')}
               />
             </div>
 
@@ -262,14 +265,14 @@ export default function CreateBranchForm() {
                 label="Sort Code"
                 placeholder="Enter sort code"
                 {...form.register('sort_code')}
-                error={form.formState.errors.sort_code?.message}
+                error={getVisibleFieldError(form, 'sort_code')}
               />
 
               <Input
                 label="SWIFT Code"
                 placeholder="Enter SWIFT code"
                 {...form.register('swift_code')}
-                error={form.formState.errors.swift_code?.message}
+                error={getVisibleFieldError(form, 'swift_code')}
               />
             </div>
           </div>
@@ -280,7 +283,7 @@ export default function CreateBranchForm() {
         <Button
           type="submit"
           variant="secondary"
-          disabled={!form.formState.isValid || isFormDisabled}
+          disabled={isFormDisabled}
           className="w-full"
         >
           Create Branch

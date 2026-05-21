@@ -22,6 +22,7 @@ import {
   getVendorPaymentById,
 } from '../services'
 import { getRequestsCorporate } from '@/features/dashboard/corporate/services'
+import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
 import type { QueryType, GetBranchManagerInvitationsQuery } from '@/types'
 import { useUserProfile } from '@/hooks'
 
@@ -75,25 +76,41 @@ export function vendorQueries() {
   }
 
   function useGetAuditLogsVendorService() {
+    const { isOperationalAccessEnabled } = useVendorOperationalAccess()
+
     return useQuery({
       queryKey: ['audit-logs-vendor'],
       queryFn: getAuditLogsVendor,
+      enabled: isOperationalAccessEnabled,
     })
   }
 
   function useGetRequestsVendorService(query?: Record<string, any>) {
     const { useGetUserProfileService } = useUserProfile()
     const { data: userProfileData } = useGetUserProfileService()
-    const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
+    const { isOperationalAccessEnabled, isCorporateSwitchedToVendor } =
+      useVendorOperationalAccess()
+    const isCorpSuperAdminFromProfile =
+      userProfileData?.user_type === 'corporate super admin'
+    const needsOperationalAccess =
+      userProfileData?.user_type === 'vendor' ||
+      userProfileData?.user_type === 'branch' ||
+      isCorporateSwitchedToVendor
 
     return useQuery({
-      queryKey: isCorporateSuperAdmin ? ['requests-corporate', query] : ['requests-vendor', query],
-      queryFn: () =>
-        isCorporateSuperAdmin ? getRequestsCorporate(query) : getRequestsVendor(query),
+      queryKey: isCorpSuperAdminFromProfile ? ['requests-corporate', query] : ['requests-vendor', query],
+      queryFn: () => {
+        if (isCorpSuperAdminFromProfile) {
+          const { status: _status, ...corporateQuery } = query ?? {}
+          return getRequestsCorporate(corporateQuery)
+        }
+        return getRequestsVendor(query)
+      },
       // Don't run until profile is loaded; don't run /requests/corporate when caller passes undefined (corporate viewing vendor's requests)
       enabled:
         userProfileData !== undefined &&
-        (query !== undefined || userProfileData?.user_type !== 'corporate super admin'),
+        (query !== undefined || userProfileData?.user_type !== 'corporate super admin') &&
+        (!needsOperationalAccess || isOperationalAccessEnabled),
     })
   }
 
@@ -108,13 +125,18 @@ export function vendorQueries() {
   function useGetCardsByVendorIdService(params?: Record<string, any>) {
     const { useGetUserProfileService } = useUserProfile()
     const { data: userProfileData } = useGetUserProfileService()
+    const { isOperationalAccessEnabled } = useVendorOperationalAccess()
     const vendor_id = userProfileData?.vendor_id ? String(userProfileData.vendor_id) : undefined
     const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
 
     return useQuery({
       queryKey: ['cards-by-vendor-id', vendor_id, params],
       queryFn: () => getCardsByVendorId({ vendor_id: vendor_id!, ...params }),
-      enabled: !!vendor_id && userProfileData?.user_type !== 'branch' && !isCorporateSuperAdmin,
+      enabled:
+        !!vendor_id &&
+        userProfileData?.user_type !== 'branch' &&
+        !isCorporateSuperAdmin &&
+        isOperationalAccessEnabled,
     })
   }
 
@@ -127,31 +149,42 @@ export function vendorQueries() {
   }
 
   function useGetCardsMetricsService() {
+    const { isOperationalAccessEnabled } = useVendorOperationalAccess()
+
     return useQuery({
       queryKey: ['cards-metrics'],
       queryFn: getCardsMetrics,
+      enabled: isOperationalAccessEnabled,
     })
   }
 
   function useGetCardsPerformanceMetricsService() {
+    const { isOperationalAccessEnabled } = useVendorOperationalAccess()
+
     return useQuery({
       queryKey: ['cards-performance-metrics'],
       queryFn: getCardsPerformanceMetrics,
+      enabled: isOperationalAccessEnabled,
     })
   }
 
   function useGetVendorCardCountsService() {
+    const { isOperationalAccessEnabled } = useVendorOperationalAccess()
+
     return useQuery({
       queryKey: ['vendor-card-counts'],
       queryFn: getVendorCardCounts,
+      enabled: isOperationalAccessEnabled,
     })
   }
 
   function useGetAllVendorsDetailsForVendorService(enabled: boolean = true) {
+    const { isOperationalAccessEnabled } = useVendorOperationalAccess()
+
     return useQuery({
       queryKey: ['all-vendors-details-for-vendor'],
       queryFn: getAllVendorsDetails,
-      enabled,
+      enabled: enabled && isOperationalAccessEnabled,
     })
   }
 

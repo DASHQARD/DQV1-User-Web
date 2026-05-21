@@ -18,7 +18,7 @@ const FEATURED_LIMIT = 4
 export function useFeaturedCards() {
   const { publicCards, isLoading: cardsLoading } = usePublicCatalog()
   const { usePublicVendors } = usePublicCatalogQueries()
-  const { data: vendorsResponse, isLoading: vendorsLoading } = usePublicVendors({ limit: 500 })
+  const { data: vendorsResponse, isLoading: vendorsLoading } = usePublicVendors({ limit: 100 })
   const [activeTab, setActiveTab] = useState<FeaturedCardsTabType>('dashx')
 
   const filteredCards = useMemo(() => {

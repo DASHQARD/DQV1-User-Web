@@ -16,31 +16,17 @@ export function useCorporateHome() {
     isLoading: isUserProfileLoading,
     isFetching: isUserProfileFetching,
   } = useGetUserProfileService()
-  const { useGetAllVendorsManagementService } = corporateQueries()
-  const { data: allVendorsResponse } = useGetAllVendorsManagementService({ limit: 100 })
+  const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
+  const isCorporateAdmin = userProfileData?.user_type === 'corporate admin'
   const vendorAccountModal = usePersistedModalState<{ user?: unknown }>({
     paramName: MODALS.CORPORATE_ADMIN.CHILDREN.CREATE_VENDOR_ACCOUNT,
   })
-
-  const myVendorAccounts = useMemo(() => {
-    if (!allVendorsResponse) return []
-    const vendorsData = Array.isArray(allVendorsResponse?.data) ? allVendorsResponse.data : []
-    return vendorsData as Array<{
-      id?: number
-      vendor_name?: string
-      business_name?: string
-      approval_status?: string
-      status?: string
-    }>
-  }, [allVendorsResponse])
 
   const addAccountParam = (path: string): string => {
     const separator = path?.includes('?') ? '&' : '?'
     return `${path}${separator}account=corporate`
   }
 
-  const isCorporateAdmin = userProfileData?.user_type === 'corporate admin'
-  const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
   const isOnboardingStatusLoading =
     (isUserProfileLoading || isUserProfileFetching) && !userProfileData
 
@@ -76,6 +62,25 @@ export function useCorporateHome() {
   const isOnboardingComplete = progressPercentage === 100
   const isApprovedOrVerified = userStatus === 'approved' || userStatus === 'verified'
   const canAccessRestrictedFeatures = isOnboardingComplete && isApprovedOrVerified
+
+  const { useGetAllVendorsManagementService } = corporateQueries()
+  const { data: allVendorsResponse, isLoading: isLoadingVendorAccounts } =
+    useGetAllVendorsManagementService(
+      isCorporateSuperAdmin && canAccessRestrictedFeatures ? { limit: 100 } : undefined,
+    )
+
+  const myVendorAccounts = useMemo(() => {
+    if (!allVendorsResponse) return []
+    const vendorsData = Array.isArray(allVendorsResponse?.data) ? allVendorsResponse.data : []
+    return vendorsData as Array<{
+      id?: number
+      vendor_id?: number
+      vendor_name?: string
+      business_name?: string
+      approval_status?: string
+      status?: string
+    }>
+  }, [allVendorsResponse])
 
   const getNextIncompleteStep = () => {
     if (!hasProfileAndID) {
@@ -149,5 +154,7 @@ export function useCorporateHome() {
     navigateToBusinessStep,
     openCreateVendorAccount,
     myVendorAccounts,
+    isLoadingVendorAccounts,
+    addAccountParam,
   }
 }

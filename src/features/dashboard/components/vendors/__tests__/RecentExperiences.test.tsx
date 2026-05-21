@@ -1,6 +1,14 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { RecentExperiences } from '../RecentExperiences'
+
+vi.mock('@/features/dashboard/hooks/useVendorOnboardingProgress', () => ({
+  useVendorOnboardingProgress: () => ({
+    getIsNavItemDisabled: () => false,
+    isSettingsDisabled: false,
+    isComplete: true,
+  }),
+}))
 
 const addAccountParam = (path: string) => `${path}?account=vendor`
 
@@ -30,7 +38,7 @@ describe('RecentExperiences', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders experience count in header when experiences exist', () => {
+  it('renders experience cards when experiences exist', () => {
     renderWithProviders(
       <RecentExperiences
         experiences={[{ id: 1, product: 'Gift Card', type: 'dashx', status: 'approved' }]}
@@ -38,13 +46,37 @@ describe('RecentExperiences', () => {
         addAccountParam={addAccountParam}
       />,
     )
-    expect(screen.getByText('(1)')).toBeInTheDocument()
     expect(screen.getByText('Gift Card')).toBeInTheDocument()
-    expect(screen.getByText('dashx')).toBeInTheDocument()
-    expect(screen.getByText('approved')).toBeInTheDocument()
+    expect(screen.getByText('DASHX')).toBeInTheDocument()
   })
 
-  it('shows View all N experiences when more than 5', () => {
+  it('renders list layout with card id and count', () => {
+    renderWithProviders(
+      <RecentExperiences
+        layout="list"
+        experiences={[
+          {
+            id: '1',
+            card_id: 'GHA-482761934-2',
+            type: 'DashX',
+            status: 'active',
+            price: '1100',
+            currency: 'GHS',
+          },
+        ]}
+        isLoading={false}
+        addAccountParam={(path) => `${path}?account=branch`}
+        viewAllPath="/dashboard/branch/experience"
+      />,
+    )
+    expect(screen.getByText('My Experiences')).toBeInTheDocument()
+    expect(screen.getByText('(1)')).toBeInTheDocument()
+    expect(screen.getByText('GHA-482761934-2')).toBeInTheDocument()
+    expect(screen.getByText('DashX')).toBeInTheDocument()
+    expect(screen.getByText('GHS 1,100.00')).toBeInTheDocument()
+  })
+
+  it('shows View all link when multiple experiences exist', () => {
     const experiences = Array.from({ length: 7 }, (_, i) => ({
       id: i + 1,
       product: `Exp ${i + 1}`,
@@ -57,6 +89,7 @@ describe('RecentExperiences', () => {
         addAccountParam={addAccountParam}
       />,
     )
-    expect(screen.getByRole('link', { name: /view all 7 experiences/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /view all/i })).toBeInTheDocument()
+    expect(screen.getByText('Exp 1')).toBeInTheDocument()
   })
 })

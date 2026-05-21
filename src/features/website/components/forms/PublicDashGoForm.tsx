@@ -1,6 +1,7 @@
 import { Button, Input, Text } from '@/components'
 import { Icon } from '@/libs'
 import { CURRENCY_PREFIX, DEFAULT_CURRENCY, formatCurrencyLabel } from '@/utils/format'
+import { getApiErrorMessage, isGuestAmountThresholdMessage } from '@/utils/apiError'
 import {
   GIFT_CARD_AMOUNT_MAX,
   GIFT_CARD_AMOUNT_MIN,
@@ -125,7 +126,10 @@ export default function PublicDashGoForm({
       toast.success('DashGo gift card added to cart')
       openCart()
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to add DashGo to cart'
+      const message = getApiErrorMessage(err, 'Failed to add DashGo to cart')
+      if (isGuestAmountThresholdMessage(message)) {
+        form.setError('amount', { type: 'server', message })
+      }
       toast.error(message)
     } finally {
       setIsSubmitting(false)

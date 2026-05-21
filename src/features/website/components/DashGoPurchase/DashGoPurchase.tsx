@@ -9,7 +9,6 @@ import { CURRENCY_PREFIX, DEFAULT_CURRENCY, formatCurrency } from '@/utils/forma
 import { DashGoAssignRecipientSchema } from '@/utils/schemas'
 import { usePublicCatalogQueries } from '../../hooks/website/usePublicCatalogQueries'
 import { usePublicCatalogMutations } from '../../hooks/website/usePublicCatalogMutations'
-import { vendorQueries } from '@/features/dashboard/vendor/hooks'
 import { useUserProfile } from '@/hooks'
 import { useCartStore } from '@/stores/cart'
 import { useCart, useGuestCart, useRecipients } from '../../hooks'
@@ -29,6 +28,8 @@ import {
   extractGuestCreateCartMeta,
   getGuestCardSingle,
 } from '../../services/cards'
+import { useToast } from '@/hooks'
+import { getApiErrorMessage, isGuestAmountThresholdMessage } from '@/utils/apiError'
 
 const QRPlaceholder = () => {
   const pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
@@ -73,6 +74,7 @@ export default function DashGoPurchase() {
     handleSubmit,
     formState: { errors },
     setValue,
+    setError,
     watch,
   } = form
 
@@ -99,10 +101,9 @@ export default function DashGoPurchase() {
   const { useAssignRecipientService, useAssignGuestRecipientService } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()
   const assignGuestRecipientMutation = useAssignGuestRecipientService()
+  const toast = useToast()
 
   const { usePublicVendorsService } = usePublicCatalogQueries()
-
-  const { useGetBranchesByVendorIdService } = vendorQueries()
   const { data: vendorsResponse } = usePublicVendorsService({ limit: 100 })
 
   React.useEffect(() => {
@@ -156,35 +157,39 @@ export default function DashGoPurchase() {
     return contact.name || recipientName || 'Your Name'
   }, [assignToSelfFormValue, recipientName, isGuestAuth, user, userProfileData])
 
-  // Extract vendors from response
-  const vendors = React.useMemo(() => {
-    if (!vendorsResponse) return []
-    const vendorsData = Array.isArray(vendorsResponse) ? vendorsResponse : [vendorsResponse]
-    return vendorsData
-      .filter((vendor: any) => vendor.branches_with_cards?.length > 0)
-      .map((vendor: any) => ({
+  // Public catalog vendors (GET /vendors/all/details) — includes branches_with_cards for redemption
+  const vendorsWithBranches = React.useMemo(() => {
+    if (!vendorsResponse) return [] as any[]
+    const vendorsData = Array.isArray(vendorsResponse)
+      ? vendorsResponse
+      : ((vendorsResponse as { data?: any[] })?.data ?? [])
+    return (Array.isArray(vendorsData) ? vendorsData : []).filter(
+      (vendor: any) => (vendor.branches_with_cards?.length ?? 0) > 0,
+    )
+  }, [vendorsResponse])
+
+  const vendors = React.useMemo(
+    () =>
+      vendorsWithBranches.map((vendor: any) => ({
         id: vendor.id || vendor.vendor_id,
         vendor_id: vendor.vendor_id || vendor.id,
         name: vendor.business_name || vendor.branch_name || vendor.vendor_name || 'Unknown Vendor',
-      }))
-  }, [vendorsResponse])
+      })),
+    [vendorsWithBranches],
+  )
 
-  // Watch selected vendor ID
-  const [selectedVendorId, setSelectedVendorId] = React.useState<string | null>(null)
-
-  // Get branches for selected vendor
-  const { data: branchesData } = useGetBranchesByVendorIdService(selectedVendorId, false)
   const branches = React.useMemo(() => {
-    if (!branchesData) return []
-    return Array.isArray(branchesData) ? branchesData : branchesData?.data || []
-  }, [branchesData])
-
-  // Update selected vendor ID when form value changes
-  React.useEffect(() => {
-    if (vendorId) {
-      setSelectedVendorId(String(vendorId))
-    }
-  }, [vendorId])
+    if (!vendorId) return []
+    const selectedVendor = vendorsWithBranches.find(
+      (vendor: any) => String(vendor.vendor_id ?? vendor.id) === String(vendorId),
+    )
+    const branchList = selectedVendor?.branches_with_cards ?? []
+    return branchList.map((branch: any) => ({
+      branch_id: String(branch.branch_id ?? branch.id ?? ''),
+      branch_name: branch.branch_name || 'Unnamed Branch',
+      branch_location: branch.branch_location || '',
+    }))
+  }, [vendorId, vendorsWithBranches])
 
   React.useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -340,8 +345,13 @@ export default function DashGoPurchase() {
       }
 
       openCart()
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to create DashGo card:', error)
+      const message = getApiErrorMessage(error, 'Failed to add DashGo to cart')
+      if (isGuestAmountThresholdMessage(message)) {
+        setError('recipient_card_amount', { type: 'server', message })
+      }
+      toast.error(message)
     }
   }
 
@@ -490,7 +500,6 @@ export default function DashGoPurchase() {
                     const value = e?.target?.value || e?.value
                     const stringValue = value ? String(value) : ''
                     field.onChange(stringValue)
-                    setSelectedVendorId(stringValue || null)
                   }}
                   error={error?.message}
                   placeholder="Select a vendor"

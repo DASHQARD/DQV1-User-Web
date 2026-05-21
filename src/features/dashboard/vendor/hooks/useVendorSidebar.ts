@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useBusinessLogoUrl, usePresignedMediaUrl, useUserProfile } from '@/hooks'
 import { getBusinessLogoFileKey } from '@/utils/businessLogo'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
+import {
+  getVendorOnboardingProgress,
+  isVendorNavItemDisabled,
+  isVendorSettingsDisabled,
+} from '@/features/dashboard/utils/vendorOnboardingProgress'
+import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
 import { vendorQueries } from './useVendorQueries'
 
 export function useVendorSidebar() {
@@ -19,6 +25,7 @@ export function useVendorSidebar() {
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
+  const { isOperationalAccessEnabled } = useVendorOperationalAccess()
 
   const userType = (user as { user_type?: string })?.user_type || userProfileData?.user_type
   const isVendor = userType === 'vendor'
@@ -45,18 +52,6 @@ export function useVendorSidebar() {
     ? branches
     : (branches as { data?: unknown[] })?.data || []
 
-  const discoveryScore = useMemo(() => {
-    const progress = userProfileData?.onboarding_progress
-    if (!progress) return 0
-    const hasProfileAndID = progress.personal_details_completed && progress.upload_id_completed
-    const hasBusinessDetailsAndDocs =
-      progress.business_details_completed && progress.business_documents_completed
-    const hasBranches = branchesArray.length > 0
-    const completedCount =
-      (hasProfileAndID ? 1 : 0) + (hasBusinessDetailsAndDocs ? 1 : 0) + (hasBranches ? 1 : 0)
-    return Math.round((completedCount / 3) * 100)
-  }, [userProfileData?.onboarding_progress, branchesArray.length])
-
   const vendorsCreatedByCorporate = useMemo(() => {
     const vendorsData = Array.isArray(allVendorsDetails)
       ? allVendorsDetails
@@ -80,6 +75,35 @@ export function useVendorSidebar() {
   const corporateId = userProfileData?.corporate_id_from_business || ''
 
   const currentVendorId = searchParams.get('vendor_id')
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
+
+  const isCorporateSwitchedToVendor = isCorporateSuperAdmin && Boolean(currentVendorId)
+
+  const vendorOnboarding = useMemo(() => {
+    return getVendorOnboardingProgress({
+      userProfile: userProfileData,
+      branchesCount: branchesArray.length,
+      isBranchManager: userType === 'branch',
+      isCorporateSwitchedToVendor,
+    })
+  }, [userProfileData, branchesArray.length, userType, isCorporateSwitchedToVendor])
+
+  const discoveryScore = vendorOnboarding.progressPercentage
+  const hasFirstBranch = branchesArray.length > 0
+
+  const getIsNavItemDisabled = useCallback(
+    (path: string) =>
+      isVendorNavItemDisabled(path, {
+        isOnboardingComplete: vendorOnboarding.isComplete,
+        hasFirstBranch,
+      }),
+    [vendorOnboarding.isComplete, hasFirstBranch],
+  )
+
+  const isSettingsDisabled = isVendorSettingsDisabled({
+    isOnboardingComplete: vendorOnboarding.isComplete,
+  })
+
   const currentVendor = useMemo(() => {
     if (!currentVendorId || vendorsCreatedByCorporate.length === 0) return null
     return (
@@ -90,7 +114,9 @@ export function useVendorSidebar() {
     )
   }, [currentVendorId, vendorsCreatedByCorporate])
 
-  const { url: logoUrl } = useBusinessLogoUrl(userProfileData)
+  const { url: logoUrl } = useBusinessLogoUrl(userProfileData, {
+    enabled: isOperationalAccessEnabled,
+  })
 
   const vendorLogoUrls = useMemo(() => {
     const map: Record<number, string> = {}
@@ -107,7 +133,9 @@ export function useVendorSidebar() {
     return vendorLogo || getBusinessLogoFileKey(userProfileData)
   }, [currentVendor, userProfileData])
 
-  const { url: currentVendorLogoUrl } = usePresignedMediaUrl(currentVendorLogoKey)
+  const { url: currentVendorLogoUrl } = usePresignedMediaUrl(currentVendorLogoKey, {
+    enabled: isOperationalAccessEnabled,
+  })
 
   const vendorsToSwitchTo = useMemo(() => {
     if (!currentVendorId) return vendorsCreatedByCorporate
@@ -202,6 +230,9 @@ export function useVendorSidebar() {
     vendorGvid,
     branchesArray,
     discoveryScore,
+    vendorOnboarding,
+    getIsNavItemDisabled,
+    isSettingsDisabled,
     canAccessCorporate,
     pendingRequestsCount,
     isBranchesExpanded,

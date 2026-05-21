@@ -9,6 +9,10 @@ import { PaymentChangeNotifications } from '../corporate/notifications/PaymentCh
 import { ExperienceApprovalNotifications } from '../corporate/notifications/ExperienceApprovalNotifications'
 import { CreateVendorAccount } from '../corporate/modals'
 import { useCorporateVendorSidebar } from '@/features/dashboard/corporate/hooks'
+import {
+  VendorSidebarNavItem,
+  VENDOR_NAV_DISABLED_TOOLTIP,
+} from './VendorSidebarNavItem'
 
 export default function CorporateVendorSidebar() {
   const {
@@ -39,6 +43,8 @@ export default function CorporateVendorSidebar() {
     isBranchActive,
     addAccountParam,
     handleSwitchToVendor,
+    getIsNavItemDisabled,
+    isSettingsDisabled,
   } = useCorporateVendorSidebar()
 
   const accountMenuContent = (
@@ -402,8 +408,35 @@ export default function CorporateVendorSidebar() {
                   </li>
                 )}
                 {filteredItems.map((item) => {
+                  const isDisabled = getIsNavItemDisabled(item.path)
+
                   // Special handling for Branches - make it expandable
                   if (item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.BRANCHES && !isCollapsed) {
+                    if (isDisabled) {
+                      return (
+                        <li
+                          key={item.path}
+                          className="flex items-center mb-2 rounded-[10px] opacity-50 cursor-not-allowed relative overflow-hidden"
+                        >
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-3.5 text-gray-400 font-medium text-sm py-3 px-4 w-full rounded-[10px] cursor-not-allowed">
+                                <Icon
+                                  icon={item.icon}
+                                  className="w-5 h-5 shrink-0 text-gray-400"
+                                />
+                                <span className="flex-1">{item.label}</span>
+                                <Icon icon="bi:chevron-down" className="w-4 h-4 text-gray-400" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">
+                              {item.label} — Create your first branch to access this section
+                            </TooltipContent>
+                          </Tooltip>
+                        </li>
+                      )
+                    }
+
                     return (
                       <React.Fragment key={item.path}>
                         <li
@@ -543,76 +576,15 @@ export default function CorporateVendorSidebar() {
                     )
                   }
 
-                  // Regular items
                   return (
-                    <li
+                    <VendorSidebarNavItem
                       key={item.path}
-                      className={cn(
-                        'flex items-center mb-2 rounded-[10px] transition-all duration-200 relative overflow-hidden',
-                        isActive(item.path) &&
-                          'bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
-                        !isActive(item.path) &&
-                          'hover:bg-[rgba(64,45,135,0.04)] hover:translate-x-px',
-                        isCollapsed && 'justify-center mb-3',
-                      )}
-                    >
-                      {isActive(item.path) && (
-                        <>
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-white/30 via-[#402D87] to-[#2d1a72] rounded-r-sm shadow-[2px_0_8px_rgba(64,45,135,0.4),2px_0_16px_rgba(64,45,135,0.2)]" />
-                          <div className="absolute inset-0 rounded-r-2xl bg-linear-to-br from-white/8 via-transparent to-[rgba(45,26,114,0.03)] pointer-events-none" />
-                        </>
-                      )}
-                      {isCollapsed ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Link
-                              to={addAccountParam(item.path)}
-                              className={cn(
-                                'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 justify-center',
-                                isActive(item.path) &&
-                                  'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
-                                !isActive(item.path) && 'hover:text-[#402D87]',
-                              )}
-                            >
-                              <Icon
-                                icon={item.icon}
-                                className={cn(
-                                  'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-                                  isActive(item.path) && 'text-[#402D87]',
-                                  !isActive(item.path) &&
-                                    'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
-                                )}
-                              />
-                            </Link>
-                          </TooltipTrigger>
-                          <TooltipContent side="right">{item.label}</TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <Link
-                          to={addAccountParam(item.path)}
-                          className={cn(
-                            'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
-                            isActive(item.path) &&
-                              'text-[#402D87] font-bold [text-shadow:0_1px_2px_rgba(64,45,135,0.2)]',
-                            !isActive(item.path) && 'hover:text-[#402D87]',
-                          )}
-                        >
-                          <Icon
-                            icon={item.icon}
-                            className={cn(
-                              'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-                              isActive(item.path) && 'text-[#402D87]',
-                              !isActive(item.path) &&
-                                'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
-                            )}
-                          />
-                          <span>{item.label}</span>
-                        </Link>
-                      )}
-                      {isCollapsed && isActive(item.path) && (
-                        <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-1 h-6 bg-linear-to-b from-[#402D87] to-[#2d1a72] rounded-l-sm" />
-                      )}
-                    </li>
+                      item={item}
+                      isDisabled={isDisabled}
+                      isCollapsed={isCollapsed}
+                      isActive={isActive}
+                      addAccountParam={addAccountParam}
+                    />
                   )
                 })}
               </React.Fragment>
@@ -624,28 +596,45 @@ export default function CorporateVendorSidebar() {
       {/* Footer - Settings and Log Out */}
       <div className="border-t border-gray-200 p-3 space-y-2">
         {/* Settings */}
-        <Link
-          to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS)}
-          className={cn(
-            'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
-            isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
-              'text-[#402D87] font-bold bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
-            !isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
-              'hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.04)]',
-            isCollapsed && 'justify-center px-2',
-          )}
-        >
-          <Icon
-            icon="bi:gear"
+        {isSettingsDisabled ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className={cn(
+                  'flex items-center gap-3.5 text-gray-400 font-medium text-sm py-3 px-4 w-full rounded-[10px] cursor-not-allowed opacity-50',
+                  isCollapsed && 'justify-center px-2',
+                )}
+              >
+                <Icon icon="bi:gear" className="w-5 h-5 shrink-0 text-gray-400" />
+                {!isCollapsed && <span>Settings</span>}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">Settings — {VENDOR_NAV_DISABLED_TOOLTIP}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Link
+            to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS)}
             className={cn(
-              'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
-              isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) && 'text-[#402D87]',
+              'flex items-center gap-3.5 no-underline text-[#495057] font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2',
+              isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
+                'text-[#402D87] font-bold bg-[rgba(64,45,135,0.08)] border-l-[3px] border-[#402D87] rounded-l-none rounded-r-[10px] shadow-[0_2px_8px_rgba(64,45,135,0.1)]',
               !isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
-                'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+                'hover:text-[#402D87] hover:bg-[rgba(64,45,135,0.04)]',
+              isCollapsed && 'justify-center px-2',
             )}
-          />
-          {!isCollapsed && <span>Settings</span>}
-        </Link>
+          >
+            <Icon
+              icon="bi:gear"
+              className={cn(
+                'w-5 h-5 text-base flex items-center justify-center transition-all duration-200 shrink-0 text-[#6c757d]',
+                isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) && 'text-[#402D87]',
+                !isActive(ROUTES.IN_APP.DASHBOARD.VENDOR.SETTINGS) &&
+                  'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
+              )}
+            />
+            {!isCollapsed && <span>Settings</span>}
+          </Link>
+        )}
 
         {/* Log Out */}
         {isCollapsed ? (

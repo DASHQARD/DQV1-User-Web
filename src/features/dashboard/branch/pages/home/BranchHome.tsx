@@ -7,7 +7,7 @@ import { formatCurrency, formatDate } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
 import LoaderGif from '@/assets/gifs/loader.gif'
 import { StatusCell } from '@/components'
-import { CompleteVendorWidget } from '@/features/dashboard/components'
+import { CompleteVendorWidget, RecentExperiences } from '@/features/dashboard/components'
 import { MetricsCard } from '@/features/dashboard/branch'
 import { useBranchHome } from '@/features/dashboard/branch'
 
@@ -205,7 +205,7 @@ export default function BranchHome() {
 
               {/* Quick Actions - Only show if onboarding is complete */}
               {branchOnboardingComplete && (
-                <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <section className="flex flex-col gap-6">
                   {/* Recent Redemptions */}
                   <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
                     <div className="p-6 pb-0 flex justify-between items-center mb-5">
@@ -316,114 +316,19 @@ export default function BranchHome() {
                     </div>
                   </div>
 
-                  {/* Recent Experiences */}
-                  <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
-                    <div className="p-6 pb-0 flex justify-between items-center mb-5">
-                      <h5 className="text-lg font-semibold text-[#495057] m-0 flex items-center">
-                        <Icon icon="bi:briefcase-fill" className="text-[#402D87] mr-2" /> My
-                        Experiences
-                        {branchExperiences.length > 0 && (
-                          <span className="ml-2 text-sm font-normal text-gray-500">
-                            ({branchExperiences.length})
-                          </span>
-                        )}
-                      </h5>
-                      <Link
-                        to={addAccountParam(ROUTES.IN_APP.DASHBOARD.BRANCH.EXPERIENCE)}
-                        className="text-[#402D87] no-underline text-sm font-medium flex items-center transition-colors duration-200 hover:text-[#2d1a72]"
-                      >
-                        View all <Icon icon="bi:arrow-right" className="ml-1" />
-                      </Link>
-                    </div>
-                    <div className="px-6 pb-6">
-                      {isLoadingBranchExperiences ? (
-                        <div className="flex justify-center items-center py-8">
-                          <Loader />
-                        </div>
-                      ) : branchExperiences.length === 0 ? (
-                        <div className="py-8">
-                          <EmptyState
-                            image={EmptyStateImage}
-                            title="No experiences created yet"
-                            description="Create your first experience to start offering gift cards to customers"
-                          />
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {branchExperiences.map((experience: any) => (
-                            <Link
-                              key={experience.id}
-                              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.BRANCH.EXPERIENCE)}
-                              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
-                            >
-                              <div className="flex items-center gap-4 flex-1 min-w-0">
-                                <div className="w-10 h-10 rounded-lg bg-[#402D87]/10 flex items-center justify-center shrink-0">
-                                  <Icon icon="bi:briefcase" className="text-[#402D87]" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <Text
-                                    variant="span"
-                                    weight="semibold"
-                                    className="text-gray-900 block"
-                                  >
-                                    {experience.product || experience.card_name || 'Experience'}
-                                  </Text>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Text variant="span" className="text-gray-500 text-sm">
-                                      {experience.type || experience.card_type || 'Gift Card'}
-                                    </Text>
-                                    {experience.status && (
-                                      <>
-                                        <span className="text-gray-400">•</span>
-                                        <span
-                                          className={cn(
-                                            'text-xs font-medium',
-                                            experience.status === 'approved' ||
-                                              experience.status === 'verified'
-                                              ? 'text-green-600'
-                                              : experience.status === 'pending'
-                                                ? 'text-yellow-600'
-                                                : 'text-gray-600',
-                                          )}
-                                        >
-                                          {experience.status}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3 shrink-0">
-                                {experience.price && (
-                                  <Text variant="span" weight="semibold" className="text-[#402D87]">
-                                    {formatCurrency(
-                                      Number(experience.price),
-                                      experience.currency || 'GHS',
-                                    )}
-                                  </Text>
-                                )}
-                                <Icon
-                                  icon="bi:chevron-right"
-                                  className="text-gray-400 group-hover:text-[#402D87] transition-colors"
-                                />
-                              </div>
-                            </Link>
-                          ))}
-                          {branchExperiences.length > 5 && (
-                            <div className="text-center pt-2">
-                              <Link
-                                to={addAccountParam(ROUTES.IN_APP.DASHBOARD.BRANCH.EXPERIENCE)}
-                                className="text-[#402D87] text-sm font-medium hover:text-[#2d1a72] transition-colors"
-                              >
-                                View all {branchExperiences.length} experiences
-                              </Link>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </section>
+              )}
+
+              {branchOnboardingComplete && (
+                <RecentExperiences
+                  experiences={branchExperiences}
+                  isLoading={isLoadingBranchExperiences}
+                  addAccountParam={addAccountParam}
+                  viewAllPath={ROUTES.IN_APP.DASHBOARD.BRANCH.EXPERIENCE}
+                  experienceLinkPath={ROUTES.IN_APP.DASHBOARD.BRANCH.EXPERIENCE}
+                  isExperienceDisabled={false}
+                  disabledTooltip="Complete Personal Details & Payment Details to access"
+                />
               )}
             </section>
             <div className="fixed bottom-6 right-6 z-50 w-[598px] max-w-[calc(100vw-3rem)]">

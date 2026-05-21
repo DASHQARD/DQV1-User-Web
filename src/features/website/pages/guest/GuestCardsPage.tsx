@@ -4,6 +4,7 @@ import { Button, EmptyState, Loader, Text } from '@/components'
 import { Icon } from '@/libs'
 import { EmptyStateImage } from '@/assets/images'
 import { ROUTES } from '@/utils/constants'
+import { getCardBackground, getCardTypeName } from '@/utils/cardDisplay'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { useGuestQueries } from '@/features/website/hooks/useGuestQueries'
 import { useRedemptionQueries } from '@/features/dashboard/hooks/redemption/useRedemptionQueries'
@@ -11,26 +12,10 @@ import {
   parseGuestAssignedCardsResponse,
   type GuestAssignedCard,
 } from '@/features/website/utils/guestAssignedCards'
-
-type GuestCreatedCardRow = {
-  id?: string
-  guest_card_id?: string | number
-  card_type?: string
-  product?: string
-  amount?: string | number
-  price?: string | number
-  currency?: string
-  status?: string
-  created_at?: string
-  issue_date?: string
-}
-
-function normalizeCreatedCards(data: unknown): GuestCreatedCardRow[] {
-  if (!data) return []
-  if (Array.isArray(data)) return data as GuestCreatedCardRow[]
-  const nested = (data as { data?: unknown })?.data
-  return Array.isArray(nested) ? (nested as GuestCreatedCardRow[]) : []
-}
+import {
+  formatGuestCardStatusLabel,
+  type GuestCreatedCard,
+} from '@/features/website/utils/guestCreatedCards'
 
 function formatSourceLabel(source?: string): string | null {
   if (!source) return null
@@ -39,13 +24,103 @@ function formatSourceLabel(source?: string): string | null {
   return source.replace(/_/g, ' ')
 }
 
+function guestStatusBadgeClass(status: string): string {
+  const normalized = status.toLowerCase()
+  if (normalized === 'pending') return 'bg-amber-50 text-amber-800'
+  if (normalized === 'active' || normalized === 'approved' || normalized === 'completed') {
+    return 'bg-emerald-50 text-emerald-800'
+  }
+  if (normalized === 'cancelled' || normalized === 'failed') return 'bg-red-50 text-red-700'
+  return 'bg-gray-100 text-gray-600'
+}
+
+function GuestCreatedCardItem({ card }: { card: GuestCreatedCard }) {
+  const cardBg = getCardBackground(card.card_type)
+  const typeLabel = getCardTypeName(card.card_type) || card.card_type
+  const statusLabel = formatGuestCardStatusLabel(card.status)
+  const giftCardStatusLabel = card.gift_card_status
+    ? formatGuestCardStatusLabel(card.gift_card_status)
+    : null
+  const displayAmount = card.amount || card.price
+
+  return (
+    <article className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm flex flex-col sm:flex-row">
+      <div
+        className="relative h-28 sm:h-auto sm:w-40 shrink-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${cardBg})` }}
+        aria-hidden
+      >
+        <div className="absolute inset-0 bg-black/25" />
+        <div className="relative flex h-full flex-col justify-end p-3 text-white">
+          <span className="text-xs font-bold uppercase tracking-wider opacity-90">{typeLabel}</span>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-wrap items-start justify-between gap-4 p-5 min-w-0">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <Text variant="span" weight="semibold" className="text-gray-900">
+              {card.product}
+            </Text>
+            {card.card_type ? (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">
+                {card.card_type}
+              </span>
+            ) : null}
+            {statusLabel ? (
+              <span
+                className={`text-xs font-medium px-2 py-0.5 rounded-full ${guestStatusBadgeClass(card.status)}`}
+              >
+                {statusLabel}
+              </span>
+            ) : null}
+            {giftCardStatusLabel && giftCardStatusLabel !== statusLabel ? (
+              <span
+                className={`text-xs font-medium px-2 py-0.5 rounded-full ${guestStatusBadgeClass(card.gift_card_status!)}`}
+              >
+                Card {giftCardStatusLabel}
+              </span>
+            ) : null}
+          </div>
+
+          {card.card_id ? (
+            <Text variant="span" className="text-sm text-gray-600 block font-mono">
+              {card.card_id}
+            </Text>
+          ) : null}
+
+          {card.created_at ? (
+            <Text variant="span" className="text-xs text-gray-400 block mt-1">
+              Created {formatDate(card.created_at)}
+            </Text>
+          ) : null}
+
+          {card.service_fee != null && card.service_fee > 0 ? (
+            <Text variant="span" className="text-xs text-gray-500 block mt-1">
+              Service fee {formatCurrency(card.service_fee, card.currency)}
+            </Text>
+          ) : null}
+        </div>
+
+        <div className="text-right shrink-0">
+          <Text variant="h5" weight="semibold" className="text-primary-600">
+            {formatCurrency(displayAmount, card.currency)}
+          </Text>
+          <Text variant="span" className="text-xs text-gray-500 block">
+            Amount
+          </Text>
+        </div>
+      </div>
+    </article>
+  )
+}
+
 export default function GuestCardsPage() {
   const { useGetGuestCardsService } = useGuestQueries()
   const { useGetGuestAssignedCardsService } = useRedemptionQueries()
-  const { data: createdCardsRaw, isLoading: isLoadingCreated } = useGetGuestCardsService()
+  const { data: createdCards = [], isLoading: isLoadingCreated } = useGetGuestCardsService()
   const { data: assignedResponse, isLoading: isLoadingAssigned } = useGetGuestAssignedCardsService()
 
-  const createdCards = useMemo(() => normalizeCreatedCards(createdCardsRaw), [createdCardsRaw])
   const assignedPayload = useMemo(
     () => parseGuestAssignedCardsResponse(assignedResponse),
     [assignedResponse],
@@ -99,35 +174,9 @@ export default function GuestCardsPage() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {createdCards.map((card) => {
-                const id = String(card.id ?? card.guest_card_id ?? '')
-                const amount = card.amount ?? card.price ?? 0
-                const currency = card.currency ?? 'GHS'
-                return (
-                  <article
-                    key={id || `${card.product}-${card.created_at}`}
-                    className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-wrap items-center justify-between gap-4"
-                  >
-                    <div>
-                      <Text variant="span" weight="semibold" className="block text-gray-900">
-                        {card.product || card.card_type || 'Gift card'}
-                      </Text>
-                      <Text variant="span" className="text-sm text-gray-500 block mt-1">
-                        {card.card_type}
-                        {card.status ? ` · ${card.status}` : ''}
-                      </Text>
-                      {(card.created_at || card.issue_date) && (
-                        <Text variant="span" className="text-xs text-gray-400 block mt-1">
-                          {formatDate(card.created_at || card.issue_date || '')}
-                        </Text>
-                      )}
-                    </div>
-                    <Text variant="h5" weight="semibold" className="text-primary-600">
-                      {formatCurrency(Number(amount), currency)}
-                    </Text>
-                  </article>
-                )
-              })}
+              {createdCards.map((card) => (
+                <GuestCreatedCardItem key={card.guest_card_id || card.gift_card_id} card={card} />
+              ))}
             </div>
           )}
         </section>

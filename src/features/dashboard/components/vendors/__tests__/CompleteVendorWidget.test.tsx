@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import CompleteVendorWidget from '../CompleteVendorWidget'
 
 const mockNavigate = vi.fn()
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
   return {
@@ -12,52 +13,69 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-vi.mock('@/hooks', () => ({
-  useUserProfile: () => ({
-    useGetUserProfileService: () => ({
-      data: {
-        user_type: 'vendor',
-        onboarding_progress: {
-          personal_details_completed: false,
-          upload_id_completed: false,
-          business_details_completed: false,
-          business_documents_completed: false,
-        },
-      },
-    }),
-  }),
-}))
+const mockUseVendorOnboardingProgress = vi.fn()
 
-vi.mock('@/features', () => ({
-  vendorQueries: () => ({
-    useBranchesService: () => ({ data: [] }),
-  }),
+vi.mock('@/features/dashboard/hooks/useVendorOnboardingProgress', () => ({
+  useVendorOnboardingProgress: () => mockUseVendorOnboardingProgress(),
 }))
 
 describe('CompleteVendorWidget', () => {
+  beforeEach(() => {
+    mockNavigate.mockClear()
+    mockUseVendorOnboardingProgress.mockReturnValue({
+      steps: [
+        {
+          id: 'profile',
+          label: 'Profile Information & ID Upload',
+          description: 'Complete your profile',
+          path: '/dashboard/vendor/compliance/profile',
+          completed: false,
+        },
+      ],
+      completedCount: 0,
+      totalCount: 1,
+      progressPercentage: 0,
+      isComplete: false,
+      nextStep: {
+        id: 'profile',
+        label: 'Profile Information & ID Upload',
+        description: 'Complete your profile',
+        path: '/dashboard/vendor/compliance/profile',
+        completed: false,
+      },
+      addAccountParam: (path: string) => `${path}?account=vendor`,
+      isBranchManager: false,
+      isCorporateSwitchedToVendor: false,
+    })
+  })
+
   it('renders collapsed vendor onboarding prompt', () => {
     renderWithProviders(<CompleteVendorWidget />)
     expect(screen.getByText(/complete your vendor onboarding/i)).toBeInTheDocument()
-    expect(
-      screen.getByText(/finish your profile to activate your vendor account/i),
-    ).toBeInTheDocument()
   })
 
-  it('expands when header is clicked', async () => {
+  it('expands and navigates on continue', async () => {
     const user = userEvent.setup()
     renderWithProviders(<CompleteVendorWidget />)
     await user.click(screen.getByRole('button', { name: /complete your vendor onboarding/i }))
-    expect(screen.getByText(/complete your vendor onboarding process/i)).toBeInTheDocument()
-    expect(screen.getByText(/progress/i)).toBeInTheDocument()
-    expect(screen.getAllByText(/profile information & id upload/i).length).toBeGreaterThan(0)
-  })
-
-  it('Continue button navigates with account param', async () => {
-    const user = userEvent.setup()
-    renderWithProviders(<CompleteVendorWidget />)
-    await user.click(screen.getByRole('button', { name: /complete your vendor onboarding/i }))
-    const continueBtn = screen.getByRole('button', { name: /continue with profile information/i })
-    await user.click(continueBtn)
+    expect(screen.getByText(/0% complete/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /continue with profile information/i }))
     expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('account=vendor'))
+  })
+
+  it('returns null when onboarding is complete', () => {
+    mockUseVendorOnboardingProgress.mockReturnValue({
+      steps: [],
+      completedCount: 4,
+      totalCount: 4,
+      progressPercentage: 100,
+      isComplete: true,
+      nextStep: null,
+      addAccountParam: (path: string) => path,
+      isBranchManager: false,
+      isCorporateSwitchedToVendor: true,
+    })
+    const { container } = renderWithProviders(<CompleteVendorWidget />)
+    expect(container).toBeEmptyDOMElement()
   })
 })

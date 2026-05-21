@@ -80,7 +80,8 @@ export function useCreateBranchForm() {
   const form = useForm<CreateBranchFormData>({
     resolver: zodResolver(CreateBranchFormSchema),
     defaultValues: DEFAULT_VALUES,
-    mode: 'onChange',
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
   })
 
   const paymentMethod = useWatch({ control: form.control, name: 'payment_method' })

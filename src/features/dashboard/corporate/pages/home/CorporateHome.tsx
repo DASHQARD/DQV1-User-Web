@@ -6,6 +6,7 @@ import {
   RecentTransactions,
   CompleteCorporateWidget,
   CorporateAccountStatusBanner,
+  CorporateVendorAccountsCard,
   CreateVendorAccount,
 } from '@/features/dashboard/components'
 import { useCorporateHome } from '../../hooks/useCorporateHome'
@@ -24,13 +25,16 @@ export default function CorporateHome() {
     isComplete,
     // isPendingAndKYCComplete,
     canAccessRestrictedFeatures,
-    accountStatusBanner,
     handleContinue,
     getNextStepName,
     navigateToProfileStep,
     navigateToBusinessStep,
     isCorporateSuperAdmin,
     openCreateVendorAccount,
+    myVendorAccounts,
+    isLoadingVendorAccounts,
+    addAccountParam,
+    accountStatusBanner,
   } = useCorporateHome()
 
   return (
@@ -266,40 +270,14 @@ export default function CorporateHome() {
         )} */}
 
         {isCorporateSuperAdmin && (
-          <div
-            className={cn(
-              'bg-white border border-gray-100 rounded-2xl shadow-lg p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between',
-              !canAccessRestrictedFeatures && 'opacity-60',
-            )}
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#402D87]/10 text-[#402D87] flex items-center justify-center shrink-0">
-                <Icon icon="bi:shop" className="text-2xl" />
-              </div>
-              <div>
-                <Text variant="h4" weight="semibold" className="text-gray-900">
-                  Vendor accounts
-                </Text>
-                <Text variant="p" className="text-sm text-gray-600 mt-1 max-w-xl">
-                  Create and manage vendor accounts linked to your corporate workspace.
-                </Text>
-                {!canAccessRestrictedFeatures && (
-                  <Text variant="span" className="text-xs text-gray-500 mt-2 block">
-                    Complete onboarding and get approved to create vendor accounts.
-                  </Text>
-                )}
-              </div>
-            </div>
-            <Button
-              variant="secondary"
-              className="shrink-0 flex items-center gap-2 rounded-full"
-              onClick={openCreateVendorAccount}
-              disabled={!canAccessRestrictedFeatures}
-            >
-              <Icon icon="bi:plus-circle" className="text-lg" />
-              Create a vendor account
-            </Button>
-          </div>
+          <CorporateVendorAccountsCard
+            vendors={myVendorAccounts}
+            isLoading={isLoadingVendorAccounts}
+            canCreate={canAccessRestrictedFeatures}
+            accountStatus={accountStatusBanner}
+            onCreateVendor={openCreateVendorAccount}
+            addAccountParam={addAccountParam}
+          />
         )}
 
         {/* Metrics Cards */}

@@ -24,7 +24,7 @@ export function VendorNameForm({ onSubmit, corporateUser }: VendorNameFormProps)
   }, [useCorporateInfo, corporateUser])
 
   return (
-    <div className="flex flex-col gap-6 mt-[120px]">
+    <div className="flex w-full flex-col gap-6">
       <div className="flex flex-col gap-4">
         <p className="text-xs text-gray-500">Step 1/3</p>
         <Text variant="h2" weight="semibold" className="text-gray-900 mb-2">

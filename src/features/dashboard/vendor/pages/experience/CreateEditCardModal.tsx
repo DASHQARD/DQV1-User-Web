@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Modal, FileUploader, Input, Combobox } from '@/components'
+import { Modal, FileUploader, Input, Combobox, GiftCardPriceFormField } from '@/components'
+import { CreateExperienceSchema } from '@/utils/schemas'
 import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { useCreateCard, useUpdateCard } from '@/features/dashboard/hooks'
@@ -29,18 +30,19 @@ export function CreateEditCardModal({ isOpen, onClose, editingCard }: CreateEdit
 
   const cardTypes = ['DashX', 'DashPass']
 
-  type FormData = z.infer<any>
+  type FormData = z.infer<typeof CreateExperienceSchema>
 
   const form = useForm<FormData>({
-    resolver: zodResolver(z.any()) as any,
+    resolver: zodResolver(CreateExperienceSchema) as any,
     defaultValues: {
       product: '',
       description: '',
       type: '',
-      price: 0,
+      price: undefined,
       currency: 'GHS',
       issue_date: '',
       expiry_date: '',
+      redemption_branches: [],
       images: [],
       terms_and_conditions: [],
     },
@@ -69,16 +71,18 @@ export function CreateEditCardModal({ isOpen, onClose, editingCard }: CreateEdit
           file_url: tc.file_url,
           file_name: tc.file_name,
         })),
+        redemption_branches: [],
       })
     } else {
       form.reset({
         product: '',
         description: '',
         type: '',
-        price: 0,
+        price: undefined,
         currency: 'GHS',
         issue_date: '',
         expiry_date: '',
+        redemption_branches: [],
         images: [],
         terms_and_conditions: [],
       })
@@ -261,12 +265,10 @@ export function CreateEditCardModal({ isOpen, onClose, editingCard }: CreateEdit
           />
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Price"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              {...form.register('price', { valueAsNumber: true })}
+            <GiftCardPriceFormField
+              control={form.control}
+              name="price"
+              disabled={isPending}
               error={form.formState.errors.price?.message}
             />
 

@@ -23,7 +23,7 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
   return (
     <AnimatePresence>
       <motion.div
-        className="flex flex-col gap-6 max-w-[448px] w-full"
+        className="flex w-full flex-col gap-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -130,37 +130,40 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
             )}
           />
 
-          <Input
-            label="Street Address"
-            placeholder="Enter your vendor street address"
-            {...form.register('street_address')}
-            error={form.formState.errors.street_address?.message}
-            disabled={checkboxVendorDetailsSameAsCorporate}
-          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="Street Address"
+              placeholder="Enter your vendor street address"
+              {...form.register('street_address')}
+              error={form.formState.errors.street_address?.message}
+              disabled={checkboxVendorDetailsSameAsCorporate}
+            />
+            <Input
+              label="Ghana Post Digital Address"
+              placeholder="Enter your Ghana Post Digital Address"
+              {...form.register('digital_address')}
+              error={form.formState.errors.digital_address?.message}
+              disabled={checkboxVendorDetailsSameAsCorporate}
+            />
+          </div>
 
-          <Input
-            label="Ghana Post Digital Address"
-            placeholder="Enter your Ghana Post Digital Address"
-            {...form.register('digital_address')}
-            error={form.formState.errors.digital_address?.message}
-            disabled={checkboxVendorDetailsSameAsCorporate}
-          />
-
-          <Input
-            label="Business registration number (VAT)"
-            placeholder="Enter your business registration number (VAT)"
-            {...form.register('registration_number')}
-            error={form.formState.errors.registration_number?.message}
-            maxLength={10}
-            disabled={checkboxVendorDetailsSameAsCorporate}
-          />
-          <Input
-            label="Taxpayer Identification Number (TIN)"
-            placeholder="Enter your Taxpayer Identification Number (TIN)"
-            {...form.register('employer_identification_number')}
-            error={form.formState.errors.employer_identification_number?.message}
-            disabled={checkboxVendorDetailsSameAsCorporate}
-          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="Business registration number (VAT)"
+              placeholder="Enter your business registration number (VAT)"
+              {...form.register('registration_number')}
+              error={form.formState.errors.registration_number?.message}
+              maxLength={10}
+              disabled={checkboxVendorDetailsSameAsCorporate}
+            />
+            <Input
+              label="Taxpayer Identification Number (TIN)"
+              placeholder="Enter your Taxpayer Identification Number (TIN)"
+              {...form.register('employer_identification_number')}
+              error={form.formState.errors.employer_identification_number?.message}
+              disabled={checkboxVendorDetailsSameAsCorporate}
+            />
+          </div>
 
           <Controller
             control={form.control}
@@ -191,7 +194,7 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
               </Text>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Controller
                 control={form.control}
                 name="certificate_of_incorporation"

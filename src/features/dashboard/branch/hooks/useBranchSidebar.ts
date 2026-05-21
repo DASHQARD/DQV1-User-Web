@@ -1,10 +1,15 @@
 import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { usePresignedMediaUrl } from '@/hooks'
+import { usePresignedMediaUrl, useUserProfile } from '@/hooks'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import type { BranchInfoResponse } from '../services'
+import {
+  getBranchOnboardingDiscoveryScore,
+  getBranchOnboardingProgress,
+  isBranchOnboardingComplete,
+} from '../utils/branchOnboardingProgress'
 import { branchQueries } from './useBranchQueries'
 
 export function useBranchSidebar() {
@@ -15,6 +20,9 @@ export function useBranchSidebar() {
   const { mutateAsync: logoutMutation } = useLogoutService()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+
   const { useGetBranchInfoService } = branchQueries()
   const { data: branchInfoResponse } = useGetBranchInfoService()
 
@@ -23,7 +31,6 @@ export function useBranchSidebar() {
     (branchInfoResponse as BranchInfoResponse['data'] | undefined)
   const branch = data?.branch
   const branchManager = data?.branch_manager
-  const paymentDetails = data?.payment_details ?? null
   const businessDetails = data?.business_details
 
   const { url: logoUrl } = usePresignedMediaUrl(businessDetails?.logo)
@@ -32,35 +39,22 @@ export function useBranchSidebar() {
   const branchManagerName = branch?.branch_manager_name ?? branchManager?.fullname ?? null
   const branchLocation = branch?.branch_location ?? null
 
-  const hasManagerDetails = useMemo(
-    () =>
-      Boolean(branchManager?.fullname) &&
-      Boolean(branchManager?.email) &&
-      Boolean(branchManager?.phonenumber),
-    [branchManager],
+  const branchOnboardingProgress = useMemo(
+    () => getBranchOnboardingProgress(userProfileData as Record<string, unknown> | undefined),
+    [userProfileData],
   )
-
-  const hasPayment = useMemo(() => {
-    if (!paymentDetails) return false
-    return Boolean(
-      paymentDetails.momo_number ?? paymentDetails.account_number ?? paymentDetails.bank_name,
-    )
-  }, [paymentDetails])
 
   const isOnboardingComplete = useMemo(
-    () => hasManagerDetails && hasPayment,
-    [hasManagerDetails, hasPayment],
+    () => isBranchOnboardingComplete(branchOnboardingProgress),
+    [branchOnboardingProgress],
   )
 
-  const isBranchApproved = branch?.status === 'approved'
+  const canAccessExperienceAndRedemptions = isOnboardingComplete
 
-  const canAccessExperienceAndRedemptions = isOnboardingComplete || isBranchApproved
-
-  const discoveryScore = useMemo(() => {
-    const steps = [hasManagerDetails, hasPayment]
-    const completedCount = steps.filter(Boolean).length
-    return Math.round((completedCount / steps.length) * 100)
-  }, [hasManagerDetails, hasPayment])
+  const discoveryScore = useMemo(
+    () => getBranchOnboardingDiscoveryScore(branchOnboardingProgress),
+    [branchOnboardingProgress],
+  )
 
   const isActive = (path: string) => {
     if (path === '/dashboard') return location.pathname === path

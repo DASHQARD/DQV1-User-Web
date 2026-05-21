@@ -271,7 +271,7 @@ export default function BranchSidebar() {
                         </TooltipTrigger>
                         <TooltipContent side="right">
                           {isDisabled
-                            ? `${item.label} - Complete onboarding to access`
+                            ? `${item.label} — complete Personal Details & Payment Details to access`
                             : item.label}
                         </TooltipContent>
                       </Tooltip>

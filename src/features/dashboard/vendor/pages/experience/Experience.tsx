@@ -24,23 +24,24 @@ export default function Experience() {
   const [searchParams] = useSearchParams()
   const vendorIdFromUrl = searchParams.get('vendor_id')
 
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const userType = (userProfileData as any)?.user_type
+  const isBranch = userType === 'branch'
+  const isCorporate = userType === 'corporate' || userType === 'corporate super admin'
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
+
   const params = useMemo(() => {
     const apiParams: Record<string, unknown> = {
       limit: query.limit || 10,
     }
     if (query.after) apiParams.after = query.after
-    if (query.search) apiParams.search = query.search
+    if (!isBranch && query.search) apiParams.search = query.search
     if ((query as any).status) apiParams.status = (query as any).status
     if ((query as any).card_type) apiParams.card_type = (query as any).card_type
     appendDateRangeApiParams(apiParams, query)
     return apiParams
-  }, [query])
-
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const userType = (userProfileData as any)?.user_type
-  const isCorporate = userType === 'corporate' || userType === 'corporate super admin'
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
+  }, [query, isBranch])
 
   const { useGetCardsByVendorIdService } = vendorQueries()
   const { data: cardsResponse, isLoading } = useGetCardsByVendorIdService(params)
@@ -129,6 +130,7 @@ export default function Experience() {
               query={query}
               setQuery={setQuery}
               searchPlaceholder="Search by product name or type..."
+              noSearch={isBranch}
               csvHeaders={experienceListCsvHeaders}
               printTitle="Experiences"
               onNextPage={handleNextPage}

@@ -1,5 +1,8 @@
-import type { Dispatch, SetStateAction } from 'react'
-import { BasePhoneInput, Button, Combobox, Input, Modal, Text } from '@/components'
+import type { ChangeEvent, Dispatch, ReactNode, SetStateAction } from 'react'
+import { BasePhoneInput, Button, Input, Modal, Text } from '@/components'
+import { Select } from '@/components/Select'
+import { Icon } from '@/libs'
+import { cn } from '@/libs'
 import { EXAMPLE_PHONE_PLACEHOLDER, MOBILE_MONEY_PROVIDERS } from '@/utils/constants'
 
 type PaymentForm = {
@@ -35,6 +38,189 @@ type PaymentDetailsModalsProps = {
   isDeleting: boolean
 }
 
+const PAYMENT_METHOD_OPTIONS = [
+  { label: 'Mobile Money', value: 'mobile_money' },
+  { label: 'Bank Account', value: 'bank' },
+] as const
+
+type PaymentFormFieldsProps = {
+  form: PaymentForm
+  setForm: Dispatch<SetStateAction<PaymentForm>>
+  countries: any[]
+  formatFieldLabel: (value: string) => string
+}
+
+function PaymentFormFields({ form, setForm, countries, formatFieldLabel }: PaymentFormFieldsProps) {
+  const updateField = <K extends keyof PaymentForm>(key: K, value: PaymentForm[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <Select
+        label="Payment Method"
+        placeholder="Select payment method"
+        options={[...PAYMENT_METHOD_OPTIONS]}
+        value={form.payment_method}
+        onValueChange={(value: string) => updateField('payment_method', value)}
+      />
+
+      {form.payment_method === 'mobile_money' ? (
+        <div className="rounded-xl border border-[#e8eaef] bg-[#faf9fc] p-5 space-y-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#402D87]/10">
+              <Icon icon="bi:phone" className="text-base text-[#402D87]" />
+            </span>
+            <Text variant="span" className="text-sm text-gray-600 leading-relaxed">
+              Enter the mobile money account where you would like to receive vendor payouts.
+            </Text>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <Select
+              label="Mobile Money Provider"
+              placeholder="Select provider"
+              options={[...MOBILE_MONEY_PROVIDERS]}
+              value={form.mobile_money_provider}
+              onValueChange={(value: string) => updateField('mobile_money_provider', value)}
+            />
+            <BasePhoneInput
+              placeholder={EXAMPLE_PHONE_PLACEHOLDER}
+              options={countries}
+              selectedVal={form.mobile_money_number}
+              handleChange={(value) => updateField('mobile_money_number', value || '')}
+              label="Mobile Money Number"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-[#e8eaef] bg-[#faf9fc] p-5 space-y-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#402D87]/10">
+              <Icon icon="bi:bank" className="text-base text-[#402D87]" />
+            </span>
+            <Text variant="span" className="text-sm text-gray-600 leading-relaxed">
+              Enter your bank account details for receiving vendor payouts.
+            </Text>
+          </div>
+          <div className="space-y-4">
+            <Input
+              label={formatFieldLabel('bank_name')}
+              placeholder="e.g. GCB Bank"
+              value={form.bank_name}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                updateField('bank_name', e.target.value)
+              }
+            />
+            <Input
+              label={formatFieldLabel('account_number')}
+              placeholder="Enter account number"
+              value={form.account_number}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                updateField('account_number', e.target.value)
+              }
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Branch"
+                placeholder="Branch name"
+                value={form.branch}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  updateField('branch', e.target.value)
+                }
+              />
+              <Input
+                label={formatFieldLabel('account_name')}
+                placeholder="Account holder name"
+                value={form.account_name}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  updateField('account_name', e.target.value)
+                }
+              />
+              <Input
+                label={formatFieldLabel('swift_code')}
+                placeholder="SWIFT / BIC"
+                value={form.swift_code}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  updateField('swift_code', e.target.value)
+                }
+              />
+              <Input
+                label={formatFieldLabel('sort_code')}
+                placeholder="Sort code"
+                value={form.sort_code}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  updateField('sort_code', e.target.value)
+                }
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+type PaymentModalShellProps = {
+  title: string
+  description: string
+  children: ReactNode
+  onCancel: () => void
+  onSubmit: () => void
+  submitLabel: string
+  isLoading: boolean
+}
+
+function PaymentModalShell({
+  title,
+  description,
+  children,
+  onCancel,
+  onSubmit,
+  submitLabel,
+  isLoading,
+}: PaymentModalShellProps) {
+  return (
+    <>
+      <div className="px-6 pt-6 pb-5 border-b border-gray-100">
+        <div className="flex items-start gap-3 pr-8">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#402D87]/10">
+            <Icon icon="bi:credit-card-2-front" className="text-xl text-[#402D87]" />
+          </span>
+          <div className="min-w-0">
+            <Text variant="h3" weight="semibold" className="text-gray-900">
+              {title}
+            </Text>
+            <Text variant="span" className="mt-1 block text-sm text-gray-500 leading-relaxed">
+              {description}
+            </Text>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-6 py-6">{children}</div>
+
+      <div
+        className={cn(
+          'flex flex-col-reverse gap-3 px-6 py-5 border-t border-gray-100 bg-gray-50/50',
+          'sm:flex-row sm:justify-end',
+        )}
+      >
+        <Button variant="outline" onClick={onCancel} className="sm:min-w-[108px]">
+          Cancel
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={onSubmit}
+          loading={isLoading}
+          className="sm:min-w-[180px]"
+        >
+          {submitLabel}
+        </Button>
+      </div>
+    </>
+  )
+}
+
 export function PaymentDetailsModals({
   countries,
   formatFieldLabel,
@@ -60,241 +246,77 @@ export function PaymentDetailsModals({
       <Modal
         isOpen={isAddModalOpen}
         setIsOpen={setIsAddModalOpen}
-        panelClass="!w-[500px]"
+        panelClass="!w-[560px] !max-w-[95vw] p-0 overflow-hidden"
         position="center"
+        showClose
+        title="Add Payment Details"
       >
-        <div className="p-8 space-y-5">
-          <Text variant="h3" weight="semibold">
-            Add Payment Details
-          </Text>
-          <div>
-            <label className="text-sm font-medium block mb-1">Payment Method</label>
-            <select
-              value={addForm.payment_method}
-              onChange={(e: any) =>
-                setAddForm((prev) => ({ ...prev, payment_method: e.target.value }))
-              }
-              className="w-full h-10 px-3 border border-gray-300 rounded-md bg-white"
-            >
-              <option value="mobile_money">Mobile Money</option>
-              <option value="bank">Bank</option>
-            </select>
-          </div>
-
-          {addForm.payment_method === 'mobile_money' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Combobox
-                label={formatFieldLabel('mobile_money_provider')}
-                options={[...MOBILE_MONEY_PROVIDERS]}
-                value={addForm.mobile_money_provider}
-                onChange={(e: unknown) => {
-                  const ev = e as { target?: { value?: string }; value?: string }
-                  const value = ev?.target?.value ?? ev?.value ?? ''
-                  setAddForm((prev) => ({ ...prev, mobile_money_provider: value }))
-                }}
-                placeholder="Select provider"
-              />
-              <BasePhoneInput
-                placeholder={EXAMPLE_PHONE_PLACEHOLDER}
-                options={countries}
-                selectedVal={addForm.mobile_money_number}
-                handleChange={(value) =>
-                  setAddForm((prev) => ({ ...prev, mobile_money_number: value || '' }))
-                }
-                label={formatFieldLabel('mobile_money_number')}
-              />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <Input
-                label={formatFieldLabel('bank_name')}
-                value={addForm.bank_name}
-                onChange={(e: any) =>
-                  setAddForm((prev) => ({ ...prev, bank_name: e.target.value }))
-                }
-              />
-              <Input
-                label={formatFieldLabel('account_number')}
-                value={addForm.account_number}
-                onChange={(e: any) =>
-                  setAddForm((prev) => ({ ...prev, account_number: e.target.value }))
-                }
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="branch"
-                  value={addForm.branch}
-                  onChange={(e: any) => setAddForm((prev) => ({ ...prev, branch: e.target.value }))}
-                />
-                <Input
-                  label={formatFieldLabel('account_name')}
-                  value={addForm.account_name}
-                  onChange={(e: any) =>
-                    setAddForm((prev) => ({ ...prev, account_name: e.target.value }))
-                  }
-                />
-                <Input
-                  label={formatFieldLabel('swift_code')}
-                  value={addForm.swift_code}
-                  onChange={(e: any) =>
-                    setAddForm((prev) => ({ ...prev, swift_code: e.target.value }))
-                  }
-                />
-                <Input
-                  label={formatFieldLabel('sort_code')}
-                  value={addForm.sort_code}
-                  onChange={(e: any) =>
-                    setAddForm((prev) => ({ ...prev, sort_code: e.target.value }))
-                  }
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="secondary" onClick={handleSubmitAddPaymentDetails} loading={isAdding}>
-              Save Payment Details
-            </Button>
-          </div>
-        </div>
+        <PaymentModalShell
+          title="Add Payment Details"
+          description="Add a payout account so we can send your vendor earnings."
+          onCancel={() => setIsAddModalOpen(false)}
+          onSubmit={handleSubmitAddPaymentDetails}
+          submitLabel="Save Payment Details"
+          isLoading={isAdding}
+        >
+          <PaymentFormFields
+            form={addForm}
+            setForm={setAddForm}
+            countries={countries}
+            formatFieldLabel={formatFieldLabel}
+          />
+        </PaymentModalShell>
       </Modal>
 
       <Modal
         isOpen={isEditModalOpen}
         setIsOpen={setIsEditModalOpen}
-        panelClass="!max-w-4xl"
+        panelClass="!w-[560px] !max-w-[95vw] p-0 overflow-hidden"
         position="center"
+        showClose
+        title="Update Payment Details"
       >
-        <div className="p-8 space-y-5">
-          <Text variant="h3" weight="semibold">
-            Update Payment Details
-          </Text>
-          <div>
-            <label className="text-sm font-medium block mb-1">Payment Method</label>
-            <select
-              value={editForm.payment_method}
-              onChange={(e: any) =>
-                setEditForm((prev) => ({ ...prev, payment_method: e.target.value }))
-              }
-              className="w-full h-10 px-3 border border-gray-300 rounded-md bg-white"
-            >
-              <option value="mobile_money">Mobile Money</option>
-              <option value="bank">Bank</option>
-            </select>
-          </div>
-
-          {editForm.payment_method === 'mobile_money' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Combobox
-                label={formatFieldLabel('mobile_money_provider')}
-                options={[...MOBILE_MONEY_PROVIDERS]}
-                value={editForm.mobile_money_provider}
-                onChange={(e: unknown) => {
-                  const ev = e as { target?: { value?: string }; value?: string }
-                  const value = ev?.target?.value ?? ev?.value ?? ''
-                  setEditForm((prev) => ({ ...prev, mobile_money_provider: value }))
-                }}
-                placeholder="Select provider"
-              />
-              <BasePhoneInput
-                placeholder={EXAMPLE_PHONE_PLACEHOLDER}
-                options={countries}
-                selectedVal={editForm.mobile_money_number}
-                handleChange={(value) =>
-                  setEditForm((prev) => ({ ...prev, mobile_money_number: value || '' }))
-                }
-                label={formatFieldLabel('mobile_money_number')}
-              />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <Input
-                label={formatFieldLabel('bank_name')}
-                value={editForm.bank_name}
-                onChange={(e: any) =>
-                  setEditForm((prev) => ({ ...prev, bank_name: e.target.value }))
-                }
-              />
-              <Input
-                label={formatFieldLabel('account_number')}
-                value={editForm.account_number}
-                onChange={(e: any) =>
-                  setEditForm((prev) => ({ ...prev, account_number: e.target.value }))
-                }
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Branch"
-                  value={editForm.branch}
-                  onChange={(e: any) =>
-                    setEditForm((prev) => ({ ...prev, branch: e.target.value }))
-                  }
-                />
-                <Input
-                  label={formatFieldLabel('account_name')}
-                  value={editForm.account_name}
-                  onChange={(e: any) =>
-                    setEditForm((prev) => ({ ...prev, account_name: e.target.value }))
-                  }
-                />
-                <Input
-                  label={formatFieldLabel('swift_code')}
-                  value={editForm.swift_code}
-                  onChange={(e: any) =>
-                    setEditForm((prev) => ({ ...prev, swift_code: e.target.value }))
-                  }
-                />
-                <Input
-                  label={formatFieldLabel('sort_code')}
-                  value={editForm.sort_code}
-                  onChange={(e: any) =>
-                    setEditForm((prev) => ({ ...prev, sort_code: e.target.value }))
-                  }
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handleSubmitEditPaymentDetails}
-              loading={isUpdating}
-            >
-              Update Payment Details
-            </Button>
-          </div>
-        </div>
+        <PaymentModalShell
+          title="Update Payment Details"
+          description="Update your payout account information."
+          onCancel={() => setIsEditModalOpen(false)}
+          onSubmit={handleSubmitEditPaymentDetails}
+          submitLabel="Update Payment Details"
+          isLoading={isUpdating}
+        >
+          <PaymentFormFields
+            form={editForm}
+            setForm={setEditForm}
+            countries={countries}
+            formatFieldLabel={formatFieldLabel}
+          />
+        </PaymentModalShell>
       </Modal>
 
       <Modal
         isOpen={isDeleteAllModalOpen}
         setIsOpen={setIsDeleteAllModalOpen}
-        panelClass="!max-w-md"
+        panelClass="!max-w-md p-0 overflow-hidden"
         position="center"
+        showClose
+        title="Delete All Payment Methods"
       >
-        <div className="p-6 space-y-4">
-          <Text variant="h3" weight="semibold">
+        <div className="px-6 pt-6 pb-4">
+          <Text variant="h3" weight="semibold" className="text-gray-900">
             Delete All Payment Methods
           </Text>
-          <Text variant="span" className="text-sm text-gray-600 block">
+          <Text variant="span" className="mt-2 block text-sm text-gray-600 leading-relaxed">
             Are you sure you want to delete all payment details for this account? This removes both
             mobile money and bank accounts.
           </Text>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={() => setIsDeleteAllModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="danger" onClick={handleDeleteAll} loading={isDeleting}>
-              Yes, Delete All
-            </Button>
-          </div>
+        </div>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 px-6 py-5 border-t border-gray-100 bg-gray-50/50">
+          <Button variant="outline" onClick={() => setIsDeleteAllModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeleteAll} loading={isDeleting}>
+            Yes, Delete All
+          </Button>
         </div>
       </Modal>
     </>
