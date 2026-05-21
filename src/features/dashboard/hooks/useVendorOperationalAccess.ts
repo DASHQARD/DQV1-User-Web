@@ -62,7 +62,7 @@ export function useVendorOperationalAccess() {
   const isPendingAdminApproval =
     Boolean(userProfile) &&
     !isAccountApproved &&
-    (Boolean(userProfile.onboarding_progress?.onboarding_completed) || isOnboardingComplete)
+    (Boolean(userProfile?.onboarding_progress?.onboarding_completed) || isOnboardingComplete)
 
   const isOperationalAccessEnabled =
     Boolean(userProfile) && isOnboardingComplete && isAccountApproved

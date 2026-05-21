@@ -55,7 +55,6 @@ export function getVendorOnboardingProgress({
   userProfile,
   branchesCount = 0,
   isBranchManager = false,
-  isCorporateSwitchedToVendor = false,
 }: VendorOnboardingProgressInput): VendorOnboardingProgressResult {
   const hasBranches = branchesCount > 0
   const profileDone = hasProfileAndId(userProfile)
