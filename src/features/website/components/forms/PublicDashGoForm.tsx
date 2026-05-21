@@ -1,9 +1,26 @@
 import { Button, Input, Text } from '@/components'
 import { Icon } from '@/libs'
+import { CURRENCY_PREFIX, DEFAULT_CURRENCY, formatCurrencyLabel } from '@/utils/format'
+import {
+  GIFT_CARD_AMOUNT_MAX,
+  GIFT_CARD_AMOUNT_MIN,
+  normalizeGiftCardAmountInput,
+  parseGiftCardAmountInput,
+  resolveGiftCardAmount,
+} from '@/utils/giftCardAmount'
 import { useForm } from 'react-hook-form'
-import { usePublicCatalogMutations } from '../../hooks/website/usePublicCatalogMutations'
 import { useCartStore } from '@/stores/cart'
+import { useAuthStore } from '@/stores'
+import { useGuestAddToCartModalStore } from '@/stores/guestAddToCartModal'
+import { useToast } from '@/hooks'
+import { createCustomDashGoAndAddToCart } from '../../services/cards'
+import {
+  getGuestEmailFromAuth,
+  getGuestNameFromAuth,
+  getGuestPhoneFromAuth,
+} from '../../utils/guestAuth'
 import React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface PublicDashGoFormProps {
   vendorName: string
@@ -24,11 +41,21 @@ export default function PublicDashGoForm({
   onAmountChange,
   vendor_id,
 }: PublicDashGoFormProps) {
-  const { useCreateDashGoAndAssignService } = usePublicCatalogMutations()
-  const createDashGoMutation = useCreateDashGoAndAssignService()
   const { openCart } = useCartStore()
+  const queryClient = useQueryClient()
+  const toast = useToast()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isGuestAuth = useAuthStore((s) => s.isGuestAuth)
+  const user = useAuthStore((s) => s.user)
+  const getGuestCartId = useAuthStore((s) => s.getGuestCartId)
+  const getGuestCartUuid = useAuthStore((s) => s.getGuestCartUuid)
+  const setGuestCartId = useAuthStore((s) => s.setGuestCartId)
+  const setGuestCartUuid = useAuthStore((s) => s.setGuestCartUuid)
+  const openGuestModal = useGuestAddToCartModalStore((s) => s.open)
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   const form = useForm<{ amount: string }>({
+    mode: 'onChange',
     defaultValues: {
       amount: selectedAmount || '100',
     },
@@ -37,41 +64,74 @@ export default function PublicDashGoForm({
   const watchedAmount = form.watch('amount')
 
   React.useEffect(() => {
-    onAmountChange?.(watchedAmount || '')
-  }, [watchedAmount, onAmountChange])
-
-  const onSubmit = async (data: { amount: string }) => {
-    const cardAmount = parseFloat(data.amount)
-    if (isNaN(cardAmount) || cardAmount <= 0) {
+    const raw = watchedAmount ?? ''
+    const normalized = normalizeGiftCardAmountInput(raw)
+    if (normalized !== raw) {
+      form.setValue('amount', normalized, { shouldValidate: true, shouldDirty: true })
       return
     }
+    onAmountChange?.(String(resolveGiftCardAmount(normalized)))
+  }, [watchedAmount, onAmountChange, form])
+
+  const onSubmit = async (data: { amount: string }) => {
+    const parsed = parseGiftCardAmountInput(normalizeGiftCardAmountInput(data.amount))
+    if (parsed === null || parsed < GIFT_CARD_AMOUNT_MIN) {
+      return
+    }
+    const cardAmount = resolveGiftCardAmount(data.amount)
 
     if (!vendor_id) {
       return
     }
 
-    // Include all available branches for redemption
+    if (!isAuthenticated) {
+      openGuestModal({
+        card_id: 0,
+        product: 'DashGo Gift Card',
+        price: cardAmount,
+        type: 'dashgo',
+        authOnly: true,
+      })
+      toast.success('Verify your phone to continue, then add to cart again.')
+      return
+    }
+
     const redemptionBranches = availableBranches.map((branch: { branch_id: string }) => ({
       branch_id: branch.branch_id,
     }))
 
-    createDashGoMutation.mutate(
-      {
+    setIsSubmitting(true)
+    try {
+      await createCustomDashGoAndAddToCart({
         vendor_id,
-        product: 'DashGo Gift Card',
-        description: `Custom DashGo card for ${vendorName}`,
+        vendorName,
         price: cardAmount,
-        currency: 'GHS',
-        issue_date: new Date().toISOString().split('T')[0],
+        currency: DEFAULT_CURRENCY,
         redemption_branches: redemptionBranches,
-      },
-      {
-        onSuccess: () => {
-          openCart()
-        },
-      },
-    )
+        isGuestAuth,
+        guestContact: isGuestAuth
+          ? {
+              guest_phone: getGuestPhoneFromAuth(user),
+              guest_name: getGuestNameFromAuth(user),
+              guest_email: getGuestEmailFromAuth(user),
+            }
+          : undefined,
+        getGuestCartId,
+        getGuestCartUuid,
+        setGuestCartId,
+        setGuestCartUuid,
+      })
+      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+      toast.success('DashGo gift card added to cart')
+      openCart()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to add DashGo to cart'
+      toast.error(message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <div className="flex flex-col gap-1">
@@ -110,7 +170,7 @@ export default function PublicDashGoForm({
         {/* Quick Selection Buttons */}
         <div className="flex gap-3 mb-4 flex-wrap">
           {quickAmounts.map((amount) => {
-            const isSelected = parseFloat(watchedAmount || '0') === amount
+            const isSelected = resolveGiftCardAmount(watchedAmount || '0') === amount
             return (
               <button
                 key={amount}
@@ -122,7 +182,7 @@ export default function PublicDashGoForm({
                     : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-primary-300'
                 }`}
               >
-                GHS {amount.toLocaleString()}
+                {formatCurrencyLabel(amount, DEFAULT_CURRENCY, { minDecimals: 0, maxDecimals: 0 })}
               </button>
             )
           })}
@@ -133,20 +193,25 @@ export default function PublicDashGoForm({
         <Input
           type="number"
           step="0.01"
-          min="1"
-          max="10000"
+          min={String(GIFT_CARD_AMOUNT_MIN)}
+          max={String(GIFT_CARD_AMOUNT_MAX)}
           prefix={
-            <span className="pointer-events-none font-bold text-primary-500 text-lg">GHS</span>
+            <span className="pointer-events-none font-bold text-primary-500 text-lg">
+              {CURRENCY_PREFIX}
+            </span>
           }
           {...form.register('amount', {
             required: 'Amount is required',
             validate: (value) => {
-              const numValue = parseFloat(value)
-              if (isNaN(numValue) || numValue <= 0) {
+              const parsed = parseGiftCardAmountInput(normalizeGiftCardAmountInput(value))
+              if (parsed === null) {
                 return 'Please enter a valid amount greater than 0'
               }
-              if (numValue > 10000) {
-                return `Maximum amount is GHS 10000`
+              if (parsed < GIFT_CARD_AMOUNT_MIN) {
+                return `Minimum amount is ${formatCurrencyLabel(GIFT_CARD_AMOUNT_MIN, DEFAULT_CURRENCY, { minDecimals: 0, maxDecimals: 0 })}`
+              }
+              if (parsed > GIFT_CARD_AMOUNT_MAX) {
+                return `Maximum amount is ${formatCurrencyLabel(GIFT_CARD_AMOUNT_MAX, DEFAULT_CURRENCY, { minDecimals: 0, maxDecimals: 0 })}`
               }
               return true
             },
@@ -156,7 +221,13 @@ export default function PublicDashGoForm({
           error={form.formState.errors.amount?.message}
         />
 
-        <p className="mt-2 text-sm text-gray-500">Maximum amount: GHS 10000</p>
+        <p className="mt-2 text-sm text-gray-500">
+          Maximum amount:{' '}
+          {formatCurrencyLabel(GIFT_CARD_AMOUNT_MAX, DEFAULT_CURRENCY, {
+            minDecimals: 0,
+            maxDecimals: 0,
+          })}
+        </p>
       </div>
 
       {/* Action Buttons */}
@@ -166,11 +237,12 @@ export default function PublicDashGoForm({
           type="submit"
           disabled={
             !form.watch('amount') ||
-            parseFloat(form.watch('amount') || '0') <= 0 ||
-            createDashGoMutation.isPending ||
+            parseGiftCardAmountInput(normalizeGiftCardAmountInput(form.watch('amount') || '')) ===
+              null ||
+            isSubmitting ||
             !vendor_id
           }
-          loading={createDashGoMutation.isPending}
+          loading={isSubmitting}
           className="flex-1"
         >
           <Icon icon="bi:cart-plus" className="size-5 mr-2" />

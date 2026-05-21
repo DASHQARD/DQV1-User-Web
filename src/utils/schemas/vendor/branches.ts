@@ -1,5 +1,11 @@
 import { z } from 'zod'
-import { getRequiredEmailSchema, getRequiredStringSchema } from '../shared'
+import {
+  getRequiredEmailSchema,
+  getRequiredInternationalPhoneSchema,
+  getRequiredStringSchema,
+  isValidInternationalPhoneDigits,
+  INVALID_PHONE_MESSAGE,
+} from '../shared'
 
 export interface Branch {
   id: string
@@ -80,7 +86,7 @@ export const CreateBranchFormSchema = z
     branch_location: getRequiredStringSchema('Branch Location'),
     branch_manager_name: getRequiredStringSchema('Branch Manager Name'),
     branch_manager_email: getRequiredEmailSchema('Branch Manager Email'),
-    branch_manager_phone: getRequiredStringSchema('Branch Manager Phone Number'),
+    branch_manager_phone: getRequiredInternationalPhoneSchema('Branch Manager Phone Number'),
     country: getRequiredStringSchema('Country'),
     country_code: z.string().optional(),
     payment_method: z.enum(['mobile_money', 'bank']),
@@ -105,6 +111,13 @@ export const CreateBranchFormSchema = z
       message: 'Mobile Money Provider and Mobile Money Number are required',
       path: ['mobile_money_provider'],
     },
+  )
+  .refine(
+    (data) =>
+      data.payment_method !== 'mobile_money' ||
+      !data.mobile_money_number ||
+      isValidInternationalPhoneDigits(data.mobile_money_number),
+    { message: INVALID_PHONE_MESSAGE, path: ['mobile_money_number'] },
   )
   .refine(
     (data) => {
@@ -150,6 +163,13 @@ export const BranchPaymentDetailsSchema = z
       message: 'Mobile Money Provider and Mobile Money Number are required',
       path: ['mobile_money_provider'],
     },
+  )
+  .refine(
+    (data) =>
+      data.payment_method !== 'mobile_money' ||
+      !data.mobile_money_number ||
+      isValidInternationalPhoneDigits(data.mobile_money_number),
+    { message: INVALID_PHONE_MESSAGE, path: ['mobile_money_number'] },
   )
   .refine(
     (data) => {

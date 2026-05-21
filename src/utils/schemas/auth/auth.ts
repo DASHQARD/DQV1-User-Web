@@ -8,7 +8,10 @@ import {
 import {
   getRequiredAlphaNumericStringSchema,
   getRequiredEmailSchema,
+  getRequiredInternationalPhoneSchema,
   getRequiredStringSchema,
+  isValidInternationalPhoneDigits,
+  INVALID_PHONE_MESSAGE,
 } from '../shared'
 import { validatePersonalInformationIdNumber } from '@/utils/validation/personalInformation'
 
@@ -27,7 +30,7 @@ export const AdminOnboardingSchema = z.object({
 export const CreateAccountSchema = z.object({
   email: getRequiredEmailSchema('Email'),
   password: getRequiredAlphaNumericStringSchema('Password'),
-  phone_number: getRequiredStringSchema('Phone Number'),
+  phone_number: getRequiredInternationalPhoneSchema('Phone Number'),
   user_type: z.enum(['user', 'corporate']),
   country: getRequiredStringSchema('Country'),
   country_code: getRequiredStringSchema('Country Code'),
@@ -81,7 +84,7 @@ export const VerifyLoginOTPSchema = z
 export const BusinessDetailsSchema = z.object({
   name: getRequiredStringSchema('Name'),
   type: z.enum(['llc', 'sole_proprietor', 'partnership']),
-  phone: getRequiredStringSchema('Phone'),
+  phone: getRequiredInternationalPhoneSchema('Phone'),
   email: getRequiredEmailSchema('Email'),
   street_address: getRequiredStringSchema('Street Address'),
   digital_address: getRequiredStringSchema('Digital Address'),
@@ -164,6 +167,13 @@ export const AddBranchSchema = z
       message: 'Mobile Money Provider and Mobile Money Number are required',
       path: ['mobile_money_provider'],
     },
+  )
+  .refine(
+    (data) =>
+      data.payment_method !== 'mobile_money' ||
+      !data.mobile_money_number ||
+      isValidInternationalPhoneDigits(data.mobile_money_number),
+    { message: INVALID_PHONE_MESSAGE, path: ['mobile_money_number'] },
   )
   .refine(
     (data) => {

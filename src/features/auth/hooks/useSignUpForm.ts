@@ -8,6 +8,18 @@ import { MODAL_NAMES } from '@/utils/constants'
 import { useAuth } from './auth'
 import { useCountriesData, usePersistedModalState } from '@/hooks'
 
+export type SignUpFormValues = z.infer<typeof CreateAccountSchema>
+
+/** Empty sign-up form; reused for init and post-submit reset. */
+export const SIGN_UP_FORM_DEFAULT_VALUES: SignUpFormValues = {
+  email: '',
+  phone_number: '',
+  password: '',
+  country: 'Ghana',
+  country_code: '01',
+  user_type: 'user',
+}
+
 function normalizeSignUpPhoneNumber(phoneNumber: string): string {
   if (!phoneNumber) return ''
 
@@ -37,13 +49,11 @@ export function useSignUpForm() {
     paramName: MODAL_NAMES.AUTH.EMAIL_SENT,
   })
 
-  const form = useForm<z.infer<typeof CreateAccountSchema>>({
+  const form = useForm<SignUpFormValues>({
     resolver: zodResolver(CreateAccountSchema),
-    defaultValues: {
-      country: 'Ghana',
-      country_code: '01',
-      user_type: 'user',
-    },
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
+    defaultValues: SIGN_UP_FORM_DEFAULT_VALUES,
   })
 
   useEffect(() => {
@@ -58,7 +68,7 @@ export function useSignUpForm() {
     }
   }, [countries, form])
 
-  const onSubmit = (data: z.infer<typeof CreateAccountSchema>) => {
+  const onSubmit = (data: SignUpFormValues) => {
     const transformedData = {
       ...data,
       phone_number: normalizeSignUpPhoneNumber(data.phone_number),
@@ -66,10 +76,12 @@ export function useSignUpForm() {
     mutate(transformedData, {
       onSuccess: () => {
         emailSentModal.openModal(MODAL_NAMES.AUTH.EMAIL_SENT, { email: data.email })
-        form.reset({
-          country: 'Ghana',
-          country_code: '01',
-          user_type: 'user',
+        form.reset(SIGN_UP_FORM_DEFAULT_VALUES, {
+          keepErrors: false,
+          keepDirty: false,
+          keepTouched: false,
+          keepIsSubmitted: false,
+          keepSubmitCount: false,
         })
       },
     })

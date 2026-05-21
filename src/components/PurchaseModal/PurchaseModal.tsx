@@ -8,15 +8,16 @@ import DashxBG from '@/assets/svgs/Dashx_bg.svg'
 import DashPassBG from '@/assets/images/dashpass_bg.png'
 import DashGoBG from '@/assets/svgs/dashgo_bg.svg'
 import { useRecipients } from '@/features/dashboard/hooks'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { AssignRecipientSchema } from '@/utils/schemas/cards'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { BasePhoneInput } from '../BasePhoneNumber/BasePhoneNumber'
 import { Input } from '../Input'
 import type { AssignRecipientPayload, GuestAssignRecipientPayload } from '@/types/responses'
 import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { useAuthStore } from '@/stores'
-import { EXAMPLE_PHONE_PLACEHOLDER_E164, MODAL_NAMES } from '@/utils/constants'
+import { EXAMPLE_PHONE_PLACEHOLDER, MODAL_NAMES, PURCHASE_WHATSAPP_HI_PROMPT } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '@/features/website/utils/assignToSelfContactPrefill'
 
 export default function PurchaseModal() {
@@ -367,7 +368,7 @@ export default function PurchaseModal() {
                               WhatsApp
                             </div>
                             <p className="text-xs text-gray-600">
-                              1. Send “Hi” to +233 25 608 0362
+                              1. {PURCHASE_WHATSAPP_HI_PROMPT}
                             </p>
                             <p className="text-xs text-gray-600">2. Follow the prompts</p>
                           </div>
@@ -488,15 +489,20 @@ export default function PurchaseModal() {
               <label className="mb-2 block text-sm font-semibold text-gray-700">
                 Phone Number {!assignToSelf && '*'}
               </label>
-              <Input
-                type="tel"
-                maxLength={15}
-                {...form.register('phone')}
-                error={form.formState.errors.phone?.message}
-                disabled={assignToSelf}
-                placeholder={
-                  assignToSelf ? 'Will use your account phone' : EXAMPLE_PHONE_PLACEHOLDER_E164
-                }
+              <Controller
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <BasePhoneInput
+                    selectedVal={field.value || ''}
+                    handleChange={field.onChange}
+                    disabled={assignToSelf}
+                    placeholder={
+                      assignToSelf ? 'Will use your account phone' : EXAMPLE_PHONE_PLACEHOLDER
+                    }
+                    error={form.formState.errors.phone?.message}
+                  />
+                )}
               />
             </div>
             <div>

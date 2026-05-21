@@ -1,5 +1,9 @@
 import { z } from 'zod'
-import { getRequiredStringSchema } from './shared'
+import {
+  getRequiredStringSchema,
+  isValidInternationalPhoneDigits,
+  INVALID_PHONE_MESSAGE,
+} from './shared'
 
 export const PaymentInfoSchema = z
   .object({
@@ -36,6 +40,13 @@ export const PaymentInfoSchema = z
       message: 'Mobile Money Provider and Mobile Money Number are required',
       path: ['mobile_money_number'],
     },
+  )
+  .refine(
+    (data) =>
+      data.payment_method !== 'mobile_money' ||
+      !data.mobile_money_number ||
+      isValidInternationalPhoneDigits(data.mobile_money_number),
+    { message: INVALID_PHONE_MESSAGE, path: ['mobile_money_number'] },
   )
   .refine(
     (data) => {
@@ -99,4 +110,11 @@ export const PaymentDetailsSchema = z
       message: 'All bank details are required',
       path: ['bank_name'],
     },
+  )
+  .refine(
+    (data) =>
+      data.payment_method !== 'mobile_money' ||
+      !data.mobile_money_number ||
+      isValidInternationalPhoneDigits(data.mobile_money_number),
+    { message: INVALID_PHONE_MESSAGE, path: ['mobile_money_number'] },
   )

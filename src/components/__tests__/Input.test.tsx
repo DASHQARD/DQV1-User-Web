@@ -28,4 +28,11 @@ describe('Input', () => {
     expect(screen.getByPlaceholderText('Message')).toBeInTheDocument()
     expect(document.querySelector('textarea')).toBeInTheDocument()
   })
+
+  it('uses expanded layout classes for textarea wrapper', () => {
+    const { container } = renderWithProviders(<Input type="textarea" placeholder="Message" />)
+    const wrapper = container.querySelector('.min-h-40')
+    expect(wrapper).toBeInTheDocument()
+    expect(wrapper).toHaveClass('items-start', 'py-3')
+  })
 })

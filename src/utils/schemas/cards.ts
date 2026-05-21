@@ -1,11 +1,16 @@
 import { z } from 'zod'
 
-import { isValidEmailAddress, isValidInternationalPhoneDigits } from './shared'
+import {
+  getRequiredInternationalPhoneSchema,
+  INVALID_PHONE_MESSAGE,
+  isValidEmailAddress,
+  isValidInternationalPhoneDigits,
+} from './shared'
 
 export const DashGoAndDashProPurchaseFormSchema = z.object({
   assign_to_self: z.boolean(),
   recipient_name: z.string().min(1),
-  recipient_phone: z.string().min(1),
+  recipient_phone: getRequiredInternationalPhoneSchema('Recipient phone'),
   recipient_email: z.string().refine((val) => isValidEmailAddress(val), {
     message: 'Invalid email address',
   }),
@@ -74,7 +79,7 @@ export const DashGoPurchaseFormSchema = z
       } else if (!isValidInternationalPhoneDigits(data.recipient_phone)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Please enter a valid phone number',
+          message: INVALID_PHONE_MESSAGE,
           path: ['recipient_phone'],
         })
       }
@@ -126,7 +131,7 @@ export const AssignRecipientSchema = z
       } else if (!isValidInternationalPhoneDigits(data.phone)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Please enter a valid phone number',
+          message: INVALID_PHONE_MESSAGE,
           path: ['phone'],
         })
       }
@@ -156,7 +161,7 @@ export const AssignRecipientSchema = z
       if (phone && !isValidInternationalPhoneDigits(phone)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Please enter a valid phone number',
+          message: INVALID_PHONE_MESSAGE,
           path: ['phone'],
         })
       }
@@ -202,7 +207,7 @@ export const DashGoAssignRecipientSchema = z
       } else if (!isValidInternationalPhoneDigits(data.recipient_phone)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Please enter a valid phone number',
+          message: INVALID_PHONE_MESSAGE,
           path: ['recipient_phone'],
         })
       }
@@ -232,7 +237,7 @@ export const DashGoAssignRecipientSchema = z
       if (phone && !isValidInternationalPhoneDigits(phone)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Please enter a valid phone number',
+          message: INVALID_PHONE_MESSAGE,
           path: ['recipient_phone'],
         })
       }

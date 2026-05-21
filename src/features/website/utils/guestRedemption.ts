@@ -1,4 +1,7 @@
 import { getImageUrl } from '@/utils/cardDisplay'
+import { formatBranchLabel } from '@/utils/format'
+
+export { formatBranchLabel }
 import type {
   GuestCardsRedemptionData,
   GuestCardsRedemptionPayload,
@@ -47,23 +50,6 @@ export function resolveRedemptionCardId(card: Record<string, unknown> | null | u
     return String(catalogId)
   }
   return ''
-}
-
-export function formatBranchLabel(branch: {
-  branch_id?: string | number
-  branch_name?: string | null
-  name?: string | null
-  branch_location?: string | null
-}): string {
-  const name = branch.branch_name ?? branch.name
-  const location = branch.branch_location
-  const id = branch.branch_id != null ? String(branch.branch_id) : ''
-
-  if (name && location) return `${name} — ${location}`
-  if (name) return name
-  if (location) return location
-  if (id) return `Branch ${id.slice(0, 8)}`
-  return 'Branch'
 }
 
 export function mapGuestAssignedCardToVendorCard(

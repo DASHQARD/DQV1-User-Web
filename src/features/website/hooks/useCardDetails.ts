@@ -1,9 +1,10 @@
-import { useMemo, useCallback, useState } from 'react'
+import { useMemo, useCallback, useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 
 import {
   getCardBackground as getCardBg,
+  getCardFileUrl,
   getCardTypeName as getCardTypeDisplayName,
 } from '@/utils/cardDisplay'
 import {
@@ -41,16 +42,13 @@ export function useCardDetails(): UseCardDetailsReturn {
   const isGuestAuth = useAuthStore((s) => s.isGuestAuth)
   const user = useAuthStore((s) => s.user)
   const getGuestCartId = useAuthStore((s) => s.getGuestCartId)
+  const getGuestCartUuid = useAuthStore((s) => s.getGuestCartUuid)
   const setGuestCartId = useAuthStore((s) => s.setGuestCartId)
   const openGuestAddToCartModal = useGuestAddToCartModalStore((s) => s.open)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
   const queryClient = useQueryClient()
   const toast = useToast()
-
-  /** Normalize API id/file_name to a valid record key (string | number). */
-  const toRecordKey = (x: unknown, fallback: number): string | number =>
-    typeof x === 'string' || typeof x === 'number' ? x : fallback
 
   const card = useMemo(() => {
     if (!cardsResponse || !id) return null
@@ -76,17 +74,10 @@ export function useCardDetails(): UseCardDetailsReturn {
   const [selectedDocument, setSelectedDocument] = useState<CardDetailsDocument | null>(null)
   const [imageIndex, setImageIndex] = useState(-1)
 
-  const termsUrls = useMemo((): Record<string | number, string> => {
-    const cardAny = card as {
-      terms_and_conditions?: { id?: unknown; file_name?: string; file_url?: string }[]
-    } | null
-    if (!cardAny?.terms_and_conditions?.length) return {}
-    const urlMap: Record<string | number, string> = {}
-    cardAny.terms_and_conditions.forEach((term, index) => {
-      if (term.file_url) urlMap[toRecordKey(term.id ?? term.file_name, index)] = term.file_url
-    })
-    return urlMap
-  }, [card])
+  useEffect(() => {
+    setSelectedDocument(null)
+    setImageIndex(-1)
+  }, [id])
 
   const getCardBackground = useCallback(() => getCardBg(card?.type), [card?.type])
   const getCardTypeName = useCallback(() => getCardTypeDisplayName(card?.type), [card?.type])
@@ -124,6 +115,7 @@ export function useCardDetails(): UseCardDetailsReturn {
             guest_name: guestName.trim(),
             guest_email: guestEmail.trim(),
             getGuestCartId,
+            getGuestCartUuid,
             setGuestCartId,
             setGuestCartUuid: useAuthStore.getState().setGuestCartUuid,
           })
@@ -166,7 +158,7 @@ export function useCardDetails(): UseCardDetailsReturn {
     } | null
     if (!c?.images) return []
     return c.images.map((img, index) => ({
-      src: img.file_url ?? '',
+      src: getCardFileUrl(img.file_url) || '',
       alt: `${c.product} image ${index + 1}`,
     }))
   }, [card])
@@ -179,7 +171,6 @@ export function useCardDetails(): UseCardDetailsReturn {
     card,
     isLoading,
     redemptionBranches,
-    termsUrls,
     selectedDocument,
     setSelectedDocument,
     imageIndex,

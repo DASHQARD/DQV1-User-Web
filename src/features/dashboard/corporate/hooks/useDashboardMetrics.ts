@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { formatCurrency } from '@/utils/format'
 
 import { corporateQueries } from './useCorporateQueries'
 
@@ -133,18 +134,6 @@ export function useDashboardMetrics() {
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
       .slice(0, 10)
   }, [paymentsData])
-
-  const formatCurrency = (amount: number | string, currency: string = 'GHS'): string => {
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
-    if (isNaN(numAmount)) return `${currency} 0.00`
-
-    return new Intl.NumberFormat('en-GH', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(numAmount)
-  }
 
   return {
     isLoading,

@@ -36,6 +36,9 @@ import {
   businessDetailsWithDocuments,
 } from '../services'
 
+const SIGN_UP_SUCCESS_MESSAGE =
+  'Registration successful! A verification email has been sent to your inbox.'
+
 export function useAuth() {
   const { success, error } = useToast()
   const [tokenExpired, setTokenExpired] = React.useState(false)
@@ -45,11 +48,10 @@ export function useAuth() {
   function useSignUpMutation() {
     return useMutation({
       mutationFn: signUp,
-      onSuccess: (response: any) => {
-        success(
-          response.data?.message ||
-            'Account created successfully. Email verification link has been sent to your email.',
-        )
+      onSuccess: () => {
+        // Use a definitive message — the API may return a generic anti-enumeration
+        // line (e.g. "if the account exists…") which is misleading right after sign-up.
+        success(SIGN_UP_SUCCESS_MESSAGE)
       },
       onError: (err: any) => {
         const errorMessage = err?.message || 'Create account failed. Please try again.'

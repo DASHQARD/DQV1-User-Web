@@ -320,7 +320,7 @@ export default function CreateExperienceForm() {
       />
 
       <Input
-        iconBefore={<span className="text-gray-400 font-medium">₵</span>}
+        iconBefore={<span className="text-gray-400 font-medium">GHS</span>}
         label="Price"
         type="number"
         step="0.01"

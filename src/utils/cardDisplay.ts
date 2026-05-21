@@ -31,7 +31,16 @@ export function getImageUrl(fileUrl: string | undefined): string {
   }
   let baseUrl = ENV_VARS.API_BASE_URL
   if (baseUrl.endsWith('/api/v1')) baseUrl = baseUrl.replace('/api/v1', '')
-  return `${baseUrl}/uploads/${fileUrl}`
+  const path = fileUrl.replace(/^\/?uploads\//, '')
+  return `${baseUrl}/uploads/${path}`
+}
+
+/** Same resolution as images — terms PDFs and other card files use uploads or absolute URLs. */
+export const getCardFileUrl = getImageUrl
+
+export function isPdfFile(fileUrl?: string, fileName?: string): boolean {
+  const name = (fileName ?? fileUrl ?? '').toLowerCase()
+  return name.endsWith('.pdf') || (fileUrl ?? '').toLowerCase().includes('.pdf')
 }
 
 export function getCardTypeName(type: string | undefined): string {

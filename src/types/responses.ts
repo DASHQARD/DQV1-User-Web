@@ -205,18 +205,19 @@ export type GuestAddCardPayload = {
   /** Catalog cards use UUID strings from cards-info; coerce at the call site with String(id). */
   card_id: string
   quantity: number
-  cart_id?: number
+  /** Numeric id or cart UUID (e.g. 019e4649-...) depending on API version */
+  cart_id?: number | string
 }
 
 /** Response from POST /guest-carts/add-card; may include cart_id for subsequent adds. */
 export type GuestAddCardResponse = {
-  cart_id?: number
+  cart_id?: number | string
   [key: string]: unknown
 }
 
 export type GuestCartApiResponse = {
   cart: {
-    id: number
+    id: number | string
     uuid?: string
     guest_phone: string
     guest_name: string

@@ -8,6 +8,7 @@ import {
   type CardType,
 } from '@/utils/constants/cards'
 import type { DropdownOption } from '@/types'
+import { formatBranchLabel } from '@/utils/format'
 import type { CardMetricsDetail } from '@/types'
 import { useRedemptionMutation, useCardMetricsDetails } from '@/features/dashboard/hooks'
 import type { CardsRedemptionPayload } from '@/features/dashboard/services/redemptions'
@@ -184,12 +185,10 @@ export function useCardDetailsPage() {
   }, [selectedVendor])
 
   const branchOptions: DropdownOption[] = useMemo(() => {
-    return availableBranches.map((branch) => {
-      const label = branch.branch_location
-        ? `${branch.branch_name} - ${branch.branch_location}`
-        : `${branch.branch_name}`
-      return { label, value: String(branch.branch_id) }
-    })
+    return availableBranches.map((branch) => ({
+      label: formatBranchLabel(branch),
+      value: String(branch.branch_id),
+    }))
   }, [availableBranches])
 
   const filteredCards = useMemo((): CardDetailsDisplayItem[] => {
@@ -374,6 +373,17 @@ export function useCardDetailsPage() {
     setSelectedBranchId(null)
   }, [])
 
+  const branchNameForSummary = useMemo(() => {
+    if (selectedBranchId !== null) {
+      const branch = availableBranches.find((b) => String(b.branch_id) === String(selectedBranchId))
+      return branch ? formatBranchLabel(branch) : null
+    }
+    if (selectedCard?.branch_name) {
+      return formatBranchLabel({ branch_name: selectedCard.branch_name })
+    }
+    return null
+  }, [selectedBranchId, availableBranches, selectedCard])
+
   return {
     cardTypeParam: cardType,
     validCardType,
@@ -409,5 +419,6 @@ export function useCardDetailsPage() {
     handleConfirmRedemption,
     handleCloseRedemptionModal,
     clearVendorSelection,
+    branchNameForSummary,
   }
 }

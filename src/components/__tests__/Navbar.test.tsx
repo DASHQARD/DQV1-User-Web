@@ -96,6 +96,21 @@ describe('Navbar', () => {
     expect(screen.getByRole('link', { name: 'Contact' })).toBeInTheDocument()
   })
 
+  it('highlights the active nav link for the current route', () => {
+    renderWithProviders(<Navbar />, { initialEntries: ['/about'] })
+    const aboutLink = screen.getByRole('link', { name: 'About' })
+    const giftCardsLink = screen.getByRole('link', { name: 'Gift Cards' })
+
+    expect(aboutLink).toHaveAttribute('aria-current', 'page')
+    expect(aboutLink.className).toMatch(/text-primary-600/)
+    expect(giftCardsLink).not.toHaveAttribute('aria-current', 'page')
+  })
+
+  it('highlights Vendors when on vendor profile route', () => {
+    renderWithProviders(<Navbar />, { initialEntries: ['/vendor'] })
+    expect(screen.getByRole('link', { name: 'Vendors' })).toHaveAttribute('aria-current', 'page')
+  })
+
   it('renders Login and Register when not authenticated', () => {
     renderWithProviders(<Navbar />)
     expect(screen.getByRole('link', { name: 'Login' })).toBeInTheDocument()

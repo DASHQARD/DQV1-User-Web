@@ -5,7 +5,7 @@ import DashProBG from '@/assets/svgs/dashpro_bg.svg'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { formatCurrency } from '@/utils/format'
+import { CURRENCY_PREFIX, DEFAULT_CURRENCY, formatCurrency } from '@/utils/format'
 import { AssignRecipientSchema } from '@/utils/schemas'
 import { useCreateCard } from '@/features/dashboard/hooks'
 import { useCart, useGuestCart } from '../../hooks'
@@ -16,10 +16,16 @@ import { useAuthStore } from '@/stores'
 import {
   EXAMPLE_PHONE_PLACEHOLDER_E164,
   GUEST_EMAIL_STORAGE_KEY,
+  PURCHASE_WHATSAPP_HI_PROMPT,
   getGuestContactSessionItem,
 } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
-import { addGuestCard, createGuestDashPro } from '../../services/cards'
+import {
+  addGuestCard,
+  createGuestDashPro,
+  extractGiftCardIdFromGuestCreate,
+  extractGuestCreateCartMeta,
+} from '../../services/cards'
 import { useToast } from '@/hooks'
 
 export default function DashProPurchase() {
@@ -63,6 +69,8 @@ export default function DashProPurchase() {
   const user = useAuthStore((state) => state.user)
   const getGuestCartId = useAuthStore((state) => state.getGuestCartId)
   const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
+  const getGuestCartUuid = useAuthStore((state) => state.getGuestCartUuid)
+  const setGuestCartUuid = useAuthStore((state) => state.setGuestCartUuid)
   const { useAssignRecipientService, useAssignGuestRecipientService } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()
   const assignGuestRecipientMutation = useAssignGuestRecipientService()
@@ -167,35 +175,52 @@ export default function DashProPurchase() {
             )
           })
 
-      const cardId =
-        cardResponse?.data?.id ||
-        cardResponse?.data?.card_id ||
-        cardResponse?.data?.card?.id ||
-        cardResponse?.id
+      const cardId = isGuestAuth
+        ? extractGiftCardIdFromGuestCreate(cardResponse)
+        : cardResponse?.data?.id ||
+          cardResponse?.data?.card_id ||
+          cardResponse?.data?.card?.id ||
+          cardResponse?.id
       if (!cardId) {
         console.error('Failed to get card ID from response')
+        toast.error('Failed to create DashPro card. Please try again.')
         return
       }
 
-      if (isGuestAuth) {
-        const guestName = (user as any)?.guest_name || data.name?.trim() || 'Guest User'
-        const guestEmail =
-          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
-          (user as any)?.guest_email ||
-          data.email?.trim() ||
-          ''
-        const cartId = getGuestCartId() ?? undefined
+      let cartItemId: string | number | null = null
 
-        const addResult = await addGuestCard({
-          guest_name: guestName,
-          guest_email: guestEmail,
-          card_id: String(cardId),
-          quantity: 1,
-          ...(cartId !== undefined && { cart_id: cartId }),
-        })
-        const nextCartId = addResult?.cart_id ?? (addResult as any)?.data?.cart_id
-        if (typeof nextCartId === 'number') {
-          setGuestCartId(nextCartId)
+      if (isGuestAuth) {
+        const guestCartMeta = extractGuestCreateCartMeta(cardResponse)
+        if (guestCartMeta.cartId) {
+          setGuestCartUuid(guestCartMeta.cartId)
+        }
+        if (guestCartMeta.cartItemId) {
+          cartItemId = guestCartMeta.cartItemId
+        }
+
+        if (!cartItemId) {
+          const guestName = (user as any)?.guest_name || data.name?.trim() || 'Guest User'
+          const guestEmail =
+            getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
+            (user as any)?.guest_email ||
+            data.email?.trim() ||
+            ''
+          const cartId = getGuestCartUuid() ?? getGuestCartId() ?? undefined
+
+          const addResult = await addGuestCard({
+            guest_name: guestName,
+            guest_email: guestEmail,
+            card_id: String(cardId),
+            quantity: 1,
+            ...(cartId !== undefined && { cart_id: cartId }),
+          })
+          const nextCartId = addResult?.cart_id ?? (addResult as any)?.data?.cart_id
+          if (typeof nextCartId === 'number') {
+            setGuestCartId(nextCartId)
+          }
+          if (typeof nextCartId === 'string') {
+            setGuestCartUuid(nextCartId)
+          }
         }
       } else {
         await addToCartAsync({
@@ -204,20 +229,23 @@ export default function DashProPurchase() {
         })
       }
 
-      const cartItemsResponse = isGuestAuth ? await refetchGuestCart() : await refetchCart()
-      const cartItems = cartItemsResponse?.data || []
+      if (!cartItemId) {
+        const cartItemsResponse = isGuestAuth ? await refetchGuestCart() : await refetchCart()
+        const cartItems = cartItemsResponse?.data || []
 
-      let cartItemId: number | null = null
-      if (Array.isArray(cartItems)) {
-        for (const cart of cartItems) {
-          if (cart.items) {
-            const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
-            const matchingItem = itemsArray.find(
-              (item: any) => String(item.card_id) === String(cardId),
-            )
-            if (matchingItem?.cart_item_id) {
-              cartItemId = matchingItem.cart_item_id
-              break
+        if (Array.isArray(cartItems)) {
+          for (const cart of cartItems) {
+            if (cart.items) {
+              const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
+              const matchingItem = itemsArray.find(
+                (item: any) =>
+                  String(item.card_id) === String(cardId) ||
+                  String(item.gift_card_id) === String(cardId),
+              )
+              if (matchingItem?.cart_item_id) {
+                cartItemId = matchingItem.cart_item_id
+                break
+              }
             }
           }
         }
@@ -225,6 +253,8 @@ export default function DashProPurchase() {
 
       if (!cartItemId) {
         console.error('Failed to get cart_item_id after adding to cart')
+        toast.error('Card was created but could not be assigned. Check your bag.')
+        openCart()
         return
       }
 
@@ -255,6 +285,7 @@ export default function DashProPurchase() {
         await assignRecipientMutation.mutateAsync(assignPayload)
       }
 
+      toast.success('DashPro gift card added to cart')
       openCart()
     } catch (error: any) {
       console.error('Error creating DashPro card and assigning recipient:', error)
@@ -270,7 +301,7 @@ export default function DashProPurchase() {
   }, [])
 
   // Computed values for card preview
-  const displayedCardAmount = amount ? formatCurrency(amount.toString(), 'GHS') : 'GHS 0'
+  const displayedCardAmount = formatCurrency(amount ? amount.toString() : 0, DEFAULT_CURRENCY)
   const displayedCardRecipient = React.useMemo(() => {
     if (assignToSelf) {
       const contact = getAssignToSelfContactPrefill({
@@ -383,7 +414,7 @@ export default function DashProPurchase() {
                                 WhatsApp
                               </div>
                               <p className="text-xs text-gray-600">
-                                1. Send “Hi” to +233 25 608 0362
+                                1. {PURCHASE_WHATSAPP_HI_PROMPT}
                               </p>
                               <p className="text-xs text-gray-600">2. Follow the prompts</p>
                             </div>
@@ -441,7 +472,7 @@ export default function DashProPurchase() {
             <div className="max-w-md space-y-4">
               <div className="relative">
                 <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-primary-500">
-                  GHS
+                  {CURRENCY_PREFIX}
                 </span>
                 <input
                   type="number"

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Icon } from '@/libs'
 import { Button } from '@/components/Button'
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL_HREF } from '@/utils/constants'
 
 export default function TermsOfService() {
   // Scroll to top on mount
@@ -501,10 +502,10 @@ export default function TermsOfService() {
                             className="text-primary-500 text-lg flex-shrink-0"
                           />
                           <a
-                            href="tel:+233542022245"
+                            href={SUPPORT_PHONE_TEL_HREF}
                             className="hover:text-primary-500 hover:underline"
                           >
-                            +233 (0) 542 022 245
+                            {SUPPORT_PHONE_DISPLAY}
                           </a>
                         </div>
                       </div>

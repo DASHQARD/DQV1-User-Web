@@ -2,8 +2,11 @@ import React from 'react'
 
 import { useReducerSpread } from '@/hooks'
 import { DEFAULT_QUERY } from '@/utils/constants'
+import { applyApiSafePriceRange } from '@/features/website/utils/priceRangeFilter'
 
 import { usePublicCatalogQueries } from './usePublicCatalogQueries'
+
+const CARDS_QUERY_DEBOUNCE_MS = 400
 
 export function usePublicCatalog(
   search?: string,
@@ -51,13 +54,21 @@ export function usePublicCatalog(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setQuery, search, expiry_date, vendor_ids, min_price, max_price, card_type, sort_by])
 
+  const [cardsFetchQuery, setCardsFetchQuery] = React.useState(() => applyApiSafePriceRange(query))
+
+  React.useEffect(() => {
+    const safeQuery = applyApiSafePriceRange(query)
+    const timer = window.setTimeout(() => setCardsFetchQuery(safeQuery), CARDS_QUERY_DEBOUNCE_MS)
+    return () => window.clearTimeout(timer)
+  }, [query])
+
   const { usePublicCardsService, usePublicVendors } = usePublicCatalogQueries()
-  const { data: publicCards, isLoading } = usePublicCardsService(query)
-  const { data: vendorsResponse, isLoading: vendorsLoading } = usePublicVendors({
-    ...query,
-    limit: query.limit || 20,
-    vendor_id: vendor_ids || '',
-  })
+  const { data: publicCards, isLoading } = usePublicCardsService(cardsFetchQuery)
+  const vendorsFetchQuery = React.useMemo(
+    () => applyApiSafePriceRange({ ...query, limit: query.limit || 20, vendor_id: vendor_ids || '' }),
+    [query, vendor_ids],
+  )
+  const { data: vendorsResponse, isLoading: vendorsLoading } = usePublicVendors(vendorsFetchQuery)
 
   const vendors = vendorsResponse
 
@@ -69,11 +80,11 @@ export function usePublicCatalog(
   ]
 
   const priceRanges = [
-    { label: 'Under ₵25', min: 0, max: 25 },
-    { label: '₵25 - ₵50', min: 25, max: 50 },
-    { label: '₵50 - ₵100', min: 50, max: 100 },
-    { label: '₵100 - ₵250', min: 100, max: 250 },
-    { label: '₵250+', min: 250, max: null },
+    { label: 'Under GHS 25', min: 0, max: 25 },
+    { label: 'GHS 25 - GHS 50', min: 25, max: 50 },
+    { label: 'GHS 50 - GHS 100', min: 50, max: 100 },
+    { label: 'GHS 100 - GHS 250', min: 100, max: 250 },
+    { label: 'GHS 250+', min: 250, max: null },
   ]
 
   return {

@@ -1,14 +1,22 @@
+import { parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js'
+import isEmail from 'validator/lib/isEmail'
 import z from 'zod'
 
-/**
- * Pragmatic validation for common mailbox addresses (aligned with typical product rules).
- * Local part: letters, digits, underscore, dot, plus, hyphen — including as the first character
- * (e.g. plus-addressing, names with underscores). Domain: at least one dot (e.g. example.com).
- */
-const validEmailRegex = /^[\w.+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/
+export const INVALID_EMAIL_MESSAGE = 'Please enter a valid email address'
 
+const emailValidatorOptions = {
+  require_tld: true,
+  allow_utf8_local_part: false,
+  allow_ip_domains: false,
+}
+
+/**
+ * Validates mailbox addresses (requires a TLD, e.g. rejects user@example).
+ */
 export function isValidEmailAddress(value: string) {
-  return validEmailRegex.test(value.trim())
+  const trimmed = value.trim()
+  if (!trimmed) return false
+  return isEmail(trimmed, emailValidatorOptions)
 }
 
 export function getOptionalStringSchema() {
@@ -26,7 +34,10 @@ export function getRequiredNumberSchema(label: string = 'Field') {
 }
 
 export function getRequiredEmailSchema(label: string = 'Email') {
-  return getRequiredStringSchema(label).refine((val) => isValidEmailAddress(val), 'Invalid email')
+  return getRequiredStringSchema(label).refine(
+    (val) => isValidEmailAddress(val),
+    INVALID_EMAIL_MESSAGE,
+  )
 }
 
 export function getRequiredAlphaNumericStringSchema(label: string = 'Field') {
@@ -48,13 +59,49 @@ export function getRequiredOTPSchema(label: string = 'OTP') {
   return z.string().min(6, `${label} must be 6 digits`)
 }
 
-/**
- * Validates phone strings as stored by our inputs (E.164-style with optional + / spaces).
- * Uses digit count only: ITU-T E.164 allows up to 15 digits; minimum 10 for a plausible mobile.
- */
-export function isValidInternationalPhoneDigits(value: string): boolean {
+export const INVALID_PHONE_MESSAGE = 'Please enter a valid phone number'
+
+/** Country dial codes only (e.g. +233 with no subscriber digits). */
+export function isDialCodeOnlyPhone(value: string): boolean {
   const digits = value.replace(/\D/g, '')
-  return digits.length >= 10 && digits.length <= 15
+  return digits.length > 0 && digits.length <= 4
+}
+
+/**
+ * Validates phone strings from BasePhoneInput / E.164 values using libphonenumber-js.
+ * Rejects dial-code-only values and incomplete national numbers (e.g. +233 + 7 digits).
+ */
+export function isValidInternationalPhoneDigits(
+  value: string,
+  defaultCountry: CountryCode = 'GH',
+): boolean {
+  const trimmed = value.trim()
+  if (!trimmed) return false
+  if (isDialCodeOnlyPhone(trimmed)) return false
+
+  const parsed = trimmed.startsWith('+')
+    ? parsePhoneNumberFromString(trimmed)
+    : parsePhoneNumberFromString(trimmed, defaultCountry)
+
+  return parsed?.isValid() === true
+}
+
+export function getRequiredInternationalPhoneSchema(label: string = 'Phone number') {
+  return getRequiredStringSchema(label).refine(
+    (val) => isValidInternationalPhoneDigits(val),
+    INVALID_PHONE_MESSAGE,
+  )
+}
+
+export function getOptionalInternationalPhoneSchema() {
+  return z
+    .string()
+    .optional()
+    .refine((val) => {
+      const trimmed = val?.trim() ?? ''
+      if (!trimmed || isDialCodeOnlyPhone(trimmed)) return true
+      return isValidInternationalPhoneDigits(trimmed)
+    }, INVALID_PHONE_MESSAGE)
 }
 
 const nigerianPhoneRegex =

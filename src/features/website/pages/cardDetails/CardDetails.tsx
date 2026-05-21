@@ -3,6 +3,7 @@ import { Loader, Button, Text, DocumentViewer } from '@/components'
 import { ROUTES } from '@/utils/constants/shared'
 import { Icon } from '@/libs'
 import { formatCurrency } from '@/utils/format'
+import { getCardFileUrl, isPdfFile } from '@/utils/cardDisplay'
 import { useCardDetails } from '../../hooks'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
@@ -23,7 +24,6 @@ export default function CardDetails() {
     lightboxImages,
     displayPrice,
     cardBackground,
-    termsUrls,
   } = useCardDetails()
 
   if (isLoading) {
@@ -423,13 +423,10 @@ export default function CardDetails() {
                 </div>
                 <div className="space-y-3">
                   {card.terms_and_conditions.map((term: any, index: number) => {
-                    const termKey = term.id || term.file_name || index
-                    const termUrl =
-                      termsUrls[termKey] ||
-                      (term.file_url?.startsWith('http://') || term.file_url?.startsWith('https://')
-                        ? term.file_url
-                        : null)
+                    const termKey = `term-${term.id ?? term.file_name ?? index}`
+                    const termUrl = getCardFileUrl(term.file_url)
                     const termName = term.file_name || `Terms & Conditions ${index + 1}`
+                    const canPreview = Boolean(termUrl && isPdfFile(term.file_url, term.file_name))
 
                     return (
                       <button
@@ -437,9 +434,12 @@ export default function CardDetails() {
                         type="button"
                         disabled={!termUrl}
                         onClick={() => {
-                          if (termUrl) {
+                          if (!termUrl) return
+                          if (canPreview) {
                             setSelectedDocument({ url: termUrl, name: termName })
+                            return
                           }
+                          window.open(termUrl, '_blank', 'noopener,noreferrer')
                         }}
                         className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-300 w-full text-left group ${
                           termUrl
@@ -459,7 +459,10 @@ export default function CardDetails() {
                         <span className="flex-1 font-semibold text-base">{termName}</span>
                         {termUrl ? (
                           <div className="w-10 h-10 rounded-lg bg-primary-600 group-hover:bg-primary-700 flex items-center justify-center transition-colors">
-                            <Icon icon="bi:eye" className="text-white text-lg" />
+                            <Icon
+                              icon={canPreview ? 'bi:eye' : 'bi:box-arrow-up-right'}
+                              className="text-white text-lg"
+                            />
                           </div>
                         ) : (
                           <Icon icon="bi:x-circle" className="text-lg text-gray-400" />

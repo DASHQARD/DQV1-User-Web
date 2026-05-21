@@ -54,9 +54,9 @@ export function Modal(props: Props) {
                     transition: { duration: 0.2 },
                   }}
                   className={cn(
-                    props.panelClass,
-                    { 'overflow-hidden!': props.overflowHidden },
                     'pointer-events-auto! relative mx-auto my-20 w-[430px] min-w-[200px] max-w-[90vw] rounded-[20px] bg-white shadow-xl',
+                    { 'overflow-hidden!': props.overflowHidden },
+                    props.panelClass,
                   )}
                   onClick={(e) => {
                     e.stopPropagation()

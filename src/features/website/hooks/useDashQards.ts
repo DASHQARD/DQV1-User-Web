@@ -86,30 +86,42 @@ export function useDashQards() {
     return cards as PublicCardResponse[]
   }, [publicCards])
 
+  const filterCardByPrice = useCallback(
+    (card: PublicCardResponse) => {
+      const cardPrice = parseFloat(String(card.price)) || 0
+      const { min: minPrice, max: maxPrice } = getNormalizedRange(query.min_price, query.max_price)
+      if (minPrice !== null && cardPrice < minPrice) return false
+      if (maxPrice !== null && cardPrice > maxPrice) return false
+      return true
+    },
+    [query.min_price, query.max_price],
+  )
+
   const filteredQardsAll = useMemo(() => {
     return allCards.filter((card) => {
       const cardType = card.type?.toLowerCase()
       if (cardType !== activeTab) return false
-      const cardPrice = parseFloat(String(card.price)) || 0
-      const { min: minPrice, max: maxPrice } = getNormalizedRange(query.min_price, query.max_price)
-      if (minPrice !== null && cardPrice < minPrice) {
-        return false
-      }
-      if (maxPrice !== null && cardPrice > maxPrice) {
-        return false
-      }
-      return true
+      return filterCardByPrice(card)
     })
-  }, [allCards, activeTab, query.min_price, query.max_price])
+  }, [allCards, activeTab, filterCardByPrice])
 
   const sortedQards = filteredQardsAll
+
+  /** Count shown in header and sidebar for the active tab (catalog cards or custom-card flow). */
+  const activeResultsCount = useMemo(() => {
+    if (activeTab === 'dashpro' || activeTab === 'dashgo') return 1
+    return filteredQardsAll.length
+  }, [activeTab, filteredQardsAll.length])
 
   const getCardTypeCount = useCallback(
     (typeId: string) => {
       if (typeId === 'dashpro' || typeId === 'dashgo') return 1
-      return allCards.filter((card) => card.type?.toLowerCase() === typeId).length
+      return allCards.filter((card) => {
+        if (card.type?.toLowerCase() !== typeId) return false
+        return filterCardByPrice(card)
+      }).length
     },
-    [allCards],
+    [allCards, filterCardByPrice],
   )
 
   const setPriceRange = useCallback(
@@ -177,6 +189,7 @@ export function useDashQards() {
     vendors,
     filteredQardsAll,
     sortedQards,
+    activeResultsCount,
     getCardTypeCount,
     setPriceRange,
     isPriceRangeActive,

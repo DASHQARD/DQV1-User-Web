@@ -9,6 +9,9 @@ export function useForgotPasswordForm() {
   const { mutate, isPending } = useForgotPasswordService()
   const form = useForm<z.infer<typeof ForgotPasswordSchema>>({
     resolver: zodResolver(ForgotPasswordSchema),
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
+    defaultValues: { email: '' },
   })
 
   const onSubmit = (data: z.infer<typeof ForgotPasswordSchema>) => {

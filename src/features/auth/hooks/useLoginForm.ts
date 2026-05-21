@@ -51,7 +51,9 @@ export function useLoginForm() {
 
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
-    mode: 'onChange',
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
+    defaultValues: { email: '', password: '' },
   })
 
   const openOtpModal = (email: string, sessionId?: string) => {

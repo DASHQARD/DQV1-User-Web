@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { normalizePriceInput, reconcilePriceRange } from '../priceRangeFilter'
+import {
+  applyApiSafePriceRange,
+  getPriceRangeValidationError,
+  isInvertedPriceRange,
+  normalizePriceInput,
+  reconcilePriceRange,
+} from '../priceRangeFilter'
 
 describe('priceRangeFilter', () => {
   it('normalizePriceInput allows partial integers while typing', () => {
@@ -26,10 +32,27 @@ describe('priceRangeFilter', () => {
     })
   })
 
-  it('reconcilePriceRange swaps when min exceeds max on blur', () => {
+  it('reconcilePriceRange swaps when min exceeds max (complete values only)', () => {
     expect(reconcilePriceRange('200', '50')).toEqual({
       min_price: '50',
       max_price: '200',
+    })
+  })
+
+  it('detects inverted range and strips max from API query', () => {
+    expect(isInvertedPriceRange('10', '1')).toBe(true)
+    expect(getPriceRangeValidationError('10', '1')).toMatch(/maximum/i)
+    expect(applyApiSafePriceRange({ min_price: '10', max_price: '1', limit: 50 })).toEqual({
+      min_price: '10',
+      max_price: '',
+      limit: 50,
+    })
+  })
+
+  it('keeps both prices when range is valid', () => {
+    expect(applyApiSafePriceRange({ min_price: '50', max_price: '100' })).toEqual({
+      min_price: '50',
+      max_price: '100',
     })
   })
 })

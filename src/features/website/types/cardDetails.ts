@@ -39,7 +39,6 @@ export interface UseCardDetailsReturn {
   card: CardDetailsCard | null
   isLoading: boolean
   redemptionBranches: RedemptionBranch[]
-  termsUrls: Record<string | number, string>
   selectedDocument: CardDetailsDocument | null
   setSelectedDocument: Dispatch<SetStateAction<CardDetailsDocument | null>>
   imageIndex: number

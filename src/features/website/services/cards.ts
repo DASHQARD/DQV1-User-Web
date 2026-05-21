@@ -32,29 +32,49 @@ export const createGuestCart = async (data: {
   return body as GuestAddCardResponse
 }
 
-/** GET /guest-carts — pending cart for the authenticated guest (optional cart_id). */
-export const getGuestCart = async (query?: {
-  cart_id?: number
-}): Promise<GuestCartApiResponse | null> => {
-  const res = await getList<GuestCartApiResponse | { data?: GuestCartApiResponse }>(
-    '/guest-carts',
-    query,
-  )
-  const payload = (res as { data?: GuestCartApiResponse })?.data ?? res
-  if (!payload || typeof payload !== 'object') return null
-  return payload as GuestCartApiResponse
+/** True when GET /guest-carts has no pending cart for this guest (expected before first POST). */
+export function isGuestCartNotFoundError(error: unknown): boolean {
+  const err = error as { status?: number; message?: string }
+  if (err?.status === 404) return true
+  const message = String(err?.message ?? '').toLowerCase()
+  return message.includes('cart not found')
 }
 
-export function resolveGuestCartId(
+/** GET /guest-carts — pending cart for the authenticated guest (optional cart_id). */
+export const getGuestCart = async (query?: {
+  cart_id?: number | string
+}): Promise<GuestCartApiResponse | null> => {
+  try {
+    const res = await getList<GuestCartApiResponse | { data?: GuestCartApiResponse }>(
+      '/guest-carts',
+      query,
+    )
+    const payload = (res as { data?: GuestCartApiResponse })?.data ?? res
+    if (!payload || typeof payload !== 'object') return null
+    return payload as GuestCartApiResponse
+  } catch (error) {
+    if (isGuestCartNotFoundError(error)) return null
+    throw error
+  }
+}
+
+export function resolveGuestCartNumericId(
   payload: GuestCartApiResponse | GuestAddCardResponse | null,
 ): number | undefined {
   if (!payload) return undefined
-  const cart = (payload as GuestCartApiResponse).cart ?? (payload as { cart?: { id?: number } }).cart
-  const id =
+  const cart = (payload as GuestCartApiResponse).cart ?? (payload as { cart?: { id?: number | string } }).cart
+  const raw =
     cart?.id ??
     (payload as GuestAddCardResponse).cart_id ??
-    (payload as { data?: { cart_id?: number } }).data?.cart_id
-  return typeof id === 'number' ? id : undefined
+    (payload as { data?: { cart_id?: number | string } }).data?.cart_id
+  return typeof raw === 'number' ? raw : undefined
+}
+
+/** @deprecated Use resolveGuestCartNumericId */
+export function resolveGuestCartId(
+  payload: GuestCartApiResponse | GuestAddCardResponse | null,
+): number | undefined {
+  return resolveGuestCartNumericId(payload)
 }
 
 export function resolveGuestCartUuid(
@@ -62,11 +82,28 @@ export function resolveGuestCartUuid(
 ): string | undefined {
   if (!payload) return undefined
   const cart = (payload as GuestCartApiResponse).cart
-  const uuid =
+  const explicitUuid =
     cart?.uuid ??
     (payload as GuestCartApiResponse).uuid ??
     (payload as { data?: { uuid?: string } }).data?.uuid
-  return typeof uuid === 'string' && uuid.trim() ? uuid.trim() : undefined
+  if (typeof explicitUuid === 'string' && explicitUuid.trim()) {
+    return explicitUuid.trim()
+  }
+  const rawId =
+    cart?.id ??
+    (payload as GuestAddCardResponse).cart_id ??
+    (payload as { data?: { cart_id?: number | string } }).data?.cart_id
+  if (typeof rawId === 'string' && rawId.trim()) {
+    return rawId.trim()
+  }
+  return undefined
+}
+
+/** Cart reference for add-card / checkout: prefer UUID, else numeric id. */
+export function resolveGuestCartRef(
+  payload: GuestCartApiResponse | GuestAddCardResponse | null,
+): string | number | undefined {
+  return resolveGuestCartUuid(payload) ?? resolveGuestCartNumericId(payload)
 }
 
 function syncGuestCartIds(
@@ -74,9 +111,9 @@ function syncGuestCartIds(
   setGuestCartId: (id: number | null) => void,
   setGuestCartUuid: (uuid: string | null) => void,
 ) {
-  const id = resolveGuestCartId(payload)
-  if (typeof id === 'number') {
-    setGuestCartId(id)
+  const numericId = resolveGuestCartNumericId(payload)
+  if (typeof numericId === 'number') {
+    setGuestCartId(numericId)
   }
   const uuid = resolveGuestCartUuid(payload)
   if (uuid) {
@@ -90,23 +127,38 @@ export async function ensureGuestCartAndAddCard(args: {
   guest_name: string
   guest_email: string
   getGuestCartId: () => number | null
+  getGuestCartUuid?: () => string | null
   setGuestCartId: (id: number | null) => void
   setGuestCartUuid: (uuid: string | null) => void
 }): Promise<GuestAddCardResponse> {
-  const { card_id, guest_name, guest_email, getGuestCartId, setGuestCartId, setGuestCartUuid } = args
-  let cartId = getGuestCartId() ?? undefined
-  if (cartId === undefined) {
+  const {
+    card_id,
+    guest_name,
+    guest_email,
+    getGuestCartId,
+    getGuestCartUuid,
+    setGuestCartId,
+    setGuestCartUuid,
+  } = args
+
+  const storedUuid = getGuestCartUuid?.()?.trim()
+  const storedNumeric = getGuestCartId()
+  let cartRef: string | number | undefined =
+    storedUuid || (storedNumeric != null ? storedNumeric : undefined)
+
+  if (cartRef === undefined) {
     const existingCart = await getGuestCart()
     syncGuestCartIds(existingCart, setGuestCartId, setGuestCartUuid)
-    cartId = resolveGuestCartId(existingCart)
+    cartRef = resolveGuestCartRef(existingCart)
   }
-  if (cartId === undefined) {
+
+  if (cartRef === undefined) {
     const createCartResult = await createGuestCart({
       guest_name,
       guest_email,
     })
     syncGuestCartIds(createCartResult, setGuestCartId, setGuestCartUuid)
-    cartId = resolveGuestCartId(createCartResult)
+    cartRef = resolveGuestCartRef(createCartResult)
   }
 
   const addResult = await addGuestCard({
@@ -114,10 +166,131 @@ export async function ensureGuestCartAndAddCard(args: {
     guest_email,
     card_id,
     quantity: 1,
-    ...(cartId !== undefined && { cart_id: cartId }),
+    ...(cartRef !== undefined && { cart_id: cartRef }),
   })
   syncGuestCartIds(addResult, setGuestCartId, setGuestCartUuid)
   return addResult
+}
+
+/** Unwrap axios + API envelope to the inner `data` payload (e.g. guest_card, gift_card, cart). */
+export function unwrapPostResponsePayload(response: unknown): Record<string, unknown> | null {
+  if (!response || typeof response !== 'object') return null
+  const res = response as Record<string, unknown>
+  let layer: Record<string, unknown> = (res.data as Record<string, unknown>) ?? res
+  const nested = layer.data
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    const inner = nested as Record<string, unknown>
+    if (inner.guest_card != null || inner.gift_card != null || inner.cart != null || inner.card != null) {
+      return inner
+    }
+  }
+  return layer
+}
+
+/** Gift card UUID from POST /guest-cards/dash-go or /guest-cards/dash-pro create responses. */
+export function extractGiftCardIdFromGuestCreate(response: unknown): string | null {
+  const payload = unwrapPostResponsePayload(response)
+  if (!payload) return null
+  const giftCard = payload.gift_card as Record<string, unknown> | undefined
+  const guestCard = payload.guest_card as Record<string, unknown> | undefined
+  const card = payload.card as Record<string, unknown> | undefined
+  const raw =
+    giftCard?.id ??
+    guestCard?.gift_card_id ??
+    card?.id ??
+    payload.id ??
+    payload.card_id
+  if (raw == null || raw === '') return null
+  return String(raw)
+}
+
+/** Cart refs when create endpoint already adds the card (guest-cards/dash-go). */
+export function extractGuestCreateCartMeta(response: unknown): {
+  cartId?: string
+  cartItemId?: string
+} {
+  const payload = unwrapPostResponsePayload(response)
+  const cart = payload?.cart as Record<string, unknown> | undefined
+  if (!cart) return {}
+  return {
+    ...(cart.cart_id != null && { cartId: String(cart.cart_id) }),
+    ...(cart.cart_item_id != null && { cartItemId: String(cart.cart_item_id) }),
+  }
+}
+
+export type CustomDashGoGuestContact = {
+  guest_phone: string
+  guest_name: string
+  guest_email: string
+}
+
+/** Create custom DashGo and add to cart — guest uses /guest-cards/dash-go + guest-carts; members use /carts/create-dashgo. */
+export async function createCustomDashGoAndAddToCart(options: {
+  vendor_id: string
+  vendorName: string
+  price: number
+  currency?: string
+  redemption_branches: Array<{ branch_id: string }>
+  isGuestAuth: boolean
+  guestContact?: CustomDashGoGuestContact
+  getGuestCartId: () => number | null
+  getGuestCartUuid?: () => string | null
+  setGuestCartId: (id: number | null) => void
+  setGuestCartUuid: (uuid: string | null) => void
+}): Promise<void> {
+  const issueDate = new Date().toISOString().split('T')[0]
+  const currency = options.currency ?? 'GHS'
+  const product = 'DashGo Gift Card'
+  const description = `Custom DashGo card for ${options.vendorName}`
+
+  if (options.isGuestAuth) {
+    const contact = options.guestContact
+    if (!contact?.guest_phone?.trim() || !contact.guest_name?.trim() || !contact.guest_email?.trim()) {
+      throw new Error('Guest contact details are required. Please verify your phone number first.')
+    }
+    const createResponse = await createGuestDashGo({
+      guest_name: contact.guest_name.trim(),
+      guest_email: contact.guest_email.trim(),
+      vendor_id: options.vendor_id,
+      product,
+      description,
+      price: options.price,
+      currency,
+      issue_date: issueDate,
+      redemption_branches: options.redemption_branches,
+      images: [],
+      terms_and_conditions: [],
+    })
+    const cardId = extractGiftCardIdFromGuestCreate(createResponse)
+    if (!cardId) {
+      throw new Error('Failed to create DashGo card')
+    }
+    const { cartId } = extractGuestCreateCartMeta(createResponse)
+    if (cartId) {
+      options.setGuestCartUuid(cartId)
+      return
+    }
+    await ensureGuestCartAndAddCard({
+      card_id: cardId,
+      guest_name: contact.guest_name.trim(),
+      guest_email: contact.guest_email.trim(),
+      getGuestCartId: options.getGuestCartId,
+      getGuestCartUuid: options.getGuestCartUuid,
+      setGuestCartId: options.setGuestCartId,
+      setGuestCartUuid: options.setGuestCartUuid,
+    })
+    return
+  }
+
+  await createDashGoAndAssign({
+    vendor_id: options.vendor_id,
+    product,
+    description,
+    price: options.price,
+    currency,
+    issue_date: issueDate,
+    redemption_branches: options.redemption_branches,
+  })
 }
 
 export const createDashGoAndAssign = async (data: {
@@ -134,8 +307,8 @@ export const createDashGoAndAssign = async (data: {
   return await postMethod('/carts/create-dashgo', data)
 }
 
+/** Guest identity comes from the Bearer token; do not send guest_phone (rejected by API). */
 export const createGuestDashGo = async (data: {
-  guest_phone: string
   guest_name: string
   guest_email: string
   vendor_id: string
@@ -191,9 +364,10 @@ export const getGuestCartItems = async (
   const payload = (res as { data?: GuestCartApiResponse })?.data ?? res
   if (!payload?.cart || !Array.isArray(payload.items)) return []
   const { cart, items } = payload
+  const cartUuid = resolveGuestCartUuid(payload)
   const normalized: CartListResponse = {
-    cart_id: cart.id,
-    guest_cart_uuid: cart.uuid ?? resolveGuestCartUuid(payload),
+    cart_id: typeof cart.id === 'number' ? cart.id : 0,
+    guest_cart_uuid: cartUuid,
     cart_status: cart.status,
     cart_created_at: cart.created_at,
     cart_updated_at: cart.updated_at,

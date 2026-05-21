@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { cn } from '@/libs/clsx'
 import Logo from '../../assets/images/logo-placeholder.png'
 import { ROUTES } from '../../utils/constants'
 import { Icon } from '@/libs'
@@ -16,8 +17,24 @@ import { vendorQueries } from '@/features'
 import { branchQueries } from '@/features/dashboard/branch'
 import { useAuth } from '@/features/auth'
 
+/** Whether a website nav item should appear selected for the current path. */
+function isWebsiteNavItemActive(pathname: string, itemPath: string): boolean {
+  if (pathname === itemPath) return true
+
+  if (itemPath === ROUTES.IN_APP.VENDORS) {
+    return pathname === '/vendor' || pathname.startsWith('/vendors/')
+  }
+
+  if (itemPath === ROUTES.IN_APP.DASHQARDS) {
+    return pathname.startsWith('/card/')
+  }
+
+  return pathname.startsWith(`${itemPath}/`)
+}
+
 export default function Navbar() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
 
   // const { cartItems } = useCart()
   const { isOpen: isCartOpen, openCart, closeCart } = useCartStore()
@@ -280,6 +297,10 @@ export default function Navbar() {
       label: 'Contact',
       path: ROUTES.IN_APP.CONTACT,
     },
+    {
+      label: 'FAQ',
+      path: ROUTES.IN_APP.FAQ,
+    },
   ]
 
   const showNavProfileImage =
@@ -307,15 +328,25 @@ export default function Navbar() {
           <section className="hidden lg:flex items-center gap-3">
             {/* Navigation Items */}
             <ul className="hidden xl:flex items-center gap-2 bg-gray-50 py-2.5 px-5 rounded-full text-sm">
-              {navItems.map((item) => (
-                <Link
-                  key={item.label}
-                  to={item.path}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-700 font-medium hover:text-primary-600 hover:bg-white rounded-lg transition-colors"
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const isActive = isWebsiteNavItemActive(pathname, item.path)
+                return (
+                  <li key={item.label}>
+                    <Link
+                      to={item.path}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={cn(
+                        'flex items-center gap-1.5 px-3 py-1.5 font-medium rounded-lg transition-colors',
+                        isActive
+                          ? 'text-primary-600 bg-white shadow-sm font-semibold'
+                          : 'text-gray-700 hover:text-primary-600 hover:bg-white',
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                )
+              })}
             </ul>
 
             {/* Action Buttons */}
@@ -488,17 +519,26 @@ export default function Navbar() {
               <div className="wrapper px-4 py-4 space-y-3">
               {/* Mobile Navigation Items */}
               <div className="flex flex-col gap-1">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    to={item.path}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-2 py-3 text-gray-700 font-medium hover:bg-gray-50 hover:text-primary-600 rounded-lg transition-colors"
-                  >
-                    <Icon icon="bi:chevron-right" className="text-lg text-gray-400" />
-                    <span>{item.label}</span>
-                  </Link>
-                ))}
+                {navItems.map((item) => {
+                  const isActive = isWebsiteNavItemActive(pathname, item.path)
+                  return (
+                    <Link
+                      key={item.label}
+                      to={item.path}
+                      aria-current={isActive ? 'page' : undefined}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={cn(
+                        'flex items-center gap-3 px-2 py-3 font-medium rounded-lg transition-colors',
+                        isActive
+                          ? 'bg-primary-50 text-primary-600 font-semibold'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600',
+                      )}
+                    >
+                      <Icon icon="bi:chevron-right" className="text-lg text-gray-400" />
+                      <span>{item.label}</span>
+                    </Link>
+                  )
+                })}
               </div>
 
               {/* Mobile Search */}

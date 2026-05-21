@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { BasePhoneInput, Input, PhoneFormatHint, Text } from '@/components'
 import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { Button } from '@/components/Button'
@@ -5,13 +6,17 @@ import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
 import { Link, useNavigate } from 'react-router-dom'
 import { Controller } from 'react-hook-form'
+import { isDialCodeOnlyPhone } from '@/utils/schemas/shared'
 import AccountType from '../AccountType'
 import EmailSentModal from '../modals/EmailSentModal'
 import PasswordRequirementsChecklist from '../PasswordRequirementsChecklist'
 import { useSignUpForm } from '../../hooks'
+import { getVisibleFieldError } from '../../utils/showFieldError'
 
 export default function SignUpForm() {
   const { form, onSubmit, isPending, phoneCountries } = useSignUpForm()
+  const { isValid } = form.formState
+  const phoneDialCodeSynced = useRef(false)
   const navigate = useNavigate()
 
   const handleBack = () => {
@@ -49,28 +54,44 @@ export default function SignUpForm() {
         </div>
         <AccountType
           value={form.watch('user_type')}
-          onChange={(value) => form.setValue('user_type', value)}
+          onChange={(value) =>
+            form.setValue('user_type', value, { shouldValidate: true, shouldDirty: true })
+          }
         />
         <section className="flex flex-col gap-4">
           <Input
             label="Email"
             placeholder="Enter your email"
             isRequired
+            type="text"
+            inputMode="email"
             {...form.register('email')}
-            error={form.formState.errors.email?.message}
+            error={getVisibleFieldError(form, 'email')}
           />
 
           <Controller
             control={form.control}
             name="phone_number"
-            render={({ field: { onChange } }) => (
+            render={({ field: { onChange, value, ref, onBlur } }) => (
               <BasePhoneInput
+                ref={ref}
                 placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                 options={phoneCountries}
                 isRequired
-                handleChange={onChange}
+                selectedVal={value ?? ''}
+                handleChange={(phone) => {
+                  const normalized = phone?.trim() ?? ''
+                  if (!phoneDialCodeSynced.current && isDialCodeOnlyPhone(normalized)) {
+                    phoneDialCodeSynced.current = true
+                    return
+                  }
+                  phoneDialCodeSynced.current = true
+                  onChange(phone)
+                }}
                 label="Phone Number"
-                error={form.formState.errors.phone_number?.message} hint={<PhoneFormatHint />}
+                error={getVisibleFieldError(form, 'phone_number')}
+                hint={<PhoneFormatHint />}
+                onBlur={onBlur}
               />
             )}
           />
@@ -82,13 +103,13 @@ export default function SignUpForm() {
               placeholder="Enter your password"
               {...form.register('password')}
               type="password"
-              error={form.formState.errors.password?.message}
+              error={getVisibleFieldError(form, 'password')}
             />
             <PasswordRequirementsChecklist password={form.watch('password') || ''} />
           </div>
 
           <Button
-            disabled={!form.formState.isValid || isPending}
+            disabled={!isValid || isPending}
             loading={isPending}
             type="submit"
             variant="secondary"

@@ -6,6 +6,10 @@ import { Button, Input, Modal, Text, BasePhoneInput } from '@/components'
 import { usePersistedModalState, useCountriesData, useToast } from '@/hooks'
 import { EXAMPLE_PHONE_PLACEHOLDER_E164, MODALS } from '@/utils/constants'
 import { AssignRecipientSchema } from '@/utils/schemas'
+import {
+  INVALID_PHONE_MESSAGE,
+  isValidInternationalPhoneDigits,
+} from '@/utils/schemas/shared'
 import { corporateMutations, corporateQueries } from '@/features/dashboard/corporate/hooks'
 
 const DashProAssignSchema = AssignRecipientSchema.safeExtend({
@@ -18,6 +22,12 @@ const DashProAssignSchema = AssignRecipientSchema.safeExtend({
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Phone number is required',
+        path: ['phone'],
+      })
+    } else if (!isValidInternationalPhoneDigits(data.phone)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: INVALID_PHONE_MESSAGE,
         path: ['phone'],
       })
     }

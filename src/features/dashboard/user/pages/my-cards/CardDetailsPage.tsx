@@ -40,6 +40,7 @@ export default function CardDetailsPage() {
     handleConfirmRedemption,
     handleCloseRedemptionModal,
     clearVendorSelection,
+    branchNameForSummary,
   } = useCardDetailsPage()
 
   if (!validCardType) {
@@ -418,22 +419,16 @@ export default function CardDetailsPage() {
                     {CARD_DISPLAY_NAMES[validCardType]}
                   </Text>
                 </div>
-                {(() => {
-                  const branchName =
-                    selectedBranchId !== null
-                      ? availableBranches.find((b) => b.branch_id === selectedBranchId)?.branch_name
-                      : selectedCard.branch_name
-                  return branchName ? (
-                    <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                      <Text variant="span" className="text-gray-600 text-sm">
-                        Branch
-                      </Text>
-                      <Text variant="span" weight="semibold" className="text-gray-900 text-sm">
-                        {branchName}
-                      </Text>
-                    </div>
-                  ) : null
-                })()}
+                {branchNameForSummary && (
+                  <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                    <Text variant="span" className="text-gray-600 text-sm">
+                      Branch
+                    </Text>
+                    <Text variant="span" weight="semibold" className="text-gray-900 text-sm">
+                      {branchNameForSummary}
+                    </Text>
+                  </div>
+                )}
                 {selectedVendor && (
                   <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                     <Text variant="span" className="text-gray-600 text-sm">

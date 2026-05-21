@@ -5,9 +5,11 @@ import { MODAL_NAMES, ROUTES } from '@/utils/constants'
 import { Link, useNavigate } from 'react-router-dom'
 import OtpLoginModal from '../modals/OtpLoginModal'
 import { useLoginForm } from '../../hooks'
+import { getVisibleFieldError } from '../../utils/showFieldError'
 
 export default function LoginForm() {
   const { form, onSubmit, isPending, modal } = useLoginForm()
+  const { isValid } = form.formState
   const navigate = useNavigate()
 
   const handleBack = () => {
@@ -55,8 +57,10 @@ export default function LoginForm() {
               label="Email"
               placeholder="Enter your email"
               autoComplete="off"
+              type="text"
+              inputMode="email"
               {...form.register('email')}
-              error={form.formState.errors.email?.message}
+              error={getVisibleFieldError(form, 'email')}
             />
             <Input
               isRequired
@@ -65,11 +69,11 @@ export default function LoginForm() {
               autoComplete="new-password"
               {...form.register('password')}
               type="password"
-              error={form.formState.errors.password?.message}
+              error={getVisibleFieldError(form, 'password')}
             />
 
             <Button
-              disabled={!form.formState.isValid || isPending}
+              disabled={!isValid || isPending}
               loading={isPending}
               type="submit"
               variant="secondary"

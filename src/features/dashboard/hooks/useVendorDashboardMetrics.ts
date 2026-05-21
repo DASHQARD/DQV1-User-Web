@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { formatCurrency } from '@/utils/format'
 
 export interface GiftCardPerformance {
   type: string
@@ -157,18 +158,6 @@ export function useVendorDashboardMetrics(timeRange: string = '30', giftCardType
 
     fetchData()
   }, [timeRange, giftCardType])
-
-  const formatCurrency = (amount: number | string, currency: string = 'GHS'): string => {
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
-    if (isNaN(numAmount)) return `${currency} 0.00`
-
-    return new Intl.NumberFormat('en-GH', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(numAmount)
-  }
 
   return {
     isLoading,

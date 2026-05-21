@@ -9,7 +9,7 @@ function mockRow<T>(original: T) {
 describe('CurrencyCell', () => {
   it('formats amount as currency', () => {
     renderWithProviders(<CurrencyCell row={mockRow({ amount: 100 })} getValue={() => 100} />)
-    expect(screen.getByText(/100|GH₵|GHS/)).toBeInTheDocument()
+    expect(screen.getByText(/GHS\s*100/)).toBeInTheDocument()
   })
 })
 

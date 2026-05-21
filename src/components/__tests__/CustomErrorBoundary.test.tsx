@@ -4,28 +4,38 @@ import { CustomErrorBoundary } from '../CustomErrorBoundary/CustomErrorBoundary'
 
 const mockUseRouteError = vi.fn()
 
-vi.mock('react-router', () => ({
-  useRouteError: () => mockUseRouteError(),
-}))
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual<typeof import('react-router')>('react-router')
+  return {
+    ...actual,
+    useRouteError: () => mockUseRouteError(),
+  }
+})
 
 describe('CustomErrorBoundary', () => {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
-  it('renders generic error message when error has statusText', () => {
-    mockUseRouteError.mockReturnValue({ statusText: 'Not Found', message: 'Fallback' })
+  it('renders statusText when error is a route error response', () => {
+    mockUseRouteError.mockReturnValue({
+      status: 500,
+      statusText: 'Server Error',
+      data: null,
+      internal: false,
+    })
     renderWithProviders(<CustomErrorBoundary />)
     expect(screen.getByText('Oops!')).toBeInTheDocument()
-    expect(screen.getByText('Sorry, an unexpected error has occurred.')).toBeInTheDocument()
-    expect(screen.getByText('Not Found')).toBeInTheDocument()
+    expect(screen.getByText('Server Error')).toBeInTheDocument()
+    expect(screen.queryByText(/unexpected application error/i)).not.toBeInTheDocument()
   })
 
-  it('renders error message when error has message but no statusText', () => {
-    mockUseRouteError.mockReturnValue({ message: 'Something went wrong' })
+  it('renders generic message for unexpected errors without leaking internals', () => {
+    mockUseRouteError.mockReturnValue(new Error('Internal stack trace details'))
     renderWithProviders(<CustomErrorBoundary />)
     expect(screen.getByText('Oops!')).toBeInTheDocument()
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument()
+    expect(screen.getByText('Something went wrong. Please try again later.')).toBeInTheDocument()
+    expect(screen.queryByText(/stack trace/i)).not.toBeInTheDocument()
   })
 
   it('applies custom className', () => {

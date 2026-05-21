@@ -8,13 +8,13 @@ import {
 
 describe('phone constants', () => {
   it('uses canonical Ghana example from product UI', () => {
-    expect(EXAMPLE_PHONE_LOCAL).toBe('5512345678')
-    expect(EXAMPLE_PHONE_E164).toBe('+2335512345678')
+    expect(EXAMPLE_PHONE_LOCAL).toBe('551234567')
+    expect(EXAMPLE_PHONE_E164).toBe('+233551234567')
     expect(EXAMPLE_PHONE_PLACEHOLDER).toContain(EXAMPLE_PHONE_LOCAL)
   })
 
   it('examplePhoneE164AtIndex increments local number', () => {
-    expect(examplePhoneE164AtIndex(0)).toBe('+2335512345678')
-    expect(examplePhoneE164AtIndex(1)).toBe('+2335512345679')
+    expect(examplePhoneE164AtIndex(0)).toBe('+233551234567')
+    expect(examplePhoneE164AtIndex(1)).toBe('+233551234568')
   })
 })

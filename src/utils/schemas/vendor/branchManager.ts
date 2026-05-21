@@ -2,6 +2,7 @@ import { z } from 'zod'
 import {
   getRequiredAlphaNumericStringSchema,
   getRequiredEmailSchema,
+  getRequiredInternationalPhoneSchema,
   getRequiredStringSchema,
 } from '../shared'
 
@@ -12,7 +13,7 @@ export const CreateBranchManagerInvitationSchema = z.object({
   ]),
   branch_manager_name: getRequiredStringSchema('Name'),
   branch_manager_email: getRequiredEmailSchema('Email'),
-  branch_manager_phone: getRequiredStringSchema('Phone number'),
+  branch_manager_phone: getRequiredInternationalPhoneSchema('Phone number'),
 })
 
 export type CreateBranchManagerInvitationFormData = z.infer<
@@ -22,7 +23,7 @@ export type CreateBranchManagerInvitationFormData = z.infer<
 export const UpdateBranchManagerInvitationSchema = z.object({
   branch_manager_name: getRequiredStringSchema('Name'),
   branch_manager_email: getRequiredEmailSchema('Email'),
-  branch_manager_phone: getRequiredStringSchema('Phone number'),
+  branch_manager_phone: getRequiredInternationalPhoneSchema('Phone number'),
 })
 
 export type UpdateBranchManagerInvitationFormData = z.infer<

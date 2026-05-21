@@ -1,5 +1,5 @@
 /** Ghana local MSISDN without leading 0 — shown in phone field hints (with +233 dial code). */
-export const EXAMPLE_PHONE_LOCAL = '5512345678'
+export const EXAMPLE_PHONE_LOCAL = '551234567'
 
 export const EXAMPLE_PHONE_COUNTRY_CODE = '+233'
 
@@ -23,12 +23,21 @@ export function examplePhoneE164AtIndex(index: number): string {
   return `${EXAMPLE_PHONE_COUNTRY_CODE}${local}`
 }
 
-/** Official DashQard support line (not the form example MSISDN). */
+/** Official DashQard support line (voice) — use everywhere for “Support Line” / “Call us”. */
 export const SUPPORT_PHONE_E164 = '+233542022245'
-export const SUPPORT_PHONE_DISPLAY = '+233 (0)542 022 245'
-export const SUPPORT_PHONE_DISPLAY_SHORT = '+233 54 202 2245'
+/** Canonical display format for the support line across footer, contact, legal pages. */
+export const SUPPORT_PHONE_DISPLAY = '+233 54 202 2245'
+/** @deprecated Use SUPPORT_PHONE_DISPLAY */
+export const SUPPORT_PHONE_DISPLAY_SHORT = SUPPORT_PHONE_DISPLAY
 
-/** Purchase / bulk gifting WhatsApp line. */
+export const SUPPORT_PHONE_TEL_HREF = `tel:${SUPPORT_PHONE_E164}` as const
+
+/** Purchase / bulk gifting WhatsApp line — separate from the voice support line. */
 export const PURCHASE_WHATSAPP_E164 = '+233566080362'
 export const PURCHASE_WHATSAPP_WA_ME = '233566080362'
 export const PURCHASE_WHATSAPP_DISPLAY = '+233 56 608 0362'
+
+export const PURCHASE_WHATSAPP_HREF = `https://wa.me/${PURCHASE_WHATSAPP_WA_ME}` as const
+
+/** Instruction shown on DashGo / DashPro / purchase flows for WhatsApp redemption. */
+export const PURCHASE_WHATSAPP_HI_PROMPT = `Send "Hi" to ${PURCHASE_WHATSAPP_DISPLAY}`

@@ -1,10 +1,14 @@
 import { z } from 'zod'
-import { getRequiredEmailSchema, getRequiredStringSchema } from './shared'
+import {
+  getRequiredEmailSchema,
+  getRequiredInternationalPhoneSchema,
+  getRequiredStringSchema,
+} from './shared'
 
 export const UserInfoSchema = z.object({
   full_name: getRequiredStringSchema('Full name'),
   email: getRequiredEmailSchema('Email'),
-  phone_number: getRequiredStringSchema('Phone number'),
+  phone_number: getRequiredInternationalPhoneSchema('Phone number'),
 })
 
 export const PaymentMethodSchema = z.object({

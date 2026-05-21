@@ -69,14 +69,16 @@ export const Input = React.forwardRef(
     const computedInputClassName = cn(
       'w-full border-none min-w-[0px] !outline-0 !bg-[transparent] self-stretch outline-none text-grey-600',
       'placeholder:text-gray-300 disabled:cursor-not-allowed',
+      isTextarea && 'min-h-[9rem] py-1 leading-relaxed resize-y',
       inputClassName,
       classes.input,
     )
 
     function focusOnInput() {
-      const input = wrapperRef.current?.querySelector('input')
-      if (!input) return
-      input.focus()
+      const field = wrapperRef.current?.querySelector('input, textarea')
+      if (field instanceof HTMLElement) {
+        field.focus()
+      }
     }
 
     function handleWrapperClick(e: React.MouseEvent<HTMLDivElement>) {
@@ -111,10 +113,12 @@ export const Input = React.forwardRef(
         {/* INNER */}
         <div
           className={cn(
-            'flex gap-4 border border-gray-300 rounded-lg h-12 items-center px-3 relative',
+            'flex gap-4 border border-gray-300 rounded-lg px-3 relative',
             'focus-within:border-primary-400',
             { 'border-red-500': !!error },
-            { 'min-h-12': !isTextarea },
+            isTextarea
+              ? 'h-auto min-h-40 items-start py-3'
+              : 'h-12 min-h-12 items-center',
             { 'text-gray-400 bg-[#f3f3f4]': otherProps.disabled },
             innerClassName,
           )}

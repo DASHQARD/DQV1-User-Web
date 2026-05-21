@@ -2,11 +2,10 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { Button, BasePhoneInput, Input, PhoneFormatHint } from '@/components'
 import { Icon } from '@/libs'
 import { useCountriesData, useToast } from '@/hooks'
-import { postMethod } from '@/services/requests'
+import { createTicket } from '@/services'
 import {
   EXAMPLE_PHONE_PLACEHOLDER,
   PURCHASE_WHATSAPP_DISPLAY,
@@ -15,29 +14,34 @@ import {
   SUPPORT_PHONE_E164,
 } from '@/utils/constants'
 import { ROUTES } from '@/utils/constants/shared'
-import { isValidEmailAddress, isValidInternationalPhoneDigits } from '@/utils/schemas/shared'
+import { ContactPageFormSchema, type ContactPageFormData } from '@/utils/schemas/contact'
 
-// Extended schema to include phone and inquiryType
-const ContactFormSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().refine((val) => isValidEmailAddress(val), {
-    message: 'Invalid email address',
-  }),
-  phone: z
-    .string()
-    .optional()
-    .refine((val) => !val?.trim() || isValidInternationalPhoneDigits(val), {
-      message: 'Please enter a valid phone number',
-    }),
-  inquiryType: z.string().min(1, 'Feedback type is required'),
-  subject: z.string().min(1, 'Subject is required'),
-  message: z.string().min(1, 'Message is required'),
-})
+const CONTACT_PAGE_DEFAULT_VALUES: ContactPageFormData = {
+  name: '',
+  email: '',
+  phone: '',
+  inquiryType: '',
+  subject: '',
+  message: '',
+}
 
-type ContactFormData = z.infer<typeof ContactFormSchema>
-
-const contactUsForm = async (payload: { to: string; subject: string; message: string }) => {
-  return await postMethod('/contact/send', payload)
+function buildTicketPayload(data: ContactPageFormData) {
+  const inquiryLabel = data.inquiryType.replace(/-/g, ' ')
+  return {
+    name: data.name,
+    email: data.email,
+    subject: `[${inquiryLabel.toUpperCase()}] ${data.subject}`,
+    message: [
+      `Name: ${data.name}`,
+      `Email: ${data.email}`,
+      `Phone: ${data.phone?.trim() || 'Not provided'}`,
+      `Feedback type: ${inquiryLabel}`,
+      `Subject: ${data.subject}`,
+      '',
+      'Message:',
+      data.message,
+    ].join('\n'),
+  }
 }
 
 export default function ContactPage() {
@@ -47,53 +51,29 @@ export default function ContactPage() {
   const toast = useToast()
   const { countries: phoneCountries } = useCountriesData()
 
-  const form = useForm<ContactFormData>({
-    resolver: zodResolver(ContactFormSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      inquiryType: '',
-      subject: '',
-      message: '',
-    },
+  const form = useForm<ContactPageFormData>({
+    resolver: zodResolver(ContactPageFormSchema),
+    defaultValues: CONTACT_PAGE_DEFAULT_VALUES,
   })
 
-  const onSubmit = async (data: ContactFormData) => {
+  const onSubmit = async (data: ContactPageFormData) => {
     setIsLoading(true)
     setSuccessMessage('')
     setErrorMessage('')
 
     try {
-      const payload = {
-        to: 'support@dashqard.com',
-        subject: `${data.inquiryType ? `[${data.inquiryType.toUpperCase()}] ` : ''}${data.subject}`,
-        message: `
-Name: ${data.name}
-Email: ${data.email}
-Phone: ${data.phone || 'Not provided'}
-Inquiry Type: ${data.inquiryType || 'Not specified'}
-Subject: ${data.subject}
+      const response = await createTicket(buildTicketPayload(data))
 
-Message:
-${data.message}
-        `.trim(),
-      }
-
-      await contactUsForm(payload)
-
-      setSuccessMessage(
-        "Your message has been sent successfully! We'll get back to you within 24 hours.",
-      )
-
-      // Reset form
-      form.reset()
-
-      toast.success('Message sent successfully!')
+      const successMsg =
+        response?.message ||
+        "Your message has been sent successfully! We'll get back to you within 24 hours."
+      setSuccessMessage(successMsg)
+      form.reset(CONTACT_PAGE_DEFAULT_VALUES)
+      toast.success(successMsg)
     } catch (error: any) {
-      console.error('Form submission error:', error)
       const errorMsg =
         error?.response?.data?.message ||
+        error?.message ||
         'There was an issue sending your message. Please try again later or contact us directly.'
       setErrorMessage(errorMsg)
       toast.error(errorMsg)
@@ -363,6 +343,7 @@ ${data.message}
                       </label>
                       <select
                         {...form.register('inquiryType')}
+                        aria-label="Feedback type"
                         className="w-full px-4 py-3 border-2 border-primary-500/10 rounded-lg focus:outline-none focus:border-primary-500"
                       >
                         <option value="">Select feedback type</option>
@@ -400,6 +381,7 @@ ${data.message}
                     <Input
                       type="textarea"
                       rows={6}
+                      innerClassName="!min-h-[12rem]"
                       placeholder="Please provide detailed information about your inquiry..."
                       {...form.register('message')}
                       error={form.formState.errors.message?.message}

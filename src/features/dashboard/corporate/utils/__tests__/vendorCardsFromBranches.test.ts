@@ -39,4 +39,43 @@ describe('getVendorCardsFromBranches', () => {
       vendor_name: 'adele business',
     })
   })
+
+  it('includes vendor_cards when branches have empty card arrays', () => {
+    const cards = getVendorCardsFromBranches(
+      {
+        vendor_id: 'v1',
+        business_name: 'Serge',
+        branches_with_cards: [{ branch_id: 'b1', branch_name: 'Main', cards: [] }],
+        vendor_cards: [
+          {
+            card_id: 'c10',
+            card_name: 'Elevate Card',
+            card_type: 'DashX',
+            card_price: 22,
+            card_status: 'active',
+          },
+        ],
+      },
+      { excludeCardTypes: ['dashgo'], activeOnly: false },
+    )
+
+    expect(cards).toHaveLength(1)
+    expect(cards[0].product).toBe('Elevate Card')
+  })
+
+  it('deduplicates cards present in both branches and vendor_cards', () => {
+    const cards = getVendorCardsFromBranches({
+      vendor_id: 'v1',
+      business_name: 'Vendor',
+      branches_with_cards: [
+        {
+          branch_id: 'b1',
+          cards: [{ card_id: 'c1', card_name: 'Same', card_type: 'dashx', card_status: 'active' }],
+        },
+      ],
+      vendor_cards: [{ card_id: 'c1', card_name: 'Same', card_type: 'dashx', card_status: 'active' }],
+    })
+
+    expect(cards).toHaveLength(1)
+  })
 })

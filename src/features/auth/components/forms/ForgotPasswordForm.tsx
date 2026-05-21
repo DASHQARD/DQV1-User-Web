@@ -5,9 +5,11 @@ import { Button } from '@/components/Button'
 import { Icon } from '@/libs'
 import { ROUTES } from '@/utils/constants'
 import { useForgotPasswordForm } from '../../hooks'
+import { getVisibleFieldError } from '../../utils/showFieldError'
 
 export default function ForgotPasswordForm() {
   const { form, onSubmit, isPending } = useForgotPasswordForm()
+  const { isValid } = form.formState
 
   return (
     <section className="wrapper w-full min-w-0">
@@ -33,8 +35,10 @@ export default function ForgotPasswordForm() {
           <Input
             label="Email"
             placeholder="Enter your email"
+            type="text"
+            inputMode="email"
             {...form.register('email')}
-            error={form.formState.errors.email?.message}
+            error={getVisibleFieldError(form, 'email')}
             isRequired
           />
 
@@ -43,7 +47,7 @@ export default function ForgotPasswordForm() {
             type="submit"
             variant="secondary"
             className="w-full"
-            disabled={isPending}
+            disabled={!isValid || isPending}
           >
             Send Reset Link
           </Button>

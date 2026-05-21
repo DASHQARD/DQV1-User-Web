@@ -40,7 +40,8 @@ export function useViewBag() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const { recipientActionsBlocked } = useMemberMustCompleteOnboardingForCustomCards()
-  const isGuestCart = !isAuthenticated
+  /** Legacy local-store bag (unauthenticated). OTP guests use API guest cart via isGuestAuth. */
+  const isGuestCart = !isAuthenticated && !isGuestAuth
 
   const {
     items: guestItems,
@@ -65,7 +66,8 @@ export function useViewBag() {
   const { useGetCartAllRecipientsService } = usePublicCatalogQueries()
   const { useServiceFeesConfig } = usePayments()
   const { data: serviceFeesConfig } = useServiceFeesConfig()
-  useGetCartAllRecipientsService()
+  /** Members only — guests load recipients from GET /guest-carts/items on each cart line */
+  useGetCartAllRecipientsService(!isGuestAuth)
 
   const modal = usePersistedModalState<{
     cart_item_id: string | number

@@ -1,11 +1,11 @@
 import React from 'react'
-import { Button, Input, Text, Combobox } from '@/components'
+import { BasePhoneInput, Button, Input, Text, Combobox } from '@/components'
 import { Icon } from '@/libs'
 import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
 import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { formatCurrency } from '@/utils/format'
+import { CURRENCY_PREFIX, DEFAULT_CURRENCY, formatCurrency } from '@/utils/format'
 import { DashGoAssignRecipientSchema } from '@/utils/schemas'
 import { usePublicCatalogQueries } from '../../hooks/website/usePublicCatalogQueries'
 import { usePublicCatalogMutations } from '../../hooks/website/usePublicCatalogMutations'
@@ -15,12 +15,18 @@ import { useCartStore } from '@/stores/cart'
 import { useCart, useGuestCart, useRecipients } from '../../hooks'
 import { useAuthStore } from '@/stores'
 import {
-  EXAMPLE_PHONE_PLACEHOLDER_E164,
+  EXAMPLE_PHONE_PLACEHOLDER,
   GUEST_EMAIL_STORAGE_KEY,
+  PURCHASE_WHATSAPP_HI_PROMPT,
   getGuestContactSessionItem,
 } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
-import { addGuestCard, createGuestDashGo } from '../../services/cards'
+import {
+  addGuestCard,
+  createGuestDashGo,
+  extractGiftCardIdFromGuestCreate,
+  extractGuestCreateCartMeta,
+} from '../../services/cards'
 
 const QRPlaceholder = () => {
   const pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
@@ -86,6 +92,8 @@ export default function DashGoPurchase() {
   const user = useAuthStore((state) => state.user)
   const getGuestCartId = useAuthStore((state) => state.getGuestCartId)
   const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
+  const getGuestCartUuid = useAuthStore((state) => state.getGuestCartUuid)
+  const setGuestCartUuid = useAuthStore((state) => state.setGuestCartUuid)
   const { useAssignRecipientService, useAssignGuestRecipientService } = useRecipients()
   const assignRecipientMutation = useAssignRecipientService()
   const assignGuestRecipientMutation = useAssignGuestRecipientService()
@@ -200,7 +208,6 @@ export default function DashGoPurchase() {
     try {
       const createResponse = isGuestAuth
         ? await createGuestDashGo({
-            guest_phone: (user as any)?.guest_phone || data.recipient_phone || '',
             guest_name: (user as any)?.guest_name || data.recipient_name || 'Guest User',
             guest_email:
               getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
@@ -227,37 +234,51 @@ export default function DashGoPurchase() {
             redemption_branches: redemptionBranches,
           })
 
-      const cardId =
-        createResponse?.data?.card?.id ||
-        createResponse?.data?.id ||
-        createResponse?.data?.card_id ||
-        createResponse?.id
+      const cardId = isGuestAuth
+        ? extractGiftCardIdFromGuestCreate(createResponse)
+        : createResponse?.data?.card?.id ||
+          createResponse?.data?.id ||
+          createResponse?.data?.card_id ||
+          createResponse?.id
       if (!cardId) {
         console.error('Failed to get card ID from response')
         return
       }
 
-      let cartItemId: number | null = null
+      let cartItemId: string | number | null = null
 
       if (isGuestAuth) {
-        const guestName = (user as any)?.guest_name || data.recipient_name || 'Guest User'
-        const guestEmail =
-          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
-          (user as any)?.guest_email ||
-          data.recipient_email ||
-          ''
-        const cartId = getGuestCartId() ?? undefined
+        const guestCartMeta = extractGuestCreateCartMeta(createResponse)
+        if (guestCartMeta.cartId) {
+          setGuestCartUuid(guestCartMeta.cartId)
+        }
+        if (guestCartMeta.cartItemId) {
+          cartItemId = guestCartMeta.cartItemId
+        }
 
-        const addResult = await addGuestCard({
-          guest_name: guestName,
-          guest_email: guestEmail,
-          card_id: String(cardId),
-          quantity: 1,
-          ...(cartId !== undefined && { cart_id: cartId }),
-        })
-        const nextCartId = addResult?.cart_id ?? (addResult as any)?.data?.cart_id
-        if (typeof nextCartId === 'number') {
-          setGuestCartId(nextCartId)
+        if (!cartItemId) {
+          const guestName = (user as any)?.guest_name || data.recipient_name || 'Guest User'
+          const guestEmail =
+            getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
+            (user as any)?.guest_email ||
+            data.recipient_email ||
+            ''
+          const cartId = getGuestCartUuid() ?? getGuestCartId() ?? undefined
+
+          const addResult = await addGuestCard({
+            guest_name: guestName,
+            guest_email: guestEmail,
+            card_id: String(cardId),
+            quantity: 1,
+            ...(cartId !== undefined && { cart_id: cartId }),
+          })
+          const nextCartId = addResult?.cart_id ?? (addResult as any)?.data?.cart_id
+          if (typeof nextCartId === 'number') {
+            setGuestCartId(nextCartId)
+          }
+          if (typeof nextCartId === 'string') {
+            setGuestCartUuid(nextCartId)
+          }
         }
 
         const cartItemsResponse = await refetchGuestCart()
@@ -365,7 +386,7 @@ export default function DashGoPurchase() {
                       <div className="absolute inset-0 grid grid-cols-2 grid-rows-[auto_1fr_auto] text-white">
                         <div className="p-4 text-2xl font-black tracking-[0.3em]">DashGo</div>
                         <div className="p-4 text-right text-2xl font-semibold">
-                          {amount ? formatCurrency(amount.toString(), 'GHS') : 'GHS 0'}
+                          {formatCurrency(amount ? amount.toString() : 0, DEFAULT_CURRENCY)}
                         </div>
                         <div className="p-4 text-lg font-semibold uppercase">
                           {dashGoPreviewRecipientName}
@@ -416,7 +437,7 @@ export default function DashGoPurchase() {
                                 WhatsApp
                               </div>
                               <p className="text-xs text-gray-600">
-                                1. Send "Hi" to +233 25 608 0362
+                                1. {PURCHASE_WHATSAPP_HI_PROMPT}
                               </p>
                               <p className="text-xs text-gray-600">2. Follow the prompts</p>
                             </div>
@@ -522,7 +543,7 @@ export default function DashGoPurchase() {
               type="number"
               {...register('recipient_card_amount', { valueAsNumber: true })}
               error={errors.recipient_card_amount?.message}
-              prefix="GHS"
+              prefix={CURRENCY_PREFIX}
               placeholder="Enter amount"
               className="w-full"
             />
@@ -567,21 +588,21 @@ export default function DashGoPurchase() {
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
                   Phone Number {!assignToSelf && '*'}
                 </label>
-                <input
-                  type="tel"
-                  maxLength={15}
-                  {...register('recipient_phone')}
-                  disabled={assignToSelf}
-                  className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
-                    assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
-                  }`}
-                  placeholder={
-                    assignToSelf ? 'Will use your account phone' : EXAMPLE_PHONE_PLACEHOLDER_E164
-                  }
+                <Controller
+                  control={control}
+                  name="recipient_phone"
+                  render={({ field }) => (
+                    <BasePhoneInput
+                      selectedVal={field.value || ''}
+                      handleChange={field.onChange}
+                      disabled={assignToSelf}
+                      placeholder={
+                        assignToSelf ? 'Will use your account phone' : EXAMPLE_PHONE_PLACEHOLDER
+                      }
+                      error={errors.recipient_phone?.message}
+                    />
+                  )}
                 />
-                {errors.recipient_phone && (
-                  <p className="mt-1 text-xs text-red-500">{errors.recipient_phone.message}</p>
-                )}
                 {assignToSelf && (
                   <p className="mt-1 text-xs text-gray-500">Will use your account phone number</p>
                 )}

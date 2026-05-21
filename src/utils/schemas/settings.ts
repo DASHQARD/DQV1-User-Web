@@ -1,12 +1,16 @@
 import { z } from 'zod'
-import { getRequiredEmailSchema, getRequiredStringSchema } from './shared'
+import {
+  getRequiredEmailSchema,
+  getRequiredInternationalPhoneSchema,
+  getRequiredStringSchema,
+} from './shared'
 import { personalInformationFieldsSchema } from './personalInformation'
 
 export const UpdateBusinessDetailsSchema = z.object({
   id: z.number(),
   name: getRequiredStringSchema('Business name'),
   type: getRequiredStringSchema('Business type'),
-  phone: getRequiredStringSchema('Phone number'),
+  phone: getRequiredInternationalPhoneSchema('Phone number'),
   email: getRequiredEmailSchema('Email'),
   street_address: getRequiredStringSchema('Street address'),
   digital_address: z.string().optional().default(''),
@@ -17,7 +21,7 @@ export type UpdateBusinessDetailsFormData = z.infer<typeof UpdateBusinessDetails
 
 export const SettingsSchema = z.object({
   fullname: getRequiredStringSchema('Full Name'),
-  phonenumber: getRequiredStringSchema('Phone Number'),
+  phonenumber: getRequiredInternationalPhoneSchema('Phone Number'),
   email: getRequiredEmailSchema('Email'),
   oldPassword: z.string().optional(),
   password: z.string().optional(),

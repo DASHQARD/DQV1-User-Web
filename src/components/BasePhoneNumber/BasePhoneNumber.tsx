@@ -1,5 +1,11 @@
 import React from 'react'
-import { defaultCountries, PhoneInput, type PhoneInputRefType } from 'react-international-phone'
+import {
+  defaultCountries,
+  parseCountry,
+  PhoneInput,
+  type CountryIso2,
+  type PhoneInputRefType,
+} from 'react-international-phone'
 import 'react-international-phone/style.css'
 
 import { cn } from '@/libs'
@@ -43,6 +49,12 @@ function sanitizeE164Phone(value: string): string {
   return digitsOnly ? `+${digitsOnly}` : ''
 }
 
+function dialCodeE164(iso2: CountryIso2): string {
+  const entry = defaultCountries.find((c) => parseCountry(c).iso2 === iso2)
+  const dialCode = entry ? parseCountry(entry).dialCode : '233'
+  return `+${dialCode}`
+}
+
 export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
   (
     {
@@ -58,9 +70,11 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
       placeholder = 'Enter number',
       hint,
       maxLength = 15,
+      onBlur,
     },
     ref,
   ) => {
+    const defaultCountryIso: CountryIso2 = 'gh'
     const value = toE164(selectedVal ?? '')
     void options
 
@@ -82,20 +96,20 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
         >
           <PhoneInput
             ref={ref}
-            defaultCountry="gh"
+            defaultCountry={defaultCountryIso}
             countries={defaultCountries}
+            forceDialCode
             value={value}
-            onChange={(phone: string) => {
+            onChange={(phone: string, meta) => {
               if (!handleChange) return
-              const sanitizedPhone = sanitizeE164Phone(phone)
+              let sanitizedPhone = sanitizeE164Phone(phone)
               if (!sanitizedPhone) {
-                handleChange('')
-                return
+                sanitizedPhone = meta?.country?.dialCode
+                  ? `+${meta.country.dialCode}`
+                  : dialCodeE164(defaultCountryIso)
               }
-              const formatted = toLegacyFormat(sanitizedPhone)
-              handleChange(formatted)
+              handleChange(toLegacyFormat(sanitizedPhone))
             }}
-            preferredCountries={['gh']}
             disabled={disabled}
             placeholder={placeholder}
             name={name}
@@ -106,6 +120,7 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
                 inputMode: 'tel',
                 autoComplete: 'tel',
                 maxLength,
+                onBlur,
                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                   if (e.ctrlKey || e.metaKey || e.altKey) return
                   const allowedKeys = new Set([

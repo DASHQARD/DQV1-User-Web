@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Icon } from '@/libs'
 import { Button } from '@/components/Button'
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL_HREF } from '@/utils/constants'
 
 export default function PrivacyPolicy() {
   // Scroll to top on mount
@@ -528,8 +529,8 @@ export default function PrivacyPolicy() {
                         </div>
                         <div className="flex items-center gap-3">
                           <Icon icon="bi:telephone" className="text-lg flex-shrink-0" />
-                          <a href="tel:+233542022245" className="hover:underline">
-                            +233 (0) 542 022 245
+                          <a href={SUPPORT_PHONE_TEL_HREF} className="hover:underline">
+                            {SUPPORT_PHONE_DISPLAY}
                           </a>
                         </div>
                       </div>

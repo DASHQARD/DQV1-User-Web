@@ -48,6 +48,7 @@ export function useCardItem(props: CardItemHookProps) {
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const user = useAuthStore((state) => state.user)
   const getGuestCartId = useAuthStore((state) => state.getGuestCartId)
+  const getGuestCartUuid = useAuthStore((state) => state.getGuestCartUuid)
   const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
@@ -96,6 +97,7 @@ export function useCardItem(props: CardItemHookProps) {
             guest_name: guestName.trim(),
             guest_email: guestEmail.trim(),
             getGuestCartId,
+            getGuestCartUuid,
             setGuestCartId,
             setGuestCartUuid: useAuthStore.getState().setGuestCartUuid,
           })

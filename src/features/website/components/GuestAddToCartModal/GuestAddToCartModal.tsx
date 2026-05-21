@@ -23,13 +23,17 @@ import {
   setGuestContactSessionItem,
 } from '@/utils/constants'
 import { useToast } from '@/hooks'
-import { isValidEmailAddress } from '@/utils/schemas/shared'
+import {
+  getRequiredInternationalPhoneSchema,
+  INVALID_EMAIL_MESSAGE,
+  isValidEmailAddress,
+} from '@/utils/schemas/shared'
 
 const ContactSchema = z.object({
   guest_name: z.string().trim().min(1, 'Name is required'),
-  guest_phone: z.string().min(1, 'Phone number is required'),
+  guest_phone: getRequiredInternationalPhoneSchema('Phone number'),
   email: z.string().refine((val) => isValidEmailAddress(val), {
-    message: 'Please enter a valid email address',
+    message: INVALID_EMAIL_MESSAGE,
   }),
 })
 
@@ -49,6 +53,7 @@ export default function GuestAddToCartModal() {
   const { isOpen, pendingItem, close } = useGuestAddToCartModalStore()
   const authenticate = useAuthStore((s) => s.authenticate)
   const getGuestCartId = useAuthStore((s) => s.getGuestCartId)
+  const getGuestCartUuid = useAuthStore((s) => s.getGuestCartUuid)
   const setGuestCartId = useAuthStore((s) => s.setGuestCartId)
   const setGuestCartUuid = useAuthStore((s) => s.setGuestCartUuid)
   const openCart = useCartStore((s) => s.openCart)
@@ -83,6 +88,11 @@ export default function GuestAddToCartModal() {
       otpForm.reset({ otp: '' })
     } else {
       setStep('choice')
+      contactForm.reset({ guest_name: '', guest_phone: '', email: '' })
+      otpForm.reset({ otp: '' })
+      setSubmittedPhone('')
+      setGuestName('')
+      setGuestEmail('')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset forms when opening modal / switching item
   }, [isOpen, pendingItem])
@@ -116,6 +126,8 @@ export default function GuestAddToCartModal() {
       setGuestName(data.guest_name)
       setGuestEmail(data.email)
       setSubmittedPhone(data.guest_phone)
+      contactForm.reset({ guest_name: '', guest_phone: '', email: '' })
+      otpForm.reset({ otp: '' })
       setStep('otp')
       toast.success('Verification code sent to your phone')
     } catch (err: any) {
@@ -183,6 +195,7 @@ export default function GuestAddToCartModal() {
         guest_name: guestName,
         guest_email: guestEmail,
         getGuestCartId,
+        getGuestCartUuid,
         setGuestCartId,
         setGuestCartUuid,
       })
@@ -381,7 +394,14 @@ export default function GuestAddToCartModal() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setStep('contact')}
+                  onClick={() => {
+                    contactForm.reset({
+                      guest_name: guestName,
+                      guest_phone: submittedPhone,
+                      email: guestEmail,
+                    })
+                    setStep('contact')
+                  }}
                   disabled={isVerifyingOtp}
                   className="flex-1"
                 >

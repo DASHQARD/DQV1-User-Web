@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { Icon } from '@/libs'
 
 import type { DashQardsTabId, DashQardsVendor } from '../../hooks/useDashQards'
-import { normalizePriceInput, reconcilePriceRange } from '../../utils/priceRangeFilter'
+import {
+  getPriceRangeValidationError,
+  isInvertedPriceRange,
+  normalizePriceInput,
+} from '../../utils/priceRangeFilter'
 
 export interface DashQardsFiltersQuery {
   search?: string
@@ -62,19 +66,28 @@ export function DashQardsFilters({
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
+  const priceRangeError = getPriceRangeValidationError(query.min_price, query.max_price)
+
   const activeFiltersCount = [
     query.min_price,
-    query.max_price,
+    isInvertedPriceRange(query.min_price, query.max_price) ? undefined : query.max_price,
     query.search,
     query.vendor_ids,
   ].filter(Boolean).length
+
+  const clearInvalidMaxIfNeeded = () => {
+    if (!isInvertedPriceRange(query.min_price, query.max_price)) return
+    setQuery({ ...query, max_price: '' })
+  }
 
   return (
     <aside className="bg-white border border-[#e6e6e6] rounded-xl sticky top-[120px] w-[280px] max-h-[calc(100vh-140px)] overflow-y-auto shrink-0 max-lg:w-[260px] max-md:static max-md:w-full max-md:max-h-none max-md:overflow-y-visible">
       <div className="flex justify-between items-start p-6 pb-4 border-b border-[#e6e6e6]">
         <div className="flex-1">
           <h3 className="text-xl font-extrabold text-[#212529] mb-1">Filter Results</h3>
-          <p className="text-sm text-grey-500 font-medium">{cardsCount} cards available</p>
+          <p className="text-sm text-grey-500 font-medium">
+            {cardsCount} {cardsCount === 1 ? 'card' : 'cards'} available
+          </p>
         </div>
       </div>
 
@@ -315,18 +328,20 @@ export function DashQardsFilters({
               </div>
             </button>
             <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${openSections.priceRange ? 'max-h-[380px] opacity-100' : 'max-h-0 opacity-0'}`}
+              className={`overflow-hidden transition-all duration-300 ease-in-out ${openSections.priceRange ? 'max-h-[480px] opacity-100' : 'max-h-0 opacity-0'}`}
             >
               <div>
-                <div className="flex items-end gap-3 mb-4">
-                  <div className="flex-1">
+                <div className="mb-4 flex flex-col gap-3">
+                  <div className="min-w-0 w-full">
                     <label className="block text-xs font-semibold text-grey-500 mb-1 uppercase tracking-wider">
                       Minimum
                     </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-grey-500 pointer-events-none">
-                        ₵
-                      </span>
+                    <div
+                      className={`flex items-center gap-2 rounded-md border-2 bg-white px-3 py-2.5 transition-colors focus-within:border-primary-500 ${
+                        priceRangeError ? 'border-red-400' : 'border-[#e6e6e6]'
+                      }`}
+                    >
+                      <span className="shrink-0 text-sm font-semibold text-grey-500">GHS</span>
                       <input
                         type="number"
                         inputMode="numeric"
@@ -338,27 +353,24 @@ export function DashQardsFilters({
                             min_price: normalizePriceInput(e.target.value),
                           })
                         }}
-                        onBlur={() => {
-                          setQuery({
-                            ...query,
-                            ...reconcilePriceRange(query.min_price, query.max_price),
-                          })
-                        }}
+                        onBlur={clearInvalidMaxIfNeeded}
                         placeholder="0"
                         min={0}
-                        className="w-full pl-7 pr-3 py-2.5 border-2 border-[#e6e6e6] rounded-md text-sm font-medium bg-white transition-colors focus:outline-none focus:border-primary-500 placeholder:text-[#aaa]"
+                        aria-invalid={!!priceRangeError}
+                        className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium outline-none placeholder:text-[#aaa]"
                       />
                     </div>
                   </div>
-                  <div className="w-5 h-0.5 bg-[#ddd] mb-3.5 rounded" />
-                  <div className="flex-1">
+                  <div className="min-w-0 w-full">
                     <label className="block text-xs font-semibold text-grey-500 mb-1 uppercase tracking-wider">
                       Maximum
                     </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-grey-500 pointer-events-none">
-                        ₵
-                      </span>
+                    <div
+                      className={`flex items-center gap-2 rounded-md border-2 bg-white px-3 py-2.5 transition-colors focus-within:border-primary-500 ${
+                        priceRangeError ? 'border-red-400' : 'border-[#e6e6e6]'
+                      }`}
+                    >
+                      <span className="shrink-0 text-sm font-semibold text-grey-500">GHS</span>
                       <input
                         type="number"
                         inputMode="numeric"
@@ -370,18 +382,20 @@ export function DashQardsFilters({
                             max_price: normalizePriceInput(e.target.value),
                           })
                         }}
-                        onBlur={() => {
-                          setQuery({
-                            ...query,
-                            ...reconcilePriceRange(query.min_price, query.max_price),
-                          })
-                        }}
+                        onBlur={clearInvalidMaxIfNeeded}
                         placeholder="1000"
                         min={0}
-                        className="w-full pl-7 pr-3 py-2.5 border-2 border-[#e6e6e6] rounded-md text-sm font-medium bg-white transition-colors focus:outline-none focus:border-primary-500 placeholder:text-[#aaa]"
+                        aria-invalid={!!priceRangeError}
+                        aria-describedby={priceRangeError ? 'price-range-error' : undefined}
+                        className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium outline-none placeholder:text-[#aaa]"
                       />
                     </div>
                   </div>
+                  {priceRangeError ? (
+                    <p id="price-range-error" className="text-xs font-medium text-red-600 -mt-1">
+                      {priceRangeError}
+                    </p>
+                  ) : null}
                 </div>
                 <div>
                   <div className="text-xs font-semibold text-grey-500 mb-2 uppercase tracking-wider">

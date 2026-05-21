@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   getRequiredEmailSchema,
+  getRequiredInternationalPhoneSchema,
   getRequiredStringSchema,
   getRequiredAlphaNumericStringSchema,
 } from '../shared'
@@ -9,7 +10,7 @@ export const InviteAdminSchema = z.object({
   first_name: getRequiredStringSchema('First Name'),
   last_name: getRequiredStringSchema('Last Name'),
   email: getRequiredEmailSchema('Email'),
-  phone_number: getRequiredStringSchema('Phone Number'),
+  phone_number: getRequiredInternationalPhoneSchema('Phone Number'),
   role: getRequiredStringSchema('Role'),
 })
 

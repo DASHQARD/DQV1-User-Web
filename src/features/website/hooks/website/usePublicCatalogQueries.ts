@@ -45,10 +45,11 @@ export function usePublicCatalogQueries() {
     })
   }
 
-  function useGetCartAllRecipientsService() {
+  function useGetCartAllRecipientsService(enabled = true) {
     return useQuery<RecipientsListResponse, Error, RecipientsListResponse>({
       queryKey: ['cart-all-recipients'],
       queryFn: () => getCartAllRecipients(),
+      enabled,
     })
   }
 

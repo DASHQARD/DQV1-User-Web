@@ -30,6 +30,7 @@ export default function DashQards() {
     vendors,
     filteredQardsAll,
     sortedQards,
+    activeResultsCount,
     getCardTypeCount,
     setPriceRange,
     isPriceRangeActive,
@@ -100,7 +101,7 @@ export default function DashQards() {
                 cardTabs={cardTabs}
                 priceRanges={priceRanges}
                 vendors={vendors}
-                cardsCount={filteredQardsAll.length}
+                cardsCount={activeResultsCount}
                 getCardTypeCount={getCardTypeCount}
                 setPriceRange={setPriceRange}
                 isPriceRangeActive={isPriceRangeActive}
@@ -113,8 +114,8 @@ export default function DashQards() {
               <section className="flex flex-col gap-4">
                 <div className="pt-2 pb-4 pr-4 border-b border-[#e6e6e6]">
                   <Text variant="h2" weight="medium" className="text-[#212529]">
-                    Results for "All Gift Cards" in{' '}
-                    <span className="font-normal">({filteredQardsAll.length + 2})</span>
+                    Results for &quot;{cardTabs.find((t) => t.id === activeTab)?.label ?? 'Gift Cards'}&quot;{' '}
+                    <span className="font-normal">({activeResultsCount})</span>
                   </Text>
                   <p className="py-2 opacity-0">check</p>
                 </div>
@@ -169,7 +170,7 @@ export default function DashQards() {
                   <div className="flex flex-wrap gap-2">
                     {query.min_price && (
                       <span className="inline-flex items-center gap-1.5 bg-primary-500 text-white px-2 py-1 rounded-2xl text-xs font-semibold">
-                        Min: ₵{query.min_price}
+                        Min: GHS {query.min_price}
                         <button
                           onClick={() => setQuery({ ...query, min_price: '' })}
                           className="bg-transparent border-none text-white cursor-pointer p-0 w-4 h-4 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
@@ -180,7 +181,7 @@ export default function DashQards() {
                     )}
                     {query.max_price && (
                       <span className="inline-flex items-center gap-1.5 bg-primary-500 text-white px-2 py-1 rounded-2xl text-xs font-semibold">
-                        Max: ₵{query.max_price}
+                        Max: GHS {query.max_price}
                         <button
                           onClick={() => setQuery({ ...query, max_price: '' })}
                           className="bg-transparent border-none text-white cursor-pointer p-0 w-4 h-4 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
@@ -328,7 +329,7 @@ export default function DashQards() {
             cardTabs={cardTabs}
             priceRanges={priceRanges}
             vendors={vendors}
-            cardsCount={filteredQardsAll.length}
+            cardsCount={activeResultsCount}
             getCardTypeCount={getCardTypeCount}
             setPriceRange={setPriceRange}
             isPriceRangeActive={isPriceRangeActive}

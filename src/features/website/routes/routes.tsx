@@ -4,6 +4,7 @@ import {
   CardDetails,
   Checkout,
   ContactPage,
+  FaqPage,
   DashQards,
   LandingPage,
   OrdersPage,
@@ -27,6 +28,10 @@ export const websiteRoutes: RouteObject[] = [
   {
     path: 'contact',
     element: <ContactPage />,
+  },
+  {
+    path: 'faq',
+    element: <FaqPage />,
   },
   {
     path: 'orders',

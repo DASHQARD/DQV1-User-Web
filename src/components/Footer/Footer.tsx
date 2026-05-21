@@ -1,4 +1,10 @@
-import { ROUTES } from '@/utils/constants'
+import {
+  PURCHASE_WHATSAPP_DISPLAY,
+  PURCHASE_WHATSAPP_HREF,
+  ROUTES,
+  SUPPORT_PHONE_DISPLAY,
+  SUPPORT_PHONE_TEL_HREF,
+} from '@/utils/constants'
 import LogoWhite from '../../assets/images/logo-white.png'
 import { Text } from '../Text'
 import { Icon } from '@/libs'
@@ -28,6 +34,10 @@ export default function Footer() {
     {
       label: 'Contact Us',
       url: ROUTES.IN_APP.CONTACT,
+    },
+    {
+      label: 'FAQ',
+      url: ROUTES.IN_APP.FAQ,
     },
     {
       label: 'Get Started',
@@ -159,10 +169,10 @@ export default function Footer() {
               <div className="flex flex-col gap-1">
                 <p className="text-xs font-medium text-white/60">Support Line</p>
                 <a
-                  href="tel:+233542022245"
+                  href={SUPPORT_PHONE_TEL_HREF}
                   className="text-xs md:text-sm font-medium text-white hover:text-yellow-500 transition-colors hover:underline"
                 >
-                  +233 54 202 2245
+                  {SUPPORT_PHONE_DISPLAY}
                 </a>
               </div>
             </li>
@@ -173,12 +183,12 @@ export default function Footer() {
               <div className="min-w-0">
                 <p className="text-xs font-medium text-white/60">Purchase Line (WhatsApp)</p>
                 <a
-                  href="https://wa.me/233566080362"
+                  href={PURCHASE_WHATSAPP_HREF}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs md:text-sm font-medium text-white hover:text-yellow-500 transition-colors hover:underline break-all"
                 >
-                  +233 56 608 0362
+                  {PURCHASE_WHATSAPP_DISPLAY}
                 </a>
               </div>
             </li>

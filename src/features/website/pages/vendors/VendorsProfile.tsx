@@ -9,6 +9,12 @@ import { usePublicCatalogQueries } from '../../hooks/website'
 import { EmptyStateImage } from '@/assets/images'
 import LoaderGif from '@/assets/gifs/loader.gif'
 import { QRCodeSVG } from 'qrcode.react'
+import { formatCurrency } from '@/utils/format'
+import { resolveGiftCardAmount } from '@/utils/giftCardAmount'
+import {
+  getVendorCardsFromBranches,
+  vendorCatalogCardToFeaturedCardProps,
+} from '@/features/dashboard/corporate/utils/vendorCardsFromBranches'
 
 export default function VendorsProfile() {
   const [searchParams] = useSearchParams()
@@ -50,48 +56,14 @@ export default function VendorsProfile() {
     }))
   }, [vendorDetails])
 
-  // Extract vendor cards from branches_with_cards
-  const vendorCards = React.useMemo(() => {
-    if (!vendorDetails) return []
-    const branches = (vendorDetails as any)?.branches_with_cards || []
-    const allCards: any[] = []
-
-    branches.forEach((branch: any) => {
-      if (branch.cards && Array.isArray(branch.cards)) {
-        branch.cards.forEach((card: any) => {
-          // Filter out DashGo cards
-          if (card.card_type?.toLowerCase() !== 'dashgo' && card.type?.toLowerCase() !== 'dashgo') {
-            allCards.push({
-              card_id: card.card_id || card.id,
-              product: card.card_name || card.product, // Use card_name as product name
-              vendor_name: branch.branch_name || '', // Use branch name as vendor_name so it displays first
-              branch_name: branch.branch_name || '', // Branch name from branch level
-              branch_location: branch.branch_location || '', // Branch location from branch level
-              rating: card.rating || 0,
-              price: String(card.card_price || card.price || 0),
-              currency: card.currency || 'GHS',
-              type: card.card_type || card.type,
-              description: card.card_description || card.description || '',
-              expiry_date: card.expiry_date || '',
-              terms_and_conditions: card.terms_and_conditions || [],
-              images: card.images || [],
-              issue_date: card.issue_date || '',
-              status: card.card_status || card.status || 'active',
-              base_price: String(card.card_price || card.price || 0),
-              markup_price: null,
-              service_fee: '0',
-              recipient_count: '0',
-              created_at: card.created_at || '',
-              updated_at: card.updated_at || card.created_at || '',
-              vendor_id: vendorDetails?.vendor_id || vendorDetails?.id,
-            })
-          }
-        })
-      }
-    })
-
-    return allCards
-  }, [vendorDetails])
+  const catalogCards = React.useMemo(
+    () =>
+      getVendorCardsFromBranches(vendorDetails, {
+        excludeCardTypes: ['dashgo'],
+        activeOnly: false,
+      }),
+    [vendorDetails],
+  )
 
   const branchName = vendorDetails?.business_name || vendorDetails?.vendor_name || ''
   const vendorName = branchName || 'Vendor'
@@ -174,7 +146,9 @@ export default function VendorsProfile() {
                   <div className="flex items-start justify-between">
                     <div className="text-2xl font-black tracking-[0.3em]">DASHGO</div>
                     <div className="text-right text-2xl font-semibold">
-                      {selectedAmount ? `GHS ${parseFloat(selectedAmount).toFixed(2)}` : 'GHS'}
+                      {selectedAmount.trim()
+                        ? formatCurrency(resolveGiftCardAmount(selectedAmount))
+                        : 'GHS'}
                     </div>
                   </div>
                   {/* Bottom Section */}
@@ -224,10 +198,6 @@ export default function VendorsProfile() {
                   <Icon icon="bi:star-fill" className="size-5 text-yellow-500" />
                   <span className="font-semibold text-[#212529]">4.5</span>
                 </div>
-                <p className="text-sm text-grey-500">
-                  Vendor ID:{' '}
-                  {(vendorDetails as any)?.gvid || (vendorDetails as any)?.vendor_id || 'N/A'}
-                </p>
                 <p className="text-grey-600 leading-relaxed">{vendorDescription}</p>
               </div>
 
@@ -248,30 +218,30 @@ export default function VendorsProfile() {
         </div>
       </section>
 
-      {/* Qards from vendor Section */}
+      {/* Preset gift cards (DashX, DashPass, etc.) — DashGo is above */}
       <section className="py-12 bg-white">
         <div className="wrapper">
           <h2 className="text-[clamp(28px,4vw,36px)] font-extrabold mb-2 text-[#212529]">
-            Cards from vendor ({vendorCards.length} Cards)
+            Other gift cards ({catalogCards.length}{' '}
+            {catalogCards.length === 1 ? 'card' : 'cards'})
           </h2>
-          {vendorCards.length === 0 ? (
+          <p className="text-grey-600 mb-8">
+            Preset gift cards from this vendor. Use DashGo above to choose your own amount.
+          </p>
+          {catalogCards.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <EmptyState
                 image={EmptyStateImage}
-                title="No cards available"
-                description="No cards available for this vendor"
+                title="No other gift cards"
+                description="This vendor only offers DashGo above. Check back later for DashX or DashPass cards."
               />
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-6 max-xl:grid-cols-3 max-md:grid-cols-2 max-[480px]:grid-cols-1 max-md:gap-4">
-              {vendorCards?.map((card: any) => (
+              {catalogCards.map((card) => (
                 <CardItems
                   key={card.card_id}
-                  {...card}
-                  id={card.card_id}
-                  type={(card.type as 'dashPass' | 'DashX') || 'DashX'}
-                  branch_name={card.branch_name}
-                  branch_location={card.branch_location}
+                  {...vendorCatalogCardToFeaturedCardProps(card)}
                 />
               ))}
             </div>

@@ -2,7 +2,7 @@ import { type RouteObject } from 'react-router'
 
 import { DashboardLayout, dashboardRoutes, websiteRoutes } from '../features'
 import { WebsiteLayout } from '../layout'
-import { CustomErrorBoundary, RouteGuard } from '@/components'
+import { NotFoundPage, RouteErrorPage, RouteGuard } from '@/components'
 import { AuthLayout, authRoutes } from '@/features/auth'
 import { InviteCorporateAdmin } from '@/features/auth/pages'
 import AcceptVendorInvite from '@/features/auth/pages/acceptVendorInvite/AcceptVendorInvite'
@@ -13,12 +13,14 @@ export const routes: RouteObject[] = [
   {
     path: '/',
     element: <WebsiteLayout />,
-    children: websiteRoutes,
+    errorElement: <RouteErrorPage />,
+    children: [...websiteRoutes, { path: '*', element: <NotFoundPage /> }],
   },
   {
     path: 'auth',
     element: <AuthLayout />,
-    children: authRoutes,
+    errorElement: <RouteErrorPage />,
+    children: [...authRoutes, { path: '*', element: <NotFoundPage /> }],
   },
   {
     path: 'invite/vendor',
@@ -45,11 +47,16 @@ export const routes: RouteObject[] = [
         <DashboardLayout />
       </RouteGuard>
     ),
-    errorElement: <CustomErrorBoundary />,
-    children: dashboardRoutes,
+    errorElement: <RouteErrorPage />,
+    children: [...dashboardRoutes, { path: '*', element: <NotFoundPage /> }],
   },
   {
     path: '/payment/payment-success',
     element: <PaymentSuccess />,
+  },
+  {
+    path: '*',
+    element: <WebsiteLayout />,
+    children: [{ path: '*', element: <NotFoundPage /> }],
   },
 ]
