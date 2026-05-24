@@ -82,19 +82,19 @@ export default function BranchSidebar() {
                       <Text
                         variant="span"
                         weight="bold"
-                        className="block text-sm text-gray-900 truncate"
+                        className="block text-sm text-gray-900 truncate capitalize"
                       >
                         {branchName || 'Branch'}
                       </Text>
                       <Tag value="Branch" variant="success" className="text-xs" />
                     </div>
                     {branchLocation && (
-                      <Text variant="span" className="block text-xs text-gray-500 truncate">
+                      <Text variant="span" className="block text-xs text-gray-500 truncate capitalize">
                         {branchLocation}
                       </Text>
                     )}
                     {branchManagerName && (
-                      <Text variant="span" className="block text-xs text-gray-500 truncate mt-0.5">
+                      <Text variant="span" className="block text-xs text-gray-500 truncate mt-0.5 capitalize">
                         {branchManagerName}
                       </Text>
                     )}

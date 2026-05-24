@@ -1,11 +1,29 @@
 import { Icon } from '@/libs'
-import { Text, Loader } from '@/components'
+import { Text, Loader, Button } from '@/components'
 import { branchQueries } from '@/features/dashboard/branch'
+import { RequestBranchDetailsUpdateModal } from '@/features/dashboard/branch/components/RequestBranchDetailsUpdateModal'
+import { RequestBranchPaymentDetailsUpdateModal } from '@/features/dashboard/branch/components/RequestBranchPaymentDetailsUpdateModal'
+import { usePersistedModalState } from '@/hooks'
+import { MODALS } from '@/utils/constants'
 import { cn } from '@/libs'
 
 export default function BranchPaymentDetails() {
   const { useGetBranchInfoService } = branchQueries()
   const { data: branchInfoData, isLoading } = useGetBranchInfoService()
+
+  const branchDetailsModal = usePersistedModalState({
+    paramName: MODALS.REQUEST_BRANCH_DETAILS_UPDATE.PARAM_NAME,
+  })
+  const branchPaymentModal = usePersistedModalState({
+    paramName: MODALS.REQUEST_BRANCH_PAYMENT_DETAILS_UPDATE.PARAM_NAME,
+  })
+
+  const openBranchDetailsRequest = () => {
+    branchDetailsModal.openModal(MODALS.REQUEST_BRANCH_DETAILS_UPDATE.ROOT)
+  }
+  const openPaymentDetailsRequest = () => {
+    branchPaymentModal.openModal(MODALS.REQUEST_BRANCH_PAYMENT_DETAILS_UPDATE.ROOT)
+  }
 
   // Support both wrapped ({ data: {...} }) and flat ({ branch, ... }) response shapes
   const branchInfo = (branchInfoData as any)?.data ?? branchInfoData
@@ -13,6 +31,9 @@ export default function BranchPaymentDetails() {
   const branchManager = branchInfo?.branch_manager
   const paymentDetails = branchInfo?.payment_details
   const businessDetails = branchInfo?.business_details
+  const hasPaymentDetails = Boolean(
+    paymentDetails?.momo_number || paymentDetails?.account_number,
+  )
 
   const logoUrl = businessDetails?.logo || null
 
@@ -37,10 +58,24 @@ export default function BranchPaymentDetails() {
               <div className="flex-1 min-w-[220px]">
                 <h2 className="text-3xl font-bold text-[#1f2937] mb-2">Payment Details</h2>
                 <p className="text-gray-600 text-base leading-relaxed">
-                  View your branch payment information and business details.
+                  View your branch and payment information. Submit a request to propose changes —
+                  your vendor admin and platform admin must approve them first.
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3">
+          <Icon icon="bi:info-circle" className="text-amber-600 text-xl shrink-0 mt-0.5" />
+          <div>
+            <Text variant="span" weight="semibold" className="text-amber-900 block mb-1">
+              Request to update branch or payment details
+            </Text>
+            <Text variant="p" className="text-amber-800/90 text-sm">
+              Branch managers cannot change these details directly. Submit a request and your vendor
+              admin, then platform admin, will review it before changes take effect.
+            </Text>
           </div>
         </div>
 
@@ -120,6 +155,14 @@ export default function BranchPaymentDetails() {
                 </span>
               </div>
             </div>
+          </div>
+          <div className="px-6 sm:px-10 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+            <Text variant="span" className="text-gray-600 text-sm">
+              Need to change branch name, location, or contact details?
+            </Text>
+            <Button type="button" variant="secondary" onClick={openBranchDetailsRequest}>
+              Request update
+            </Button>
           </div>
         </div>
 
@@ -303,11 +346,21 @@ export default function BranchPaymentDetails() {
                 <div className="text-center py-8">
                   <Icon icon="bi:info-circle" className="text-4xl text-gray-400 mb-3" />
                   <Text variant="span" className="text-gray-500">
-                    No payment details available
+                    No payment details on file. Contact your vendor admin to set up payment details.
                   </Text>
                 </div>
               )}
             </div>
+            {hasPaymentDetails && (
+              <div className="px-6 sm:px-10 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                <Text variant="span" className="text-gray-600 text-sm">
+                  Need to change payment information?
+                </Text>
+                <Button type="button" variant="secondary" onClick={openPaymentDetailsRequest}>
+                  Request update
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -411,6 +464,9 @@ export default function BranchPaymentDetails() {
           </div>
         )}
       </div>
+
+      <RequestBranchDetailsUpdateModal />
+      <RequestBranchPaymentDetailsUpdateModal />
     </div>
   )
 }

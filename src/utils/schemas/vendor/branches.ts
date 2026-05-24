@@ -1,10 +1,13 @@
 import { z } from 'zod'
 import {
+  getOptionalInternationalPhoneSchema,
   getRequiredEmailSchema,
   getRequiredInternationalPhoneSchema,
   getRequiredStringSchema,
   isDialCodeOnlyPhone,
+  isValidEmailAddress,
   isValidInternationalPhoneDigits,
+  INVALID_EMAIL_MESSAGE,
   INVALID_PHONE_MESSAGE,
 } from '../shared'
 
@@ -15,6 +18,8 @@ export interface Branch {
   branch_manager_email: string
   branch_name: string
   branch_location: string
+  branch_phone?: string | null
+  branch_email?: string | null
   is_single_branch: boolean
   created_at: string
   updated_at: string
@@ -193,3 +198,16 @@ export const BranchPaymentDetailsSchema = z
   )
 
 export type BranchPaymentDetailsFormData = z.infer<typeof BranchPaymentDetailsSchema>
+
+/** Branch details edit form — PATCH /branches/{corporate|vendor}/:id/details */
+export const UpdateBranchDetailsFormSchema = z.object({
+  branch_name: getRequiredStringSchema('Branch Name'),
+  branch_location: getRequiredStringSchema('Branch Location'),
+  branch_phone: getOptionalInternationalPhoneSchema(),
+  branch_email: z
+    .string()
+    .optional()
+    .refine((val) => !val?.trim() || isValidEmailAddress(val.trim()), INVALID_EMAIL_MESSAGE),
+})
+
+export type UpdateBranchDetailsFormData = z.infer<typeof UpdateBranchDetailsFormSchema>

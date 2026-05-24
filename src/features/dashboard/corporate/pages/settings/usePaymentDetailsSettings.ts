@@ -12,9 +12,11 @@ import { MOBILE_MONEY_PROVIDERS } from '@/utils/constants'
 export type PaymentDetailsFormData = z.infer<typeof PaymentDetailsSchema>
 
 export function usePaymentDetailsSettings() {
-  const { useUpdatePaymentDetailsService, useDeletePaymentDetailsService } = corporateMutations()
+  const { useUpdatePaymentDetailsService, useDeletePaymentDetailsService, useAddPaymentDetailsService } =
+    corporateMutations()
   const { mutateAsync: updatePaymentDetails, isPending: isUpdating } =
     useUpdatePaymentDetailsService()
+  const { mutateAsync: addPaymentDetails, isPending: isAdding } = useAddPaymentDetailsService()
   const { mutateAsync: deletePaymentDetails, isPending: isDeleting } =
     useDeletePaymentDetailsService()
   const { useGetPaymentDetailsService } = corporateQueries()
@@ -177,7 +179,7 @@ export function usePaymentDetailsSettings() {
       if (data.payment_method === 'mobile_money') {
         payload.mobile_money_provider = data.mobile_money_provider
         payload.mobile_money_number = data.mobile_money_number
-      } else if (data.payment_method === 'bank') {
+      } else       if (data.payment_method === 'bank') {
         payload.bank_name = data.bank_name
         payload.branch = data.branch
         payload.account_name = data.account_name
@@ -185,7 +187,12 @@ export function usePaymentDetailsSettings() {
         payload.swift_code = data.swift_code
         payload.sort_code = data.sort_code
       }
-      await updatePaymentDetails(payload as any)
+
+      if (hasPaymentDetails) {
+        await updatePaymentDetails(payload as Parameters<typeof updatePaymentDetails>[0])
+      } else {
+        await addPaymentDetails(payload as Parameters<typeof addPaymentDetails>[0])
+      }
     } catch (error) {
       console.error('Failed to update payment details:', error)
     }
@@ -207,7 +214,7 @@ export function usePaymentDetailsSettings() {
     form,
     onSubmit,
     handleDelete,
-    isUpdating,
+    isUpdating: isUpdating || isAdding,
     isDeleting,
     hasPaymentDetails,
     paymentMethod,

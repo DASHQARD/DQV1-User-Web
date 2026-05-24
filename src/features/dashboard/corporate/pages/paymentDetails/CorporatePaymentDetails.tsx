@@ -5,20 +5,20 @@ import { Button, Text } from '@/components'
 import { Icon } from '@/libs'
 import { useCountriesData, useUserProfile, useToast } from '@/hooks'
 import { hasVendorPaymentDetails } from '@/features/dashboard/utils/vendorOnboardingProgress'
+import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
 import { ROUTES } from '@/utils/constants'
-import {
-  addPaymentDetails,
-  getPaymentDetails,
-  updatePaymentDetails,
-  deletePaymentDetails,
-} from '../../services'
+import { addPaymentDetails, getPaymentDetails, deletePaymentDetails } from '../../services'
 import { PaymentDetailsModals } from './PaymentDetailsModals'
+
 export function CorporatePaymentDetails() {
   const { success, error } = useToast()
   const queryClient = useQueryClient()
   const { useGetUserProfileService } = useUserProfile()
   const { countries } = useCountriesData()
   const { data: userProfile } = useGetUserProfileService()
+  const { useUpdatePaymentDetailsService } = corporateMutations()
+  const { mutateAsync: submitPaymentDetailsUpdateRequest, isPending: isUpdating } =
+    useUpdatePaymentDetailsService()
   const isCorporateSuperAdmin = userProfile?.user_type === 'corporate super admin'
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -63,21 +63,12 @@ export function CorporatePaymentDetails() {
     : []
 
   const addPaymentMutation = useMutation({
-    mutationFn: (payload: any) => addPaymentDetails(payload),
+    mutationFn: (payload: Parameters<typeof addPaymentDetails>[0]) => addPaymentDetails(payload),
     onSuccess: (response) => {
       success(response?.message || 'Payment details added successfully')
       queryClient.invalidateQueries({ queryKey: ['corp-admin-payment-details'] })
     },
-    onError: (err: any) => error(err?.message || 'Failed to add payment details'),
-  })
-
-  const updatePaymentMutation = useMutation({
-    mutationFn: (payload: any) => updatePaymentDetails(payload),
-    onSuccess: (response) => {
-      success(response?.message || 'Payment details updated successfully')
-      queryClient.invalidateQueries({ queryKey: ['corp-admin-payment-details'] })
-    },
-    onError: (err: any) => error(err?.message || 'Failed to update payment details'),
+    onError: (err: { message?: string }) => error(err?.message || 'Failed to add payment details'),
   })
 
   const deletePaymentMutation = useMutation({
@@ -86,7 +77,8 @@ export function CorporatePaymentDetails() {
       success(response?.message || 'Payment details deleted successfully')
       queryClient.invalidateQueries({ queryKey: ['corp-admin-payment-details'] })
     },
-    onError: (err: any) => error(err?.message || 'Failed to delete payment details'),
+    onError: (err: { message?: string }) =>
+      error(err?.message || 'Failed to delete payment details'),
   })
 
   if (!isCorporateSuperAdmin) {
@@ -97,12 +89,12 @@ export function CorporatePaymentDetails() {
     const payload =
       addForm.payment_method === 'mobile_money'
         ? {
-            payment_method: 'mobile_money',
+            payment_method: 'mobile_money' as const,
             mobile_money_provider: addForm.mobile_money_provider,
             mobile_money_number: addForm.mobile_money_number,
           }
         : {
-            payment_method: 'bank',
+            payment_method: 'bank' as const,
             bank_name: addForm.bank_name,
             branch: addForm.branch,
             account_name: addForm.account_name,
@@ -118,25 +110,27 @@ export function CorporatePaymentDetails() {
     })
   }
 
-  const openEditPaymentModal = (type: 'mobile_money' | 'bank', account: any) => {
+  const openEditPaymentModal = (type: 'mobile_money' | 'bank', account: Record<string, unknown>) => {
     setEditForm({
       payment_method: type,
-      mobile_money_provider: account?.provider || account?.mobile_money_provider || 'mtn',
-      mobile_money_number: account?.momo_number || account?.mobile_money_number || '',
-      bank_name: account?.bank_name || 'string',
-      branch: account?.bank_branch || account?.branch || 'string',
-      account_name: account?.account_holder_name || account?.account_name || 'string',
-      account_number: account?.account_number || '0000000000',
-      swift_code: account?.swift_code || 'string',
-      sort_code: account?.sort_code || 'string',
+      mobile_money_provider: String(
+        account?.provider || account?.mobile_money_provider || 'mtn',
+      ),
+      mobile_money_number: String(account?.momo_number || account?.mobile_money_number || ''),
+      bank_name: String(account?.bank_name || ''),
+      branch: String(account?.bank_branch || account?.branch || ''),
+      account_name: String(account?.account_holder_name || account?.account_name || ''),
+      account_number: String(account?.account_number || ''),
+      swift_code: String(account?.swift_code || ''),
+      sort_code: String(account?.sort_code || ''),
     })
     setIsEditModalOpen(true)
   }
 
-  const handleSubmitEditPaymentDetails = () => {
-    updatePaymentMutation.mutate(
-      {
-        payment_method: editForm.payment_method,
+  const handleSubmitEditPaymentDetails = async () => {
+    try {
+      await submitPaymentDetailsUpdateRequest({
+        payment_method: editForm.payment_method as 'mobile_money' | 'bank',
         mobile_money_provider: editForm.mobile_money_provider,
         mobile_money_number: editForm.mobile_money_number,
         bank_name: editForm.bank_name,
@@ -145,13 +139,11 @@ export function CorporatePaymentDetails() {
         account_number: editForm.account_number,
         swift_code: editForm.swift_code,
         sort_code: editForm.sort_code,
-      },
-      {
-        onSuccess: () => {
-          setIsEditModalOpen(false)
-        },
-      },
-    )
+      })
+      setIsEditModalOpen(false)
+    } catch {
+      // Toast handled by mutation hook
+    }
   }
 
   const formatFieldLabel = (value: string) =>
@@ -167,6 +159,20 @@ export function CorporatePaymentDetails() {
       <Text variant="h2" weight="semibold" className="text-primary-900">
         Corporate Payment Details (Super Admin)
       </Text>
+
+      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3">
+        <Icon icon="bi:info-circle" className="text-amber-600 text-xl shrink-0 mt-0.5" />
+        <div>
+          <Text variant="span" weight="semibold" className="text-amber-900 block mb-1">
+            Payment updates require admin approval
+          </Text>
+          <Text variant="p" className="text-amber-800/90 text-sm">
+            Changes to existing payment details are submitted as a request. A platform admin must
+            approve them before they take effect.
+          </Text>
+        </div>
+      </div>
+
       <div className="flex justify-end">
         <div className="flex items-center gap-3">
           <Button variant="danger" onClick={() => setIsDeleteAllModalOpen(true)}>
@@ -200,7 +206,7 @@ export function CorporatePaymentDetails() {
                 </Text>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {mobileMoneyAccounts.map((account: any, index: number) => (
+                  {mobileMoneyAccounts.map((account: Record<string, unknown>, index: number) => (
                     <div
                       key={String(account.id ?? index)}
                       className="border border-gray-200 rounded-lg p-3 bg-gray-50 relative"
@@ -209,17 +215,17 @@ export function CorporatePaymentDetails() {
                         type="button"
                         onClick={() => openEditPaymentModal('mobile_money', account)}
                         className="absolute top-2 right-2 text-gray-500 hover:text-primary-900 transition-colors"
-                        aria-label="Update payment details"
+                        aria-label="Request payment details update"
                       >
                         <Icon icon="bi:three-dots-vertical" className="text-base" />
                       </button>
                       <Text variant="span" className="block text-sm">
                         <strong>Provider:</strong>{' '}
-                        {account.provider || account.mobile_money_provider || '-'}
+                        {String(account.provider || account.mobile_money_provider || '-')}
                       </Text>
                       <Text variant="span" className="block text-sm">
                         <strong>Number:</strong>{' '}
-                        {account.momo_number || account.mobile_money_number || '-'}
+                        {String(account.momo_number || account.mobile_money_number || '-')}
                       </Text>
                     </div>
                   ))}
@@ -237,7 +243,7 @@ export function CorporatePaymentDetails() {
                 </Text>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {bankAccounts.map((account: any, index: number) => (
+                  {bankAccounts.map((account: Record<string, unknown>, index: number) => (
                     <div
                       key={String(account.id ?? index)}
                       className="border border-gray-200 rounded-lg p-3 bg-gray-50 relative"
@@ -246,22 +252,23 @@ export function CorporatePaymentDetails() {
                         type="button"
                         onClick={() => openEditPaymentModal('bank', account)}
                         className="absolute top-2 right-2 text-gray-500 hover:text-primary-900 transition-colors"
-                        aria-label="Update payment details"
+                        aria-label="Request payment details update"
                       >
                         <Icon icon="bi:three-dots-vertical" className="text-base" />
                       </button>
                       <Text variant="span" className="block text-sm">
-                        <strong>Bank:</strong> {account.bank_name || '-'}
+                        <strong>Bank:</strong> {String(account.bank_name || '-')}
                       </Text>
                       <Text variant="span" className="block text-sm">
                         <strong>Account Name:</strong>{' '}
-                        {account.account_holder_name || account.account_name || '-'}
+                        {String(account.account_holder_name || account.account_name || '-')}
                       </Text>
                       <Text variant="span" className="block text-sm">
-                        <strong>Account Number:</strong> {account.account_number || '-'}
+                        <strong>Account Number:</strong> {String(account.account_number || '-')}
                       </Text>
                       <Text variant="span" className="block text-sm">
-                        <strong>Branch:</strong> {account.bank_branch || account.branch || '-'}
+                        <strong>Branch:</strong>{' '}
+                        {String(account.bank_branch || account.branch || '-')}
                       </Text>
                     </div>
                   ))}
@@ -286,7 +293,7 @@ export function CorporatePaymentDetails() {
         editForm={editForm}
         setEditForm={setEditForm}
         handleSubmitEditPaymentDetails={handleSubmitEditPaymentDetails}
-        isUpdating={updatePaymentMutation.isPending}
+        isUpdating={isUpdating}
         isDeleteAllModalOpen={isDeleteAllModalOpen}
         setIsDeleteAllModalOpen={setIsDeleteAllModalOpen}
         handleDeleteAll={handleDeleteAllPaymentDetails}

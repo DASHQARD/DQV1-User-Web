@@ -44,6 +44,7 @@ import {
 } from '@/features/website/utils/guestAuth'
 import { useMemberMustCompleteOnboardingForCustomCards } from './useMemberMustCompleteOnboardingForCustomCards'
 import { useGuestRecipientsByCartItems } from './useGuestQueries'
+import { getRecipientsForCartUnit, type CartRecipient } from '@/features/website/utils/cartRecipientUnits'
 
 /** Checkout-specific flattened cart item (one row per quantity unit, with quantity_index) */
 export type CheckoutFlattenedCartItem = FlattenedCartItem & {
@@ -198,14 +199,9 @@ export function useCheckout() {
         const cid = item.cart_item_id
         if (cid == null || cid === '') return
         const key = `${cid}-${item.quantity_index ?? 0}`
-        const all = guestRecipientsByCartItem[String(cid)] ?? []
-        const idx = item.quantity_index ?? 0
-        const cardType = item.type?.toLowerCase()
-        if (cardType === 'dashgo') {
-          map[key] = idx === 0 ? all : []
-        } else {
-          map[key] = all[idx] != null ? [all[idx]] : []
-        }
+        const all = (guestRecipientsByCartItem[String(cid)] ?? []) as CartRecipient[]
+        const unitAmount = parseFloat(item.amount || '0')
+        map[key] = getRecipientsForCartUnit(all, item.quantity_index ?? 0, unitAmount)
       })
       return map
     }
@@ -215,9 +211,11 @@ export function useCheckout() {
       itemsArray.forEach((item: any) => {
         const recipients = item.recipients ?? []
         const qty = item.total_quantity || 1
+        const totalItemAmount = parseFloat(item.total_amount || '0')
+        const unitAmount = qty > 0 ? totalItemAmount / qty : totalItemAmount
         for (let i = 0; i < qty; i++) {
           const key = `${item.cart_item_id}-${i}`
-          map[key] = recipients[i] != null ? [recipients[i]] : []
+          map[key] = getRecipientsForCartUnit(recipients, i, unitAmount)
         }
       })
     })

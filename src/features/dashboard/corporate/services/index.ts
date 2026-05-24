@@ -11,6 +11,7 @@ import type {
   AssignRecipientPayload,
   AddToCartPayload,
 } from '@/types/responses'
+import type { UpdateBranchDetailsPayload } from '@/types'
 
 const CORPORATE_API_URL = '/corporate-admin'
 
@@ -320,6 +321,21 @@ export const updatePaymentDetails = async (data: {
   return await putMethod(`/payment-details`, data)
 }
 
+/** POST /payment-details/request-update — corporate admin/super admin payment detail change requests */
+export const requestPaymentDetailsUpdate = async (data: {
+  payment_method: 'mobile_money' | 'bank'
+  mobile_money_provider?: string
+  mobile_money_number?: string
+  bank_name?: string
+  branch?: string
+  account_name?: string
+  account_number?: string
+  swift_code?: string
+  sort_code?: string
+}): Promise<any> => {
+  return await postMethod(`/payment-details/request-update`, data)
+}
+
 export const updateBranchPaymentDetails = async (data: {
   branch_id: string | number
   mobile_money_accounts: Array<{
@@ -439,6 +455,15 @@ export const requestBusinessUpdate = async (data: {
   return await postMethod(`/business-details/request-update`, data)
 }
 
+/** POST /corporates/request-account-update — corporate admin/super admin account field change requests */
+export const requestCorporateAccountUpdate = async (data: {
+  fields_to_update: Record<string, boolean>
+  proposed_values: Record<string, string>
+  reason_for_change?: string
+}): Promise<any> => {
+  return await postMethod(`/corporates/request-account-update`, data)
+}
+
 export const getCorporateBranches = async (corporateUserId: number | string): Promise<any> => {
   return await getList(`/branches/corporate/${corporateUserId}`)
 }
@@ -479,6 +504,13 @@ export const addCorporateBranch = async (data: any): Promise<any> => {
 
 export const deleteCorporateBranch = async (branchId: number | string): Promise<any> => {
   return await deleteMethod(`/branches/corporate/${branchId}`)
+}
+
+export const updateCorporateBranchDetails = async (
+  branchId: number | string,
+  data: UpdateBranchDetailsPayload,
+): Promise<any> => {
+  return await patchMethod(`/branches/corporate/${branchId}/details`, data)
 }
 
 export const getCorporatePayments = async (params?: Record<string, any>): Promise<any> => {

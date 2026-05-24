@@ -58,6 +58,8 @@ export function getStatusVariant(status?: string) {
       return 'success'
     case 'approved':
       return 'success'
+    case 'auto_approved':
+      return 'success'
     case 'processing':
       return 'warning'
     case 'pending':

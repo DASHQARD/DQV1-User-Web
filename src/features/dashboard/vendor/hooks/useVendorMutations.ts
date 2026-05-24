@@ -25,6 +25,7 @@ import {
   removeBranchManager,
   updateBranchManagerDetails,
   updateBranchStatus,
+  updateVendorBranchDetails,
   createVendorPayment,
   updateVendorPayment,
 } from '../services'
@@ -33,6 +34,7 @@ import type {
   AddBranchPaymentDetailsPayload,
   RemoveBranchManagerPayload,
   UpdateBranchStatusPayload,
+  UpdateBranchDetailsPayload,
 } from '@/types'
 import { useToast } from '@/hooks'
 import { useNavigate } from 'react-router-dom'
@@ -381,6 +383,28 @@ export function useVendorMutations() {
     })
   }
 
+  function useUpdateVendorBranchDetailsService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: ({
+        branchId,
+        data,
+      }: {
+        branchId: string | number
+        data: UpdateBranchDetailsPayload
+      }) => updateVendorBranchDetails(branchId, data),
+      onSuccess: (response: any, variables) => {
+        success(response?.message || 'Branch details updated successfully')
+        queryClient.invalidateQueries({ queryKey: ['branches'] })
+        queryClient.invalidateQueries({ queryKey: ['branches-by-vendor-id'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-branch', variables.branchId] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to update branch details. Please try again.')
+      },
+    })
+  }
+
   function useDeleteBranchByVendorService() {
     const queryClient = useQueryClient()
     const navigate = useNavigate()
@@ -472,6 +496,7 @@ export function useVendorMutations() {
     useRemoveBranchManagerService,
     useUpdateBranchManagerDetailsService,
     useUpdateBranchStatusService,
+    useUpdateVendorBranchDetailsService,
     useDeleteBranchByVendorService,
     useCreateVendorPaymentService,
     useUpdateVendorPaymentService,

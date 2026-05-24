@@ -1,67 +1,95 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useAuth } from '@/features/auth/hooks/auth'
-import { useUserProfile } from '@/hooks'
-import type { OnboardingData } from '@/types/auth/auth'
-import { PersonalInformationSchema } from '@/utils/schemas/settings'
+import { useQueryClient } from '@tanstack/react-query'
+import { useUserProfile, useCountriesData, useToast } from '@/hooks'
+import { EditUserProfileSchema, type EditUserProfileFormData } from '@/utils/schemas/settings'
+import { editUserProfile } from '@/features/dashboard/services/user'
+import type { EditUserProfilePayload } from '@/types'
 
-export type PersonalInformationFormData = z.infer<typeof PersonalInformationSchema>
+function profileToFormValues(
+  profile: Record<string, unknown> | null | undefined,
+): EditUserProfileFormData {
+  return {
+    full_name: String(profile?.fullname ?? ''),
+    phone_number: String(profile?.phonenumber ?? ''),
+    street_address: String(profile?.street_address ?? ''),
+    dob: String(profile?.dob ?? ''),
+    id_type: String(profile?.id_type ?? ''),
+    id_number: String(profile?.id_number ?? ''),
+    email: String(profile?.email ?? ''),
+  }
+}
+
+function buildEditUserProfilePayload(data: EditUserProfileFormData): EditUserProfilePayload {
+  const payload: EditUserProfilePayload = {
+    full_name: data.full_name.trim(),
+    phone_number: data.phone_number.trim(),
+    street_address: data.street_address.trim(),
+    dob: data.dob.trim(),
+    id_type: data.id_type.trim(),
+    id_number: data.id_number.trim(),
+  }
+  const email = data.email?.trim()
+  if (email) {
+    payload.email = email
+  }
+  return payload
+}
+
+export type PersonalInformationFormData = EditUserProfileFormData
 
 export function usePersonalInformationSettings() {
-  const { usePersonalDetailsService } = useAuth()
-  const { mutate: updatePersonalDetails, isPending } = usePersonalDetailsService()
+  const queryClient = useQueryClient()
+  const toast = useToast()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
+  const { countries: phoneCountries } = useCountriesData()
 
-  const form = useForm<PersonalInformationFormData>({
-    resolver: zodResolver(PersonalInformationSchema),
+  const form = useForm<EditUserProfileFormData>({
+    resolver: zodResolver(EditUserProfileSchema),
     mode: 'onChange',
-    defaultValues: {
-      full_name: userProfileData?.fullname || '',
-      street_address: userProfileData?.street_address || '',
-      dob: userProfileData?.dob || '',
-      id_type: userProfileData?.id_type || '',
-      id_number: userProfileData?.id_number || '',
-    },
+    defaultValues: profileToFormValues(userProfileData as Record<string, unknown> | undefined),
   })
+
+  const resetToProfile = useCallback(() => {
+    form.reset(profileToFormValues(userProfileData as Record<string, unknown> | undefined))
+  }, [form, userProfileData])
 
   useEffect(() => {
     if (userProfileData) {
-      form.reset({
-        full_name: userProfileData?.fullname || '',
-        street_address: userProfileData?.street_address || '',
-        dob: userProfileData?.dob || '',
-        id_type: userProfileData?.id_type || '',
-        id_number: userProfileData?.id_number || '',
-      })
+      resetToProfile()
     }
-  }, [userProfileData, form])
+  }, [userProfileData, resetToProfile])
 
-  const onSubmit = (data: PersonalInformationFormData) => {
-    const payload: OnboardingData = {
-      full_name: data.full_name,
-      street_address: data.street_address,
-      dob: data.dob,
-      id_type: data.id_type,
-      id_number: data.id_number,
+  const onSubmit = async (data: EditUserProfileFormData) => {
+    try {
+      const response = await editUserProfile(buildEditUserProfilePayload(data))
+      toast.success(
+        response.message ||
+          'Profile update request submitted for admin approval. Your current details are unchanged until approved.',
+      )
+      resetToProfile()
+      await queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : 'Failed to submit profile update request. Please try again.'
+      toast.error(message)
     }
-    updatePersonalDetails(payload, {
-      onSuccess: () => {
-        form.reset(data)
-      },
-    })
   }
 
   const handleReset = () => {
-    form.reset()
+    resetToProfile()
   }
 
   return {
     form,
     onSubmit,
     handleReset,
-    isPending,
+    isPending: form.formState.isSubmitting,
+    phoneCountries,
+    profileEmail: userProfileData?.email ?? '',
   }
 }

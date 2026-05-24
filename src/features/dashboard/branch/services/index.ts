@@ -107,3 +107,34 @@ export interface BranchInfoResponse {
 export const getBranchInfo = async (): Promise<BranchInfoResponse> => {
   return await getMethod<BranchInfoResponse>('/branches/info')
 }
+
+/** POST /branches/details/request-update — branch-initiated branch details change request */
+export const requestBranchDetailsUpdate = async (data: {
+  proposed_data: {
+    branch_name?: string
+    branch_location?: string
+    branch_phone?: string
+    branch_email?: string
+  }
+  reason_for_change?: string
+}): Promise<any> => {
+  return await postMethod('/branches/details/request-update', data)
+}
+
+/** POST /branches/payment-details/request-update — branch-initiated payment details change request */
+export const requestBranchPaymentDetailsUpdate = async (data: {
+  proposed_data: {
+    payment_method: 'mobile_money' | 'bank'
+    mobile_money_provider?: string
+    mobile_money_number?: string
+    bank_name?: string
+    bank_branch?: string
+    account_holder_name?: string
+    account_number?: string
+    sort_code?: string
+    swift_code?: string
+  }
+  reason_for_change?: string
+}): Promise<any> => {
+  return await postMethod('/branches/payment-details/request-update', data)
+}

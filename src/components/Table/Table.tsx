@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-table'
 
 import type { TableCellProps } from '@/types'
+import { cn } from '@/libs'
 
 import styles from './Table.module.scss'
 
@@ -20,6 +21,8 @@ type Props = Readonly<{
   onRowSelectionChange?: (
     updater: RowSelectionState | ((old: RowSelectionState) => RowSelectionState),
   ) => void
+  /** On viewports below md, pin the first column while horizontally scrolling the rest. */
+  stickyFirstColumnOnMobile?: boolean
 }>
 
 export function Table({
@@ -30,6 +33,7 @@ export function Table({
   getRowId,
   rowSelection,
   onRowSelectionChange,
+  stickyFirstColumnOnMobile = false,
 }: Props) {
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -45,7 +49,12 @@ export function Table({
   })
 
   return (
-    <div className={styles.table_wrapper}>
+    <div
+      className={cn(
+        styles.table_wrapper,
+        stickyFirstColumnOnMobile && styles.sticky_first_column_mobile,
+      )}
+    >
       <table>
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (

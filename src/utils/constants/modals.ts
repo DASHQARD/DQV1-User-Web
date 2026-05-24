@@ -135,6 +135,18 @@ export const MODALS = {
     PARAM_NAME: 'request-business-update',
     ROOT: 'request-business-update',
   },
+  REQUEST_CORPORATE_ACCOUNT_UPDATE: {
+    PARAM_NAME: 'request-corporate-account-update',
+    ROOT: 'request-corporate-account-update',
+  },
+  REQUEST_BRANCH_DETAILS_UPDATE: {
+    PARAM_NAME: 'request-branch-details-update',
+    ROOT: 'request-branch-details-update',
+  },
+  REQUEST_BRANCH_PAYMENT_DETAILS_UPDATE: {
+    PARAM_NAME: 'request-branch-payment-details-update',
+    ROOT: 'request-branch-payment-details-update',
+  },
   VENDOR_PAYMENT_MANAGEMENT: {
     PARAM_NAME: 'vendor-payment-management',
     CHILDREN: {

@@ -12,3 +12,4 @@ export { default as BusinessIdentificationCards } from './BusinessIdentification
 export { default as Redeem } from './Redeem'
 export { default as Settings } from './Settings'
 export { BusinessDetailsSettings } from './BusinessDetailsSettings'
+export { CorporateAccountSettings } from './CorporateAccountSettings'

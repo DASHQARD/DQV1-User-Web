@@ -1,0 +1,40 @@
+import { describe, expect, it } from 'vitest'
+import { buildBranchPaymentDetailsRequestUpdatePayload } from '../buildBranchPaymentDetailsRequestUpdatePayload'
+
+describe('buildBranchPaymentDetailsRequestUpdatePayload', () => {
+  it('builds mobile money payload', () => {
+    expect(
+      buildBranchPaymentDetailsRequestUpdatePayload({
+        payment_method: 'mobile_money',
+        mobile_money_provider: 'mtn',
+        mobile_money_number: '+233-241234567',
+      }),
+    ).toEqual({
+      payment_method: 'mobile_money',
+      mobile_money_provider: 'mtn',
+      mobile_money_number: '+233-241234567',
+    })
+  })
+
+  it('builds bank payload', () => {
+    expect(
+      buildBranchPaymentDetailsRequestUpdatePayload({
+        payment_method: 'bank',
+        bank_name: 'GCB Bank',
+        bank_branch: 'Accra Main',
+        account_holder_name: 'Branch Manager',
+        account_number: '1234567890',
+        sort_code: '040100',
+        swift_code: 'GCBBGHAC',
+      }),
+    ).toEqual({
+      payment_method: 'bank',
+      bank_name: 'GCB Bank',
+      bank_branch: 'Accra Main',
+      account_holder_name: 'Branch Manager',
+      account_number: '1234567890',
+      sort_code: '040100',
+      swift_code: 'GCBBGHAC',
+    })
+  })
+})

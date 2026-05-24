@@ -36,7 +36,12 @@ export function BranchDetailsModal() {
     isLoadingPaymentDetails,
     isUpdatingPaymentDetails,
     isAddingPaymentDetails,
+    isUpdatingBranchDetails,
+    branchDetailsErrors,
+    setBranchDetailsErrors,
     handleCloseModal,
+    handleSaveBranchDetails,
+    cancelBranchEdit,
     handleSavePaymentDetails,
     cancelPaymentEdit,
     mobileMoneyProviders,
@@ -86,61 +91,96 @@ export function BranchDetailsModal() {
           </div>
 
           <div className="flex flex-col gap-6">
-            <Text variant="h5" weight="medium">
-              Branch Information
-            </Text>
+            <div className="flex items-center justify-between">
+              <Text variant="h5" weight="medium">
+                Branch Information
+              </Text>
+              {!isEditing && (
+                <Button
+                  variant="outline"
+                  size="small"
+                  onClick={() => setIsEditing(true)}
+                  className="rounded-full"
+                >
+                  Edit
+                </Button>
+              )}
+            </div>
             <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1">
-                <p className="text-xs text-gray-400">Branch ID</p>
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <p className="text-xs text-gray-400">Branch Name</p>
                 {isEditing ? (
                   <Input
-                    value={editedBranch?.full_branch_id || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setEditedBranch({ ...editedBranch!, full_branch_id: e.target.value })
-                    }
+                    value={editedBranch?.branch_name || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setEditedBranch({ ...editedBranch!, branch_name: e.target.value })
+                      setBranchDetailsErrors((prev) => ({ ...prev, branch_name: '' }))
+                    }}
+                    error={branchDetailsErrors.branch_name}
                   />
                 ) : (
-                  <Text variant="span">{branch.full_branch_id || branch.id}</Text>
+                  <Text variant="span">{branch.branch_name}</Text>
                 )}
               </div>
               <div className="flex flex-col gap-1">
+                <p className="text-xs text-gray-400">Branch ID</p>
+                <Text variant="span">{branch.full_branch_id || branch.id}</Text>
+              </div>
+              <div className="flex flex-col gap-1">
                 <p className="text-xs text-gray-400">Branch Code</p>
-                {isEditing ? (
-                  <Input
-                    value={editedBranch?.branch_code || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setEditedBranch({ ...editedBranch!, branch_code: e.target.value })
-                    }
-                  />
-                ) : (
-                  <Text variant="span">{branch.branch_code}</Text>
-                )}
+                <Text variant="span">{branch.branch_code}</Text>
               </div>
               <div className="flex flex-col gap-1 sm:col-span-2">
                 <p className="text-xs text-gray-400">Location</p>
                 {isEditing ? (
                   <Input
                     value={editedBranch?.branch_location || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       setEditedBranch({ ...editedBranch!, branch_location: e.target.value })
-                    }
+                      setBranchDetailsErrors((prev) => ({ ...prev, branch_location: '' }))
+                    }}
+                    error={branchDetailsErrors.branch_location}
                   />
                 ) : (
                   <Text variant="span">{branch.branch_location}</Text>
                 )}
               </div>
               <div className="flex flex-col gap-1">
-                <p className="text-xs text-gray-400">Branch Type</p>
+                <p className="text-xs text-gray-400">Branch Phone</p>
                 {isEditing ? (
-                  <Input
-                    value={editedBranch?.branch_type || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setEditedBranch({ ...editedBranch!, branch_type: e.target.value })
-                    }
+                  <BasePhoneInput
+                    placeholder={EXAMPLE_PHONE_PLACEHOLDER}
+                    options={countries || []}
+                    selectedVal={editedBranch?.branch_phone || ''}
+                    handleChange={(value: string) => {
+                      setEditedBranch({ ...editedBranch!, branch_phone: value })
+                      setBranchDetailsErrors((prev) => ({ ...prev, branch_phone: '' }))
+                    }}
+                    error={branchDetailsErrors.branch_phone}
                   />
                 ) : (
-                  <Text variant="span">{branch.branch_type}</Text>
+                  <Text variant="span">{branch.branch_phone || '—'}</Text>
                 )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <p className="text-xs text-gray-400">Branch Email</p>
+                {isEditing ? (
+                  <Input
+                    type="email"
+                    value={editedBranch?.branch_email || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setEditedBranch({ ...editedBranch!, branch_email: e.target.value })
+                      setBranchDetailsErrors((prev) => ({ ...prev, branch_email: '' }))
+                    }}
+                    error={branchDetailsErrors.branch_email}
+                  />
+                ) : (
+                  <Text variant="span">{branch.branch_email || '—'}</Text>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <p className="text-xs text-gray-400">Branch Type</p>
+                <Text variant="span">{branch.branch_type || '—'}</Text>
               </div>
               <div className="flex flex-col gap-1">
                 <p className="text-xs text-gray-400">Status</p>
@@ -156,30 +196,11 @@ export function BranchDetailsModal() {
             <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
                 <p className="text-xs text-gray-400">Manager Name</p>
-                {isEditing ? (
-                  <Input
-                    value={editedBranch?.branch_manager_name || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setEditedBranch({ ...editedBranch!, branch_manager_name: e.target.value })
-                    }
-                  />
-                ) : (
-                  <Text variant="span">{branch.branch_manager_name}</Text>
-                )}
+                <Text variant="span">{branch.branch_manager_name || '—'}</Text>
               </div>
               <div className="flex flex-col gap-1">
                 <p className="text-xs text-gray-400">Manager Email</p>
-                {isEditing ? (
-                  <Input
-                    type="email"
-                    value={editedBranch?.branch_manager_email || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setEditedBranch({ ...editedBranch!, branch_manager_email: e.target.value })
-                    }
-                  />
-                ) : (
-                  <Text variant="span">{branch.branch_manager_email}</Text>
-                )}
+                <Text variant="span">{branch.branch_manager_email || '—'}</Text>
               </div>
             </section>
           </div>
@@ -434,7 +455,8 @@ export function BranchDetailsModal() {
               <Button
                 variant="secondary"
                 size="medium"
-                onClick={() => setIsEditing(false)}
+                onClick={handleSaveBranchDetails}
+                loading={isUpdatingBranchDetails}
                 className="flex-1 rounded-full"
               >
                 Save Changes
@@ -442,10 +464,8 @@ export function BranchDetailsModal() {
               <Button
                 variant="outline"
                 size="medium"
-                onClick={() => {
-                  setIsEditing(false)
-                  setEditedBranch(branch)
-                }}
+                onClick={cancelBranchEdit}
+                disabled={isUpdatingBranchDetails}
                 className="flex-1 rounded-full"
               >
                 Cancel

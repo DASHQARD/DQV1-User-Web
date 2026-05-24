@@ -1,6 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
-import { updateBranchExperience, deleteBranchExperience, createBranchExperience } from '../services'
+import {
+  updateBranchExperience,
+  deleteBranchExperience,
+  createBranchExperience,
+  requestBranchDetailsUpdate,
+  requestBranchPaymentDetailsUpdate,
+} from '../services'
 
 export function useBranchMutations() {
   const { success, error } = useToast()
@@ -42,9 +48,45 @@ export function useBranchMutations() {
       },
     })
   }
+  function useRequestBranchDetailsUpdateService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: requestBranchDetailsUpdate,
+      onSuccess: (response: any) => {
+        success(
+          response?.message ||
+            'Branch details update request submitted. Your vendor and platform admin will review it.',
+        )
+        queryClient.invalidateQueries({ queryKey: ['branch-info'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to submit branch details update request. Please try again.')
+      },
+    })
+  }
+
+  function useRequestBranchPaymentDetailsUpdateService() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: requestBranchPaymentDetailsUpdate,
+      onSuccess: (response: any) => {
+        success(
+          response?.message ||
+            'Payment details update request submitted. Your vendor and platform admin will review it.',
+        )
+        queryClient.invalidateQueries({ queryKey: ['branch-info'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to submit payment details update request. Please try again.')
+      },
+    })
+  }
+
   return {
     useUpdateBranchExperienceService,
     useDeleteBranchExperienceService,
     useCreateBranchExperienceService,
+    useRequestBranchDetailsUpdateService,
+    useRequestBranchPaymentDetailsUpdateService,
   }
 }

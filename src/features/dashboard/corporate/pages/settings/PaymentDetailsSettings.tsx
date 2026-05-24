@@ -32,10 +32,24 @@ export function PaymentDetailsSettings() {
   return (
     <>
       <div className="space-y-6">
-        {hasPaymentDetails && (
+        {hasPaymentDetails ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3">
+            <Icon icon="bi:info-circle" className="text-amber-600 text-xl shrink-0 mt-0.5" />
+            <div>
+              <Text variant="span" weight="semibold" className="text-amber-900 block mb-1">
+                Request to update payment details
+              </Text>
+              <Text variant="p" className="text-amber-800/90 text-sm">
+                Corporate accounts cannot change payment details directly. Submit your proposed
+                changes here; a platform admin will review and approve them before they take
+                effect.
+              </Text>
+            </div>
+          </div>
+        ) : (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <Text variant="span" className="text-sm text-blue-800">
-              You have existing payment details. Update them below or delete to start fresh.
+              Add your payment details below. Updates after that require admin approval.
             </Text>
           </div>
         )}
@@ -194,7 +208,7 @@ export function PaymentDetailsSettings() {
               </Button>
             )}
             <Button type="submit" variant="secondary" loading={isUpdating}>
-              {hasPaymentDetails ? 'Update Payment Details' : 'Add Payment Details'}
+              {hasPaymentDetails ? 'Submit update request' : 'Add Payment Details'}
             </Button>
           </div>
         </form>

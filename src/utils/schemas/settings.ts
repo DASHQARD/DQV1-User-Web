@@ -3,8 +3,17 @@ import {
   getRequiredEmailSchema,
   getRequiredInternationalPhoneSchema,
   getRequiredStringSchema,
+  isValidEmailAddress,
 } from './shared'
-import { personalInformationFieldsSchema } from './personalInformation'
+import {
+  personalInformationFieldsSchema,
+  personalInformationFullNameSchema,
+  personalInformationStreetAddressSchema,
+  personalInformationDobSchema,
+  personalInformationIdTypeSchema,
+  personalInformationIdNumberSchema,
+} from './personalInformation'
+import { validatePersonalInformationIdNumber } from '@/utils/validation/personalInformation'
 
 export const UpdateBusinessDetailsSchema = z.object({
   id: z.number(),
@@ -32,3 +41,24 @@ export const SettingsSchema = z.object({
 })
 
 export const PersonalInformationSchema = personalInformationFieldsSchema
+
+/** Settings form for PUT /users/edit-profile */
+export const EditUserProfileSchema = z
+  .object({
+    full_name: personalInformationFullNameSchema,
+    phone_number: getRequiredInternationalPhoneSchema('Phone number'),
+    street_address: personalInformationStreetAddressSchema,
+    dob: personalInformationDobSchema,
+    id_type: personalInformationIdTypeSchema,
+    id_number: personalInformationIdNumberSchema,
+    email: z
+      .string()
+      .optional()
+      .refine(
+        (val) => !val?.trim() || isValidEmailAddress(val.trim()),
+        'Please enter a valid email address',
+      ),
+  })
+  .superRefine(validatePersonalInformationIdNumber)
+
+export type EditUserProfileFormData = z.infer<typeof EditUserProfileSchema>

@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
 import { Controller } from 'react-hook-form'
-import { Button, Input, Text, Combobox, DateInput } from '@/components'
+import { Button, Input, Text, Combobox, DateInput, BasePhoneInput } from '@/components'
 import { Icon } from '@/libs'
-import { ID_TYPE_OPTIONS } from '@/utils/constants'
+import { ID_TYPE_OPTIONS, EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { usePersonalInformationSettings } from './usePersonalInformationSettings'
 
 export function PersonalInformationSettings() {
-  const { form, onSubmit, handleReset, isPending } = usePersonalInformationSettings()
+  const { form, onSubmit, handleReset, isPending, phoneCountries } = usePersonalInformationSettings()
   const dobMaxDate = useMemo(() => {
     const today = new Date()
     const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
@@ -20,9 +20,22 @@ export function PersonalInformationSettings() {
           Personal Information
         </Text>
         <Text variant="p" className="text-gray-600 text-sm">
-          Update your personal details and identification information. This information is used for
-          account verification and compliance purposes.
+          Propose changes to your personal details. An administrator must approve them before they
+          are applied to your account.
         </Text>
+      </div>
+
+      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3">
+        <Icon icon="bi:info-circle" className="text-amber-600 text-xl shrink-0 mt-0.5" />
+        <div>
+          <Text variant="span" weight="semibold" className="text-amber-900 block mb-1">
+            Admin approval required
+          </Text>
+          <Text variant="p" className="text-amber-800/90 text-sm">
+            Your stored profile stays the same until an administrator approves your update request.
+            You will be notified by email when the request is approved or rejected.
+          </Text>
+        </div>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -37,6 +50,35 @@ export function PersonalInformationSettings() {
               placeholder="Enter your full name"
               {...form.register('full_name')}
               error={form.formState.errors.full_name?.message}
+            />
+          </div>
+
+          <Controller
+            control={form.control}
+            name="phone_number"
+            render={({ field: { value, onChange } }) => (
+              <BasePhoneInput
+                label="Phone number"
+                placeholder={EXAMPLE_PHONE_PLACEHOLDER}
+                options={phoneCountries}
+                selectedVal={value}
+                handleChange={onChange}
+                error={form.formState.errors.phone_number?.message}
+              />
+            )}
+          />
+
+          <div>
+            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+              <Icon icon="bi:envelope-fill" className="size-4 mr-2 text-gray-500" />
+              Email
+              <span className="text-gray-400 font-normal ml-1">(optional)</span>
+            </label>
+            <Input
+              type="email"
+              placeholder="Enter your email address"
+              {...form.register('email')}
+              error={form.formState.errors.email?.message}
             />
           </div>
 
@@ -141,8 +183,7 @@ export function PersonalInformationSettings() {
             variant="secondary"
             className="min-w-[150px]"
           >
-            <Icon icon="bi:check-circle" className="size-4 mr-2" />
-            Save Changes
+            Submit update request
           </Button>
           <Button type="button" variant="outline" onClick={handleReset} disabled={isPending}>
             Cancel

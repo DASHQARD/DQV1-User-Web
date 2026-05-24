@@ -18,14 +18,17 @@ import {
   updateBusinessDetails,
   updateBusinessLogo,
   updatePaymentDetails,
+  requestPaymentDetailsUpdate,
   updateCorporateSuperAdminPaymentDetails,
   deletePaymentDetails,
   checkout,
   updateRequestStatus,
   updateCorporateSuperAdminVendorRequestStatus,
   requestBusinessUpdate,
+  requestCorporateAccountUpdate,
   addCorporateBranch,
   deleteCorporateBranch,
+  updateCorporateBranchDetails,
   createCorporateBranchManagerInvitation,
   deleteCorporateBranchManagerInvitation,
   deleteCorporateVendorBranchManagerInvitation,
@@ -49,11 +52,15 @@ import type {
   AssignRecipientPayload,
   AddToCartPayload,
 } from '@/types/responses'
+import type { UpdateBranchDetailsPayload } from '@/types'
+import { buildPaymentDetailsRequestUpdatePayload } from '@/features/dashboard/utils/buildPaymentDetailsRequestUpdatePayload'
 
 export function corporateMutations() {
   const { user } = useAuthStore.getState()
   const userType = (user as any)?.user_type
   const isCorporateSuperAdmin = userType === 'corporate super admin'
+  const isCorporateAdmin = userType === 'corporate admin'
+  const usesCorporatePaymentDetailsRequestFlow = isCorporateSuperAdmin || isCorporateAdmin
 
   function useInviteAdminForCorporateService() {
     const { success, error } = useToast()
@@ -432,6 +439,26 @@ export function corporateMutations() {
     })
   }
 
+  function useRequestPaymentDetailsUpdateService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: Parameters<typeof requestPaymentDetailsUpdate>[0]) =>
+        requestPaymentDetailsUpdate(data),
+      onSuccess: (response: any) => {
+        success(
+          response?.message ||
+            'Payment details update request created successfully. An admin will review your request.',
+        )
+        queryClient.invalidateQueries({ queryKey: ['corporate-payment-details'] })
+        queryClient.invalidateQueries({ queryKey: ['corp-admin-payment-details'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to submit payment details update request. Please try again.')
+      },
+    })
+  }
+
   function useUpdatePaymentDetailsService() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
@@ -453,25 +480,41 @@ export function corporateMutations() {
     }
 
     return useMutation({
-      mutationFn: (data: UpdatePaymentPayload) =>
-        isCorporateSuperAdmin
-          ? updateCorporateSuperAdminPaymentDetails({
-              target_type: data.target_type || 'vendor',
-              target_id: data.target_id || '',
-              payment_method: data.payment_method,
-              mobile_money_provider: data.mobile_money_provider,
-              mobile_money_number: data.mobile_money_number,
-              bank_name: data.bank_name,
-              bank_branch: data.bank_branch || data.branch,
-              account_holder_name: data.account_holder_name || data.account_name,
-              account_number: data.account_number,
-              swift_code: data.swift_code,
-              sort_code: data.sort_code,
-            })
-          : updatePaymentDetails(data),
+      mutationFn: (data: UpdatePaymentPayload) => {
+        const isOwnCorporatePaymentUpdate =
+          usesCorporatePaymentDetailsRequestFlow && !data.target_type
+
+        if (isOwnCorporatePaymentUpdate) {
+          return requestPaymentDetailsUpdate(buildPaymentDetailsRequestUpdatePayload(data))
+        }
+
+        if (isCorporateSuperAdmin && data.target_type) {
+          return updateCorporateSuperAdminPaymentDetails({
+            target_type: data.target_type || 'vendor',
+            target_id: data.target_id || '',
+            payment_method: data.payment_method,
+            mobile_money_provider: data.mobile_money_provider,
+            mobile_money_number: data.mobile_money_number,
+            bank_name: data.bank_name,
+            bank_branch: data.bank_branch || data.branch,
+            account_holder_name: data.account_holder_name || data.account_name,
+            account_number: data.account_number,
+            swift_code: data.swift_code,
+            sort_code: data.sort_code,
+          })
+        }
+
+        return updatePaymentDetails(data)
+      },
       onSuccess: (response: any) => {
-        success(response?.message || 'Payment details updated successfully')
+        success(
+          response?.message ||
+            (usesCorporatePaymentDetailsRequestFlow
+              ? 'Payment details update request created successfully. An admin will review your request.'
+              : 'Payment details updated successfully'),
+        )
         queryClient.invalidateQueries({ queryKey: ['corporate-payment-details'] })
+        queryClient.invalidateQueries({ queryKey: ['corp-admin-payment-details'] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to update payment details. Please try again.')
@@ -586,6 +629,28 @@ export function corporateMutations() {
     })
   }
 
+  function useRequestCorporateAccountUpdateService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: {
+        fields_to_update: Record<string, boolean>
+        proposed_values: Record<string, string>
+        reason_for_change?: string
+      }) => requestCorporateAccountUpdate(data),
+      onSuccess: (response: any) => {
+        success(
+          response?.message ||
+            'Corporate account update request created successfully. An admin will review your request.',
+        )
+        queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to submit account update request. Please try again.')
+      },
+    })
+  }
+
   function useAddCorporateBranchService() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
@@ -616,6 +681,31 @@ export function corporateMutations() {
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to delete branch. Please try again.')
+      },
+    })
+  }
+
+  function useUpdateCorporateBranchDetailsService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: ({
+        branchId,
+        data,
+      }: {
+        branchId: string | number
+        data: UpdateBranchDetailsPayload
+      }) => updateCorporateBranchDetails(branchId, data),
+      onSuccess: (response: any, variables) => {
+        success(response?.message || 'Branch details updated successfully')
+        queryClient.invalidateQueries({ queryKey: ['corporate-branches'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-branches-list'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-branches-by-vendor'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-branch', variables.branchId] })
+        queryClient.invalidateQueries({ queryKey: ['branches-by-vendor-id'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to update branch details. Please try again.')
       },
     })
   }
@@ -778,6 +868,7 @@ export function corporateMutations() {
     useUpdateBusinessDetailsService,
     useUpdateBusinessLogoService,
     useUpdatePaymentDetailsService,
+    useRequestPaymentDetailsUpdateService,
     useDeletePaymentDetailsService,
     useCheckoutService,
     useUpdateRequestStatusService,
@@ -785,8 +876,10 @@ export function corporateMutations() {
     useDeleteCorporateRequestService,
     useDeleteCorporateSuperAdminVendorRequestService,
     useRequestBusinessUpdateService,
+    useRequestCorporateAccountUpdateService,
     useAddCorporateBranchService,
     useDeleteCorporateBranchService,
+    useUpdateCorporateBranchDetailsService,
     useCreateCorporateBranchManagerInvitationService,
     useDeleteCorporateBranchManagerInvitationService,
     useDeleteCorporateVendorBranchManagerInvitationService,

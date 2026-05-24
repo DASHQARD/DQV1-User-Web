@@ -126,3 +126,21 @@ export type UpdateUserInfoPayload = {
   full_name: string
   dob: string
 }
+
+/** PUT /users/edit-profile — queues personal_info_update for admin approval */
+export type EditUserProfilePayload = {
+  full_name: string
+  phone_number: string
+  street_address: string
+  dob: string
+  id_type: string
+  id_number: string
+  email?: string
+}
+
+export type EditUserProfileResponse = {
+  status: string
+  statusCode: number
+  message: string
+  data?: unknown
+}

@@ -1,5 +1,14 @@
+import { putMethod } from '@/services/requests'
+import type { EditUserProfilePayload, EditUserProfileResponse, UpdateUserInfoPayload } from '@/types'
 import { axiosClient } from '@/libs'
-import type { UpdateUserInfoPayload } from '@/types'
+
+/** PUT /users/edit-profile — profile changes require admin approval (personal_info_update request) */
+export const editUserProfile = async (
+  data: EditUserProfilePayload,
+): Promise<EditUserProfileResponse> => {
+  const response = await putMethod('/users/edit-profile', data)
+  return response as unknown as EditUserProfileResponse
+}
 
 export const updateUserInfo = async (
   data: UpdateUserInfoPayload,

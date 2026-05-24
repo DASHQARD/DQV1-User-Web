@@ -61,6 +61,8 @@ type Props = Readonly<{
   currentAfter?: string
   previousCursor?: string | null
   onSetAfter?: (after: string) => void
+  /** On viewports below md, pin the first column while horizontally scrolling the rest. */
+  stickyFirstColumnOnMobile?: boolean
 }>
 
 // Helper to remove page from query object
@@ -76,6 +78,12 @@ const removeCursorFromQuery = (query: QueryType) => {
   const { page, after, ...rest } = query as QueryType & { page?: number; after?: string }
   return rest
 }
+
+const FILTER_BUTTON_CLASSNAME =
+  'border border-[#e2e4ed] bg-white py-0 rounded-md w-full md:w-fit text-xs text-[#7c8689] font-normal capitalize min-w-0 truncate justify-between'
+
+const EXPORT_BUTTON_CLASSNAME =
+  'border border-[#e2e4ed] bg-white py-0 rounded-md w-full md:w-fit text-xs text-primary-900 capitalize font-semibold min-w-0 justify-between'
 
 export function PaginatedTable({
   data,
@@ -105,6 +113,7 @@ export function PaginatedTable({
   currentAfter,
   previousCursor,
   onSetAfter,
+  stickyFirstColumnOnMobile = false,
 }: Props) {
   const memoisedColumns = React.useMemo(() => columns, [columns])
   const memoisedData = React.useMemo(() => data ?? [], [data])
@@ -221,9 +230,19 @@ export function PaginatedTable({
     }
   }, [data, total, exportPending, loading, query, printTitle, csvHeaders, previousLimit, setQuery])
 
+  const hasFilterControls = Boolean(
+    filterBy?.simpleSelects?.length || dateFilterConfig || buttonGroup || !noExport,
+  )
+
   return (
-    <div className={cn('grid gap-4', className)}>
-      <div className={`flex flex-wrap justify-end items-center gap-2 ${filterWrapperClassName}`}>
+    <div className={cn('grid gap-4 w-full min-w-0 max-w-full', className)}>
+      <div
+        className={cn(
+          'flex flex-col gap-3 w-full',
+          'md:flex-row md:flex-wrap md:justify-end md:items-center md:gap-2',
+          filterWrapperClassName,
+        )}
+      >
         {noSearch ? null : (
           <DebouncedSearch
             value={query.search}
@@ -231,85 +250,91 @@ export function PaginatedTable({
               setQuery({ ...removeCursorFromQuery(query), search: value } as QueryType)
             }}
             placeholder={searchPlaceholder ?? 'Search...'}
-            className="md:w-[343px]"
-          />
-        )}
-        {filterBy?.simpleSelects?.map((item) => {
-          const selectedValue = query[item.label as keyof QueryType]
-          const selectedOption = item.options.find(
-            (x) => (typeof x === 'string' ? x : x.value) === selectedValue,
-          )
-          const displayText =
-            selectedValue && selectedOption
-              ? typeof selectedOption === 'string'
-                ? selectedOption
-                : selectedOption.label
-              : `Filter by ${item.label === 'direction' ? 'transaction type' : item.label}`
-
-          return (
-            <Dropdown
-              key={item.label}
-              contentClassName=""
-              align="start"
-              actions={[
-                {
-                  label: 'All',
-                  value: '',
-                },
-                ...item.options.map((x) => (typeof x === 'string' ? { label: x, value: x } : x)),
-              ].map((option) => ({
-                label: option.label,
-                onClickFn: () => {
-                  setQuery({
-                    ...removeCursorFromQuery(query),
-                    [item.label]: option.value,
-                  } as QueryType)
-                },
-              }))}
-            >
-              <Button
-                variant="outline"
-                icon="hugeicons:arrow-down-01"
-                iconPosition="right"
-                size="medium"
-                className="border border-[#e2e4ed] bg-white py-0 rounded-md w-fit text-xs text-[#7c8689] font-normal capitalize"
-              >
-                {displayText}
-              </Button>
-            </Dropdown>
-          )
-        })}
-
-        {/* Date range filters */}
-        {dateFilterConfig && (
-          <DateRangeFilter
-            key="date-range-filter"
-            startDate={startDate}
-            endDate={endDate}
-            onChange={handleDateRangeChange}
-            placeholder={dateFilterConfig.label || 'Date range'}
-            format="DD-MM-YYYY"
+            className="w-full md:w-[343px] md:shrink-0"
           />
         )}
 
-        {/* other filters here */}
-        {buttonGroup}
+        {hasFilterControls ? (
+          <div className="grid grid-cols-2 gap-2 w-full md:contents">
+            {filterBy?.simpleSelects?.map((item) => {
+              const selectedValue = query[item.label as keyof QueryType]
+              const selectedOption = item.options.find(
+                (x) => (typeof x === 'string' ? x : x.value) === selectedValue,
+              )
+              const displayText =
+                selectedValue && selectedOption
+                  ? typeof selectedOption === 'string'
+                    ? selectedOption
+                    : selectedOption.label
+                  : `Filter by ${item.label === 'direction' ? 'transaction type' : item.label}`
 
-        {noExport ? null : (
-          <div className="">
-            <Dropdown actions={actions}>
-              <Button
-                variant="outline"
-                icon="hugeicons:arrow-down-01"
-                iconPosition="right"
-                size="medium"
-                className="border border-[#e2e4ed] bg-white py-0 rounded-md w-fit text-xs text-primary-900 capitalize font-semibold "
-              >
-                Export
-              </Button>
-            </Dropdown>
+              return (
+                <Dropdown
+                  key={item.label}
+                  contentClassName=""
+                  align="start"
+                  actions={[
+                    {
+                      label: 'All',
+                      value: '',
+                    },
+                    ...item.options.map((x) =>
+                      typeof x === 'string' ? { label: x, value: x } : x,
+                    ),
+                  ].map((option) => ({
+                    label: option.label,
+                    onClickFn: () => {
+                      setQuery({
+                        ...removeCursorFromQuery(query),
+                        [item.label]: option.value,
+                      } as QueryType)
+                    },
+                  }))}
+                >
+                  <Button
+                    variant="outline"
+                    icon="hugeicons:arrow-down-01"
+                    iconPosition="right"
+                    size="medium"
+                    className={FILTER_BUTTON_CLASSNAME}
+                  >
+                    {displayText}
+                  </Button>
+                </Dropdown>
+              )
+            })}
+
+            {dateFilterConfig ? (
+              <DateRangeFilter
+                key="date-range-filter"
+                startDate={startDate}
+                endDate={endDate}
+                onChange={handleDateRangeChange}
+                placeholder={dateFilterConfig.label || 'Date range'}
+                format="DD-MM-YYYY"
+                className="w-full md:w-max"
+              />
+            ) : null}
+
+            {buttonGroup}
+
+            {!noExport ? (
+              <div className="col-span-2 md:col-auto">
+                <Dropdown actions={actions}>
+                  <Button
+                    variant="outline"
+                    icon="hugeicons:arrow-down-01"
+                    iconPosition="right"
+                    size="medium"
+                    className={EXPORT_BUTTON_CLASSNAME}
+                  >
+                    Export
+                  </Button>
+                </Dropdown>
+              </div>
+            ) : null}
           </div>
-        )}
+        ) : null}
       </div>
 
       {loading ? (
@@ -320,7 +345,12 @@ export function PaginatedTable({
         </div>
       ) : (
         <PrintView>
-          <div className="overflow-x-auto">
+          <div
+            className={cn(
+              'min-w-0 max-w-full',
+              stickyFirstColumnOnMobile ? 'overflow-x-hidden' : 'overflow-x-auto',
+            )}
+          >
             <Text weight="bold" className="print-view mb-5">
               {printTitle}
             </Text>
@@ -332,6 +362,7 @@ export function PaginatedTable({
               getRowId={getRowId}
               rowSelection={rowSelection}
               onRowSelectionChange={onRowSelectionChange}
+              stickyFirstColumnOnMobile={stickyFirstColumnOnMobile}
             />
 
             {memoisedData?.length ? null : (

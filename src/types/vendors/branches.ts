@@ -3,6 +3,14 @@ export type UpdateBranchStatusPayload = {
   status: string
 }
 
+/** PATCH /branches/vendor/:id/details and PATCH /branches/corporate/:id/details */
+export type UpdateBranchDetailsPayload = {
+  branch_name?: string
+  branch_location?: string
+  branch_phone?: string
+  branch_email?: string
+}
+
 export interface RecentBranchesProps {
   branches: any[]
   isLoading: boolean

@@ -63,12 +63,12 @@ export default function Orders() {
     : payments.length
 
   return (
-    <div className="w-full">
-      <div className="mb-6">
-        <Text variant="h2" weight="semibold" className="text-primary-900">
+    <div className="w-full min-w-0 max-w-full">
+      <div className="mb-4 md:mb-6">
+        <Text variant="h2" weight="semibold" className="text-primary-900 text-xl md:text-2xl">
           Orders
         </Text>
-        <Text variant="p" className="text-gray-600 mt-2">
+        <Text variant="p" className="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">
           View and manage your card purchase orders
         </Text>
       </div>
@@ -80,9 +80,10 @@ export default function Orders() {
         total={estimatedTotal}
         query={query}
         setQuery={setQuery}
-        searchPlaceholder="Search orders by receipt number"
+        searchPlaceholder="Search by receipt"
         printTitle="Orders"
         csvHeaders={paymentListCsvHeaders}
+        stickyFirstColumnOnMobile
         filterBy={{
           simpleSelects: [{ label: 'status', options: OPTIONS.PAYMENT_STATUS }],
           date: [{ queryKey: 'dateFrom', label: 'Date range' }],

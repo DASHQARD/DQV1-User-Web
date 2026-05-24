@@ -1,5 +1,5 @@
 import { deleteMethod, getList, patchMethod, postMethod } from '@/services/requests'
-import type { UpdateBranchStatusPayload } from '@/types'
+import type { UpdateBranchStatusPayload, UpdateBranchDetailsPayload } from '@/types'
 import type { BranchData, BranchesListResponse, OnboardBranchManagerPayload } from '@/utils/schemas'
 
 const commonUrl = '/vendors'
@@ -39,6 +39,13 @@ export const bulkUploadBranches = async (file: File) => {
 
 export const updateBranchStatus = async (payload: UpdateBranchStatusPayload): Promise<any> => {
   return await patchMethod(`/branches/manage-status`, payload)
+}
+
+export const updateVendorBranchDetails = async (
+  branchId: string | number,
+  data: UpdateBranchDetailsPayload,
+): Promise<any> => {
+  return await patchMethod(`/branches/vendor/${branchId}/details`, data)
 }
 
 export const getBranchManagerInvitation = async (token: string): Promise<any> => {

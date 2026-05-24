@@ -3,9 +3,12 @@ import { Icon } from '@/libs'
 import { Text, TabbedView } from '@/components'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
+import { useUserProfile } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
 import { cn } from '@/libs/clsx'
 import { BusinessDetailsSettings } from './BusinessDetailsSettings'
+import { CorporateAccountSettings } from './CorporateAccountSettings'
+import { PaymentDetailsSettings } from '@/features/dashboard/corporate/pages/settings/PaymentDetailsSettings'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -13,6 +16,12 @@ export default function Settings() {
   const { logout: clearAuthState } = useAuthStore()
   const { useLogoutService } = useAuth()
   const { mutateAsync: logoutMutation } = useLogoutService()
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfile } = useGetUserProfileService()
+
+  const userType = userProfile?.user_type
+  const showPaymentDetailsTab =
+    userType === 'corporate super admin' || userType === 'corporate admin'
 
   const logout = () => {
     logoutMutation(undefined, {
@@ -55,6 +64,20 @@ export default function Settings() {
       component: () => <BusinessDetailsSettings />,
       label: 'Business Details',
     },
+    ...(showPaymentDetailsTab
+      ? [
+          {
+            key: 'account-details' as const,
+            component: () => <CorporateAccountSettings />,
+            label: 'Account Details',
+          },
+          {
+            key: 'payment-details' as const,
+            component: () => <PaymentDetailsSettings />,
+            label: 'Payment Details',
+          },
+        ]
+      : []),
   ]
 
   return (

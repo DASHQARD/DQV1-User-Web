@@ -1,17 +1,21 @@
 import React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { usePersistedModalState } from '@/hooks'
+import { usePersistedModalState, useUserProfile, useToast } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import type { Branch } from '@/utils/schemas'
 import {
   BranchPaymentDetailsSchema,
   type BranchPaymentDetailsFormData,
+  UpdateBranchDetailsFormSchema,
 } from '@/utils/schemas/vendor/branches'
 import { useVendorMutations } from '@/features/dashboard/vendor/hooks/useVendorMutations'
+import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
 import { vendorQueries } from '@/features/dashboard/vendor/hooks/useVendorQueries'
 import { GHANA_BANKS } from '@/assets/data/banks'
 import { useCountriesData } from '@/hooks'
+import { useAuthStore } from '@/stores'
+import { buildBranchDetailsPatch } from '@/features/dashboard/utils/buildBranchDetailsPatch'
 import type { UpdateBranchPaymentDetailsPayload, AddBranchPaymentDetailsPayload } from '@/types'
 
 const MOBILE_MONEY_PROVIDERS = [
@@ -43,15 +47,28 @@ const DEFAULT_PAYMENT_VALUES: BranchPaymentDetailsFormData = {
 
 export function useBranchDetailsModal() {
   const modal = usePersistedModalState<Branch>({ paramName: MODALS.BRANCH.VIEW })
+  const toast = useToast()
+  const { user } = useAuthStore()
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
 
   const branch = modal.modalData ?? null
+  const userType = (user as { user_type?: string })?.user_type || userProfileData?.user_type
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
 
-  const { useUpdateBranchPaymentDetailsService, useAddBranchPaymentDetailsService } =
+  const { useUpdateBranchPaymentDetailsService, useAddBranchPaymentDetailsService, useUpdateVendorBranchDetailsService } =
     useVendorMutations()
+  const { useUpdateCorporateBranchDetailsService } = corporateMutations()
   const { mutateAsync: updateBranchPaymentDetails, isPending: isUpdatingPaymentDetails } =
     useUpdateBranchPaymentDetailsService()
   const { mutateAsync: addBranchPaymentDetails, isPending: isAddingPaymentDetails } =
     useAddBranchPaymentDetailsService()
+  const { mutateAsync: updateVendorBranchDetails, isPending: isUpdatingVendorBranchDetails } =
+    useUpdateVendorBranchDetailsService()
+  const { mutateAsync: updateCorporateBranchDetails, isPending: isUpdatingCorporateBranchDetails } =
+    useUpdateCorporateBranchDetailsService()
+  const isUpdatingBranchDetails =
+    isUpdatingVendorBranchDetails || isUpdatingCorporateBranchDetails
 
   const { useGetBranchPaymentDetailsService } = vendorQueries()
   const { data: paymentDetailsResponse, isLoading: isLoadingPaymentDetails } =
@@ -70,6 +87,7 @@ export function useBranchDetailsModal() {
 
   const [isEditing, setIsEditing] = React.useState(false)
   const [editedBranch, setEditedBranch] = React.useState(branch)
+  const [branchDetailsErrors, setBranchDetailsErrors] = React.useState<Record<string, string>>({})
   const [isEditingPayment, setIsEditingPayment] = React.useState(false)
 
   const initialPaymentValues = React.useMemo((): BranchPaymentDetailsFormData => {
@@ -142,8 +160,72 @@ export function useBranchDetailsModal() {
     modal.closeModal()
     setIsEditing(false)
     setIsEditingPayment(false)
+    setBranchDetailsErrors({})
     paymentForm.reset(initialPaymentValuesRef.current)
   }, [modal, paymentForm])
+
+  const cancelBranchEdit = React.useCallback(() => {
+    setIsEditing(false)
+    setEditedBranch(branch)
+    setBranchDetailsErrors({})
+  }, [branch])
+
+  const handleSaveBranchDetails = React.useCallback(async () => {
+    if (!branch?.id || !editedBranch) return
+
+    const validation = UpdateBranchDetailsFormSchema.safeParse({
+      branch_name: editedBranch.branch_name,
+      branch_location: editedBranch.branch_location,
+      branch_phone: editedBranch.branch_phone ?? '',
+      branch_email: editedBranch.branch_email ?? '',
+    })
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {}
+      for (const issue of validation.error.issues) {
+        const key = issue.path[0]
+        if (typeof key === 'string' && !fieldErrors[key]) {
+          fieldErrors[key] = issue.message
+        }
+      }
+      setBranchDetailsErrors(fieldErrors)
+      return
+    }
+
+    const payload = buildBranchDetailsPatch(branch, editedBranch)
+    if (Object.keys(payload).length === 0) {
+      toast.info('No changes to save')
+      setIsEditing(false)
+      return
+    }
+
+    try {
+      const response = isCorporateSuperAdmin
+        ? await updateCorporateBranchDetails({ branchId: branch.id, data: payload })
+        : await updateVendorBranchDetails({ branchId: branch.id, data: payload })
+
+      const updatedBranch = {
+        ...branch,
+        ...editedBranch,
+        ...(response?.data && typeof response.data === 'object' ? response.data : {}),
+      }
+
+      modal.openModal(MODALS.BRANCH.VIEW, updatedBranch)
+      setEditedBranch(updatedBranch)
+      setIsEditing(false)
+      setBranchDetailsErrors({})
+    } catch (error) {
+      console.error('Failed to save branch details:', error)
+    }
+  }, [
+    branch,
+    editedBranch,
+    isCorporateSuperAdmin,
+    modal,
+    toast,
+    updateCorporateBranchDetails,
+    updateVendorBranchDetails,
+  ])
 
   const openDeletePaymentDetailsModal = React.useCallback(() => {
     if (branch) modal.openModal(MODALS.BRANCH.DELETE_PAYMENT_DETAILS, branch)
@@ -238,7 +320,12 @@ export function useBranchDetailsModal() {
     isLoadingPaymentDetails,
     isUpdatingPaymentDetails,
     isAddingPaymentDetails,
+    isUpdatingBranchDetails,
+    branchDetailsErrors,
+    setBranchDetailsErrors,
     handleCloseModal,
+    handleSaveBranchDetails,
+    cancelBranchEdit,
     handleSavePaymentDetails,
     cancelPaymentEdit,
     mobileMoneyProviders: MOBILE_MONEY_PROVIDERS,
