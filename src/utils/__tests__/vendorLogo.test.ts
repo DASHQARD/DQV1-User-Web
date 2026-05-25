@@ -9,7 +9,7 @@ describe('vendorLogo', () => {
     expect(getVendorLogoStorageKey({ logo: url, logo_key: 'key.png' })).toBeNull()
   })
 
-  it('falls back to logo_key for presigned fetch', () => {
+  it('falls back to logo_key for uploads URL resolution', () => {
     expect(
       getVendorLogoStorageKey({
         logo_key: '1779196527983-Variant5.png',

@@ -202,6 +202,7 @@ export function useVendorSidebar() {
     logoutMutation(undefined, {
       onSettled: () => {
         clearAuthState()
+        navigate(ROUTES.IN_APP.HOME, { replace: true })
       },
     })
   }

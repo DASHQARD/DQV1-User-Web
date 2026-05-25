@@ -21,7 +21,7 @@ export function getCardBackground(type: string | undefined): string {
   }
 }
 
-/** True when the value is a storage key that must be resolved via signed-url API. */
+/** True when the value is a bare storage key (not an absolute or uploads path). */
 export function isCardStorageFileKey(fileUrl: string | undefined): boolean {
   if (!fileUrl?.trim()) return false
   const trimmed = fileUrl.trim()
@@ -31,8 +31,7 @@ export function isCardStorageFileKey(fileUrl: string | undefined): boolean {
 }
 
 /**
- * Split card media into either a direct URL (absolute or legacy /uploads path)
- * or a storage key for presigned URL resolution.
+ * Split card media into a direct browser URL (absolute, legacy uploads path, or storage key).
  */
 export function getCardMediaSource(fileUrl: string | undefined): {
   directUrl: string
@@ -41,10 +40,15 @@ export function getCardMediaSource(fileUrl: string | undefined): {
   if (!fileUrl?.trim()) return { directUrl: '', storageKey: null }
   const trimmed = fileUrl.trim()
   if (isAbsoluteMediaUrl(trimmed)) return { directUrl: trimmed, storageKey: null }
-  if (trimmed.startsWith('uploads/') || trimmed.startsWith('/uploads/')) {
-    return { directUrl: getImageUrl(trimmed), storageKey: null }
-  }
-  return { directUrl: '', storageKey: trimmed }
+  return { directUrl: getImageUrl(trimmed), storageKey: null }
+}
+
+/** Resolve absolute URLs, uploads paths, and storage keys to a browser-loadable URL. */
+export function resolveMediaUrl(fileUrl: string | null | undefined): string | null {
+  if (!fileUrl?.trim()) return null
+  const trimmed = fileUrl.trim()
+  if (isAbsoluteMediaUrl(trimmed)) return trimmed
+  return getImageUrl(trimmed) || null
 }
 
 export function getImageUrl(fileUrl: string | undefined): string {

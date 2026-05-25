@@ -1,41 +1,27 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { renderHook } from '@testing-library/react'
 import { usePresignedMediaUrl } from '../usePresignedMediaUrl'
 
-const mockFetchPresignedURL = vi.fn()
-
-vi.mock('../useUploadFiles', () => ({
-  usePresignedURL: () => ({ mutateAsync: mockFetchPresignedURL }),
+vi.mock('@/utils/constants', () => ({
+  ENV_VARS: { API_BASE_URL: 'https://api.example.com/api/v1' },
 }))
 
 describe('usePresignedMediaUrl', () => {
-  beforeEach(() => {
-    mockFetchPresignedURL.mockReset()
-  })
-
   it('returns null when file key is empty', () => {
     const { result } = renderHook(() => usePresignedMediaUrl(null))
     expect(result.current.url).toBeNull()
-    expect(mockFetchPresignedURL).not.toHaveBeenCalled()
+    expect(result.current.isLoading).toBe(false)
   })
 
-  it('uses absolute URLs without calling presigned API', () => {
+  it('uses absolute URLs as-is', () => {
     const { result } = renderHook(() =>
       usePresignedMediaUrl('https://example.com/avatar.jpg'),
     )
     expect(result.current.url).toBe('https://example.com/avatar.jpg')
-    expect(mockFetchPresignedURL).not.toHaveBeenCalled()
   })
 
-  it('fetches presigned URL for storage keys', async () => {
-    mockFetchPresignedURL.mockResolvedValue({
-      data: { signed_url: 'https://example.com/signed.jpg' },
-    })
+  it('resolves storage keys to uploads URLs', () => {
     const { result } = renderHook(() => usePresignedMediaUrl('1779330705116-key.png'))
-
-    await waitFor(() => {
-      expect(result.current.url).toBe('https://example.com/signed.jpg')
-    })
-    expect(mockFetchPresignedURL).toHaveBeenCalledWith('1779330705116-key.png')
+    expect(result.current.url).toBe('https://api.example.com/uploads/1779330705116-key.png')
   })
 })

@@ -61,8 +61,6 @@ type Props = Readonly<{
   currentAfter?: string
   previousCursor?: string | null
   onSetAfter?: (after: string) => void
-  /** On viewports below md, pin the first column while horizontally scrolling the rest. */
-  stickyFirstColumnOnMobile?: boolean
 }>
 
 // Helper to remove page from query object
@@ -113,7 +111,6 @@ export function PaginatedTable({
   currentAfter,
   previousCursor,
   onSetAfter,
-  stickyFirstColumnOnMobile = false,
 }: Props) {
   const memoisedColumns = React.useMemo(() => columns, [columns])
   const memoisedData = React.useMemo(() => data ?? [], [data])
@@ -234,6 +231,20 @@ export function PaginatedTable({
     filterBy?.simpleSelects?.length || dateFilterConfig || buttonGroup || !noExport,
   )
 
+  const mobileFilterControlsClass = React.useMemo(() => {
+    const selectCount = filterBy?.simpleSelects?.length ?? 0
+    const hasDate = Boolean(dateFilterConfig)
+    const hasExport = !noExport
+    const hasButtonGroup = Boolean(buttonGroup)
+
+    // Date + export only (e.g. Requests): one balanced row on mobile
+    if (selectCount === 0 && hasDate && hasExport && !hasButtonGroup) {
+      return 'max-md:grid max-md:grid-cols-2 max-md:gap-2'
+    }
+
+    return 'max-md:flex max-md:flex-col max-md:gap-2'
+  }, [filterBy?.simpleSelects?.length, dateFilterConfig, noExport, buttonGroup])
+
   return (
     <div className={cn('grid gap-4 w-full min-w-0 max-w-full', className)}>
       <div
@@ -255,7 +266,7 @@ export function PaginatedTable({
         )}
 
         {hasFilterControls ? (
-          <div className="grid grid-cols-2 gap-2 w-full md:contents">
+          <div className={cn('w-full min-w-0 md:contents', mobileFilterControlsClass)}>
             {filterBy?.simpleSelects?.map((item) => {
               const selectedValue = query[item.label as keyof QueryType]
               const selectedOption = item.options.find(
@@ -312,14 +323,14 @@ export function PaginatedTable({
                 onChange={handleDateRangeChange}
                 placeholder={dateFilterConfig.label || 'Date range'}
                 format="DD-MM-YYYY"
-                className="w-full md:w-max"
+                className="w-full min-w-0"
               />
             ) : null}
 
             {buttonGroup}
 
             {!noExport ? (
-              <div className="col-span-2 md:col-auto">
+              <div className="w-full min-w-0 md:w-auto">
                 <Dropdown actions={actions}>
                   <Button
                     variant="outline"
@@ -345,12 +356,7 @@ export function PaginatedTable({
         </div>
       ) : (
         <PrintView>
-          <div
-            className={cn(
-              'min-w-0 max-w-full',
-              stickyFirstColumnOnMobile ? 'overflow-x-hidden' : 'overflow-x-auto',
-            )}
-          >
+          <div className="min-w-0 max-w-full overflow-x-hidden">
             <Text weight="bold" className="print-view mb-5">
               {printTitle}
             </Text>
@@ -362,7 +368,6 @@ export function PaginatedTable({
               getRowId={getRowId}
               rowSelection={rowSelection}
               onRowSelectionChange={onRowSelectionChange}
-              stickyFirstColumnOnMobile={stickyFirstColumnOnMobile}
             />
 
             {memoisedData?.length ? null : (

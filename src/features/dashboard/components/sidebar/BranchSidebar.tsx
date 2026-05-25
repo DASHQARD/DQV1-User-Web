@@ -8,7 +8,6 @@ import { useBranchSidebar } from '@/features/dashboard/branch'
 
 export default function BranchSidebar() {
   const {
-    navigate,
     logout,
     isCollapsed,
     setIsCollapsed,
@@ -176,7 +175,6 @@ export default function BranchSidebar() {
                             <button
                               onClick={() => {
                                 logout()
-                                navigate(ROUTES.IN_APP.AUTH.LOGIN)
                               }}
                               className={cn(
                                 'flex items-center gap-3.5 text-red-600 font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 justify-center hover:text-red-700',
@@ -194,7 +192,6 @@ export default function BranchSidebar() {
                         <button
                           onClick={() => {
                             logout()
-                            navigate(ROUTES.IN_APP.AUTH.LOGIN)
                           }}
                           className={cn(
                             'flex items-center gap-3.5 text-red-600 font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] relative z-2 hover:text-red-700',
@@ -333,7 +330,6 @@ export default function BranchSidebar() {
               <button
                 onClick={() => {
                   logout()
-                  navigate(ROUTES.IN_APP.AUTH.LOGIN)
                 }}
                 className="flex items-center justify-center p-3 w-full text-red-600 hover:bg-red-50 rounded-[10px] transition-colors"
               >
@@ -346,7 +342,6 @@ export default function BranchSidebar() {
           <button
             onClick={() => {
               logout()
-              navigate(ROUTES.IN_APP.AUTH.LOGIN)
             }}
             className="flex items-center gap-3.5 text-red-600 font-medium text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] hover:bg-red-50 hover:text-red-700"
           >

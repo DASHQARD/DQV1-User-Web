@@ -34,15 +34,6 @@ vi.mock('../../hooks/useCart', () => ({
 }))
 vi.mock('@/stores/cart', () => ({ useCartStore: () => ({ openCart: vi.fn() }) }))
 
-const mockFetchPresignedURL = vi.fn().mockResolvedValue('')
-vi.mock('@/hooks', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/hooks')>()
-  return {
-    ...actual,
-    usePresignedURL: () => ({ mutateAsync: mockFetchPresignedURL }),
-  }
-})
-
 function CardDetailsRoute() {
   return (
     <Routes>

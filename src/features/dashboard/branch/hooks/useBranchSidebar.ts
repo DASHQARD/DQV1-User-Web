@@ -4,6 +4,7 @@ import { usePresignedMediaUrl, useUserProfile } from '@/hooks'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
+import { getBranchUserAvatarUrl } from '@/utils/branchUserAvatar'
 import type { BranchInfoResponse } from '../services'
 import {
   getBranchOnboardingDiscoveryScore,
@@ -31,9 +32,12 @@ export function useBranchSidebar() {
     (branchInfoResponse as BranchInfoResponse['data'] | undefined)
   const branch = data?.branch
   const branchManager = data?.branch_manager
-  const businessDetails = data?.business_details
 
-  const { url: logoUrl } = usePresignedMediaUrl(businessDetails?.logo)
+  const avatarSource = useMemo(
+    () => getBranchUserAvatarUrl(userProfileData),
+    [userProfileData],
+  )
+  const { url: logoUrl } = usePresignedMediaUrl(avatarSource)
 
   const branchName = branch?.branch_name ?? null
   const branchManagerName = branch?.branch_manager_name ?? branchManager?.fullname ?? null
@@ -75,6 +79,7 @@ export function useBranchSidebar() {
     logoutMutation(undefined, {
       onSettled: () => {
         clearAuthState()
+        navigate(ROUTES.IN_APP.HOME, { replace: true })
       },
     })
   }

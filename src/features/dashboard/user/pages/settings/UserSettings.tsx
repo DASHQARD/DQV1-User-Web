@@ -21,7 +21,7 @@ export default function UserSettings() {
     logoutMutation(undefined, {
       onSettled: () => {
         clearAuthState()
-        navigate(ROUTES.IN_APP.AUTH.LOGIN)
+        navigate(ROUTES.IN_APP.HOME, { replace: true })
       },
     })
   }

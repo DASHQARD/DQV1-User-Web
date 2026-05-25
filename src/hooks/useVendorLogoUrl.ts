@@ -1,20 +1,23 @@
 import { useMemo } from 'react'
 
+import { resolveMediaUrl } from '@/utils/cardDisplay'
 import {
   getVendorLogoDirectUrl,
   getVendorLogoStorageKey,
   type VendorLogoFields,
 } from '@/utils/vendorLogo'
-import { usePresignedMediaUrl } from './usePresignedMediaUrl'
 
-/** Resolves vendor logo from /vendors/all/details (`logo` URL or `logo_key`). */
+/** Resolves vendor logo from /vendors/all/details (`logo` URL or storage key). */
 export function useVendorLogoUrl(vendor?: VendorLogoFields | null) {
-  const directUrl = useMemo(() => getVendorLogoDirectUrl(vendor), [vendor])
-  const storageKey = useMemo(() => getVendorLogoStorageKey(vendor), [vendor])
-  const { url: presignedUrl, isLoading } = usePresignedMediaUrl(storageKey)
+  const url = useMemo(() => {
+    const directUrl = getVendorLogoDirectUrl(vendor)
+    if (directUrl) return directUrl
+    const storageKey = getVendorLogoStorageKey(vendor)
+    return resolveMediaUrl(storageKey)
+  }, [vendor])
 
   return {
-    url: directUrl || presignedUrl || null,
-    isLoading: !directUrl && isLoading,
+    url,
+    isLoading: false,
   }
 }

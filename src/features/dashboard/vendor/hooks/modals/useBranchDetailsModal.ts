@@ -16,7 +16,8 @@ import { GHANA_BANKS } from '@/assets/data/banks'
 import { useCountriesData } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { buildBranchDetailsPatch } from '@/features/dashboard/utils/buildBranchDetailsPatch'
-import type { UpdateBranchPaymentDetailsPayload, AddBranchPaymentDetailsPayload } from '@/types'
+import { buildUpdateBranchPaymentDetailsPayload } from '@/features/dashboard/utils/buildUpdateBranchPaymentDetailsPayload'
+import type { AddBranchPaymentDetailsPayload } from '@/types'
 
 const MOBILE_MONEY_PROVIDERS = [
   { label: 'MTN', value: 'mtn' },
@@ -260,22 +261,9 @@ export function useBranchDetailsModal() {
           await addBranchPaymentDetails(payload)
         } else {
           if (!data.payment_method) throw new Error('Payment method is required')
-          const payload: UpdateBranchPaymentDetailsPayload = {
-            branch_id: branch.id,
-            payment_method: data.payment_method,
-          }
-          if (data.payment_method === 'mobile_money') {
-            payload.mobile_money_provider = data.mobile_money_provider
-            payload.mobile_money_number = data.mobile_money_number
-          } else if (data.payment_method === 'bank') {
-            payload.bank_name = data.bank_name
-            payload.branch = data.bank_branch
-            payload.account_name = data.account_holder_name
-            payload.account_number = data.account_number
-            payload.sort_code = data.sort_code
-            payload.swift_code = data.swift_code
-          }
-          await updateBranchPaymentDetails(payload)
+          await updateBranchPaymentDetails(
+            buildUpdateBranchPaymentDetailsPayload(branch.id, data),
+          )
         }
         setIsEditingPayment(false)
         paymentForm.reset(initialPaymentValuesRef.current)

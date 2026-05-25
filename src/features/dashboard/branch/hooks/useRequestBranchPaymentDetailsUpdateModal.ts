@@ -7,7 +7,7 @@ import {
   type BranchPaymentDetailsFormData,
 } from '@/utils/schemas/vendor/branches'
 import { GHANA_BANKS } from '@/assets/data/banks'
-import { buildBranchPaymentDetailsRequestUpdatePayload } from '@/features/dashboard/utils/buildBranchPaymentDetailsRequestUpdatePayload'
+import { buildUpdateBranchPaymentDetailsPayload } from '@/features/dashboard/utils/buildUpdateBranchPaymentDetailsPayload'
 import { useBranchMutations } from './useBranchMutatation'
 import type { BranchInfoResponse } from '../services'
 
@@ -118,15 +118,20 @@ export function useRequestBranchPaymentDetailsUpdateModal(
 
   const handleRequestUpdate = useCallback(
     async (data: BranchPaymentDetailsFormData) => {
+      if (!branchInfo?.branch?.id) {
+        toast.error('Branch information is missing.')
+        return
+      }
+
       if (!branchInfo?.payment_details) {
         toast.error('No payment details on file to update.')
         return
       }
 
       try {
-        await requestBranchPaymentDetailsUpdate({
-          proposed_data: buildBranchPaymentDetailsRequestUpdatePayload(data),
-        })
+        await requestBranchPaymentDetailsUpdate(
+          buildUpdateBranchPaymentDetailsPayload(branchInfo.branch.id, data),
+        )
         handleClose()
       } catch (err: unknown) {
         const message =
@@ -136,7 +141,7 @@ export function useRequestBranchPaymentDetailsUpdateModal(
         toast.error(message)
       }
     },
-    [branchInfo?.payment_details, requestBranchPaymentDetailsUpdate, handleClose, toast],
+    [branchInfo?.branch?.id, branchInfo?.payment_details, requestBranchPaymentDetailsUpdate, handleClose, toast],
   )
 
   return {

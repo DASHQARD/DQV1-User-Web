@@ -83,7 +83,6 @@ export default function Orders() {
         searchPlaceholder="Search by receipt"
         printTitle="Orders"
         csvHeaders={paymentListCsvHeaders}
-        stickyFirstColumnOnMobile
         filterBy={{
           simpleSelects: [{ label: 'status', options: OPTIONS.PAYMENT_STATUS }],
           date: [{ queryKey: 'dateFrom', label: 'Date range' }],

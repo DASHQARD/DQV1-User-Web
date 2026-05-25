@@ -20,10 +20,13 @@ describe('cardDisplay file URLs', () => {
     )
   })
 
-  it('treats storage keys as presigned media', () => {
+  it('resolves storage keys to uploads URLs', () => {
     const key = '1779334283870-logo.jpg'
     expect(isCardStorageFileKey(key)).toBe(true)
-    expect(getCardMediaSource(key)).toEqual({ directUrl: '', storageKey: key })
+    expect(getCardMediaSource(key)).toEqual({
+      directUrl: 'https://api.example.com/uploads/1779334283870-logo.jpg',
+      storageKey: null,
+    })
   })
 
   it('detects PDF files for preview', () => {

@@ -26,6 +26,7 @@ import {
   updateBranchPaymentDetails,
   deleteVendorBranchPaymentDetails,
 } from '@/features/dashboard/corporate/services'
+import { buildUpdateBranchPaymentDetailsPayload } from '@/features/dashboard/utils/buildUpdateBranchPaymentDetailsPayload'
 import { useBranchDetails } from './useBranchDetails'
 
 export function BranchDetails() {
@@ -649,36 +650,18 @@ export function BranchDetails() {
               loading={updateBranchMutation.isPending}
               onClick={() => {
                 if (!branchId) return
-                const existingMobile = branchMobileMoneyAccounts[0]
-                const existingBank = branchBankAccounts[0]
                 updateBranchMutation.mutate(
-                  {
-                    branch_id: branchId,
-                    mobile_money_accounts:
-                      updateForm.payment_method === 'mobile_money' && updateForm.mobile_money_number
-                        ? [
-                            {
-                              id: existingMobile?.id ?? 0,
-                              mobile_money_number: updateForm.mobile_money_number,
-                              mobile_money_provider: updateForm.mobile_money_provider,
-                            },
-                          ]
-                        : [],
-                    bank_accounts:
-                      updateForm.payment_method === 'bank' && updateForm.account_number
-                        ? [
-                            {
-                              id: existingBank?.id ?? 0,
-                              account_number: updateForm.account_number,
-                              account_holder_name: updateForm.account_holder_name,
-                              bank_name: updateForm.bank_name,
-                              bank_branch: updateForm.bank_branch,
-                              swift_code: updateForm.swift_code,
-                              sort_code: updateForm.sort_code,
-                            },
-                          ]
-                        : [],
-                  },
+                  buildUpdateBranchPaymentDetailsPayload(branchId, {
+                    payment_method: updateForm.payment_method as 'mobile_money' | 'bank',
+                    mobile_money_provider: updateForm.mobile_money_provider,
+                    mobile_money_number: updateForm.mobile_money_number,
+                    bank_name: updateForm.bank_name,
+                    bank_branch: updateForm.bank_branch,
+                    account_holder_name: updateForm.account_holder_name,
+                    account_number: updateForm.account_number,
+                    sort_code: updateForm.sort_code,
+                    swift_code: updateForm.swift_code,
+                  }),
                   {
                     onSuccess: () => setIsEditPaymentModalOpen(false),
                   },

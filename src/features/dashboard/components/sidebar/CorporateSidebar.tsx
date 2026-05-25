@@ -613,7 +613,6 @@ export default function CorporateSidebar() {
               <button
                 onClick={() => {
                   logout()
-                  navigate(ROUTES.IN_APP.AUTH.LOGIN)
                 }}
                 className="flex items-center justify-center gap-3.5 text-red-600 font-medium text-sm py-3 px-2 w-full transition-all duration-200 rounded-[10px] hover:bg-red-50 hover:text-red-700"
               >
@@ -626,7 +625,6 @@ export default function CorporateSidebar() {
           <button
             onClick={() => {
               logout()
-              navigate(ROUTES.IN_APP.AUTH.LOGIN)
             }}
             className="flex items-center gap-3.5 text-red-600 font-semibold text-sm py-3 px-4 w-full transition-all duration-200 rounded-[10px] hover:bg-red-50 hover:text-red-700 text-left"
           >

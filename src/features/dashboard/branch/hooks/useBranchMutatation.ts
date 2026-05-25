@@ -5,8 +5,8 @@ import {
   deleteBranchExperience,
   createBranchExperience,
   requestBranchDetailsUpdate,
-  requestBranchPaymentDetailsUpdate,
 } from '../services'
+import { updateBranchPaymentDetails } from '@/features/dashboard/vendor/services/vendor'
 
 export function useBranchMutations() {
   const { success, error } = useToast()
@@ -68,7 +68,7 @@ export function useBranchMutations() {
   function useRequestBranchPaymentDetailsUpdateService() {
     const queryClient = useQueryClient()
     return useMutation({
-      mutationFn: requestBranchPaymentDetailsUpdate,
+      mutationFn: updateBranchPaymentDetails,
       onSuccess: (response: any) => {
         success(
           response?.message ||

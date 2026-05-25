@@ -30,7 +30,7 @@ export function DateRangeFilter({
   className?: string
 }) {
   return (
-    <div className={cn('relative w-max min-w-0', className)}>
+    <div className={cn('relative w-full min-w-0 md:w-max', className)}>
       <DatePicker
         showPopperArrow={false}
         selectsRange

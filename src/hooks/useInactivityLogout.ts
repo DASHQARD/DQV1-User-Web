@@ -34,7 +34,7 @@ type Options = {
  */
 export function useInactivityLogout({
   timeoutMinutes = DEFAULT_TIMEOUT_MINUTES,
-  redirectTo = ROUTES.IN_APP.AUTH.LOGIN,
+  redirectTo = ROUTES.IN_APP.HOME,
 }: Options = {}) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()

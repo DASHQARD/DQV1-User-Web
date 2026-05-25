@@ -46,13 +46,11 @@ export interface BranchPaymentDetailsResponse {
 export interface UpdateBranchPaymentDetailsPayload {
   branch_id: string | number
   payment_method: 'mobile_money' | 'bank'
-  // Mobile Money fields
   mobile_money_provider?: string
   mobile_money_number?: string
-  // Bank fields
   bank_name?: string
-  branch?: string
-  account_name?: string
+  bank_branch?: string
+  account_holder_name?: string
   account_number?: string
   sort_code?: string
   swift_code?: string

@@ -2,10 +2,6 @@ import { axiosClient } from '@/libs'
 import type { UserProfileResponse, PaymentInfoData, PaymentResponse, GetUserPaymentsParams } from '@/types'
 import { getList } from './requests'
 
-const getPresignedURL = async (file: string) => {
-  return await axiosClient.post(`/file/generate/signed-url`, { file })
-}
-
 const uploadFiles = async (data: File[]) => {
   const formData = new FormData()
   data.forEach((file) => {
@@ -55,7 +51,6 @@ const createTicket = async (data: {
 
 export {
   uploadFiles,
-  getPresignedURL,
   getUserProfile,
   paymentInfo,
   getPaymentInfo,

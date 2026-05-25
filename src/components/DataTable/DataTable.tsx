@@ -17,6 +17,7 @@ import {
 
 import { cn } from '@/libs'
 import { Loader } from '@/components/Loader'
+import tableStyles from '@/components/Table/Table.module.scss'
 
 export type DataTablePageSizeOption = number | { label: string; value: number }
 
@@ -122,7 +123,13 @@ export function DataTable<TData, TValue>({
   return (
     <div className={cn('space-y-4', className)}>
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-        <div className={cn('relative overflow-x-auto', stickyHeader ? 'max-h-[520px]' : undefined)}>
+        <div className="relative min-w-0 max-w-full overflow-x-hidden">
+          <div
+            className={cn(
+              tableStyles.table_wrapper,
+              stickyHeader && 'max-h-[520px] overflow-y-auto',
+            )}
+          >
           {isLoading ? (
             <div className="flex h-64 items-center justify-center">
               <Loader />
@@ -185,6 +192,7 @@ export function DataTable<TData, TValue>({
               </tbody>
             </table>
           )}
+          </div>
         </div>
 
         {!isLoading && data.length > 0 && (

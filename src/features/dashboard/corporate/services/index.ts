@@ -11,7 +11,7 @@ import type {
   AssignRecipientPayload,
   AddToCartPayload,
 } from '@/types/responses'
-import type { UpdateBranchDetailsPayload } from '@/types'
+import type { UpdateBranchDetailsPayload, UpdateBranchPaymentDetailsPayload } from '@/types'
 
 const CORPORATE_API_URL = '/corporate-admin'
 
@@ -336,23 +336,9 @@ export const requestPaymentDetailsUpdate = async (data: {
   return await postMethod(`/payment-details/request-update`, data)
 }
 
-export const updateBranchPaymentDetails = async (data: {
-  branch_id: string | number
-  mobile_money_accounts: Array<{
-    id: number
-    mobile_money_number: string
-    mobile_money_provider: string
-  }>
-  bank_accounts: Array<{
-    id: number
-    account_number: string
-    account_holder_name: string
-    bank_name: string
-    bank_branch: string
-    swift_code: string
-    sort_code: string
-  }>
-}): Promise<any> => {
+export const updateBranchPaymentDetails = async (
+  data: UpdateBranchPaymentDetailsPayload,
+): Promise<any> => {
   return await putMethod(`/payment-details/update-branch`, data)
 }
 

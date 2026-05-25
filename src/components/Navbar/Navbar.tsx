@@ -13,9 +13,9 @@ import { CartPopoverContent } from '@/components/CartModal'
 import { GuestAddToCartModal } from '@/features/website/components/GuestAddToCartModal'
 import { useUserProfile, usePresignedMediaUrl } from '@/hooks'
 import { getBusinessLogoFileKey } from '@/utils/businessLogo'
+import { getBranchUserAvatarUrl } from '@/utils/branchUserAvatar'
 import { DEFAULT_AVATAR_SRC } from '@/components/Avatar/Avatar'
 import { vendorQueries } from '@/features'
-import { branchQueries } from '@/features/dashboard/branch'
 import { useAuth } from '@/features/auth'
 import { getGuestNameFromAuth } from '@/features/website/utils/guestAuth'
 
@@ -83,12 +83,6 @@ export default function Navbar() {
   const vendorId = userProfileData?.vendor_id ? String(userProfileData.vendor_id) : null
   const { data: branchesData } = useGetBranchesByVendorIdService(vendorId, false)
 
-  // Branch info for branch manager logo
-  const { useGetBranchInfoService } = branchQueries()
-  const { data: branchInfoData } = useGetBranchInfoService()
-  const branchInfo = (branchInfoData as any)?.data ?? branchInfoData
-  const businessDetails = branchInfo?.business_details
-
   // Get first branch for navigation
   const firstBranch = useMemo(() => {
     if (!branchesData || !Array.isArray(branchesData) || branchesData.length === 0) return null
@@ -101,7 +95,7 @@ export default function Navbar() {
     if (isCorporateUser || isVendor) {
       return getBusinessLogoFileKey(userProfileData)
     }
-    if (isBranchManager) return businessDetails?.logo || null
+    if (isBranchManager) return getBranchUserAvatarUrl(userProfileData)
     return null
   }, [
     isAuthenticated,
@@ -110,7 +104,6 @@ export default function Navbar() {
     isVendor,
     isBranchManager,
     userProfileData,
-    businessDetails,
   ])
 
   const { url: avatarUrl } = usePresignedMediaUrl(avatarFileKey)
@@ -346,6 +339,7 @@ export default function Navbar() {
     logoutMutation(undefined, {
       onSettled: () => {
         clearAuthState()
+        navigate(ROUTES.IN_APP.HOME, { replace: true })
       },
     })
   }

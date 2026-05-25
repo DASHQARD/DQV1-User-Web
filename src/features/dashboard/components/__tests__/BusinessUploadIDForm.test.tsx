@@ -10,14 +10,12 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 const mockMutateAsync = vi.fn()
 const mockUploadFiles = vi.fn()
-const mockFetchPresignedURL = vi.fn()
 const mockUseGetUserProfileService = vi.fn().mockReturnValue({ data: null })
 vi.mock('@/hooks', () => ({
   useUserProfile: () => ({
     useGetUserProfileService: mockUseGetUserProfileService,
   }),
   useUploadFiles: () => ({ mutateAsync: mockUploadFiles, isPending: false }),
-  usePresignedURL: () => ({ mutateAsync: mockFetchPresignedURL, isPending: false }),
   useToast: () => ({ toast: vi.fn(), success: vi.fn(), error: vi.fn() }),
 }))
 vi.mock('@/features/auth/hooks', () => ({
@@ -30,7 +28,6 @@ describe('BusinessUploadIDForm', () => {
   beforeEach(() => {
     mockMutateAsync.mockClear()
     mockUploadFiles.mockClear()
-    mockFetchPresignedURL.mockClear()
     mockUseGetUserProfileService.mockReturnValue({ data: null })
   })
 
@@ -40,7 +37,7 @@ describe('BusinessUploadIDForm', () => {
     expect(screen.getAllByText(/Certificate of Incorporation/).length).toBeGreaterThanOrEqual(1)
   })
 
-  it('prefills form when user has business_documents', async () => {
+  it('prefills form when user has business_documents', () => {
     mockUseGetUserProfileService.mockReturnValue({
       data: {
         business_documents: [
@@ -53,10 +50,7 @@ describe('BusinessUploadIDForm', () => {
         ],
       },
     })
-    mockFetchPresignedURL.mockResolvedValue('https://example.com/doc.pdf')
     renderWithProviders(<BusinessUploadIDForm />)
-    await vi.waitFor(() => {
-      expect(mockFetchPresignedURL).toHaveBeenCalled()
-    })
+    expect(screen.getByText('Logo')).toBeInTheDocument()
   })
 })

@@ -1,10 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import { VendorItems } from '../VendorItems'
-
-vi.mock('@/hooks', () => ({
-  usePresignedURL: () => ({ mutateAsync: vi.fn().mockResolvedValue('') }),
-}))
 
 describe('VendorItems', () => {
   it('renders vendor name', () => {

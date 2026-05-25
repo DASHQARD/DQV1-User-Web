@@ -37,11 +37,13 @@ vi.mock('@/stores', () => ({
 }))
 
 const mockUseGetUserProfileService = vi.fn().mockReturnValue({ data: null })
-const mockFetchPresignedURL = vi.fn()
-vi.mock('@/hooks/useUploadFiles', () => ({
-  usePresignedURL: () => ({ mutateAsync: mockFetchPresignedURL }),
-  useUploadFiles: () => ({ mutateAsync: vi.fn() }),
-}))
+vi.mock('@/utils/constants', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/constants')>()
+  return {
+    ...actual,
+    ENV_VARS: { API_BASE_URL: 'https://api.example.com/api/v1' },
+  }
+})
 vi.mock('@/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/hooks')>()
   return {
@@ -223,18 +225,14 @@ describe('Navbar', () => {
       expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument()
     })
 
-    it('shows avatar image when profile has avatar and presigned URL resolves', async () => {
+    it('shows avatar image when profile has avatar storage key', () => {
       mockUseGetUserProfileService.mockReturnValue({
         data: { avatar: 'avatar-key', user_type: 'user' },
       })
-      mockFetchPresignedURL.mockResolvedValue('https://example.com/avatar.jpg')
       renderWithProviders(<Navbar />)
-      await waitFor(() => {
-        expect(screen.getByRole('img', { name: 'Jane Doe' })).toBeInTheDocument()
-      })
       expect(screen.getByRole('img', { name: 'Jane Doe' })).toHaveAttribute(
         'src',
-        'https://example.com/avatar.jpg',
+        'https://api.example.com/uploads/avatar-key',
       )
     })
 
@@ -242,11 +240,7 @@ describe('Navbar', () => {
       mockUseGetUserProfileService.mockReturnValue({
         data: { avatar: 'avatar-key', user_type: 'user' },
       })
-      mockFetchPresignedURL.mockResolvedValue('https://example.com/avatar.jpg')
       renderWithProviders(<Navbar />)
-      await waitFor(() => {
-        expect(screen.getByRole('img', { name: 'Jane Doe' })).toBeInTheDocument()
-      })
       const img = screen.getByRole('img', { name: 'Jane Doe' })
       await act(async () => {
         img.dispatchEvent(new Event('error', { bubbles: true }))
@@ -290,18 +284,17 @@ describe('Navbar', () => {
       )
     })
 
-    it('shows branch manager logo when businessDetails.logo is set', async () => {
-      mockUseGetBranchInfoService.mockReturnValue({
-        data: { business_details: { logo: 'branch-logo-key' } },
+    it('shows branch manager avatar from id_images', () => {
+      mockUseGetUserProfileService.mockReturnValue({
+        data: {
+          user_type: 'branch',
+          id_images: [{ file_url: 'https://example.com/id-front.png' }],
+        },
       })
-      mockFetchPresignedURL.mockResolvedValue('https://example.com/branch-logo.png')
       renderWithProviders(<Navbar />)
-      await waitFor(() => {
-        expect(screen.getByRole('img', { name: 'Branch User' })).toBeInTheDocument()
-      })
       expect(screen.getByRole('img', { name: 'Branch User' })).toHaveAttribute(
         'src',
-        'https://example.com/branch-logo.png',
+        'https://example.com/id-front.png',
       )
     })
   })
@@ -354,7 +347,7 @@ describe('Navbar', () => {
       expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/branch_id=99/))
     })
 
-    it('shows vendor logo when business_documents has logo', async () => {
+    it('shows vendor logo when business_documents has logo', () => {
       mockUseGetUserProfileService.mockReturnValue({
         data: {
           user_type: 'vendor',
@@ -362,14 +355,10 @@ describe('Navbar', () => {
           business_documents: [{ type: 'logo', file_url: 'vendor-logo-key' }],
         },
       })
-      mockFetchPresignedURL.mockResolvedValue('https://example.com/vendor-logo.png')
       renderWithProviders(<Navbar />)
-      await waitFor(() => {
-        expect(screen.getByRole('img', { name: 'Vendor User' })).toBeInTheDocument()
-      })
       expect(screen.getByRole('img', { name: 'Vendor User' })).toHaveAttribute(
         'src',
-        'https://example.com/vendor-logo.png',
+        'https://api.example.com/uploads/vendor-logo-key',
       )
     })
   })
@@ -434,7 +423,7 @@ describe('Navbar', () => {
       )
     })
 
-    it('shows corporate logo when business_documents has logo', async () => {
+    it('shows corporate logo when business_documents has logo', () => {
       mockUseGetUserProfileService.mockReturnValue({
         data: {
           user_type: 'corporate',
@@ -442,18 +431,14 @@ describe('Navbar', () => {
           business_documents: [{ type: 'logo', file_url: 'corp-logo-key' }],
         },
       })
-      mockFetchPresignedURL.mockResolvedValue('https://example.com/corp-logo.png')
       renderWithProviders(<Navbar />)
-      await waitFor(() => {
-        expect(screen.getByRole('img', { name: 'Corp User' })).toBeInTheDocument()
-      })
       expect(screen.getByRole('img', { name: 'Corp User' })).toHaveAttribute(
         'src',
-        'https://example.com/corp-logo.png',
+        'https://api.example.com/uploads/corp-logo-key',
       )
     })
 
-    it('shows corporate logo from business_details when documents omit logo', async () => {
+    it('shows corporate logo from business_details when documents omit logo', () => {
       mockUseGetUserProfileService.mockReturnValue({
         data: {
           user_type: 'corporate',
@@ -461,14 +446,11 @@ describe('Navbar', () => {
           business_details: [{ logo: 'corp-details-logo-key', name: 'Fuse' }],
         },
       })
-      mockFetchPresignedURL.mockResolvedValue('https://example.com/corp-details-logo.png')
       renderWithProviders(<Navbar />)
-      await waitFor(() => {
-        expect(screen.getByRole('img', { name: 'Corp User' })).toHaveAttribute(
-          'src',
-          'https://example.com/corp-details-logo.png',
-        )
-      })
+      expect(screen.getByRole('img', { name: 'Corp User' })).toHaveAttribute(
+        'src',
+        'https://api.example.com/uploads/corp-details-logo-key',
+      )
     })
   })
 })

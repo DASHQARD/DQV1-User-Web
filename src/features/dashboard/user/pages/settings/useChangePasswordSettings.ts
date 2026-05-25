@@ -55,7 +55,7 @@ export function useChangePasswordSettings() {
             queryClient.clear()
             clearAuthState()
             info?.('For your security, please sign in with your new password.')
-            navigate(ROUTES.IN_APP.AUTH.LOGIN, { replace: true })
+            navigate(ROUTES.IN_APP.HOME, { replace: true })
           }
         },
       },

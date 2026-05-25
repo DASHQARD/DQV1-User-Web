@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
+import { resolveMediaUrl } from '@/utils/cardDisplay'
 import { getBusinessLogoFileKey, type BusinessLogoProfile } from '@/utils/businessLogo'
-import { usePresignedMediaUrl } from './usePresignedMediaUrl'
 
 type UseBusinessLogoUrlOptions = {
   enabled?: boolean
@@ -12,6 +12,13 @@ export function useBusinessLogoUrl(
   profile?: BusinessLogoProfile | null,
   options?: UseBusinessLogoUrlOptions,
 ) {
+  const enabled = options?.enabled !== false
   const fileKey = useMemo(() => getBusinessLogoFileKey(profile), [profile])
-  return usePresignedMediaUrl(fileKey, options)
+
+  const url = useMemo(() => {
+    if (!enabled) return null
+    return resolveMediaUrl(fileKey)
+  }, [enabled, fileKey])
+
+  return { url, isLoading: false }
 }

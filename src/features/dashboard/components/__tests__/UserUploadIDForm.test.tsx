@@ -10,14 +10,12 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 const mockMutateAsync = vi.fn()
 const mockUploadFiles = vi.fn()
-const mockFetchPresignedURL = vi.fn()
 const mockUseGetUserProfileService = vi.fn().mockReturnValue({ data: null, isLoading: false })
 vi.mock('@/hooks', () => ({
   useUserProfile: () => ({
     useGetUserProfileService: mockUseGetUserProfileService,
   }),
   useUploadFiles: () => ({ mutateAsync: mockUploadFiles, isPending: false }),
-  usePresignedURL: () => ({ mutateAsync: mockFetchPresignedURL, isPending: false }),
   useToast: () => ({ toast: vi.fn(), success: vi.fn(), error: vi.fn() }),
 }))
 vi.mock('../../auth/hooks', () => ({
@@ -45,15 +43,13 @@ describe('UserUploadIDForm', () => {
     expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument()
   })
 
-  it('renders existing id section when user has id_images', async () => {
+  it('renders existing id section when user has id_images', () => {
     mockUseGetUserProfileService.mockReturnValue({
       data: { id_images: [{ file_url: 'a' }, { file_url: 'b' }], user_type: 'user' },
       isLoading: false,
     })
-    mockFetchPresignedURL.mockResolvedValue('https://example.com/id.jpg')
     renderWithProviders(<UserUploadIDForm />)
-    await vi.waitFor(() => {
-      expect(mockFetchPresignedURL).toHaveBeenCalled()
-    })
+    expect(screen.getByText('Front of Identification')).toBeInTheDocument()
+    expect(screen.getByText('Back of Identification')).toBeInTheDocument()
   })
 })

@@ -97,6 +97,7 @@ export const addPaymentDetails = async (data: {
   return await postMethod(`/payment-details`, data)
 }
 
+/** PUT /payment-details/update-branch — branch payment details change request (approval flow) */
 export const updateBranchPaymentDetails = async (
   data: UpdateBranchPaymentDetailsPayload,
 ): Promise<any> => {

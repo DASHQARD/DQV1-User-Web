@@ -1,4 +1,4 @@
-import { getPresignedURL, uploadFiles } from '@/services'
+import { uploadFiles } from '@/services'
 import { useMutation } from '@tanstack/react-query'
 
 function useUploadFiles() {
@@ -13,10 +13,4 @@ function useUploadFiles() {
   })
 }
 
-function usePresignedURL() {
-  return useMutation({
-    mutationFn: getPresignedURL,
-  })
-}
-
-export { useUploadFiles, usePresignedURL }
+export { useUploadFiles }

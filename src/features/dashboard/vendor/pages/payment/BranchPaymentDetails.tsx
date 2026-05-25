@@ -3,13 +3,16 @@ import { Text, Loader, Button } from '@/components'
 import { branchQueries } from '@/features/dashboard/branch'
 import { RequestBranchDetailsUpdateModal } from '@/features/dashboard/branch/components/RequestBranchDetailsUpdateModal'
 import { RequestBranchPaymentDetailsUpdateModal } from '@/features/dashboard/branch/components/RequestBranchPaymentDetailsUpdateModal'
-import { usePersistedModalState } from '@/hooks'
+import { usePersistedModalState, useUserProfile } from '@/hooks'
+import { getBranchUserAvatarUrl } from '@/utils/branchUserAvatar'
 import { MODALS } from '@/utils/constants'
 import { cn } from '@/libs'
 
 export default function BranchPaymentDetails() {
   const { useGetBranchInfoService } = branchQueries()
   const { data: branchInfoData, isLoading } = useGetBranchInfoService()
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
 
   const branchDetailsModal = usePersistedModalState({
     paramName: MODALS.REQUEST_BRANCH_DETAILS_UPDATE.PARAM_NAME,
@@ -35,7 +38,7 @@ export default function BranchPaymentDetails() {
     paymentDetails?.momo_number || paymentDetails?.account_number,
   )
 
-  const logoUrl = businessDetails?.logo || null
+  const logoUrl = getBranchUserAvatarUrl(userProfileData)
 
   if (isLoading) {
     return (
