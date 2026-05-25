@@ -50,14 +50,14 @@ describe('RecentExperiences', () => {
     expect(screen.getByText('DASHX')).toBeInTheDocument()
   })
 
-  it('renders list layout with card id and count', () => {
+  it('renders list layout without issued card codes when only card_id is present', () => {
     renderWithProviders(
       <RecentExperiences
         layout="list"
         experiences={[
           {
             id: '1',
-            card_id: 'GHA-482761934-2',
+            card_id: 'X-9688-01-01-001-000002',
             type: 'DashX',
             status: 'active',
             price: '1100',
@@ -71,7 +71,7 @@ describe('RecentExperiences', () => {
     )
     expect(screen.getByText('My Experiences')).toBeInTheDocument()
     expect(screen.getByText('(1)')).toBeInTheDocument()
-    expect(screen.getByText('GHA-482761934-2')).toBeInTheDocument()
+    expect(screen.queryByText('X-9688-01-01-001-000002')).not.toBeInTheDocument()
     expect(screen.getByText('DashX')).toBeInTheDocument()
     expect(screen.getByText('GHS 1,100.00')).toBeInTheDocument()
   })

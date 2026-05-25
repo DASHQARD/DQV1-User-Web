@@ -6,7 +6,7 @@ import { useCart } from './useCart'
 import { useCartStore } from '@/stores/cart'
 import { getApiErrorMessage } from '@/utils/apiError'
 import { formatCurrency } from '@/utils/format'
-import { getCardBackground, getCardTypeName } from '@/utils/cardDisplay'
+import { getCardBackground, getCardTypeName, getCardDisplayName } from '@/utils/cardDisplay'
 import { ensureGuestCartAndAddCard } from '@/features/website/services/cards'
 import {
   GUEST_EMAIL_STORAGE_KEY,
@@ -62,6 +62,7 @@ export function useCardItem(props: CardItemHookProps) {
   const cardBackground = useMemo(() => getCardBackground(type), [type])
   const cardTypeName = useMemo(() => getCardTypeName(type), [type])
   const displayPrice = useMemo(() => formatCurrency(price, currency) || 0, [price, currency])
+  const displayProduct = useMemo(() => getCardDisplayName(product), [product])
 
   const handleQuickAdd = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
@@ -141,6 +142,7 @@ export function useCardItem(props: CardItemHookProps) {
     cardBackground,
     cardTypeName,
     displayPrice,
+    displayProduct,
     // handlers
     handleQuickAdd,
     handleCardClick,

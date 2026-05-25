@@ -5,7 +5,7 @@ import { Icon } from '@/libs'
 import { cn } from '@/libs'
 import { ROUTES } from '@/utils/constants'
 import { formatCurrency, formatDate } from '@/utils/format'
-import { getImageUrl, getCardBackground, getCardTypeName } from '@/utils/cardDisplay'
+import { getCardBackground, getCardTypeName, getCardDisplayName, getImageUrl } from '@/utils/cardDisplay'
 import { EmptyStateImage } from '@/assets/images'
 import { useVendorOnboardingProgress } from '@/features/dashboard/hooks/useVendorOnboardingProgress'
 import { VENDOR_NAV_DISABLED_TOOLTIP } from '@/features/dashboard/components/sidebar/VendorSidebarNavItem'
@@ -36,8 +36,10 @@ function experienceStatusClass(status: string): string {
 }
 
 function getExperienceTitle(experience: Record<string, unknown>): string {
-  return String(
-    experience.card_id ?? experience.product ?? experience.card_name ?? 'Experience',
+  return getCardDisplayName(
+    experience.product as string,
+    experience.card_name as string,
+    experience.name as string,
   )
 }
 
@@ -137,9 +139,11 @@ export function RecentExperiences({
                         <Icon icon="bi:briefcase" className="text-[#402D87]" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <Text variant="span" weight="semibold" className="text-gray-900 block">
-                          {getExperienceTitle(experience)}
-                        </Text>
+                        {getExperienceTitle(experience) ? (
+                          <Text variant="span" weight="semibold" className="text-gray-900 block">
+                            {getExperienceTitle(experience)}
+                          </Text>
+                        ) : null}
                         <div className="flex items-center gap-2 mt-1">
                           <Text variant="span" className="text-gray-500 text-sm">
                             {cardType}
@@ -319,13 +323,15 @@ export function RecentExperiences({
                       <Icon icon="bi:briefcase-fill" className="text-[8px]" />
                       {getCardTypeName(cardType)}
                     </span>
-                    <Text
-                      variant="span"
-                      weight="semibold"
-                      className="text-gray-900 block line-clamp-2 text-xs leading-snug mb-2"
-                    >
-                      {productName}
-                    </Text>
+                    {productName ? (
+                      <Text
+                        variant="span"
+                        weight="semibold"
+                        className="text-gray-900 block line-clamp-2 text-xs leading-snug mb-2"
+                      >
+                        {productName}
+                      </Text>
+                    ) : null}
                     <div className="mb-2">
                       {experience.status ? (
                         <div className="h-1 rounded-full bg-gray-100 overflow-hidden mb-1">

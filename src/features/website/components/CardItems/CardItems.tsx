@@ -10,6 +10,7 @@ import type { VendorLogoFields } from '@/utils/vendorLogo'
 export const CardItems = (props: FeaturedCardProps) => {
   const {
     displayPrice,
+    displayProduct,
     handleCardClick,
     product,
     vendor_name,
@@ -48,13 +49,15 @@ export const CardItems = (props: FeaturedCardProps) => {
           <Icon icon="bi:briefcase-fill" className="text-[8px]" />
           {props.type?.toUpperCase() || 'DASHX'}
         </span>
-        <Text
-          variant="span"
-          weight="semibold"
-          className="text-gray-900 block line-clamp-2 text-xs leading-snug mb-2"
-        >
-          {product}
-        </Text>
+        {displayProduct ? (
+          <Text
+            variant="span"
+            weight="semibold"
+            className="text-gray-900 block line-clamp-2 text-xs leading-snug mb-2"
+          >
+            {displayProduct}
+          </Text>
+        ) : null}
         <div className="mb-2">
           {props.status && (
             <div className="h-1 rounded-full bg-gray-100 overflow-hidden mb-1">

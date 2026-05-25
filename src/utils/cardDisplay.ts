@@ -90,3 +90,19 @@ export function getCardTypeName(type: string | undefined): string {
       return type.toUpperCase().trim()
   }
 }
+
+/** Issued card codes (e.g. X-9688-…, P-9688-…, G-9688-…) are not shown as product titles. */
+export function isIssuedCardDisplayCode(value: string | null | undefined): boolean {
+  if (!value?.trim()) return false
+  return /^[XPG]-\d/i.test(value.trim())
+}
+
+export function getCardDisplayName(
+  ...candidates: (string | null | undefined)[]
+): string {
+  for (const candidate of candidates) {
+    const text = String(candidate ?? '').trim()
+    if (text && !isIssuedCardDisplayCode(text)) return text
+  }
+  return ''
+}
