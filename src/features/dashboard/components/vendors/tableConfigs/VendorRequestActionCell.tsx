@@ -2,14 +2,20 @@ import { Dropdown } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
+import {
+  isRequestApproved,
+  isRequestAwaitingApproval,
+  isRequestRejected,
+} from '@/utils/requestStatus'
 
 export function VendorRequestActionCell({ row }: any) {
   const modal = usePersistedModalState({
     paramName: MODALS.REQUEST.PARAM_NAME,
   })
-  const isPending = row.original.status === 'pending'
-
-  const isRejected = String(row.original.status).toLowerCase() === 'rejected'
+  const status = row.original.status
+  const canApproveOrReject = isRequestAwaitingApproval(status)
+  const canReApprove = isRequestRejected(status)
+  const canDelete = !isRequestApproved(status)
 
   const actions = [
     {
@@ -18,7 +24,7 @@ export function VendorRequestActionCell({ row }: any) {
         modal.openModal(MODALS.REQUEST.CHILDREN.VIEW, { ...row.original })
       },
     },
-    ...(isPending
+    ...(canApproveOrReject
       ? [
           {
             label: 'Approve',
@@ -34,7 +40,7 @@ export function VendorRequestActionCell({ row }: any) {
           },
         ]
       : []),
-    ...(isRejected
+    ...(canReApprove
       ? [
           {
             label: 'Approve',
@@ -44,12 +50,16 @@ export function VendorRequestActionCell({ row }: any) {
           },
         ]
       : []),
-    {
-      label: 'Delete',
-      onClickFn: () => {
-        modal.openModal(MODALS.REQUEST.CHILDREN.DELETE, { ...row.original })
-      },
-    },
+    ...(canDelete
+      ? [
+          {
+            label: 'Delete',
+            onClickFn: () => {
+              modal.openModal(MODALS.REQUEST.CHILDREN.DELETE, { ...row.original })
+            },
+          },
+        ]
+      : []),
   ]
 
   return (

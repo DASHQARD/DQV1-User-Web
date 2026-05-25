@@ -8,6 +8,7 @@ import {
   type RequestInfoRow,
   type UseVendorRequestDetailsReturn,
 } from '@/features/dashboard/vendor/hooks'
+import { isRequestAwaitingApproval } from '@/utils/requestStatus'
 
 export function VendorRequestDetails() {
   const { modal, isPending, requestInfo, data, openApproveModal, openRejectModal } =
@@ -54,7 +55,7 @@ export function VendorRequestDetails() {
               })}
             </div>
 
-            {String(data?.status ?? '').toLowerCase() === 'pending' && (
+            {isRequestAwaitingApproval(String(data?.status ?? '')) && (
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 shrink-0">
                 <Button variant="secondary" loading={isPending} onClick={openApproveModal}>
                   Approve

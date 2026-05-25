@@ -2,18 +2,14 @@ import { Dropdown } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
+import { isRequestApproved, isRequestAwaitingApproval } from '@/utils/requestStatus'
 
 export function RequestActionCell({ row }: any) {
   const modal = usePersistedModalState({
     paramName: MODALS.REQUEST.PARAM_NAME,
   })
-  const normalizedStatus = String(row.original.status || '').toLowerCase().trim()
-  const isAwaitingApproval =
-    normalizedStatus === 'pending' ||
-    normalizedStatus === 'awaiting corporate approval' ||
-    (normalizedStatus.includes('awaiting') && normalizedStatus.includes('approval'))
-  const isApproved = normalizedStatus === 'approved'
-  const canDelete = !isApproved
+  const canApproveOrReject = isRequestAwaitingApproval(row.original.status)
+  const canDelete = !isRequestApproved(row.original.status)
 
   const actions = [
     {
@@ -22,7 +18,7 @@ export function RequestActionCell({ row }: any) {
         modal.openModal(MODALS.REQUEST.CHILDREN.VIEW, { ...row.original })
       },
     },
-    ...(isAwaitingApproval
+    ...(canApproveOrReject
       ? [
           {
             label: 'Approve',
