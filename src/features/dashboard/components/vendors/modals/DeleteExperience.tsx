@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom'
 import { Modal, Text, Button } from '@/components'
 import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { MODALS } from '@/utils/constants'
@@ -7,6 +8,9 @@ import { useBranchMutations } from '@/features/dashboard/branch'
 import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
 
 export function DeleteExperience() {
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
+
   const modal = usePersistedModalState({
     paramName: MODALS.EXPERIENCE.ROOT,
   })
@@ -29,11 +33,14 @@ export function DeleteExperience() {
     if (!card?.id) return
 
     if (isCorporateSuperAdmin) {
-      deleteCorporateCardMutation.mutate(card.id, {
-        onSuccess: () => {
-          modal.closeModal()
+      deleteCorporateCardMutation.mutate(
+        { id: card.id, vendorId: vendorIdFromUrl },
+        {
+          onSuccess: () => {
+            modal.closeModal()
+          },
         },
-      })
+      )
     } else if (isBranch) {
       deleteBranchExperience(card.id, {
         onSuccess: () => {

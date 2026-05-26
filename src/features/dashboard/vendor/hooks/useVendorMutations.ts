@@ -277,10 +277,17 @@ export function useVendorMutations() {
   function useUpdateRequestStatusService() {
     const queryClient = useQueryClient()
     return useMutation({
-      mutationFn: (data: { id: string | number; status: string }) => updateRequestStatus(data),
-      onSuccess: (response: any) => {
+      mutationFn: (data: {
+        id: string | number
+        status: string
+        rejection_reason?: string
+        comments?: string
+      }) => updateRequestStatus(data),
+      onSuccess: (response: any, variables) => {
         success(response?.message || 'Request status updated successfully')
         queryClient.invalidateQueries({ queryKey: ['requests-vendor'] })
+        queryClient.invalidateQueries({ queryKey: ['requests-corporate-super-admin-vendor'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-request', variables.id] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to update request status. Please try again.')

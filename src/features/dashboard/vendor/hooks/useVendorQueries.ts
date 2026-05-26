@@ -21,7 +21,6 @@ import {
   getCorporateSuperAdminVendorPayments,
   getVendorPaymentById,
 } from '../services'
-import { getRequestsCorporate } from '@/features/dashboard/corporate/services'
 import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
 import type { QueryType, GetBranchManagerInvitationsQuery } from '@/types'
 import { useUserProfile } from '@/hooks'
@@ -90,26 +89,19 @@ export function vendorQueries() {
     const { data: userProfileData } = useGetUserProfileService()
     const { isOperationalAccessEnabled, isCorporateSwitchedToVendor } =
       useVendorOperationalAccess()
-    const isCorpSuperAdminFromProfile =
-      userProfileData?.user_type === 'corporate super admin'
     const needsOperationalAccess =
       userProfileData?.user_type === 'vendor' ||
       userProfileData?.user_type === 'branch' ||
       isCorporateSwitchedToVendor
 
     return useQuery({
-      queryKey: isCorpSuperAdminFromProfile ? ['requests-corporate', query] : ['requests-vendor', query],
-      queryFn: () => {
-        if (isCorpSuperAdminFromProfile) {
-          const { status: _status, ...corporateQuery } = query ?? {}
-          return getRequestsCorporate(corporateQuery)
-        }
-        return getRequestsVendor(query)
-      },
-      // Don't run until profile is loaded; don't run /requests/corporate when caller passes undefined (corporate viewing vendor's requests)
+      queryKey: ['requests-vendor', query],
+      queryFn: () => getRequestsVendor(query),
+      // Corporate super admin uses GET .../corporate-super-admin/vendor/:id/requests when switched to a vendor.
       enabled:
         userProfileData !== undefined &&
-        (query !== undefined || userProfileData?.user_type !== 'corporate super admin') &&
+        userProfileData?.user_type !== 'corporate super admin' &&
+        query !== undefined &&
         (!needsOperationalAccess || isOperationalAccessEnabled),
     })
   }

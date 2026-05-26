@@ -32,8 +32,21 @@ export const getAuditLogsCorporate = async (params?: Record<string, any>): Promi
   return response
 }
 
+function mapRequestListParams(params?: Record<string, unknown>): Record<string, unknown> {
+  if (!params) return {}
+  const { status, ...rest } = params
+  const apiParams: Record<string, unknown> = { ...rest }
+  const normalizedStatus = String(status ?? '')
+    .toLowerCase()
+    .trim()
+  if (normalizedStatus === 'pending') apiParams.pending = true
+  else if (normalizedStatus === 'approved') apiParams.approved = true
+  else if (normalizedStatus === 'rejected') apiParams.rejected = true
+  return apiParams
+}
+
 export const getRequestsCorporate = async (params?: Record<string, any>): Promise<any> => {
-  const { status: _status, ...apiParams } = params ?? {}
+  const apiParams = mapRequestListParams(params)
   const queryString = getQueryString(apiParams)
   const fullUrl = queryString ? `/requests/corporate?${queryString}` : `/requests/corporate`
   const response = await axiosClient.get(fullUrl)
@@ -61,6 +74,8 @@ export const getCorporateSuperAdminVendorRequestInfo = async (
 export const updateRequestStatus = async (data: {
   id: string | number
   status: string
+  rejection_reason?: string
+  comments?: string
 }): Promise<any> => {
   return await patchMethod(`/requests/corporate/update-status`, {
     ...data,
@@ -71,9 +86,17 @@ export const updateRequestStatus = async (data: {
 /** PATCH /requests/corporate-super-admin/vendor/:vendor_id/update-status */
 export const updateCorporateSuperAdminVendorRequestStatus = async (
   vendorId: string | number,
-  data: { id: string | number; status: string },
+  data: {
+    id: string | number
+    status: string
+    rejection_reason?: string
+    comments?: string
+  },
 ): Promise<any> => {
-  return await patchMethod(`/requests/corporate-super-admin/vendor/${vendorId}/update-status`, data)
+  return await patchMethod(`/requests/corporate-super-admin/vendor/${vendorId}/update-status`, {
+    ...data,
+    id: String(data.id),
+  })
 }
 
 export const getCorporateRequestById = async (id: number | string): Promise<any> => {
@@ -431,6 +454,35 @@ export const updateCorporateSuperAdminCard = async (
   data: Record<string, any>,
 ): Promise<any> => {
   return await putMethod(`/cards/corporate-super-admin/${id}`, data)
+}
+
+/** POST /cards/corporate-super-admin/create-for-vendor */
+export const createCorporateSuperAdminCardForVendor = async (
+  data: Record<string, unknown> & { vendor_user_id: string | number },
+): Promise<any> => {
+  return await postMethod(`/cards/corporate-super-admin/create-for-vendor`, data)
+}
+
+/** PUT /cards/corporate-super-admin/vendor/:vendor_id/cards/:card_id */
+export const updateCorporateSuperAdminVendorCard = async (
+  vendorId: string | number,
+  cardId: string | number,
+  data: Record<string, unknown>,
+): Promise<any> => {
+  return await putMethod(
+    `/cards/corporate-super-admin/vendor/${vendorId}/cards/${cardId}`,
+    data,
+  )
+}
+
+/** DELETE /cards/corporate-super-admin/vendor/:vendor_id/cards/:card_id */
+export const deleteCorporateSuperAdminVendorCard = async (
+  vendorId: string | number,
+  cardId: string | number,
+): Promise<any> => {
+  return await deleteMethod(
+    `/cards/corporate-super-admin/vendor/${vendorId}/cards/${cardId}`,
+  )
 }
 
 export const requestBusinessUpdate = async (data: {

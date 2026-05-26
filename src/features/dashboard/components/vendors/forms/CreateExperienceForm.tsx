@@ -10,22 +10,30 @@ import { MODALS, ROUTES } from '@/utils/constants'
 import { useAuthStore } from '@/stores'
 import { useVendorMutations, vendorQueries } from '@/features'
 import { CreateExperienceSchema } from '@/utils/schemas'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/libs'
 import { useBranchMutations } from '@/features/dashboard/branch'
+import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
+import { resolveVendorUserIdForCorporateSwitch } from '@/utils/resolveVendorUserId'
 
 type FormData = z.infer<typeof CreateExperienceSchema>
 
 export default function CreateExperienceForm() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
   const { useCreateExperienceService } = useVendorMutations()
   const { mutateAsync: createExperience, isPending: isCreating } = useCreateExperienceService()
+  const { useCreateCorporateSuperAdminCardForVendorService } = corporateMutations()
+  const { mutateAsync: createCorporateCardForVendor, isPending: isCreatingCorporateCard } =
+    useCreateCorporateSuperAdminCardForVendorService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
   const { user } = useAuthStore()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { useBranchesService } = vendorQueries()
+  const { useBranchesService, useGetAllVendorsDetailsService } = vendorQueries()
   const { data: branches, isLoading: isLoadingBranches } = useBranchesService()
+  const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
   const { useCreateBranchExperienceService } = useBranchMutations()
   const { mutateAsync: createBranchExperience, isPending: isCreatingBranchExperience } =
     useCreateBranchExperienceService()
@@ -47,6 +55,23 @@ export default function CreateExperienceForm() {
 
   const userType = (user as any)?.user_type
   const isBranchManager = userType === 'branch'
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
+
+  const vendorsList = useMemo(() => {
+    if (!allVendorsDetails) return []
+    return Array.isArray(allVendorsDetails)
+      ? allVendorsDetails
+      : (allVendorsDetails as { data?: unknown[] })?.data || []
+  }, [allVendorsDetails])
+
+  const vendorUserIdForCorporate = useMemo(
+    () =>
+      resolveVendorUserIdForCorporateSwitch(
+        vendorIdFromUrl,
+        vendorsList as Array<Record<string, unknown>>,
+      ),
+    [vendorIdFromUrl, vendorsList],
+  )
 
   const cardTypes = ['DashX', 'DashPass']
 
@@ -66,7 +91,8 @@ export default function CreateExperienceForm() {
     },
   })
 
-  const isPending = isCreating || isUploading || isCreatingBranchExperience
+  const isPending =
+    isCreating || isUploading || isCreatingBranchExperience || isCreatingCorporateCard
 
   const issueDate = useWatch({ control: form.control, name: 'issue_date' })
   const minExpiryDate = useMemo(() => {
@@ -220,7 +246,16 @@ export default function CreateExperienceForm() {
         redemption_branches: branchIds.length > 0 ? branchIds.map((id) => ({ branch_id: id })) : [],
       }
 
-      if (isBranchManager) {
+      if (isCorporateSuperAdmin && vendorIdFromUrl) {
+        if (!vendorUserIdForCorporate) {
+          toast.error('Could not resolve vendor account. Return to vendor list and try again.')
+          return
+        }
+        await createCorporateCardForVendor({
+          ...payload,
+          vendor_user_id: vendorUserIdForCorporate,
+        })
+      } else if (isBranchManager) {
         await createBranchExperience(payload)
       } else {
         await createExperience(payload)

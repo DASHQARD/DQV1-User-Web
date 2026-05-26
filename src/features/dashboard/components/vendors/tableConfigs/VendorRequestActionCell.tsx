@@ -2,18 +2,24 @@ import { Dropdown } from '@/components'
 import { usePersistedModalState } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
-import {
-  isRequestApproved,
-  isRequestAwaitingApproval,
-  isRequestRejected,
-} from '@/utils/requestStatus'
+import { useSearchParams } from 'react-router-dom'
+import { useUserProfile } from '@/hooks'
+import { canApproveAtCurrentLevel, isRequestApproved, isRequestRejected } from '@/utils/requestStatus'
 
 export function VendorRequestActionCell({ row }: any) {
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
+  const approvalContext =
+    isCorporateSuperAdmin && vendorIdFromUrl ? 'corporate-vendor-scoped' : 'vendor'
+
   const modal = usePersistedModalState({
     paramName: MODALS.REQUEST.PARAM_NAME,
   })
   const status = row.original.status
-  const canApproveOrReject = isRequestAwaitingApproval(status)
+  const canApproveOrReject = canApproveAtCurrentLevel(row.original, approvalContext)
   const canReApprove = isRequestRejected(status)
   const canDelete = !isRequestApproved(status)
 
