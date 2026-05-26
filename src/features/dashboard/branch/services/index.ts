@@ -108,7 +108,7 @@ export const getBranchInfo = async (): Promise<BranchInfoResponse> => {
   return await getMethod<BranchInfoResponse>('/branches/info')
 }
 
-/** POST /branches/details/request-update — branch-initiated branch details change request */
+/** PUT /branches/details/request-update — branch-initiated branch details change request */
 export const requestBranchDetailsUpdate = async (data: {
   proposed_data: {
     branch_name?: string
@@ -118,5 +118,5 @@ export const requestBranchDetailsUpdate = async (data: {
   }
   reason_for_change?: string
 }): Promise<any> => {
-  return await postMethod('/branches/details/request-update', data)
+  return await putMethod('/branches/details/request-update', data)
 }

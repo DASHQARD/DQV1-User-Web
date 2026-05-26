@@ -1,8 +1,7 @@
 import { Text } from '@/components'
 
 import { TabbedView } from '@/components'
-import { BusinessDetailsSettings } from './BusinessDetailsSettings'
-import { BusinessLogoSettings } from './BusinessLogoSettings'
+import { BusinessDetailsSettings } from '@/features/dashboard/shared/BusinessDetailsSettings'
 // import { PaymentDetailsSettings } from './PaymentDetailsSettings'
 
 export default function Settings() {
@@ -12,16 +11,6 @@ export default function Settings() {
       component: () => <BusinessDetailsSettings />,
       label: 'Business Details',
     },
-    {
-      key: 'business-logo' as const,
-      component: () => <BusinessLogoSettings />,
-      label: 'Business Logo',
-    },
-    // {
-    //   key: 'payment-details' as const,
-    //   component: () => <PaymentDetailsSettings />,
-    //   label: 'Payment Details',
-    // },
   ]
 
   return (

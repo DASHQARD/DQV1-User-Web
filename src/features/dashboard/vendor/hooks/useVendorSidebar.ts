@@ -11,6 +11,8 @@ import {
   isVendorSettingsDisabled,
 } from '@/features/dashboard/utils/vendorOnboardingProgress'
 import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
+import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
+import { countAwaitingApprovalRequests } from '@/utils/requestStatus'
 import { vendorQueries } from './useVendorQueries'
 
 export function useVendorSidebar() {
@@ -33,9 +35,25 @@ export function useVendorSidebar() {
 
   const { useBranchesService, useGetAllVendorsDetailsService, useGetRequestsVendorService } =
     vendorQueries()
+  const { useGetRequestsCorporateSuperAdminVendorService } = corporateQueries()
   const { data: branches } = useBranchesService()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
-  const { data: requestsResponse } = useGetRequestsVendorService({ limit: 100 })
+
+  const currentVendorId = searchParams.get('vendor_id')
+  const isCorporateSuperAdminForRequests = userType === 'corporate super admin'
+
+  const { data: vendorRequestsResponse } = useGetRequestsVendorService(
+    isCorporateSuperAdminForRequests ? undefined : { limit: 100, pending: true },
+  )
+  const { data: corporateVendorRequestsResponse } =
+    useGetRequestsCorporateSuperAdminVendorService(
+      isCorporateSuperAdminForRequests && currentVendorId ? currentVendorId : null,
+    )
+
+  const requestsResponse =
+    isCorporateSuperAdminForRequests && currentVendorId
+      ? corporateVendorRequestsResponse
+      : vendorRequestsResponse
 
   const pendingRequestsCount = useMemo(() => {
     if (!requestsResponse) return 0
@@ -44,8 +62,7 @@ export function useVendorSidebar() {
       : Array.isArray((requestsResponse as { data?: unknown[] })?.data)
         ? (requestsResponse as { data: unknown[] }).data
         : []
-    return list.filter((r: { status?: string }) => String(r?.status).toLowerCase() === 'pending')
-      .length
+    return countAwaitingApprovalRequests(list as Array<{ status?: string }>)
   }, [requestsResponse])
 
   const branchesArray = Array.isArray(branches)
@@ -74,8 +91,7 @@ export function useVendorSidebar() {
   const corporateName = corporateBusiness?.name || 'Corporate Account'
   const corporateId = userProfileData?.corporate_id_from_business || ''
 
-  const currentVendorId = searchParams.get('vendor_id')
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
+  const isCorporateSuperAdmin = isCorporateSuperAdminForRequests
 
   const isCorporateSwitchedToVendor = isCorporateSuperAdmin && Boolean(currentVendorId)
 

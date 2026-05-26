@@ -35,7 +35,10 @@ import {
   updateCorporateBranchManagerInvitation,
   updateCorporateVendorBranchManagerInvitation,
   deleteCorporateSuperAdminCard,
+  deleteCorporateSuperAdminVendorCard,
   updateCorporateSuperAdminCard,
+  updateCorporateSuperAdminVendorCard,
+  createCorporateSuperAdminCardForVendor,
   deleteCorporateRequest,
   deleteCorporateSuperAdminVendorRequest,
   cancelVendorInvitation,
@@ -541,7 +544,12 @@ export function corporateMutations() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
     return useMutation({
-      mutationFn: (data: { id: string | number; status: string }) => updateRequestStatus(data),
+      mutationFn: (data: {
+        id: string | number
+        status: string
+        rejection_reason?: string
+        comments?: string
+      }) => updateRequestStatus(data),
       onSuccess: (response: any, variables) => {
         success(response?.message || 'Request status updated successfully')
         queryClient.invalidateQueries({ queryKey: ['requests-corporate'] })
@@ -582,11 +590,19 @@ export function corporateMutations() {
         data,
       }: {
         vendorId: string | number
-        data: { id: string | number; status: string }
+        data: {
+          id: string | number
+          status: string
+          rejection_reason?: string
+          comments?: string
+        }
       }) => updateCorporateSuperAdminVendorRequestStatus(vendorId, data),
-      onSuccess: (response: any) => {
+      onSuccess: (response: any, { data }) => {
         success(response?.message || 'Request status updated successfully')
+        queryClient.invalidateQueries({ queryKey: ['requests-corporate'] })
         queryClient.invalidateQueries({ queryKey: ['requests-corporate-super-admin-vendor'] })
+        queryClient.invalidateQueries({ queryKey: ['requests-vendor'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-request', data.id] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to update request status. Please try again.')
@@ -820,11 +836,21 @@ export function corporateMutations() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
     return useMutation({
-      mutationFn: (id: number | string) => deleteCorporateSuperAdminCard(id),
-      onSuccess: (response: any, id: number | string) => {
+      mutationFn: ({
+        id,
+        vendorId,
+      }: {
+        id: number | string
+        vendorId?: string | number | null
+      }) =>
+        vendorId
+          ? deleteCorporateSuperAdminVendorCard(vendorId, id)
+          : deleteCorporateSuperAdminCard(id),
+      onSuccess: (response: any, { id }) => {
         success(response?.message || 'Card deleted successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-cards'] })
         queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-card', id] })
+        queryClient.invalidateQueries({ queryKey: ['cards-by-vendor-id'] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to delete card. Please try again.')
@@ -836,15 +862,43 @@ export function corporateMutations() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
     return useMutation({
-      mutationFn: ({ id, data }: { id: number | string; data: Record<string, any> }) =>
-        updateCorporateSuperAdminCard(id, data),
+      mutationFn: ({
+        id,
+        data,
+        vendorId,
+      }: {
+        id: number | string
+        data: Record<string, any>
+        vendorId?: string | number | null
+      }) =>
+        vendorId
+          ? updateCorporateSuperAdminVendorCard(vendorId, id, data)
+          : updateCorporateSuperAdminCard(id, data),
       onSuccess: (response: any, { id }) => {
         success(response?.message || 'Card updated successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-cards'] })
         queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-card', id] })
+        queryClient.invalidateQueries({ queryKey: ['cards-by-vendor-id'] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to update card. Please try again.')
+      },
+    })
+  }
+
+  function useCreateCorporateSuperAdminCardForVendorService() {
+    const { success, error } = useToast()
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: (data: Record<string, unknown> & { vendor_user_id: string | number }) =>
+        createCorporateSuperAdminCardForVendor(data),
+      onSuccess: (response: any) => {
+        success(response?.message || 'Card created successfully')
+        queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['cards-by-vendor-id'] })
+      },
+      onError: (err: any) => {
+        error(err?.message || 'Failed to create card. Please try again.')
       },
     })
   }
@@ -887,6 +941,7 @@ export function corporateMutations() {
     useUpdateCorporateVendorBranchManagerInvitationService,
     useDeleteCorporateSuperAdminCardService,
     useUpdateCorporateSuperAdminCardService,
+    useCreateCorporateSuperAdminCardForVendorService,
     useCancelVendorInvitationService,
     useDeleteVendorManagementService,
     useUpdateVendorStatusManagementService,

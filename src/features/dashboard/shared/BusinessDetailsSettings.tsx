@@ -45,8 +45,8 @@ export function BusinessDetailsSettings() {
             Request to update business information
           </Text>
           <Text variant="p" className="text-amber-800/90 text-sm">
-            Corporates can&apos;t change or update business information on their own. You can
-            request an update here; an admin will manually review and process it.
+            Business information cannot be changed directly. Submit a request here and it will be
+            reviewed through the approval workflow before changes apply.
           </Text>
         </div>
       </div>

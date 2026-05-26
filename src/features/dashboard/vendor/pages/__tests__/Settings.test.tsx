@@ -1,16 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import Settings from '../settings/Settings'
-
-vi.mock('../settings/BusinessDetailsSettings', () => ({
-  BusinessDetailsSettings: () => (
-    <div data-testid="business-details-settings">Business Details</div>
-  ),
-}))
-
-vi.mock('../settings/BusinessLogoSettings', () => ({
-  BusinessLogoSettings: () => <div data-testid="business-logo-settings">Business Logo</div>,
-}))
 
 describe('Settings (vendor)', () => {
   it('renders Settings heading', () => {
@@ -25,14 +15,15 @@ describe('Settings (vendor)', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders Business Details and Business Logo tabs', () => {
+  it('renders Business Details tab', () => {
     renderWithProviders(<Settings />)
     expect(screen.getByRole('button', { name: /business details/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /business logo/i })).toBeInTheDocument()
   })
 
-  it('renders Business Details content by default', () => {
+  it('renders business details view or empty state', () => {
     renderWithProviders(<Settings />)
-    expect(screen.getByTestId('business-details-settings')).toBeInTheDocument()
+    const hasEmpty = screen.queryByText(/no business details available/i)
+    const hasRequest = screen.queryByText(/request to update business information/i)
+    expect(hasEmpty || hasRequest).toBeTruthy()
   })
 })

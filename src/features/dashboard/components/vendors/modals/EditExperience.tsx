@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -16,6 +17,9 @@ import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorpor
 type FormData = z.infer<typeof CreateExperienceSchema> & { id: number }
 
 export function EditExperience() {
+  const [searchParams] = useSearchParams()
+  const vendorIdFromUrl = searchParams.get('vendor_id')
+
   const modal = usePersistedModalState({
     paramName: MODALS.EXPERIENCE.ROOT,
   })
@@ -270,7 +274,11 @@ export function EditExperience() {
       }
 
       if (isCorporateSuperAdmin) {
-        await updateCorporateCard({ id: card.id, data: payload })
+        await updateCorporateCard({
+          id: card.id,
+          data: payload,
+          vendorId: vendorIdFromUrl,
+        })
       } else if (isBranch) {
         await updateBranchExperience(branchPayload)
       } else {

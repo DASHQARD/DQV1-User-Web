@@ -46,8 +46,21 @@ export const getAuditLogsVendor = async (): Promise<any> => {
   return await getList<any>(`/audit-logs/vendors`)
 }
 
+function mapRequestListParams(params?: Record<string, unknown>): Record<string, unknown> {
+  if (!params) return {}
+  const { status, ...rest } = params
+  const apiParams: Record<string, unknown> = { ...rest }
+  const normalizedStatus = String(status ?? '')
+    .toLowerCase()
+    .trim()
+  if (normalizedStatus === 'pending') apiParams.pending = true
+  else if (normalizedStatus === 'approved') apiParams.approved = true
+  else if (normalizedStatus === 'rejected') apiParams.rejected = true
+  return apiParams
+}
+
 export const getRequestsVendor = async (params?: Record<string, any>): Promise<any> => {
-  return await getList<any>(`/requests/vendors`, params)
+  return await getList<any>(`/requests/vendors`, mapRequestListParams(params))
 }
 
 export const getRequestVendorInfo = async (id: number | string): Promise<any> => {
@@ -57,8 +70,22 @@ export const getRequestVendorInfo = async (id: number | string): Promise<any> =>
 export const updateRequestStatus = async (data: {
   id: string | number
   status: string
+  rejection_reason?: string
+  comments?: string
 }): Promise<any> => {
-  return await patchMethod(`/requests/vendors/update-status`, data)
+  return await patchMethod(`/requests/vendors/update-status`, {
+    ...data,
+    id: String(data.id),
+  })
+}
+
+/** POST /business-details/request-update — vendor business detail change requests */
+export const requestBusinessDetailsUpdate = async (data: {
+  fields_to_update: Record<string, boolean>
+  proposed_values: Record<string, string>
+  reason_for_change?: string
+}): Promise<any> => {
+  return await postMethod(`/business-details/request-update`, data)
 }
 
 export const deleteRequestVendor = async (id: number | string): Promise<any> => {

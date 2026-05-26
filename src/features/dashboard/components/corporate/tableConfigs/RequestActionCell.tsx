@@ -1,14 +1,30 @@
 import { Dropdown } from '@/components'
-import { usePersistedModalState } from '@/hooks'
+import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { Icon } from '@/libs'
 import { MODALS } from '@/utils/constants'
-import { isRequestApproved, isRequestAwaitingApproval } from '@/utils/requestStatus'
+import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
+import { resolveVendorIdForCorporateApproval } from '@/utils/resolveVendorIdFromRequest'
+import { canCorporateUserApproveRequest, isRequestApproved } from '@/utils/requestStatus'
 
 export function RequestActionCell({ row }: any) {
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfileData } = useGetUserProfileService()
+  const { useGetAllVendorsManagementService } = corporateQueries()
+  const { data: vendorsResponse } = useGetAllVendorsManagementService({ limit: 200 })
+  const corporateVendors = Array.isArray(vendorsResponse)
+    ? vendorsResponse
+    : Array.isArray(vendorsResponse?.data)
+      ? vendorsResponse.data
+      : []
+  const approvalVendorId = resolveVendorIdForCorporateApproval(row.original, corporateVendors)
+
   const modal = usePersistedModalState({
     paramName: MODALS.REQUEST.PARAM_NAME,
   })
-  const canApproveOrReject = isRequestAwaitingApproval(row.original.status)
+  const canApproveOrReject = canCorporateUserApproveRequest(
+    row.original,
+    userProfileData?.user_type,
+  )
   const canDelete = !isRequestApproved(row.original.status)
 
   const actions = [
@@ -23,13 +39,19 @@ export function RequestActionCell({ row }: any) {
           {
             label: 'Approve',
             onClickFn: () => {
-              modal.openModal(MODALS.REQUEST.CHILDREN.APPROVE, { ...row.original })
+              modal.openModal(MODALS.REQUEST.CHILDREN.APPROVE, {
+                ...row.original,
+                approvalVendorId,
+              })
             },
           },
           {
             label: 'Reject',
             onClickFn: () => {
-              modal.openModal(MODALS.REQUEST.CHILDREN.REJECT, { ...row.original })
+              modal.openModal(MODALS.REQUEST.CHILDREN.REJECT, {
+                ...row.original,
+                approvalVendorId,
+              })
             },
           },
         ]

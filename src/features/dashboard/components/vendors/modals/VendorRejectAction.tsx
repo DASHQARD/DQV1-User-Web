@@ -37,13 +37,18 @@ export function VendorRejectAction() {
     },
   })
 
-  const onSubmit: SubmitHandler<any> = () => {
+  const onSubmit: SubmitHandler<any> = (values) => {
     const requestId = modal.modalData?.id
     if (!requestId) {
       console.error('Request ID is required')
       return
     }
-    const payload = { id: requestId, status: 'rejected' as const }
+    const reason = String(values?.reason ?? '').trim()
+    const payload = {
+      id: requestId,
+      status: 'rejected' as const,
+      ...(reason ? { rejection_reason: reason, comments: reason } : {}),
+    }
 
     if (useCorporateVendorScoped && vendorIdFromUrl) {
       updateCorporateVendorRequestStatus(
