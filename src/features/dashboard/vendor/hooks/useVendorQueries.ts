@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from '@/stores'
 import {
   getAllVendors,
   getAllVendorsManagement,
@@ -23,6 +22,7 @@ import {
 } from '../services'
 import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
 import type { QueryType, GetBranchManagerInvitationsQuery } from '@/types'
+import { isCorporateManagementApiEnabled } from '@/features/dashboard/corporate/utils/corporateOperationalAccess'
 import { useUserProfile } from '@/hooks'
 
 export function vendorQueries() {
@@ -34,17 +34,17 @@ export function vendorQueries() {
   }
 
   function useGetAllVendorsDetailsService() {
-    const { user } = useAuthStore()
-    const userType = (user as any)?.user_type
-    const userStatus = (user as any)?.status
-    const isCorporateAdmin =
-      (userType === 'corporate super admin' || userType === 'corporate admin') &&
-      userStatus !== 'pending'
+    const { useGetUserProfileService } = useUserProfile()
+    const { data: userProfile, isLoading: isLoadingProfile } = useGetUserProfileService()
+    const userType = userProfile?.user_type
+    const isCorporateUser =
+      userType === 'corporate super admin' || userType === 'corporate admin'
+    const canFetch = !isCorporateUser || isCorporateManagementApiEnabled(userProfile)
 
     return useQuery({
       queryKey: ['all-vendors-details'],
       queryFn: getAllVendorsManagement,
-      enabled: isCorporateAdmin,
+      enabled: canFetch && !isLoadingProfile,
     })
   }
 
