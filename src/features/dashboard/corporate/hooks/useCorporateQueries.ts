@@ -42,6 +42,7 @@ import {
 } from '../services'
 import { getCards } from '@/features/dashboard/services/cards'
 import { canFetchVendorPaymentDetails } from '@/features/dashboard/utils/vendorAccountStatus'
+import { isCorporateManagementApiEnabled } from '@/features/dashboard/corporate/utils/corporateOperationalAccess'
 import { useUserProfile } from '@/hooks'
 import { useAuthStore } from '@/stores'
 
@@ -408,10 +409,14 @@ export function corporateQueries() {
   }
 
   function useGetAllVendorsManagementService(params?: Record<string, any>) {
+    const { useGetUserProfileService } = useUserProfile()
+    const { data: userProfile, isLoading: isLoadingProfile } = useGetUserProfileService()
+    const canFetchVendors = isCorporateManagementApiEnabled(userProfile)
+
     return useQuery({
       queryKey: ['all-vendors-management', params],
       queryFn: () => getAllVendorsManagement(params),
-      enabled: params !== undefined,
+      enabled: params !== undefined && canFetchVendors && !isLoadingProfile,
     })
   }
 
