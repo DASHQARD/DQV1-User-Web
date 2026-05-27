@@ -4,15 +4,22 @@ import { Icon } from '@/libs'
 import { SearchBox, Loader, EmptyState } from '@/components'
 import { VendorItems } from '../../components/VendorItems'
 import { usePublicCatalogQueries } from '../../hooks/website'
+import { PUBLIC_VENDORS_QUERY, PUBLIC_CATALOG_STALE_MS } from '../../constants/publicCatalog'
+import { vendorHasCatalogCards } from '../../utils/vendorCatalogStats'
 import { EmptyStateImage } from '@/assets/images'
 
 export default function Vendors() {
   const navigate = useNavigate()
   const [search, setSearch] = React.useState('')
   const { usePublicVendors } = usePublicCatalogQueries()
-  const { data: vendors, isLoading: vendorsLoading } = usePublicVendors()
+  const { data: vendors, isLoading: vendorsLoading } = usePublicVendors(
+    PUBLIC_VENDORS_QUERY,
+    { staleTime: PUBLIC_CATALOG_STALE_MS },
+  )
 
-  const vendorsWithCards = vendors?.filter((vendor: any) => vendor.branches_with_cards?.length > 0)
+  const vendorsWithCards = vendors?.filter((vendor: any) =>
+    vendorHasCatalogCards(vendor.branches_with_cards || []),
+  )
 
   const visibleVendors = vendorsWithCards?.filter((vendor: any) => {
     if (!search.trim()) return true
@@ -97,8 +104,6 @@ export default function Vendors() {
                 >
                   <VendorItems
                     name={vendorName}
-                    branches={vendor.branches_with_cards?.length || 0}
-                    rating={4.5}
                     logo={vendor.logo}
                     logo_key={vendor.logo_key}
                     business_logo={vendor.business_logo}

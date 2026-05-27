@@ -1,95 +1,130 @@
 import { useMemo } from 'react'
-import { Icon } from '@/libs'
+import { cn, Icon } from '@/libs'
 import { VendorLogoImage } from '../VendorLogo/VendorLogoImage'
 import type { VendorLogoFields } from '@/utils/vendorLogo'
+import { formatCurrencyLabel } from '@/utils/format'
+import {
+  getVendorCatalogStats,
+  type VendorBranchWithCards,
+} from '../../utils/vendorCatalogStats'
 
 type VendorItemProps = VendorLogoFields & {
   name: string
   branches?: number
-  rating?: number
   businessAddress?: string
   businessCountry?: string
-  branchesWithCards?: any[]
+  branchesWithCards?: VendorBranchWithCards[]
+  variant?: 'default' | 'compact'
+}
+
+function formatPriceLabel(
+  minPrice: number | null,
+  maxPrice: number | null,
+  currency: string,
+  compact: boolean,
+): string | null {
+  if (minPrice == null) return null
+  if (compact || maxPrice == null || maxPrice === minPrice) {
+    return `From ${formatCurrencyLabel(minPrice, currency)}`
+  }
+  return `${formatCurrencyLabel(minPrice, currency)} – ${formatCurrencyLabel(maxPrice, currency)}`
 }
 
 export const VendorItems = ({
   name,
-  branches = 0,
-  rating = 4.5,
+  branches,
   logo,
   logo_key,
   business_logo,
   vendor_logo,
-  businessAddress,
   businessCountry,
   branchesWithCards = [],
+  variant = 'default',
 }: VendorItemProps) => {
-  const roundedRating = Math.round(rating)
+  const isCompact = variant === 'compact'
   const vendorLogo: VendorLogoFields = { logo, logo_key, business_logo, vendor_logo }
 
-  // Calculate total cards across all branches
-  const totalCards = useMemo(() => {
-    return branchesWithCards.reduce((total, branch) => {
-      return total + (branch.cards?.length || 0)
-    }, 0)
-  }, [branchesWithCards])
+  const stats = useMemo(() => getVendorCatalogStats(branchesWithCards), [branchesWithCards])
+  const branchCount = branches ?? stats.activeBranches
+  const priceLabel = formatPriceLabel(stats.minPrice, stats.maxPrice, stats.currency, isCompact)
+  const cardTypesLabel = stats.cardTypes.join(' · ')
+  const statsLabel = `${stats.totalCards} ${stats.totalCards === 1 ? 'card' : 'cards'} · ${branchCount} ${branchCount === 1 ? 'branch' : 'branches'}`
 
   return (
-    <article className="group relative flex flex-col h-full rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-primary-200 hover:shadow-lg">
-      {/* Logo/Badge Section */}
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-primary-500/10 to-primary-600/10 ring-1 ring-primary-500/20 overflow-hidden">
-          <VendorLogoImage vendor={vendorLogo} name={name} />
-        </div>
-        <div className="flex flex-col items-end gap-1.5 flex-1 min-w-0">
-          <span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 ring-1 ring-primary-200 whitespace-nowrap">
-            {branches} {branches === 1 ? 'Branch' : 'Branches'}
-          </span>
-          {totalCards > 0 && (
-            <span className="text-xs text-gray-500 font-medium">
-              {totalCards} {totalCards === 1 ? 'Card' : 'Cards'}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Vendor Name */}
-      <div className="mb-3 flex-1">
-        <h4 className="line-clamp-2 text-base font-bold text-gray-900 leading-tight group-hover:text-primary-600 transition-colors">
-          {name}
-        </h4>
-      </div>
-
-      {/* Location */}
-      {(businessAddress || businessCountry) && (
-        <div className="mb-3 flex items-start gap-1.5 text-xs text-gray-500">
-          <Icon icon="bi:geo-alt" className="size-3.5 shrink-0 mt-0.5 text-gray-400" />
-          <span className="line-clamp-1">
-            {businessAddress && businessCountry
-              ? `${businessAddress}, ${businessCountry}`
-              : businessAddress || businessCountry}
-          </span>
-        </div>
+    <article
+      className={cn(
+        'group flex h-full flex-col rounded-xl border border-gray-100 bg-white transition-shadow',
+        isCompact
+          ? 'shadow-none md:shadow-[0_2px_8px_rgba(0,0,0,0.06)] md:hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]'
+          : 'shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]',
       )}
+    >
+      <div className={cn('flex flex-1 flex-col', isCompact ? 'gap-3 p-3' : 'gap-3.5 p-4')}>
+        <div className="flex min-w-0 items-center gap-3">
+          <div
+            className={cn(
+              'flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-100 bg-gray-50',
+              isCompact ? 'h-11 w-11 p-1' : 'h-12 w-12 p-1.5',
+            )}
+          >
+            <VendorLogoImage
+              vendor={vendorLogo}
+              name={name}
+              className="max-h-full max-w-full object-contain"
+              iconClassName={cn('text-[#402D87]', isCompact ? 'size-5' : 'size-6')}
+              fallbackIcon="bi:shop"
+            />
+          </div>
 
-      {/* Rating */}
-      <div
-        className="flex items-center gap-2 pt-3 border-t border-gray-100"
-        aria-label={`Rating ${rating} out of 5`}
-      >
-        <div className="flex items-center gap-0.5">
-          {Array.from({ length: 5 }).map((_, n) => {
-            const starNumber = n + 1
-            return (
-              <Icon
-                key={starNumber}
-                icon={starNumber <= roundedRating ? 'bi:star-fill' : 'bi:star'}
-                className="size-3.5 text-yellow-400"
-              />
-            )
-          })}
+          <div className="min-w-0 flex-1">
+            <h4
+              className={cn(
+                'truncate font-semibold text-gray-900 transition-colors group-hover:text-[#402D87]',
+                isCompact ? 'text-sm' : 'text-base',
+              )}
+            >
+              {name}
+            </h4>
+            {businessCountry ? (
+              <p
+                className={cn(
+                  'mt-0.5 flex items-center gap-1 truncate text-gray-500',
+                  isCompact ? 'text-[11px]' : 'text-xs',
+                )}
+              >
+                <Icon icon="bi:geo-alt" className="size-3 shrink-0 text-gray-400" />
+                {businessCountry}
+              </p>
+            ) : null}
+          </div>
         </div>
-        <span className="text-sm font-semibold text-gray-700">{rating.toFixed(1)}</span>
+
+        {cardTypesLabel ? (
+          <p className={cn('truncate text-gray-500', isCompact ? 'text-[11px]' : 'text-xs')}>
+            {cardTypesLabel}
+          </p>
+        ) : null}
+
+        <div className="mt-auto space-y-1 border-t border-gray-100 pt-3">
+          <p
+            className={cn(
+              'whitespace-nowrap text-gray-600',
+              isCompact ? 'text-[11px]' : 'text-xs',
+            )}
+          >
+            {statsLabel}
+          </p>
+          {priceLabel ? (
+            <p
+              className={cn(
+                'truncate font-bold text-[#402D87]',
+                isCompact ? 'text-sm' : 'text-base',
+              )}
+            >
+              {priceLabel}
+            </p>
+          ) : null}
+        </div>
       </div>
     </article>
   )

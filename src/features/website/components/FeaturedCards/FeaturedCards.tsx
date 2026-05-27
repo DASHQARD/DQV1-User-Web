@@ -1,72 +1,94 @@
+import { useRef } from 'react'
 import { CardItems } from '../CardItems'
 import { useNavigate } from 'react-router-dom'
 import { Loader, Text, EmptyState } from '@/components'
-import { useFeaturedCards } from '../../hooks/website'
-import { cn } from '@/libs'
+import { useFeaturedCards, type FeaturedCardSection } from '../../hooks/website'
+import { Icon } from '@/libs'
 import EmptyStateImage from '@/assets/images/empty-state.png'
 
-export const FeaturedCards = () => {
+function getFeaturedCardKey(
+  card: { card_id?: number; id?: number; branch_name?: string; branch_id?: number },
+  index: number,
+) {
+  return `${card.card_id || card.id}-${card.branch_name || card.branch_id || index}`
+}
+
+type FeaturedCardTypeSectionProps = {
+  section: FeaturedCardSection
+  isLoading: boolean
+}
+
+function FeaturedCardTypeSection({ section, isLoading }: FeaturedCardTypeSectionProps) {
   const navigate = useNavigate()
-  const { activeTab, setActiveTab, tabOptions, filteredCards, isLoading } = useFeaturedCards()
+  const mobileCarouselRef = useRef<HTMLDivElement>(null)
 
   return (
-    <section className="py-8 md:py-12">
-      <div className="wrapper flex flex-col gap-4 bg-white rounded-2xl">
-        <div className="flex flex-col gap-4">
-          <div className="px-4 md:px-6 pt-4 md:pt-6 flex items-center justify-between gap-4">
-            <Text variant="h3" weight="medium" className="text-gray-900">
-              Featured Cards
-            </Text>
-            <button
-              onClick={() => navigate('/dashqards')}
-              className="text-sm font-medium text-[#014fd3] hover:underline whitespace-nowrap"
-            >
-              See more
-            </button>
-          </div>
-        </div>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3 max-md:px-2">
+        <Text variant="h3" weight="medium" className="text-gray-900">
+          {section.label}
+        </Text>
+        <button
+          type="button"
+          onClick={() => navigate('/dashqards')}
+          className="inline-flex items-center gap-0.5 text-sm font-medium text-[#014fd3] hover:text-[#0139a8] whitespace-nowrap shrink-0"
+        >
+          All
+          <Icon icon="bi:chevron-right" className="size-4" aria-hidden />
+        </button>
+      </div>
 
-        {/* Tabs */}
-        <div className="px-4 md:px-6 pt-4">
-          <div className="inline-flex items-center gap-2 p-1 bg-gray-100 rounded-lg">
-            {tabOptions.map((tab) => (
-              <button
-                key={tab.value}
-                onClick={() => setActiveTab(tab.value)}
-                className={cn(
-                  'px-4 md:px-6 py-2 text-sm md:text-base font-medium rounded-md transition-all whitespace-nowrap',
-                  activeTab === tab.value
-                    ? 'bg-white text-primary-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50',
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
+      <div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10 px-4">
+            <Loader />
           </div>
-        </div>
-
-        <div className="px-4 md:px-6 pb-4 md:pb-6 mt-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader />
-            </div>
-          ) : filteredCards.length === 0 ? (
+        ) : section.cards.length === 0 ? (
+          <div className="px-4">
             <EmptyState
               image={EmptyStateImage}
-              title={`No ${activeTab === 'dashx' ? 'DashX' : 'DashPass'} cards available`}
+              title={`No ${section.label} cards available`}
               description="Check back soon for new cards or browse our full collection."
             />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredCards.map((card: any, index: number) => {
-                // Create unique key by combining card_id with branch info or index
-                const uniqueKey = `${card.card_id || card.id}-${card.branch_name || card.branch_id || index}`
-                return <CardItems key={uniqueKey} {...card} />
-              })}
+          </div>
+        ) : (
+          <>
+            <div
+              ref={mobileCarouselRef}
+              className="md:hidden flex gap-2 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pl-2 pr-2 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              aria-label={`${section.label} cards carousel`}
+            >
+              {section.cards.map((card: any, index: number) => (
+                <div
+                  key={getFeaturedCardKey(card, index)}
+                  className="snap-start shrink-0 w-[min(300px,calc(100vw-1rem))]"
+                >
+                  <CardItems {...card} />
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+
+            <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {section.cards.map((card: any, index: number) => (
+                <CardItems key={getFeaturedCardKey(card, index)} {...card} density="compact" />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export const FeaturedCards = () => {
+  const { sections, isLoading } = useFeaturedCards()
+
+  return (
+    <section className="w-full max-md:bg-transparent max-md:shadow-none max-md:border-0 md:rounded-2xl md:bg-white md:shadow-sm md:border md:border-gray-100/80">
+      <div className="flex flex-col gap-4 md:gap-8 md:p-8 lg:p-10">
+        {sections.map((section) => (
+          <FeaturedCardTypeSection key={section.id} section={section} isLoading={isLoading} />
+        ))}
       </div>
     </section>
   )

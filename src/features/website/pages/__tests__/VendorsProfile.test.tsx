@@ -5,10 +5,10 @@ import VendorsProfile from '../vendors/VendorsProfile'
 vi.mock('@/assets/svgs/dashgo_bg.svg', () => ({ default: '/dashgo-bg.svg' }))
 vi.mock('@/assets/gifs/loader.gif', () => ({ default: '/loader.gif' }))
 
+const mockUseVendorProfilePage = vi.fn()
+
 vi.mock('../../hooks/website', () => ({
-  usePublicCatalogQueries: () => ({
-    usePublicVendorsService: () => ({ data: [], isLoading: false }),
-  }),
+  useVendorProfilePage: (vendorId: string) => mockUseVendorProfilePage(vendorId),
 }))
 
 // useSearchParams - no vendor_id
@@ -21,6 +21,14 @@ vi.mock('react-router-dom', async (importOriginal) => {
 })
 
 describe('VendorsProfile (website)', () => {
+  beforeEach(() => {
+    mockUseVendorProfilePage.mockReturnValue({
+      vendor: null,
+      displayName: '',
+      isLoading: false,
+    })
+  })
+
   it('shows "Vendor not found" when vendor_id is missing', () => {
     renderWithProviders(<VendorsProfile />)
     expect(screen.getByText('Vendor not found')).toBeInTheDocument()

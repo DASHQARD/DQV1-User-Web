@@ -4,31 +4,24 @@ import { FeaturedCards } from '../FeaturedCards'
 
 vi.mock('../../hooks/website', () => ({
   useFeaturedCards: () => ({
-    activeTab: 'dashx',
-    setActiveTab: vi.fn(),
-    tabOptions: [
-      { value: 'dashx', label: 'DashX' },
-      { value: 'dashpass', label: 'DashPass' },
+    sections: [
+      { id: 'dashx', label: 'DashX', cards: [] },
+      { id: 'dashpass', label: 'DashPass', cards: [] },
     ],
-    filteredCards: [],
     isLoading: false,
   }),
 }))
 
 describe('FeaturedCards', () => {
-  it('renders Featured Cards heading', () => {
-    renderWithProviders(<FeaturedCards />)
-    expect(screen.getByText('Featured Cards')).toBeInTheDocument()
-  })
-
-  it('renders See more button', () => {
-    renderWithProviders(<FeaturedCards />)
-    expect(screen.getByRole('button', { name: /See more/i })).toBeInTheDocument()
-  })
-
-  it('renders tab options', () => {
+  it('renders separate DashX and DashPass sections', () => {
     renderWithProviders(<FeaturedCards />)
     expect(screen.getByText('DashX')).toBeInTheDocument()
     expect(screen.getByText('DashPass')).toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+  })
+
+  it('renders All link for each section', () => {
+    renderWithProviders(<FeaturedCards />)
+    expect(screen.getAllByRole('button', { name: /All/i })).toHaveLength(2)
   })
 })

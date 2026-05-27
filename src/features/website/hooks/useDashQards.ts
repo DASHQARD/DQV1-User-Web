@@ -4,27 +4,15 @@ import { useNavigate } from 'react-router-dom'
 import type { PublicCardResponse } from '@/types/responses'
 
 import { enrichCardsWithVendorLogos } from '@/features/website/utils/enrichCardsWithVendorLogos'
+import { mapPublicVendorsForFilter } from '@/features/website/utils/mapPublicVendorsForFilter'
 import { usePublicCatalog } from './website'
-import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
 
 export type DashQardsTabId = 'dashx' | 'dashpro' | 'dashpass' | 'dashgo'
 
-export interface DashQardsVendor {
+export type DashQardsVendor = {
   id: number | string
   vendor_id?: number
   name: string
-}
-
-/** Shape of /api/v1/vendors/all/details response */
-interface VendorsApiResponse {
-  data?: Array<{
-    vendor_id?: number
-    id?: number
-    business_name?: string
-    vendor_name?: string
-    branch_name?: string
-    branches_with_cards?: Array<{ cards?: unknown[] }>
-  }>
 }
 
 const SORT_ACTIONS = [
@@ -53,28 +41,11 @@ export function useDashQards() {
   const [activeTab, setActiveTab] = useState<DashQardsTabId>('dashx')
   const { publicCards, query, setQuery, cardTabs, priceRanges, vendors: vendorsCatalog } =
     usePublicCatalog()
-  const { usePublicVendorsService } = usePublicCatalogQueries()
-  const { data: vendorsResponse } = usePublicVendorsService({ limit: 100 })
 
-  const vendors = useMemo((): DashQardsVendor[] => {
-    if (!vendorsResponse) return []
-    // API can return { data: [...] } or the client may unwrap to the array
-    const raw = Array.isArray(vendorsResponse)
-      ? vendorsResponse
-      : ((vendorsResponse as VendorsApiResponse)?.data ?? [])
-    const list = Array.isArray(raw) ? raw : []
-    return list
-      .filter(
-        (v) =>
-          (v.branches_with_cards?.length ?? 0) > 0 &&
-          (v.branches_with_cards ?? []).some((b) => (b.cards?.length ?? 0) > 0),
-      )
-      .map((v) => ({
-        id: v.vendor_id ?? v.id ?? 0,
-        vendor_id: v.vendor_id,
-        name: v.business_name || v.vendor_name || 'Unknown Vendor',
-      }))
-  }, [vendorsResponse])
+  const vendors = useMemo(
+    (): DashQardsVendor[] => mapPublicVendorsForFilter(vendorsCatalog),
+    [vendorsCatalog],
+  )
 
   const sortBy = query.sort_by || 'popular'
 

@@ -38,8 +38,11 @@ function experienceStatusClass(status: string): string {
 function getExperienceTitle(experience: Record<string, unknown>): string {
   return getCardDisplayName(
     experience.product as string,
-    experience.card_name as string,
-    experience.name as string,
+    (experience.card_name ?? experience.name) as string,
+    {
+      description: experience.description as string,
+      type: experience.type as string,
+    },
   )
 }
 

@@ -1,5 +1,12 @@
 import type { Dispatch, SetStateAction } from 'react'
 
+export type CardPriceBreakdown = {
+  basePrice: number
+  markupPrice: number
+  totalPrice: number
+  currency: string
+}
+
 export interface RedemptionBranch {
   branch_name: string
   branch_location: string
@@ -18,9 +25,13 @@ export interface LightboxSlide {
 /** Card shape used on the card details page (from public catalog) */
 export interface CardDetailsCard {
   product?: string
+  card_name?: string
   vendor_name?: string
-  vendor_id?: number
+  vendor_id?: number | string
   price?: string | number
+  base_price?: string | number
+  markup_price?: string | number
+  service_fee?: string | number
   currency?: string
   status?: string
   description?: string
@@ -41,13 +52,20 @@ export interface UseCardDetailsReturn {
   redemptionBranches: RedemptionBranch[]
   selectedDocument: CardDetailsDocument | null
   setSelectedDocument: Dispatch<SetStateAction<CardDetailsDocument | null>>
-  imageIndex: number
-  setImageIndex: Dispatch<SetStateAction<number>>
+  selectedImageIndex: number
+  setSelectedImageIndex: Dispatch<SetStateAction<number>>
+  lightboxIndex: number
+  openLightbox: (index: number) => void
+  closeLightbox: () => void
   getCardBackground: () => string
   getCardTypeName: () => string
   handleAddToCart: () => Promise<void>
   isAdding: boolean
   lightboxImages: LightboxSlide[]
   displayPrice: number
+  displayProduct: string
+  vendorDisplayName: string | null
   cardBackground: string
+  priceBreakdown: CardPriceBreakdown | null
+  formattedExpiry: string | null
 }

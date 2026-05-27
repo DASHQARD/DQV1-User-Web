@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
 import { getPublicVendors, getPublicCards, getCards } from '../../services'
 import type {
   PublicCardsResponse,
@@ -7,18 +7,25 @@ import type {
 } from '@/types/responses'
 import { getCartAllRecipients, getRecipientByID } from '../../services/recipients'
 
+type PublicCatalogQueryOptions = Pick<UseQueryOptions, 'staleTime' | 'enabled' | 'gcTime'>
+
 export function usePublicCatalogQueries() {
-  function usePublicCardsService(query?: Record<string, any>) {
+  function usePublicCardsService(
+    query?: Record<string, any>,
+    options?: PublicCatalogQueryOptions,
+  ) {
     return useQuery<PublicCardsResponse, Error, PublicCardsResponse>({
       queryKey: ['public-cards', query],
       queryFn: () => getPublicCards(query),
+      ...options,
     })
   }
 
-  function usePublicVendors(query?: Record<string, any>) {
+  function usePublicVendors(query?: Record<string, any>, options?: PublicCatalogQueryOptions) {
     return useQuery<VendorDetailsResponse, Error, VendorDetailsResponse>({
       queryKey: ['public-vendors-list', query],
       queryFn: () => getPublicVendors(query),
+      ...options,
     })
   }
 

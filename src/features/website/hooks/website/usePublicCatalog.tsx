@@ -4,6 +4,7 @@ import { useReducerSpread } from '@/hooks'
 import { DEFAULT_QUERY } from '@/utils/constants'
 import { applyApiSafePriceRange } from '@/features/website/utils/priceRangeFilter'
 
+import { PUBLIC_VENDORS_QUERY, PUBLIC_CATALOG_STALE_MS } from '../../constants/publicCatalog'
 import { usePublicCatalogQueries } from './usePublicCatalogQueries'
 
 const CARDS_QUERY_DEBOUNCE_MS = 400
@@ -64,11 +65,10 @@ export function usePublicCatalog(
 
   const { usePublicCardsService, usePublicVendors } = usePublicCatalogQueries()
   const { data: publicCards, isLoading } = usePublicCardsService(cardsFetchQuery)
-  const vendorsFetchQuery = React.useMemo(
-    () => applyApiSafePriceRange({ ...query, limit: query.limit || 20, vendor_id: vendor_ids || '' }),
-    [query, vendor_ids],
+  const { data: vendorsResponse, isLoading: vendorsLoading } = usePublicVendors(
+    PUBLIC_VENDORS_QUERY,
+    { staleTime: PUBLIC_CATALOG_STALE_MS },
   )
-  const { data: vendorsResponse, isLoading: vendorsLoading } = usePublicVendors(vendorsFetchQuery)
 
   const vendors = vendorsResponse
 
