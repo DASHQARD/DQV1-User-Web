@@ -375,42 +375,73 @@ describe('Navbar', () => {
       })
     })
 
-    it('shows corporate menu items without Purchase/Requests when not approved', async () => {
+    it('shows only dashboard for pending corporate owner', async () => {
       const user = userEvent.setup()
       renderWithProviders(<Navbar />)
       await user.click(screen.getByRole('button', { name: 'Account' }))
       expect(screen.getByRole('button', { name: 'Dashboard' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Transactions' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Audit Logs' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Recipients' })).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: 'Purchase' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Purchases' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Transactions' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Audit Logs' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Recipients' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Requests' })).not.toBeInTheDocument()
     })
 
-    it('shows Purchase and Requests when status is approved', async () => {
+    it('shows purchases and recipients when corporate owner is approved and onboarded', async () => {
       mockUseGetUserProfileService.mockReturnValue({
-        data: { user_type: 'corporate', status: 'approved' },
+        data: {
+          user_type: 'corporate',
+          status: 'approved',
+          onboarding_progress: {
+            personal_details_completed: true,
+            upload_id_completed: true,
+            business_details_completed: true,
+            business_documents_completed: true,
+          },
+        },
       })
       const user = userEvent.setup()
       renderWithProviders(<Navbar />)
       await user.click(screen.getByRole('button', { name: 'Account' }))
-      expect(screen.getByRole('button', { name: 'Purchase' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Requests' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Purchases' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Recipients' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Requests' })).not.toBeInTheDocument()
     })
 
-    it('shows Admins for corporate super admin when approved', async () => {
+    it('shows all sidebar tabs for corporate super admin with full access', async () => {
       vi.mocked(useAuthStore).mockReturnValue({
         isAuthenticated: true,
         user: { fullname: 'Super Admin', user_type: 'corporate super admin' },
         logout: mockLogout,
       } as any)
       mockUseGetUserProfileService.mockReturnValue({
-        data: { user_type: 'corporate super admin', status: 'approved' },
+        data: {
+          user_type: 'corporate super admin',
+          status: 'approved',
+          onboarding_progress: {
+            personal_details_completed: true,
+            upload_id_completed: true,
+            business_details_completed: true,
+            business_documents_completed: true,
+          },
+        },
       })
       const user = userEvent.setup()
       renderWithProviders(<Navbar />)
       await user.click(screen.getByRole('button', { name: 'Account' }))
-      expect(screen.getByRole('button', { name: 'Admins' })).toBeInTheDocument()
+      for (const label of [
+        'Dashboard',
+        'Purchases',
+        'Recipients',
+        'Requests',
+        'Admins',
+        'Vendor Invitations',
+        'Vendors',
+      ]) {
+        expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
+      }
+      expect(screen.queryByRole('button', { name: 'Transactions' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Audit Logs' })).not.toBeInTheDocument()
     })
 
     it('corporate Dashboard navigates to corporate home with account=corporate', async () => {

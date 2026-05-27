@@ -28,7 +28,7 @@ export default function ProfileInformation() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="bg-white rounded-xl p-6">
+      <div className="bg-white rounded-xl p-4 sm:p-6 w-full max-w-4xl">
         <OnboardingForm />
       </div>
       <OnboardingSuccessModal />

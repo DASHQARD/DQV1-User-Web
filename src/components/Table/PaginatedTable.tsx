@@ -83,6 +83,19 @@ const FILTER_BUTTON_CLASSNAME =
 const EXPORT_BUTTON_CLASSNAME =
   'border border-[#e2e4ed] bg-white py-0 rounded-md w-full md:w-fit text-xs text-primary-900 capitalize font-semibold min-w-0 justify-between'
 
+/** Legacy pages passed absolute positioning here; it caused filters to overlap the table. */
+function sanitizeFilterWrapperClassName(className?: string) {
+  if (!className?.trim()) return undefined
+  const cleaned = className
+    .replace(/\b(?:lg:)?absolute\b/g, '')
+    .replace(/\blg:top-\S+/g, '')
+    .replace(/\blg:right-\S+/g, '')
+    .replace(/\bpt-\d+\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return cleaned || undefined
+}
+
 export function PaginatedTable({
   data,
   loading,
@@ -231,27 +244,14 @@ export function PaginatedTable({
     filterBy?.simpleSelects?.length || dateFilterConfig || buttonGroup || !noExport,
   )
 
-  const mobileFilterControlsClass = React.useMemo(() => {
-    const selectCount = filterBy?.simpleSelects?.length ?? 0
-    const hasDate = Boolean(dateFilterConfig)
-    const hasExport = !noExport
-    const hasButtonGroup = Boolean(buttonGroup)
-
-    // Date + export only (e.g. Requests): one balanced row on mobile
-    if (selectCount === 0 && hasDate && hasExport && !hasButtonGroup) {
-      return 'max-md:grid max-md:grid-cols-2 max-md:gap-2'
-    }
-
-    return 'max-md:flex max-md:flex-col max-md:gap-2'
-  }, [filterBy?.simpleSelects?.length, dateFilterConfig, noExport, buttonGroup])
+  const safeFilterWrapperClassName = sanitizeFilterWrapperClassName(filterWrapperClassName)
 
   return (
-    <div className={cn('grid gap-4 w-full min-w-0 max-w-full', className)}>
+    <div className={cn('grid gap-6 w-full min-w-0 max-w-full', className)}>
       <div
         className={cn(
-          'flex flex-col gap-3 w-full',
-          'md:flex-row md:flex-wrap md:justify-end md:items-center md:gap-2',
-          filterWrapperClassName,
+          'grid gap-3 w-full min-w-0',
+          safeFilterWrapperClassName,
         )}
       >
         {noSearch ? null : (
@@ -261,12 +261,12 @@ export function PaginatedTable({
               setQuery({ ...removeCursorFromQuery(query), search: value } as QueryType)
             }}
             placeholder={searchPlaceholder ?? 'Search...'}
-            className="w-full md:w-[343px] md:shrink-0"
+            className="w-full min-w-0 sm:max-w-[343px]"
           />
         )}
 
         {hasFilterControls ? (
-          <div className={cn('w-full min-w-0 md:contents', mobileFilterControlsClass)}>
+          <div className="flex flex-wrap gap-2 items-stretch sm:items-center w-full min-w-0">
             {filterBy?.simpleSelects?.map((item) => {
               const selectedValue = query[item.label as keyof QueryType]
               const selectedOption = item.options.find(
@@ -323,7 +323,7 @@ export function PaginatedTable({
                 onChange={handleDateRangeChange}
                 placeholder={dateFilterConfig.label || 'Date range'}
                 format="DD-MM-YYYY"
-                className="w-full min-w-0"
+                className="w-full min-w-[200px] sm:w-auto sm:max-w-[280px]"
               />
             ) : null}
 
