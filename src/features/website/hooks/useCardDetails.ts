@@ -7,7 +7,18 @@ import {
   getCardBackground as getCardBg,
   getCardFileUrl,
   getCardTypeName as getCardTypeDisplayName,
+  getCardDisplayName,
+  formatCardDisplayTitle,
 } from '@/utils/cardDisplay'
+import {
+  PUBLIC_CATALOG_CARDS_QUERY,
+  PUBLIC_VENDORS_QUERY,
+  PUBLIC_CATALOG_STALE_MS,
+} from '../constants/publicCatalog'
+import {
+  getCardPriceBreakdown,
+  getVendorNameById,
+} from '../pages/cardDetails/cardDetailsUtils'
 import {
   type CardDetailsCard,
   type CardDetailsDocument,
@@ -37,8 +48,16 @@ export type {
 
 export function useCardDetails(): UseCardDetailsReturn {
   const { id } = useParams<{ id: string }>()
-  const { usePublicCardsService } = usePublicCatalogQueries()
-  const { data: cardsResponse, isLoading } = usePublicCardsService()
+  const { usePublicCardsService, usePublicVendors } = usePublicCatalogQueries()
+  const { data: cardsResponse, isLoading: isLoadingCards } = usePublicCardsService(
+    PUBLIC_CATALOG_CARDS_QUERY,
+    { staleTime: PUBLIC_CATALOG_STALE_MS },
+  )
+  const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendors(
+    PUBLIC_VENDORS_QUERY,
+    { staleTime: PUBLIC_CATALOG_STALE_MS },
+  )
+  const isLoading = isLoadingCards || isLoadingVendors
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isGuestAuth = useAuthStore((s) => s.isGuestAuth)
   const user = useAuthStore((s) => s.user)
@@ -69,16 +88,31 @@ export function useCardDetails(): UseCardDetailsReturn {
     if (!card) return []
     const c = card as { branch_name?: string; branch_location?: string }
     if (!c.branch_name) return []
-    return [{ branch_name: c.branch_name, branch_location: c.branch_location ?? '' }]
+    return [
+      {
+        branch_name: formatCardDisplayTitle(c.branch_name),
+        branch_location: c.branch_location?.trim() ?? '',
+      },
+    ]
   }, [card])
 
   const [selectedDocument, setSelectedDocument] = useState<CardDetailsDocument | null>(null)
-  const [imageIndex, setImageIndex] = useState(-1)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [lightboxIndex, setLightboxIndex] = useState(-1)
 
   useEffect(() => {
     setSelectedDocument(null)
-    setImageIndex(-1)
+    setSelectedImageIndex(0)
+    setLightboxIndex(-1)
   }, [id])
+
+  const openLightbox = useCallback((index: number) => {
+    setLightboxIndex(index)
+  }, [])
+
+  const closeLightbox = useCallback(() => {
+    setLightboxIndex(-1)
+  }, [])
 
   const getCardBackground = useCallback(() => getCardBg(card?.type), [card?.type])
   const getCardTypeName = useCallback(() => getCardTypeDisplayName(card?.type), [card?.type])
@@ -166,6 +200,37 @@ export function useCardDetails(): UseCardDetailsReturn {
   const displayPrice = card ? parseFloat(String((card as { price?: unknown }).price)) || 0 : 0
   const cardBackground = getCardBg(card?.type)
 
+  const displayProduct = useMemo(() => {
+    if (!card) return ''
+    return getCardDisplayName(card.product, card.card_name, {
+      description: card.description,
+      type: card.type,
+    })
+  }, [card])
+
+  const vendorDisplayName = useMemo(() => {
+    if (!card) return null
+    const c = card as { vendor_name?: string; vendor_id?: string | number }
+    if (c.vendor_name?.trim()) return formatCardDisplayTitle(c.vendor_name)
+    const fromCatalog = getVendorNameById(vendorsResponse, c.vendor_id)
+    return fromCatalog ? formatCardDisplayTitle(fromCatalog) : null
+  }, [card, vendorsResponse])
+
+  const priceBreakdown = useMemo(
+    () => (card ? getCardPriceBreakdown(card) : null),
+    [card],
+  )
+
+  const formattedExpiry = useMemo(() => {
+    const c = card as { expiry_date?: string } | null
+    if (!c?.expiry_date) return null
+    return new Date(c.expiry_date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }, [card])
+
   return {
     id,
     card,
@@ -173,14 +238,21 @@ export function useCardDetails(): UseCardDetailsReturn {
     redemptionBranches,
     selectedDocument,
     setSelectedDocument,
-    imageIndex,
-    setImageIndex,
+    selectedImageIndex,
+    setSelectedImageIndex,
+    lightboxIndex,
+    openLightbox,
+    closeLightbox,
     getCardBackground,
     getCardTypeName,
     handleAddToCart,
     isAdding,
     lightboxImages,
     displayPrice,
+    displayProduct,
+    vendorDisplayName,
     cardBackground,
+    priceBreakdown,
+    formattedExpiry,
   }
 }

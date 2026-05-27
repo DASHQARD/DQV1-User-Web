@@ -78,9 +78,9 @@ export default function Hero() {
   })
 
   return (
-    <header className="bg-primary-500 lg:min-h-screen flex pt-8 md:pt-16 lg:pt-20 overflow-hidden">
-      <section className="flex flex-col lg:flex-row justify-between items-center wrapper py-2 md:py-6 lg:py-8">
-        <div className="text-white py-2 md:py-6 lg:py-8 relative flex flex-col gap-6 md:gap-8 lg:gap-10 w-full lg:w-auto z-20">
+    <header className="bg-primary-500 flex pt-20 pb-12 md:pt-24 md:pb-16 lg:pt-28 lg:pb-20 overflow-hidden">
+      <section className="flex flex-col lg:flex-row justify-between items-center wrapper max-md:px-2 py-0 md:py-6 lg:py-8">
+        <div className="text-white relative flex flex-col w-full lg:w-auto z-20 md:py-6 lg:py-8">
           {/* Transparent Logo - Background image behind text */}
           <animated.img
             src={TransparentLogo}
@@ -91,53 +91,62 @@ export default function Hero() {
               transform: logoSpring.y.to((y) => `translateY(${y}px)`),
             }}
           />
-          <div className="flex flex-col gap-4 md:gap-5 lg:gap-6 px-4 md:px-6 lg:px-10 py-2 md:py-6 lg:py-8 relative z-10">
+          <div className="flex flex-col gap-3 md:gap-5 lg:gap-6 px-2 md:px-6 lg:px-10 md:py-6 lg:py-8 relative z-10">
             <animated.p
               style={badgeSpring}
-              className="w-fit text-xs md:text-sm font-medium text-white bg-[#ffffff26] border border-white/20 py-1.5 md:py-2 px-4 md:px-5 rounded-[50px]"
+              className="w-fit max-w-full text-[11px] md:text-sm font-medium text-white bg-[#ffffff26] border border-white/20 py-1 px-3 md:py-2 md:px-5 rounded-[50px] leading-snug"
             >
-              🎁 Ghana's Leading Digital Gifting Platform
+              <span className="md:hidden">🎁 Ghana&apos;s #1 gifting platform</span>
+              <span className="hidden md:inline">
+                🎁 Ghana&apos;s Leading Digital Gifting Platform
+              </span>
             </animated.p>
-            <div className="max-w-[636px] w-full flex flex-col gap-6 md:gap-8 lg:gap-12">
+            <div className="max-w-[636px] w-full flex flex-col gap-4 md:gap-8 lg:gap-12">
               <animated.p
                 style={headingSpring}
-                className="text-3xl md:text-4xl lg:text-5xl xl:text-[64px] font-bold uppercase -tracking-[2%] md:-tracking-[3%] leading-tight md:leading-[1.1] lg:leading-[72px]"
+                className="text-[1.65rem] leading-[1.15] md:text-4xl lg:text-5xl xl:text-[64px] font-bold uppercase tracking-tight md:-tracking-[3%] md:leading-[1.1] lg:leading-[72px]"
               >
                 Gift Cards for the people that matter most in your life
               </animated.p>
               <animated.p
                 style={subtitleSpring}
-                className="text-base md:text-xl lg:text-2xl xl:text-[28px] font-light leading-relaxed md:leading-[1.4] lg:leading-[39px] max-w-full lg:max-w-[548px] w-full"
+                className="text-sm leading-snug md:text-xl lg:text-2xl xl:text-[28px] font-light md:leading-[1.4] lg:leading-[39px] max-w-full lg:max-w-[548px] w-full"
               >
                 Welcome to DashQard!{' '}
                 <span className="text-yellow-500 font-bold">Create, Connect. Celebrate.</span>
               </animated.p>
-              <section className="flex flex-wrap gap-4 md:gap-6 lg:gap-8">
+              <section className="flex justify-between gap-2 md:flex-wrap md:justify-start md:gap-6 lg:gap-8 max-w-sm md:max-w-none">
                 {statsTrail.map((style, index) => (
-                  <animated.div key={index} style={style} className="flex flex-col gap-1">
-                    <p className="text-2xl md:text-3xl lg:text-[32px] font-bold leading-tight md:leading-[32px] text-yellow-500">
+                  <animated.div key={index} style={style} className="flex flex-col gap-0.5 min-w-0">
+                    <p className="text-xl md:text-3xl lg:text-[32px] font-bold leading-tight text-yellow-500">
                       {stats[index].value}
                     </p>
-                    <p className="text-xs md:text-sm font-light">{stats[index].label}</p>
+                    <p className="text-[10px] md:text-sm font-light leading-tight">
+                      {stats[index].label}
+                    </p>
                   </animated.div>
                 ))}
               </section>
               <animated.div
                 style={buttonsSpring}
-                className="flex flex-col sm:flex-row gap-3 md:gap-4 w-full sm:w-auto"
+                className="grid grid-cols-2 gap-2 w-full sm:flex sm:flex-row sm:w-auto md:gap-4"
               >
                 <Button
-                  className="rounded-4xl! w-full sm:max-w-[220px] sm:w-full"
+                  variant="primary"
+                  size="medium"
+                  className="rounded-4xl! w-full min-h-11 sm:max-w-[220px] text-sm! md:text-base!"
                   icon="mdi:arrow-right-thin"
                   iconPosition="right"
                   onClick={() => navigate(ROUTES.IN_APP.AUTH.REGISTER)}
-                  iconProps={{ className: 'size-4 md:size-5 text-primary-500' }}
+                  iconProps={{ className: 'size-4 text-[#353535]' }}
                 >
                   Get Started
                 </Button>
                 <Button
+                  variant="outline"
+                  size="medium"
                   onClick={() => navigate(ROUTES.IN_APP.DASHQARDS)}
-                  className="rounded-4xl! w-full sm:max-w-[220px] sm:w-full"
+                  className="rounded-4xl! w-full min-h-11 sm:max-w-[220px] text-sm! md:text-base! !border-white !text-white !bg-transparent hover:!bg-white hover:!text-primary-500"
                 >
                   Get a Card
                 </Button>

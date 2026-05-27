@@ -1,4 +1,6 @@
 export * from './usePublicCatalogQueries'
 export * from './usePublicCatalogMutations'
 export * from './usePublicCatalog'
+export * from './useHomePageCatalog'
 export * from './useFeaturedCards'
+export * from './useVendorProfilePage'

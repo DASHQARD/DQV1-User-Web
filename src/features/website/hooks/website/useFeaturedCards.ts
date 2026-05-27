@@ -1,52 +1,58 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import {
   enrichCardsWithVendorLogos,
   type CardWithVendorId,
 } from '@/features/website/utils/enrichCardsWithVendorLogos'
-import { usePublicCatalog } from './usePublicCatalog'
-import { usePublicCatalogQueries } from './usePublicCatalogQueries'
+import { useHomePageCatalog } from './useHomePageCatalog'
 
-export type FeaturedCardsTabType = 'dashx' | 'dashpass'
+export type FeaturedCardSectionId = 'dashx' | 'dashpass'
 
-const TAB_OPTIONS: { value: FeaturedCardsTabType; label: string }[] = [
-  { value: 'dashx', label: 'DashX' },
-  { value: 'dashpass', label: 'DashPass' },
+export type FeaturedCardSection = {
+  id: FeaturedCardSectionId
+  label: string
+  cards: CardWithVendorId[]
+}
+
+const FEATURED_SECTIONS: { id: FeaturedCardSectionId; label: string }[] = [
+  { id: 'dashx', label: 'DashX' },
+  { id: 'dashpass', label: 'DashPass' },
 ]
 
 const FEATURED_LIMIT = 4
 
+function normalizeCards(publicCards: unknown): CardWithVendorId[] {
+  if (!publicCards) return []
+  if (Array.isArray(publicCards)) return publicCards as CardWithVendorId[]
+  if (Array.isArray((publicCards as { data?: unknown[] })?.data)) {
+    return (publicCards as { data: CardWithVendorId[] }).data
+  }
+  return []
+}
+
 export function useFeaturedCards() {
-  const { publicCards, isLoading: cardsLoading } = usePublicCatalog()
-  const { usePublicVendors } = usePublicCatalogQueries()
-  const { data: vendorsResponse, isLoading: vendorsLoading } = usePublicVendors({ limit: 100 })
-  const [activeTab, setActiveTab] = useState<FeaturedCardsTabType>('dashx')
+  const { publicCards, vendors: vendorsResponse, isLoading } = useHomePageCatalog()
 
-  const filteredCards = useMemo(() => {
-    if (!publicCards) return []
-    const cards = Array.isArray(publicCards)
-      ? publicCards
-      : Array.isArray((publicCards as { data?: unknown[] })?.data)
-        ? (publicCards as { data: unknown[] }).data
-        : []
-    const normalizedTargetType = activeTab.toLowerCase()
-    const typedCards = cards as CardWithVendorId[]
-    const byType = typedCards.filter((card) => {
-      const cardType = String(card.type ?? '')
-        .toLowerCase()
-        .trim()
-      return cardType === normalizedTargetType
+  const sections = useMemo((): FeaturedCardSection[] => {
+    const cards = normalizeCards(publicCards)
+
+    return FEATURED_SECTIONS.map(({ id, label }) => {
+      const byType = cards.filter((card) => {
+        const cardType = String(card.type ?? '')
+          .toLowerCase()
+          .trim()
+        return cardType === id
+      })
+      const enriched = enrichCardsWithVendorLogos(byType, vendorsResponse)
+      return {
+        id,
+        label,
+        cards: enriched.slice(0, FEATURED_LIMIT),
+      }
     })
-    const enriched = enrichCardsWithVendorLogos(byType, vendorsResponse)
-    return enriched.slice(0, FEATURED_LIMIT)
-  }, [publicCards, activeTab, vendorsResponse])
-
-  const isLoading = cardsLoading || vendorsLoading
+  }, [publicCards, vendorsResponse])
 
   return {
-    activeTab,
-    setActiveTab,
-    tabOptions: TAB_OPTIONS,
-    filteredCards,
+    sections,
     isLoading,
   }
 }

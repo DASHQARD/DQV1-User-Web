@@ -18,6 +18,7 @@ import { useToast } from '@/hooks'
 export type CardItemHookProps = {
   card_id?: string | number
   product: string
+  card_name?: string
   branch_name?: string
   branch_location?: string
   vendor_name?: string
@@ -33,6 +34,7 @@ export function useCardItem(props: CardItemHookProps) {
   const {
     card_id,
     product,
+    card_name,
     branch_name,
     branch_location,
     vendor_name,
@@ -62,7 +64,10 @@ export function useCardItem(props: CardItemHookProps) {
   const cardBackground = useMemo(() => getCardBackground(type), [type])
   const cardTypeName = useMemo(() => getCardTypeName(type), [type])
   const displayPrice = useMemo(() => formatCurrency(price, currency) || 0, [price, currency])
-  const displayProduct = useMemo(() => getCardDisplayName(product), [product])
+  const displayProduct = useMemo(
+    () => getCardDisplayName(product, card_name, { type }),
+    [product, card_name, type],
+  )
 
   const handleQuickAdd = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()

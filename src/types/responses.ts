@@ -380,6 +380,12 @@ export type VendorDetailsResponse = {
   status: string
   updated_at: string
   vendor: string
+  logo?: string | null
+  logo_key?: string | null
+  business_logo?: string | null
+  vendor_logo?: string | null
+  business_country?: string | null
+  business_address?: string
 }[]
 
 export type VendorDetails = {

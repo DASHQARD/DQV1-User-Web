@@ -7,18 +7,29 @@ import type {
 } from '@/types/responses'
 import { getCartAllRecipients, getRecipientByID } from '../../services/recipients'
 
+type PublicCatalogQueryOptions = {
+  staleTime?: number
+  enabled?: boolean
+  gcTime?: number
+}
+
 export function usePublicCatalogQueries() {
-  function usePublicCardsService(query?: Record<string, any>) {
+  function usePublicCardsService(
+    query?: Record<string, any>,
+    options?: PublicCatalogQueryOptions,
+  ) {
     return useQuery<PublicCardsResponse, Error, PublicCardsResponse>({
       queryKey: ['public-cards', query],
       queryFn: () => getPublicCards(query),
+      ...options,
     })
   }
 
-  function usePublicVendors(query?: Record<string, any>) {
+  function usePublicVendors(query?: Record<string, any>, options?: PublicCatalogQueryOptions) {
     return useQuery<VendorDetailsResponse, Error, VendorDetailsResponse>({
       queryKey: ['public-vendors-list', query],
       queryFn: () => getPublicVendors(query),
+      ...options,
     })
   }
 

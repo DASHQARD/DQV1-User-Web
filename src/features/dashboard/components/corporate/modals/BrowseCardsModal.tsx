@@ -190,7 +190,6 @@ export function BrowseCardsModal() {
                           <VendorItems
                             name={vendor.branch_name}
                             branches={vendor.shops || vendor.branches_with_cards?.length || 0}
-                            rating={vendor.rating}
                           />
                         </div>
                       ))

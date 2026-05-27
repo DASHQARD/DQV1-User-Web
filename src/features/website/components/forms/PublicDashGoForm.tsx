@@ -1,4 +1,4 @@
-import { Button, Input, Text } from '@/components'
+import { Button, Input } from '@/components'
 import { Icon } from '@/libs'
 import { CURRENCY_PREFIX, DEFAULT_CURRENCY, formatCurrencyLabel } from '@/utils/format'
 import { getApiErrorMessage, isGuestAmountThresholdMessage } from '@/utils/apiError'
@@ -22,6 +22,7 @@ import {
 } from '../../utils/guestAuth'
 import React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { VENDOR_DASHGO_FORM } from '../../pages/vendors/vendorProfileUtils'
 
 interface PublicDashGoFormProps {
   vendorName: string
@@ -35,7 +36,7 @@ interface PublicDashGoFormProps {
 
 export default function PublicDashGoForm({
   vendorName,
-  vendorDetails,
+  vendorDetails: _vendorDetails,
   availableBranches,
   quickAmounts,
   selectedAmount,
@@ -136,54 +137,35 @@ export default function PublicDashGoForm({
     }
   }
 
+  const resolvedAmount = resolveGiftCardAmount(watchedAmount || '0')
+
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <div className="flex flex-col gap-1">
-        <Text variant="h1" className="capitalize">
-          DashGo Gift Qard
-        </Text>
-        <Text variant="p" className="text-grey-500">
-          Vendor: {vendorName}
-        </Text>
-        <div className="flex items-center gap-1">
-          <Icon icon="bi:geo-alt-fill" className="size-4 text-grey-500" />
-          <Text variant="p" className="text-grey-500">
-            {(vendorDetails as any)?.business_country ||
-              (vendorDetails as any)?.business_address ||
-              'Location not available'}
-          </Text>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <Text variant="h2" className="capitalize">
-          Description
-        </Text>
-        <Text variant="p" className="text-grey-600 leading-relaxed">
-          Create a custom DashGo gift card with your desired amount for {vendorName}. Use this card
-          at {vendorName} locations.
-        </Text>
-      </div>
-
-      {/* Amount Input */}
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className={VENDOR_DASHGO_FORM}
+    >
       <div>
-        <Text variant="h3" weight="bold" className="text-gray-900 mb-4">
-          Select Amount
-        </Text>
+        <h2 className="text-lg md:text-xl font-bold text-gray-900">Custom DashGo amount</h2>
+        <p className="mt-1 text-sm text-gray-600 leading-relaxed">
+          Choose an amount for {vendorName}. The card works at their listed branch
+          {availableBranches.length !== 1 ? 'es' : ''}.
+        </p>
+      </div>
 
-        {/* Quick Selection Buttons */}
-        <div className="flex gap-3 mb-4 flex-wrap">
+      <div>
+        <p className="text-sm font-semibold text-gray-900 mb-2.5">Quick select</p>
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-5 md:gap-2">
           {quickAmounts.map((amount) => {
-            const isSelected = resolveGiftCardAmount(watchedAmount || '0') === amount
+            const isSelected = resolvedAmount === amount
             return (
               <button
                 key={amount}
                 type="button"
                 onClick={() => form.setValue('amount', amount.toString())}
-                className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                className={`min-h-10 rounded-lg text-sm font-semibold transition-colors md:min-h-11 ${
                   isSelected
-                    ? 'bg-primary-500 text-white shadow-md'
-                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-primary-300'
+                    ? 'bg-primary-500 text-white shadow-sm'
+                    : 'bg-gray-50 text-gray-800 border border-gray-200 hover:border-primary-300 lg:bg-white'
                 }`}
               >
                 {formatCurrencyLabel(amount, DEFAULT_CURRENCY, { minDecimals: 0, maxDecimals: 0 })}
@@ -191,16 +173,17 @@ export default function PublicDashGoForm({
             )
           })}
         </div>
+      </div>
 
-        {/* Amount Input Field */}
-
+      <div>
+        <p className="text-sm font-semibold text-gray-900 mb-2">Or enter amount</p>
         <Input
           type="number"
           step="0.01"
           min={String(GIFT_CARD_AMOUNT_MIN)}
           max={String(GIFT_CARD_AMOUNT_MAX)}
           prefix={
-            <span className="pointer-events-none font-bold text-primary-500 text-lg">
+            <span className="pointer-events-none font-bold text-primary-500 text-base">
               {CURRENCY_PREFIX}
             </span>
           }
@@ -221,12 +204,11 @@ export default function PublicDashGoForm({
             },
           })}
           placeholder="0.00"
-          innerClassName="h-[56px]!"
+          innerClassName="h-12!"
           error={form.formState.errors.amount?.message}
         />
-
-        <p className="mt-2 text-sm text-gray-500">
-          Maximum amount:{' '}
+        <p className="mt-1.5 text-xs text-gray-500">
+          Max{' '}
           {formatCurrencyLabel(GIFT_CARD_AMOUNT_MAX, DEFAULT_CURRENCY, {
             minDecimals: 0,
             maxDecimals: 0,
@@ -234,8 +216,7 @@ export default function PublicDashGoForm({
         </p>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-4">
+      <div className="md:pt-1">
         <Button
           variant="secondary"
           type="submit"
@@ -247,12 +228,13 @@ export default function PublicDashGoForm({
             !vendor_id
           }
           loading={isSubmitting}
-          className="flex-1"
+          className="w-full min-h-11 font-bold"
         >
           <Icon icon="bi:cart-plus" className="size-5 mr-2" />
-          Add to Cart
+          Add to cart
         </Button>
       </div>
+
     </form>
   )
 }
