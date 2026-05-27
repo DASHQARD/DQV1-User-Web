@@ -11,7 +11,7 @@ export type DashQardsTabId = 'dashx' | 'dashpro' | 'dashpass' | 'dashgo'
 
 export type DashQardsVendor = {
   id: number | string
-  vendor_id?: number
+  vendor_id?: number | string
   name: string
 }
 

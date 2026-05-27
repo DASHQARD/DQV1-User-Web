@@ -12,9 +12,8 @@ export const PartnerVendors = () => {
   const navigate = useNavigate()
   const { vendors, isLoadingVendors: isLoading } = useHomePageCatalog()
 
-  const vendorsWithCards = vendors?.filter((vendor) =>
-    vendorHasCatalogCards(vendor.branches_with_cards || []),
-  )
+  const vendorsWithCards =
+    vendors?.filter((vendor) => vendorHasCatalogCards(vendor.branches_with_cards || [])) ?? []
 
   const openVendor = (vendorId: string | number) => {
     navigate(`/vendor?vendor_id=${vendorId}`)

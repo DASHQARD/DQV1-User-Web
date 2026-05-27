@@ -1,14 +1,17 @@
 import { useMemo } from 'react'
 
 import { formatCardDisplayTitle } from '@/utils/cardDisplay'
-import { normalizePublicVendorsResponse } from '@/features/website/utils/mapPublicVendorsForFilter'
+import {
+  normalizePublicVendorsResponse,
+  type PublicVendorRecord,
+} from '@/features/website/utils/mapPublicVendorsForFilter'
 import {
   PUBLIC_CATALOG_STALE_MS,
   PUBLIC_VENDORS_QUERY,
 } from '../../constants/publicCatalog'
 import { usePublicCatalogQueries } from './usePublicCatalogQueries'
 
-export type VendorProfileRecord = ReturnType<typeof normalizePublicVendorsResponse>[number]
+export type VendorProfileRecord = PublicVendorRecord
 
 export function useVendorProfilePage(vendorId: string) {
   const { usePublicVendors } = usePublicCatalogQueries()

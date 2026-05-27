@@ -202,10 +202,9 @@ export function useCardDetails(): UseCardDetailsReturn {
 
   const displayProduct = useMemo(() => {
     if (!card) return ''
-    const c = card as { product?: string; card_name?: string }
-    return getCardDisplayName(c.product, c.card_name, {
-      description: c.description,
-      type: c.type,
+    return getCardDisplayName(card.product, card.card_name, {
+      description: card.description,
+      type: card.type,
     })
   }, [card])
 

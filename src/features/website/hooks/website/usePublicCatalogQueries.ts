@@ -1,4 +1,4 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { getPublicVendors, getPublicCards, getCards } from '../../services'
 import type {
   PublicCardsResponse,
@@ -7,7 +7,11 @@ import type {
 } from '@/types/responses'
 import { getCartAllRecipients, getRecipientByID } from '../../services/recipients'
 
-type PublicCatalogQueryOptions = Pick<UseQueryOptions, 'staleTime' | 'enabled' | 'gcTime'>
+type PublicCatalogQueryOptions = {
+  staleTime?: number
+  enabled?: boolean
+  gcTime?: number
+}
 
 export function usePublicCatalogQueries() {
   function usePublicCardsService(

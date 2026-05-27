@@ -170,7 +170,6 @@ export function IndividualPurchaseModal() {
                         <VendorItems
                           name={vendor.branch_name}
                           branches={vendor.shops || 0}
-                          rating={vendor.rating}
                         />
                       </div>
                     ))

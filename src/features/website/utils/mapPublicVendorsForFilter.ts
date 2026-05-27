@@ -1,20 +1,29 @@
+import type { VendorLogoFields } from '@/utils/vendorLogo'
+
 export type PublicVendorFilterOption = {
   id: number | string
-  vendor_id?: number
+  vendor_id?: number | string
   name: string
 }
 
-type VendorBranchWithCards = {
-  cards?: unknown[]
+export type PublicVendorBranchRecord = {
+  branch_id?: number | string
+  branch_name?: string
+  branch_location?: string
+  cards?: Array<Record<string, unknown>>
 }
 
-type PublicVendorRecord = {
-  vendor_id?: number
-  id?: number
+export type PublicVendorRecord = VendorLogoFields & {
+  vendor_id?: number | string
+  id?: number | string
   business_name?: string
   vendor_name?: string
   branch_name?: string
-  branches_with_cards?: VendorBranchWithCards[]
+  business_country?: string | null
+  business_address?: string
+  qr_url?: string
+  branches_with_cards?: PublicVendorBranchRecord[]
+  vendor_cards?: Array<Record<string, unknown>>
 }
 
 function vendorHasCards(vendor: PublicVendorRecord): boolean {
