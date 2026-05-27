@@ -99,7 +99,6 @@ export function IndividualPurchaseModal() {
       // console.log('Creating DashGo purchase for vendor:', selectedVendor, 'amount:', dashGoAmount)
     } else {
       // TODO: Handle regular card individual purchase creation (includes DashX and DashPass which are vendor-created)
-      // console.log('Creating individual purchase for card:', selectedCard, 'vendor:', selectedVendor)
     }
 
     modal.closeModal()
@@ -167,10 +166,7 @@ export function IndividualPurchaseModal() {
                         onClick={() => handleVendorSelect(vendor.id)}
                         className="cursor-pointer transition-all hover:scale-105"
                       >
-                        <VendorItems
-                          name={vendor.branch_name}
-                          branches={vendor.shops || 0}
-                        />
+                        <VendorItems name={vendor.branch_name} branches={vendor.shops || 0} />
                       </div>
                     ))
                   )}
@@ -326,9 +322,7 @@ export function IndividualPurchaseModal() {
             <Button
               variant="secondary"
               onClick={handleConfirm}
-              disabled={
-                selectedCardType === 'dashgo' && !isGiftCardAmountSubmittable(dashGoAmount)
-              }
+              disabled={selectedCardType === 'dashgo' && !isGiftCardAmountSubmittable(dashGoAmount)}
             >
               Confirm Purchase
             </Button>
