@@ -37,7 +37,7 @@ export default function OnboardingForm() {
 
         <hr className="border-[#F1F2F4]" />
 
-        <section className="grid grid-cols-2 gap-4 flex-1">
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="First Name"
             isRequired

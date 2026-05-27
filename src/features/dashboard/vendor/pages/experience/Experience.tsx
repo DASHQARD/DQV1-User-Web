@@ -120,37 +120,34 @@ export default function Experience() {
           </div>
 
           <VendorSummaryCards />
-          <div className="relative pt-14">
-            <PaginatedTable
-              filterWrapperClassName="lg:absolute lg:top-0 lg:right-[2px]"
-              columns={experienceListColumns}
-              data={experiencesData}
-              total={estimatedTotal}
-              loading={isLoadingAny}
-              query={query}
-              setQuery={setQuery}
-              searchPlaceholder="Search by product name or type..."
-              noSearch={isBranch}
-              csvHeaders={experienceListCsvHeaders}
-              printTitle="Experiences"
-              onNextPage={handleNextPage}
-              hasNextPage={pagination?.hasNextPage}
-              hasPreviousPage={pagination?.hasPreviousPage}
-              currentAfter={query.after}
-              previousCursor={pagination?.previous}
-              onSetAfter={handleSetAfter}
-              filterBy={{
-                simpleSelects: [
-                  { label: 'status', options: OPTIONS.EXPERIENCE_STATUS },
-                  {
-                    label: 'card_type',
-                    options: OPTIONS.BRANCH_AND_CORPORATE_EXPERIENCE_CARD_TYPE,
-                  },
-                ],
-                date: [{ queryKey: 'dateFrom', label: 'Date range' }],
-              }}
-            />
-          </div>
+          <PaginatedTable
+            columns={experienceListColumns}
+            data={experiencesData}
+            total={estimatedTotal}
+            loading={isLoadingAny}
+            query={query}
+            setQuery={setQuery}
+            searchPlaceholder="Search by product name or type..."
+            noSearch={isBranch}
+            csvHeaders={experienceListCsvHeaders}
+            printTitle="Experiences"
+            onNextPage={handleNextPage}
+            hasNextPage={pagination?.hasNextPage}
+            hasPreviousPage={pagination?.hasPreviousPage}
+            currentAfter={query.after}
+            previousCursor={pagination?.previous}
+            onSetAfter={handleSetAfter}
+            filterBy={{
+              simpleSelects: [
+                { label: 'status', options: OPTIONS.EXPERIENCE_STATUS },
+                {
+                  label: 'card_type',
+                  options: OPTIONS.BRANCH_AND_CORPORATE_EXPERIENCE_CARD_TYPE,
+                },
+              ],
+              date: [{ queryKey: 'dateFrom', label: 'Date range' }],
+            }}
+          />
         </div>
       </div>
       <ViewExperience />

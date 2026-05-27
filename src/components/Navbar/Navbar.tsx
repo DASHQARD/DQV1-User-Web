@@ -18,6 +18,11 @@ import { DEFAULT_AVATAR_SRC } from '@/components/Avatar/Avatar'
 import { vendorQueries } from '@/features'
 import { useAuth } from '@/features/auth'
 import { getGuestNameFromAuth } from '@/features/website/utils/guestAuth'
+import {
+  buildCorporateAccountMenuItems,
+  getCorporateAccessState,
+  isAnyCorporateUser,
+} from '@/features/dashboard/corporate/utils/corporateNavAccess'
 
 /** Whether a website nav item should appear selected for the current path. */
 function isWebsiteNavItemActive(pathname: string, itemPath: string): boolean {
@@ -34,7 +39,12 @@ function isWebsiteNavItemActive(pathname: string, itemPath: string): boolean {
   return pathname.startsWith(`${itemPath}/`)
 }
 
-export default function Navbar() {
+type NavbarProps = {
+  variant?: 'website' | 'dashboard'
+}
+
+export default function Navbar({ variant = 'website' }: NavbarProps) {
+  const isDashboardVariant = variant === 'dashboard'
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
@@ -51,7 +61,13 @@ export default function Navbar() {
   // const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0)
   const displayName = isGuestAuth
     ? getGuestNameFromAuth(user) || 'Guest'
-    : user?.fullname || user?.name || user?.email?.split('@')[0] || user?.username || 'there'
+    : userProfileData?.fullname?.trim() ||
+      user?.fullname ||
+      user?.name ||
+      userProfileData?.email?.split('@')[0] ||
+      user?.email?.split('@')[0] ||
+      user?.username ||
+      'there'
 
   // State for mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -64,17 +80,11 @@ export default function Navbar() {
 
   // Get user type
   const currentUserType = (user as any)?.user_type || userProfileData?.user_type
-  const isCorporateUser =
-    currentUserType === 'corporate admin' ||
-    currentUserType === 'corporate super admin' ||
-    currentUserType === 'corporate'
+  const isCorporateUser = isAnyCorporateUser(currentUserType)
 
   // Get user type and status (moved up to use in useEffect)
   const userStatus = (user as any)?.status || userProfileData?.status
   const userType = currentUserType
-  const isCorporateAdmin = userType === 'corporate admin'
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
-  const isCorporate = userType === 'corporate' || isCorporateSuperAdmin
   const isVendor = userType === 'vendor' || userType === 'corporate_vendor'
   const isBranchManager = userType === 'branch'
   const isApprovedOrVerified = userStatus === 'approved' || userStatus === 'verified'
@@ -200,66 +210,13 @@ export default function Navbar() {
       ]
     }
 
-    // Corporate menu items
-    if (isCorporate || isCorporateAdmin) {
-      const items = [
-        {
-          label: 'Dashboard',
-          icon: 'bi:grid',
-          path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.HOME}?account=corporate`,
-        },
-        {
-          label: 'Transactions',
-          icon: 'bi:receipt',
-          path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.TRANSACTIONS}?account=corporate`,
-        },
-      ]
-
-      // Add purchase, requests if approved/verified
-      if (isApprovedOrVerified) {
-        items.push(
-          {
-            label: 'Purchase',
-            icon: 'bi:gift',
-            path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.PURCHASE}?account=corporate`,
-          },
-          {
-            label: 'Requests',
-            icon: 'bi:clipboard-check',
-            path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS}?account=corporate`,
-          },
-        )
-      }
-
-      items.push({
-        label: 'Audit Logs',
-        icon: 'bi:journal-text',
-        path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.AUDIT_LOGS}?account=corporate`,
+    // Corporate menu items (same entries as corporate sidebar)
+    if (isCorporateUser) {
+      const { canAccessRestrictedFeatures } = getCorporateAccessState(userProfileData)
+      return buildCorporateAccountMenuItems({
+        userType,
+        canAccessRestrictedFeatures,
       })
-
-      // Only show Admins and Notifications for corporate super admin (not corporate admin)
-      if (isCorporateSuperAdmin && isApprovedOrVerified) {
-        items.push(
-          {
-            label: 'Admins',
-            icon: 'bi:people-fill',
-            path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.ADMINS}?account=corporate`,
-          },
-          // {
-          //   label: 'Notifications',
-          //   icon: 'bi:bell-fill',
-          //   path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.NOTIFICATIONS}?account=corporate`,
-          // },
-        )
-      }
-
-      items.push({
-        label: 'Recipients',
-        icon: 'bi:person-lines-fill',
-        path: `${ROUTES.IN_APP.DASHBOARD.CORPORATE.RECIPIENTS}?account=corporate`,
-      })
-
-      return items
     }
 
     // Regular user menu items (default)
@@ -292,9 +249,8 @@ export default function Navbar() {
     ]
   }, [
     isGuestAuth,
-    isCorporateAdmin,
-    isCorporateSuperAdmin,
-    isCorporate,
+    isCorporateUser,
+    userProfileData,
     isVendor,
     isBranchManager,
     isApprovedOrVerified,
@@ -346,8 +302,18 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200/60 shadow-sm">
-        <div className="wrapper flex justify-between items-center py-3">
+      <nav
+        className={cn(
+          'sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200/60 shadow-sm shrink-0',
+          isDashboardVariant && 'relative',
+        )}
+      >
+        <div
+          className={cn(
+            'flex justify-between items-center',
+            isDashboardVariant ? 'px-4 sm:px-6 py-2.5' : 'wrapper py-3',
+          )}
+        >
           {/* Logo */}
           <Link to={ROUTES.IN_APP.HOME} className="shrink-0">
             <img src={Logo} alt="Logo" className="h-8 w-auto object-contain" />
@@ -356,6 +322,7 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <section className="hidden lg:flex items-center gap-3">
             {/* Navigation Items */}
+            {!isDashboardVariant ? (
             <ul className="hidden xl:flex items-center gap-2 bg-gray-50 py-2.5 px-5 rounded-full text-sm">
               {navItems.map((item) => {
                 const isActive = isWebsiteNavItemActive(pathname, item.path)
@@ -377,6 +344,7 @@ export default function Navbar() {
                 )
               })}
             </ul>
+            ) : null}
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
@@ -545,42 +513,45 @@ export default function Navbar() {
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-200 bg-white flex flex-col max-h-[calc(100dvh-4.5rem)]">
             <div className="flex-1 overflow-y-auto">
-              <div className="wrapper px-4 py-4 space-y-3">
-              {/* Mobile Navigation Items */}
-              <div className="flex flex-col gap-1">
-                {navItems.map((item) => {
-                  const isActive = isWebsiteNavItemActive(pathname, item.path)
-                  return (
-                    <Link
-                      key={item.label}
-                      to={item.path}
-                      aria-current={isActive ? 'page' : undefined}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={cn(
-                        'flex items-center gap-3 px-2 py-3 font-medium rounded-lg transition-colors',
-                        isActive
-                          ? 'bg-primary-50 text-primary-600 font-semibold'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600',
-                      )}
-                    >
-                      <Icon icon="bi:chevron-right" className="text-lg text-gray-400" />
-                      <span>{item.label}</span>
-                    </Link>
-                  )
-                })}
-              </div>
+              <div className={cn('px-4 py-4 space-y-3', !isDashboardVariant && 'wrapper')}>
+              {!isDashboardVariant ? (
+                <>
+                  <div className="flex flex-col gap-1">
+                    {navItems.map((item) => {
+                      const isActive = isWebsiteNavItemActive(pathname, item.path)
+                      return (
+                        <Link
+                          key={item.label}
+                          to={item.path}
+                          aria-current={isActive ? 'page' : undefined}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={cn(
+                            'flex items-center gap-3 px-2 py-3 font-medium rounded-lg transition-colors',
+                            isActive
+                              ? 'bg-primary-50 text-primary-600 font-semibold'
+                              : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600',
+                          )}
+                        >
+                          <Icon icon="bi:chevron-right" className="text-lg text-gray-400" />
+                          <span>{item.label}</span>
+                        </Link>
+                      )
+                    })}
+                  </div>
 
-              {/* Mobile Search */}
-              <button
-                onClick={() => {
-                  navigate(ROUTES.IN_APP.DASHQARDS)
-                  setMobileMenuOpen(false)
-                }}
-                className="flex items-center gap-3 px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 hover:text-primary-600 rounded-lg transition-colors w-full text-left"
-              >
-                <Icon icon="hugeicons:search-02" className="text-lg text-gray-400" />
-                <span>Search</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate(ROUTES.IN_APP.DASHQARDS)
+                      setMobileMenuOpen(false)
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 hover:text-primary-600 rounded-lg transition-colors w-full text-left"
+                  >
+                    <Icon icon="hugeicons:search-02" className="text-lg text-gray-400" />
+                    <span>Search</span>
+                  </button>
+                </>
+              ) : null}
 
               {/* Mobile Auth Section */}
               {isAuthenticated ? (

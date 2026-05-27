@@ -44,7 +44,7 @@ export default function BusinessDetailsForm() {
 
         <hr className="border-[#F1F2F4]" />
 
-        <section className="flex flex-col gap-4 flex-1">
+        <section className="flex flex-col gap-4">
           <Controller
             control={form.control}
             name="logo"
@@ -221,7 +221,7 @@ export default function BusinessDetailsForm() {
           </Text>
           <p className="text-sm text-gray-500">Upload required business documents</p>
         </div>
-        <section className="flex flex-col gap-4 flex-1">
+        <section className="flex flex-col gap-4">
           <div className="p-4 bg-[#EAEBEF]">
             <p className="text-sm text-gray-500 mb-2">
               Submit the following documents to help us verify your business.
