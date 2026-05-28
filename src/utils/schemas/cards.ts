@@ -9,7 +9,8 @@ import {
 
 export const DashGoAndDashProPurchaseFormSchema = z.object({
   assign_to_self: z.boolean(),
-  recipient_name: z.string().min(1),
+  recipient_first_name: z.string().min(1),
+  recipient_last_name: z.string().min(1),
   recipient_phone: getRequiredInternationalPhoneSchema('Recipient phone'),
   recipient_email: z.string().refine((val) => isValidEmailAddress(val), {
     message: 'Invalid email address',
@@ -41,7 +42,8 @@ export const DashGoPurchaseFormSchema = z
   .object({
     assign_to_self: z.boolean(),
     vendor_id: z.string().min(1, 'Vendor is required'),
-    recipient_name: z.string().optional(),
+    recipient_first_name: z.string().optional(),
+    recipient_last_name: z.string().optional(),
     recipient_phone: z.string().optional(),
     recipient_email: z.string().optional(),
     recipient_message: z.string().min(1),
@@ -63,11 +65,18 @@ export const DashGoPurchaseFormSchema = z
   .superRefine((data, ctx) => {
     // If assign_to_self is false, recipient details are required
     if (!data.assign_to_self) {
-      if (!data.recipient_name || data.recipient_name.trim().length === 0) {
+      if (!data.recipient_first_name || data.recipient_first_name.trim().length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Recipient name is required when not assigning to self',
-          path: ['recipient_name'],
+          message: 'First name is required when not assigning to self',
+          path: ['recipient_first_name'],
+        })
+      }
+      if (!data.recipient_last_name || data.recipient_last_name.trim().length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Last name is required when not assigning to self',
+          path: ['recipient_last_name'],
         })
       }
       if (!data.recipient_phone || data.recipient_phone.trim().length === 0) {
@@ -102,7 +111,8 @@ export const DashGoPurchaseFormSchema = z
 export const AssignRecipientSchema = z
   .object({
     assign_to_self: z.boolean(),
-    name: z.string().optional(),
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
     phone: z.string().optional(),
     email: z.string().optional(),
     message: z.string().refine((val) => val.trim().length > 0, {
@@ -115,11 +125,18 @@ export const AssignRecipientSchema = z
   })
   .superRefine((data, ctx) => {
     if (!data.assign_to_self) {
-      if (!data.name || data.name.trim().length === 0) {
+      if (!data.first_name || data.first_name.trim().length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Name is required when not assigning to yourself',
-          path: ['name'],
+          message: 'First name is required when not assigning to yourself',
+          path: ['first_name'],
+        })
+      }
+      if (!data.last_name || data.last_name.trim().length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Last name is required when not assigning to yourself',
+          path: ['last_name'],
         })
       }
       if (!data.phone || data.phone.trim().length === 0) {
@@ -172,7 +189,8 @@ export const DashGoAssignRecipientSchema = z
   .object({
     assign_to_self: z.boolean(),
     vendor_id: z.string().min(1, 'Vendor is required'),
-    recipient_name: z.string().optional().or(z.literal('')),
+    recipient_first_name: z.string().optional().or(z.literal('')),
+    recipient_last_name: z.string().optional().or(z.literal('')),
     recipient_phone: z.string().optional().or(z.literal('')),
     recipient_email: z.string().optional().or(z.literal('')),
     recipient_message: z.string().optional(),
@@ -191,11 +209,18 @@ export const DashGoAssignRecipientSchema = z
   })
   .superRefine((data, ctx) => {
     if (!data.assign_to_self) {
-      if (!data.recipient_name || data.recipient_name.trim() === '') {
+      if (!data.recipient_first_name || data.recipient_first_name.trim() === '') {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Recipient name is required when not assigning to yourself',
-          path: ['recipient_name'],
+          message: 'First name is required when not assigning to yourself',
+          path: ['recipient_first_name'],
+        })
+      }
+      if (!data.recipient_last_name || data.recipient_last_name.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Last name is required when not assigning to yourself',
+          path: ['recipient_last_name'],
         })
       }
       if (!data.recipient_phone || data.recipient_phone.trim() === '') {

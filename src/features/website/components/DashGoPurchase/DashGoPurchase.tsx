@@ -20,6 +20,7 @@ import {
   getGuestContactSessionItem,
 } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
+import { formatPersonName, splitPersonName } from '@/utils/personName'
 import {
   addGuestCard,
   createGuestDashGo,
@@ -56,7 +57,8 @@ export default function DashGoPurchase() {
     defaultValues: {
       assign_to_self: true,
       vendor_id: '',
-      recipient_name: '',
+      recipient_first_name: '',
+      recipient_last_name: '',
       recipient_phone: '',
       recipient_email: '',
       recipient_message: '',
@@ -80,7 +82,9 @@ export default function DashGoPurchase() {
 
   // Watch form values for card preview
   const amount = useWatch({ control, name: 'recipient_card_amount' })
-  const recipientName = useWatch({ control, name: 'recipient_name' })
+  const recipientFirstName = useWatch({ control, name: 'recipient_first_name' })
+  const recipientLastName = useWatch({ control, name: 'recipient_last_name' })
+  const recipientName = formatPersonName(recipientFirstName ?? '', recipientLastName ?? '')
   const message = useWatch({ control, name: 'recipient_message' })
   const assignToSelfFormValue = useWatch({ control, name: 'assign_to_self' })
   const vendorId = useWatch({ control, name: 'vendor_id' })
@@ -125,11 +129,14 @@ export default function DashGoPurchase() {
         user,
         userProfileData: userProfileData ?? null,
       })
-      setValue('recipient_name', contact.name)
+      const { first_name, last_name } = splitPersonName(contact.name)
+      setValue('recipient_first_name', first_name)
+      setValue('recipient_last_name', last_name)
       setValue('recipient_email', contact.email)
       setValue('recipient_phone', contact.phone)
     } else {
-      setValue('recipient_name', '')
+      setValue('recipient_first_name', '')
+      setValue('recipient_last_name', '')
       setValue('recipient_email', '')
       setValue('recipient_phone', '')
     }
@@ -142,7 +149,9 @@ export default function DashGoPurchase() {
       user,
       userProfileData: userProfileData ?? null,
     })
-    setValue('recipient_name', contact.name)
+    const { first_name, last_name } = splitPersonName(contact.name)
+    setValue('recipient_first_name', first_name)
+    setValue('recipient_last_name', last_name)
     setValue('recipient_email', contact.email)
     setValue('recipient_phone', contact.phone)
   }, [assignToSelf, isGuestAuth, user, userProfileData, setValue])
@@ -198,7 +207,11 @@ export default function DashGoPurchase() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: z.infer<typeof DashGoAssignRecipientSchema>) => {
+    const recipientFullName = formatPersonName(
+      data.recipient_first_name ?? '',
+      data.recipient_last_name ?? '',
+    )
     // Calculate issue date in YYYY-MM-DD format
     const today = new Date()
     const issueDate = today.toISOString().split('T')[0] // YYYY-MM-DD format
@@ -215,7 +228,7 @@ export default function DashGoPurchase() {
     try {
       const createResponse = isGuestAuth
         ? await createGuestDashGo({
-            guest_name: (user as any)?.guest_name || data.recipient_name || 'Guest User',
+            guest_name: (user as any)?.guest_name || recipientFullName || 'Guest User',
             guest_email:
               getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
               (user as any)?.guest_email ||
@@ -271,7 +284,7 @@ export default function DashGoPurchase() {
         }
 
         if (!cartItemId) {
-          const guestName = (user as any)?.guest_name || data.recipient_name || 'Guest User'
+          const guestName = (user as any)?.guest_name || recipientFullName || 'Guest User'
           const guestEmail =
             getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
             (user as any)?.guest_email ||
@@ -333,7 +346,7 @@ export default function DashGoPurchase() {
       }
 
       if (!data.assign_to_self) {
-        assignPayload.name = data.recipient_name
+        assignPayload.name = recipientFullName
         assignPayload.phone = data.recipient_phone
         assignPayload.email = data.recipient_email
       }
@@ -578,30 +591,49 @@ export default function DashGoPurchase() {
               </Text>
             </div>
             <div className="grid max-w-2xl gap-6">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Full Name {!assignToSelf && '*'}
-                </label>
-                <input
-                  type="text"
-                  {...register('recipient_name')}
-                  disabled={assignToSelf}
-                  className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
-                    assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
-                  }`}
-                  placeholder={
-                    assignToSelf
-                      ? 'Will use your account information'
-                      : "Enter recipient's full name"
-                  }
-                />
-                {errors.recipient_name && (
-                  <p className="mt-1 text-xs text-red-500">{errors.recipient_name.message}</p>
-                )}
-                {assignToSelf && (
-                  <p className="mt-1 text-xs text-gray-500">Will use your account name</p>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    First Name {!assignToSelf && '*'}
+                  </label>
+                  <input
+                    type="text"
+                    {...register('recipient_first_name')}
+                    disabled={assignToSelf}
+                    className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
+                      assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                    placeholder={assignToSelf ? 'Will use your account information' : 'First name'}
+                  />
+                  {errors.recipient_first_name && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.recipient_first_name.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Last Name {!assignToSelf && '*'}
+                  </label>
+                  <input
+                    type="text"
+                    {...register('recipient_last_name')}
+                    disabled={assignToSelf}
+                    className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
+                      assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                    placeholder={assignToSelf ? 'Will use your account information' : 'Last name'}
+                  />
+                  {errors.recipient_last_name && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.recipient_last_name.message}
+                    </p>
+                  )}
+                </div>
               </div>
+              {assignToSelf && (
+                <p className="text-xs text-gray-500">Will use your account name</p>
+              )}
               <div>
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
                   Phone Number {!assignToSelf && '*'}

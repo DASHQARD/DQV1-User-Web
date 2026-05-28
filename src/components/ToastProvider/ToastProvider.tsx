@@ -9,6 +9,8 @@ import { ToastContextProvider, type ToastNotificationType } from '@/contexts'
 import { cn } from '@/libs'
 import { Icon } from '@/libs/icon'
 
+const TOAST_DURATION_MS = 6000
+
 export function ToastProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [notificationList, setNotificationList] = React.useState<
     {
@@ -42,7 +44,7 @@ export function ToastProvider({ children }: Readonly<{ children: React.ReactNode
         { message, type, id, title, nodeRef: React.createRef() },
       ])
 
-      setTimeout(() => removeNotification(id), 4000)
+      setTimeout(() => removeNotification(id), TOAST_DURATION_MS)
     },
     [setNotificationList],
   )

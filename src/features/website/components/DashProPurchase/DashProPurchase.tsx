@@ -20,6 +20,7 @@ import {
   getGuestContactSessionItem,
 } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
+import { formatPersonName, splitPersonName } from '@/utils/personName'
 import {
   addGuestCard,
   createGuestDashPro,
@@ -41,7 +42,8 @@ export default function DashProPurchase() {
     defaultValues: {
       assign_to_self: true,
       amount: 1000,
-      name: '',
+      first_name: '',
+      last_name: '',
       phone: '',
       email: '',
       message: '',
@@ -59,7 +61,9 @@ export default function DashProPurchase() {
 
   // Watch form values for card preview
   const amount = useWatch({ control, name: 'amount' })
-  const recipientName = useWatch({ control, name: 'name' })
+  const recipientFirstName = useWatch({ control, name: 'first_name' })
+  const recipientLastName = useWatch({ control, name: 'last_name' })
+  const recipientName = formatPersonName(recipientFirstName ?? '', recipientLastName ?? '')
   const message = useWatch({ control, name: 'message' })
   const assignToSelfFormValue = useWatch({ control, name: 'assign_to_self' })
 
@@ -100,12 +104,15 @@ export default function DashProPurchase() {
         user,
         userProfileData: userProfileData ?? null,
       })
-      setValue('name', contact.name)
+      const { first_name, last_name } = splitPersonName(contact.name)
+      setValue('first_name', first_name)
+      setValue('last_name', last_name)
       setValue('email', contact.email)
       setValue('phone', contact.phone)
     } else {
       // Clear fields when not assigning to self
-      setValue('name', '')
+      setValue('first_name', '')
+      setValue('last_name', '')
       setValue('email', '')
       setValue('phone', '')
     }
@@ -119,19 +126,22 @@ export default function DashProPurchase() {
       user,
       userProfileData: userProfileData ?? null,
     })
-    setValue('name', contact.name)
+    const { first_name, last_name } = splitPersonName(contact.name)
+    setValue('first_name', first_name)
+    setValue('last_name', last_name)
     setValue('email', contact.email)
     setValue('phone', contact.phone)
   }, [assignToSelf, isGuestAuth, user, userProfileData, setValue])
 
   const onSubmit = async (data: z.infer<typeof AssignRecipientSchema>) => {
     try {
+      const recipientFullName = formatPersonName(data.first_name ?? '', data.last_name ?? '')
       const today = new Date()
       const issueDate = today.toISOString().split('T')[0]
 
       const cardResponse = isGuestAuth
         ? await createGuestDashPro({
-            guest_name: (user as any)?.guest_name || data.name?.trim() || 'Guest User',
+            guest_name: (user as any)?.guest_name || recipientFullName || 'Guest User',
             guest_email:
               getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
               (user as any)?.guest_email ||
@@ -200,7 +210,7 @@ export default function DashProPurchase() {
         }
 
         if (!cartItemId) {
-          const guestName = (user as any)?.guest_name || data.name?.trim() || 'Guest User'
+          const guestName = (user as any)?.guest_name || recipientFullName || 'Guest User'
           const guestEmail =
             getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
             (user as any)?.guest_email ||
@@ -269,8 +279,8 @@ export default function DashProPurchase() {
 
       // Only include name, email, phone if assign_to_self is false
       if (!data.assign_to_self) {
-        if (data.name && data.name.trim().length > 0) {
-          assignPayload.name = data.name.trim()
+        if (recipientFullName) {
+          assignPayload.name = recipientFullName
         }
         if (data.email && data.email.trim().length > 0) {
           assignPayload.email = data.email.trim()
@@ -502,28 +512,45 @@ export default function DashProPurchase() {
               <p className="text-sm text-gray-500">Who will receive this gift card?</p>
             </div>
             <div className="grid max-w-2xl gap-6">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Full Name {!assignToSelf && '*'}
-                </label>
-                <input
-                  type="text"
-                  {...register('name')}
-                  disabled={assignToSelf}
-                  className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
-                    assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
-                  }`}
-                  placeholder={
-                    assignToSelf
-                      ? 'Will use your account information'
-                      : "Enter recipient's full name"
-                  }
-                />
-                {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
-                {assignToSelf && (
-                  <p className="mt-1 text-xs text-gray-500">Will use your account name</p>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    First Name {!assignToSelf && '*'}
+                  </label>
+                  <input
+                    type="text"
+                    {...register('first_name')}
+                    disabled={assignToSelf}
+                    className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
+                      assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                    placeholder={assignToSelf ? 'Will use your account information' : 'First name'}
+                  />
+                  {errors.first_name && (
+                    <p className="mt-1 text-xs text-red-500">{errors.first_name.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Last Name {!assignToSelf && '*'}
+                  </label>
+                  <input
+                    type="text"
+                    {...register('last_name')}
+                    disabled={assignToSelf}
+                    className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
+                      assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                    placeholder={assignToSelf ? 'Will use your account information' : 'Last name'}
+                  />
+                  {errors.last_name && (
+                    <p className="mt-1 text-xs text-red-500">{errors.last_name.message}</p>
+                  )}
+                </div>
               </div>
+              {assignToSelf && (
+                <p className="text-xs text-gray-500 -mt-2">Will use your account name</p>
+              )}
               <div>
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
                   Phone Number {!assignToSelf && '*'}

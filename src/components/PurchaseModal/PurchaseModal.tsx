@@ -20,6 +20,7 @@ import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { useAuthStore } from '@/stores'
 import { EXAMPLE_PHONE_PLACEHOLDER, MODAL_NAMES, PURCHASE_WHATSAPP_HI_PROMPT } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '@/features/website/utils/assignToSelfContactPrefill'
+import { formatPersonName, splitPersonName } from '@/utils/personName'
 
 function resolveModalAmount(amount: number | null | undefined): number | undefined {
   if (amount == null || amount <= 0) return undefined
@@ -76,7 +77,8 @@ export default function PurchaseModal() {
     resolver: zodResolver(AssignRecipientSchema),
     defaultValues: {
       assign_to_self: true,
-      name: '',
+      first_name: '',
+      last_name: '',
       phone: '',
       email: '',
       message: '',
@@ -129,7 +131,9 @@ export default function PurchaseModal() {
   const displayedCardAmount = form.watch('amount')
     ? `${cardCurrency} ${Number(form.watch('amount')).toLocaleString()}`
     : `${cardCurrency} 0`
-  const recipientName = form.watch('name')
+  const recipientFirstName = form.watch('first_name')
+  const recipientLastName = form.watch('last_name')
+  const recipientName = formatPersonName(recipientFirstName ?? '', recipientLastName ?? '')
   const displayedCardRecipient = React.useMemo(() => {
     if (assignToSelf) {
       const contact = getAssignToSelfContactPrefill({
@@ -159,11 +163,14 @@ export default function PurchaseModal() {
         user,
         userProfileData: userProfileData ?? null,
       })
-      form.setValue('name', contact.name)
+      const { first_name, last_name } = splitPersonName(contact.name)
+      form.setValue('first_name', first_name)
+      form.setValue('last_name', last_name)
       form.setValue('email', contact.email)
       form.setValue('phone', contact.phone)
     } else {
-      form.setValue('name', '')
+      form.setValue('first_name', '')
+      form.setValue('last_name', '')
       form.setValue('email', '')
       form.setValue('phone', '')
     }
@@ -192,7 +199,9 @@ export default function PurchaseModal() {
           user,
           userProfileData: userProfileData ?? null,
         })
-        form.setValue('name', contact.name)
+        const { first_name, last_name } = splitPersonName(contact.name)
+        form.setValue('first_name', first_name)
+        form.setValue('last_name', last_name)
         form.setValue('phone', contact.phone)
         form.setValue('email', contact.email)
         form.setValue('message', modalData.message ?? '')
@@ -200,7 +209,9 @@ export default function PurchaseModal() {
         if (amount !== undefined) form.setValue('amount', amount)
         else form.resetField('amount')
       } else if (editing) {
-        form.setValue('name', modalData.recipient_name ?? '')
+        const { first_name, last_name } = splitPersonName(modalData.recipient_name ?? '')
+        form.setValue('first_name', first_name)
+        form.setValue('last_name', last_name)
         form.setValue('phone', modalData.recipient_phone ?? '')
         form.setValue('email', modalData.recipient_email ?? '')
         form.setValue('message', modalData.message ?? '')
@@ -208,7 +219,8 @@ export default function PurchaseModal() {
         if (amount !== undefined) form.setValue('amount', amount)
         else form.resetField('amount')
       } else {
-        form.setValue('name', '')
+        form.setValue('first_name', '')
+        form.setValue('last_name', '')
         form.setValue('phone', '')
         form.setValue('email', '')
         form.setValue('message', '')
@@ -253,13 +265,15 @@ export default function PurchaseModal() {
       return
     }
 
+    const recipientFullName = formatPersonName(data.first_name ?? '', data.last_name ?? '')
+
     if (isGuestAuth) {
       const recipientId = modal.modalData?.recipient_id
       if (recipientId != null && recipientId !== '') {
         updateGuestRecipientMutation.mutate({
           recipient_id: recipientId,
-          ...(!data.assign_to_self && data.name?.trim()
-            ? { recipient_name: data.name.trim() }
+          ...(!data.assign_to_self && recipientFullName
+            ? { recipient_name: recipientFullName }
             : {}),
           ...(!data.assign_to_self && data.email?.trim()
             ? { recipient_email: data.email.trim() }
@@ -279,8 +293,8 @@ export default function PurchaseModal() {
         quantity: 1,
       }
       if (!data.assign_to_self) {
-        if (data.name && data.name.trim().length > 0) {
-          guestPayload.recipient_name = data.name.trim()
+        if (recipientFullName) {
+          guestPayload.recipient_name = recipientFullName
         }
         if (data.email && data.email.trim().length > 0) {
           guestPayload.recipient_email = data.email.trim()
@@ -302,8 +316,8 @@ export default function PurchaseModal() {
     }
 
     if (!data.assign_to_self) {
-      if (data.name && data.name.trim().length > 0) {
-        payload.name = data.name.trim()
+      if (recipientFullName) {
+        payload.name = recipientFullName
       }
       if (data.email && data.email.trim().length > 0) {
         payload.email = data.email.trim()
@@ -518,19 +532,31 @@ export default function PurchaseModal() {
             <p className="text-sm text-gray-500">Who will receive this gift card?</p>
           </div>
           <div className="grid max-w-2xl gap-6">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Full Name {!assignToSelf && '*'}
-              </label>
-              <Input
-                type="text"
-                {...form.register('name')}
-                error={form.formState.errors.name?.message}
-                disabled={assignToSelf}
-                placeholder={
-                  assignToSelf ? 'Will use your account information' : "Enter recipient's full name"
-                }
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  First Name {!assignToSelf && '*'}
+                </label>
+                <Input
+                  type="text"
+                  {...form.register('first_name')}
+                  error={form.formState.errors.first_name?.message}
+                  disabled={assignToSelf}
+                  placeholder={assignToSelf ? 'Will use your account information' : 'First name'}
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Last Name {!assignToSelf && '*'}
+                </label>
+                <Input
+                  type="text"
+                  {...form.register('last_name')}
+                  error={form.formState.errors.last_name?.message}
+                  disabled={assignToSelf}
+                  placeholder={assignToSelf ? 'Will use your account information' : 'Last name'}
+                />
+              </div>
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">

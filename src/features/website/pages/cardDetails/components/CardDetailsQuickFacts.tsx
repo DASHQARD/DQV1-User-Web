@@ -56,14 +56,14 @@ export function CardDetailsQuickFacts({ facts, priceBreakdown }: CardDetailsQuic
                 {formatCurrency(priceBreakdown.basePrice, priceBreakdown.currency)}
               </span>
             </div>
-            {priceBreakdown.markupPrice > 0 && (
+            {/* {priceBreakdown.markupPrice > 0 && (
               <div className="flex justify-between gap-2 text-gray-600">
                 <span>Platform fee</span>
                 <span className="font-medium text-gray-900 tabular-nums">
                   {formatCurrency(priceBreakdown.markupPrice, priceBreakdown.currency)}
                 </span>
               </div>
-            )}
+            )} */}
             <div className="flex justify-between gap-2 border-t border-gray-200 pt-2 font-semibold text-gray-900">
               <span>Total</span>
               <span className="tabular-nums">

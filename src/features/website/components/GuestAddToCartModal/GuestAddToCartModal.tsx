@@ -29,9 +29,11 @@ import {
   INVALID_EMAIL_MESSAGE,
   isValidEmailAddress,
 } from '@/utils/schemas/shared'
+import { formatPersonName, splitPersonName } from '@/utils/personName'
 
 const ContactSchema = z.object({
-  guest_name: z.string().trim().min(1, 'Name is required'),
+  first_name: z.string().trim().min(1, 'First name is required'),
+  last_name: z.string().trim().min(1, 'Last name is required'),
   guest_phone: getRequiredInternationalPhoneSchema('Phone number'),
   email: z.string().refine((val) => isValidEmailAddress(val), {
     message: INVALID_EMAIL_MESSAGE,
@@ -68,7 +70,7 @@ export default function GuestAddToCartModal() {
 
   const contactForm = useForm<ContactFormData>({
     resolver: zodResolver(ContactSchema),
-    defaultValues: { guest_name: '', guest_phone: '', email: '' },
+    defaultValues: { first_name: '', last_name: '', guest_phone: '', email: '' },
   })
 
   const otpForm = useForm<OTPFormData>({
@@ -81,15 +83,16 @@ export default function GuestAddToCartModal() {
     if (pendingItem.redemptionOnly) {
       setStep('contact')
       const phone = getGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY) ?? ''
+      const savedName = getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ?? ''
       contactForm.reset({
-        guest_name: getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ?? '',
+        ...splitPersonName(savedName),
         guest_phone: phone,
         email: getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ?? '',
       })
       otpForm.reset({ otp: '' })
     } else {
       setStep('choice')
-      contactForm.reset({ guest_name: '', guest_phone: '', email: '' })
+      contactForm.reset({ first_name: '', last_name: '', guest_phone: '', email: '' })
       otpForm.reset({ otp: '' })
       setSubmittedPhone('')
       setGuestName('')
@@ -121,13 +124,14 @@ export default function GuestAddToCartModal() {
     if (!pendingItem) return
     setIsRequestingOtp(true)
     try {
+      const guestFullName = formatPersonName(data.first_name, data.last_name)
       await guestAuthOtpRequest({ guest_phone: data.guest_phone })
       setGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY, data.email)
       setGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY, data.guest_phone)
-      setGuestName(data.guest_name)
+      setGuestName(guestFullName)
       setGuestEmail(data.email)
       setSubmittedPhone(data.guest_phone)
-      contactForm.reset({ guest_name: '', guest_phone: '', email: '' })
+      contactForm.reset({ first_name: '', last_name: '', guest_phone: '', email: '' })
       otpForm.reset({ otp: '' })
       setStep('otp')
       toast.success('Verification code sent to your phone')
@@ -296,16 +300,28 @@ export default function GuestAddToCartModal() {
                 We’ll send a one-time code to your phone. Your email is saved for later.
               </p>
             </div>
-            <Input
-              label="Full name"
-              id="guest-name"
-              type="text"
-              {...contactForm.register('guest_name')}
-              error={contactForm.formState.errors.guest_name?.message}
-              placeholder="Your name"
-              className="w-full"
-              isRequired
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="First name"
+                id="guest-first-name"
+                type="text"
+                {...contactForm.register('first_name')}
+                error={contactForm.formState.errors.first_name?.message}
+                placeholder="First name"
+                className="w-full"
+                isRequired
+              />
+              <Input
+                label="Last name"
+                id="guest-last-name"
+                type="text"
+                {...contactForm.register('last_name')}
+                error={contactForm.formState.errors.last_name?.message}
+                placeholder="Last name"
+                className="w-full"
+                isRequired
+              />
+            </div>
             <Controller
               control={contactForm.control}
               name="guest_phone"
@@ -397,7 +413,7 @@ export default function GuestAddToCartModal() {
                   variant="outline"
                   onClick={() => {
                     contactForm.reset({
-                      guest_name: guestName,
+                      ...splitPersonName(guestName),
                       guest_phone: submittedPhone,
                       email: guestEmail,
                     })
