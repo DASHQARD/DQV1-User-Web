@@ -17,26 +17,13 @@ const DashProAssignSchema = AssignRecipientSchema.safeExtend({
   phone: z.string().optional(),
   email: z.string().optional(),
 }).superRefine((data, ctx) => {
-  // If assign_to_self is false, phone and email are required
   if (!data.assign_to_self) {
-    if (!data.phone || data.phone.trim().length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Phone number is required',
-        path: ['phone'],
-      })
-    } else if (!isValidInternationalPhoneDigits(data.phone)) {
+    const phone = data.phone?.trim()
+    if (phone && !isValidInternationalPhoneDigits(phone)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: INVALID_PHONE_MESSAGE,
         path: ['phone'],
-      })
-    }
-    if (!data.email || data.email.trim().length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Email address is required',
-        path: ['email'],
       })
     }
   }

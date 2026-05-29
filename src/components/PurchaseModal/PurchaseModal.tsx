@@ -560,7 +560,10 @@ export default function PurchaseModal() {
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Phone Number {!assignToSelf && '*'}
+                Phone Number
+                {!assignToSelf && (
+                  <span className="text-gray-400 font-normal"> (optional)</span>
+                )}
               </label>
               <Controller
                 control={form.control}
@@ -580,7 +583,10 @@ export default function PurchaseModal() {
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Email Address {!assignToSelf && '*'}
+                Email Address
+                {!assignToSelf && (
+                  <span className="text-gray-400 font-normal"> (optional)</span>
+                )}
               </label>
               <Input
                 type="email"

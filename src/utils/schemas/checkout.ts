@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  getOptionalEmailSchema,
   getRequiredEmailSchema,
   getRequiredInternationalPhoneSchema,
   getRequiredStringSchema,
@@ -8,6 +9,13 @@ import {
 export const UserInfoSchema = z.object({
   full_name: getRequiredStringSchema('Full name'),
   email: getRequiredEmailSchema('Email'),
+  phone_number: getRequiredInternationalPhoneSchema('Phone number'),
+})
+
+/** Guest checkout — phone required (OTP identity); name and email optional enrichment. */
+export const GuestUserInfoSchema = z.object({
+  full_name: z.string().optional(),
+  email: getOptionalEmailSchema(),
   phone_number: getRequiredInternationalPhoneSchema('Phone number'),
 })
 
@@ -27,5 +35,6 @@ export const PaymentMethodSchema = z.object({
 })
 
 export type UserInfoFormData = z.infer<typeof UserInfoSchema>
+export type GuestUserInfoFormData = z.infer<typeof GuestUserInfoSchema>
 /** RHF holds raw input values; Zod coerces to numbers on parse. */
 export type PaymentMethodFormData = z.input<typeof PaymentMethodSchema>

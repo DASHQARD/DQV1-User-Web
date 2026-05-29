@@ -24,20 +24,15 @@ import {
   setGuestContactSessionItem,
 } from '@/utils/constants'
 import { useToast } from '@/hooks'
-import {
-  getRequiredInternationalPhoneSchema,
-  INVALID_EMAIL_MESSAGE,
-  isValidEmailAddress,
-} from '@/utils/schemas/shared'
+import { getOptionalEmailSchema, getRequiredInternationalPhoneSchema } from '@/utils/schemas/shared'
 import { formatPersonName, splitPersonName } from '@/utils/personName'
+import { pickGuestCartIdentityFields } from '@/utils/guestContact'
 
 const ContactSchema = z.object({
-  first_name: z.string().trim().min(1, 'First name is required'),
-  last_name: z.string().trim().min(1, 'Last name is required'),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
   guest_phone: getRequiredInternationalPhoneSchema('Phone number'),
-  email: z.string().refine((val) => isValidEmailAddress(val), {
-    message: INVALID_EMAIL_MESSAGE,
-  }),
+  email: getOptionalEmailSchema(),
 })
 
 const OTPSchema = z.object({
@@ -124,12 +119,13 @@ export default function GuestAddToCartModal() {
     if (!pendingItem) return
     setIsRequestingOtp(true)
     try {
-      const guestFullName = formatPersonName(data.first_name, data.last_name)
+      const guestFullName = formatPersonName(data.first_name ?? '', data.last_name ?? '')
       await guestAuthOtpRequest({ guest_phone: data.guest_phone })
-      setGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY, data.email)
+      const guestEmail = data.email?.trim() ?? ''
+      if (guestEmail) setGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY, guestEmail)
       setGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY, data.guest_phone)
       setGuestName(guestFullName)
-      setGuestEmail(data.email)
+      setGuestEmail(guestEmail)
       setSubmittedPhone(data.guest_phone)
       contactForm.reset({ first_name: '', last_name: '', guest_phone: '', email: '' })
       otpForm.reset({ otp: '' })
@@ -197,8 +193,7 @@ export default function GuestAddToCartModal() {
 
       await ensureGuestCartAndAddCard({
         card_id: String(pendingItem.card_id),
-        guest_name: guestName,
-        guest_email: guestEmail,
+        ...pickGuestCartIdentityFields(guestName, guestEmail),
         getGuestCartId,
         getGuestCartUuid,
         setGuestCartId,
@@ -297,7 +292,7 @@ export default function GuestAddToCartModal() {
                 <Icon icon="bi:phone" className="text-[#402D87]" />
               </div>
               <p className="text-sm text-gray-600">
-                We’ll send a one-time code to your phone. Your email is saved for later.
+                We&apos;ll send a one-time code to your phone. Name and email are optional.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -307,9 +302,8 @@ export default function GuestAddToCartModal() {
                 type="text"
                 {...contactForm.register('first_name')}
                 error={contactForm.formState.errors.first_name?.message}
-                placeholder="First name"
+                placeholder="First name (optional)"
                 className="w-full"
-                isRequired
               />
               <Input
                 label="Last name"
@@ -317,9 +311,8 @@ export default function GuestAddToCartModal() {
                 type="text"
                 {...contactForm.register('last_name')}
                 error={contactForm.formState.errors.last_name?.message}
-                placeholder="Last name"
+                placeholder="Last name (optional)"
                 className="w-full"
-                isRequired
               />
             </div>
             <Controller
@@ -343,9 +336,8 @@ export default function GuestAddToCartModal() {
               type="email"
               {...contactForm.register('email')}
               error={contactForm.formState.errors.email?.message}
-              placeholder="you@example.com"
+              placeholder="you@example.com (optional)"
               className="w-full"
-              isRequired
             />
 
             <div className="flex gap-3 pt-2">

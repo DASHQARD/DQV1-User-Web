@@ -40,6 +40,18 @@ export function getRequiredEmailSchema(label: string = 'Email') {
   )
 }
 
+/** Optional email — validates format only when a value is entered. */
+export function getOptionalEmailSchema() {
+  return z
+    .string()
+    .optional()
+    .refine((val) => {
+      const trimmed = val?.trim() ?? ''
+      if (!trimmed) return true
+      return isValidEmailAddress(trimmed)
+    }, INVALID_EMAIL_MESSAGE)
+}
+
 export function getRequiredAlphaNumericStringSchema(label: string = 'Field') {
   return z
     .string()

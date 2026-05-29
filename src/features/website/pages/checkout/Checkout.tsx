@@ -69,6 +69,7 @@ export default function Checkout() {
     paymentMethod,
     checkoutGateway,
     isPersonalDetailsCompleted,
+    isGuestAuth,
     recipientsByCartItem,
     itemsMissingRecipients,
     handleCheckout,
@@ -187,13 +188,16 @@ export default function Checkout() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                        Full Name <span className="text-red-500">*</span>
+                        Full Name {!isGuestAuth && <span className="text-red-500">*</span>}
+                        {isGuestAuth && (
+                          <span className="text-gray-400 font-normal"> (optional)</span>
+                        )}
                       </label>
                       <Input
                         type="text"
                         {...userInfoForm.register('full_name')}
                         error={userInfoForm.formState.errors.full_name?.message}
-                        placeholder="John Doe"
+                        placeholder={isGuestAuth ? 'Your name (optional)' : 'John Doe'}
                         className="w-full"
                       />
                     </div>
@@ -217,13 +221,16 @@ export default function Checkout() {
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                      Email Address <span className="text-red-500">*</span>
+                      Email Address {!isGuestAuth && <span className="text-red-500">*</span>}
+                      {isGuestAuth && (
+                        <span className="text-gray-400 font-normal"> (optional)</span>
+                      )}
                     </label>
                     <Input
                       type="email"
                       {...userInfoForm.register('email')}
                       error={userInfoForm.formState.errors.email?.message}
-                      placeholder="john@example.com"
+                      placeholder={isGuestAuth ? 'you@example.com (optional)' : 'john@example.com'}
                       className="w-full"
                     />
                   </div>

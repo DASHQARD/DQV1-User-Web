@@ -16,11 +16,13 @@ import { useAuthStore } from '@/stores'
 import {
   EXAMPLE_PHONE_PLACEHOLDER_E164,
   GUEST_EMAIL_STORAGE_KEY,
+  GUEST_NAME_STORAGE_KEY,
   PURCHASE_WHATSAPP_HI_PROMPT,
   getGuestContactSessionItem,
 } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
 import { formatPersonName, splitPersonName } from '@/utils/personName'
+import { pickGuestCartIdentityFields } from '@/utils/guestContact'
 import {
   addGuestCard,
   createGuestDashPro,
@@ -139,14 +141,18 @@ export default function DashProPurchase() {
       const today = new Date()
       const issueDate = today.toISOString().split('T')[0]
 
+      const guestIdentity = pickGuestCartIdentityFields(
+        (user as any)?.guest_name ||
+          getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
+          recipientFullName,
+        (user as any)?.guest_email ||
+          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
+          data.email,
+      )
+
       const cardResponse = isGuestAuth
         ? await createGuestDashPro({
-            guest_name: (user as any)?.guest_name || recipientFullName || 'Guest User',
-            guest_email:
-              getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
-              (user as any)?.guest_email ||
-              data.email?.trim() ||
-              '',
+            ...guestIdentity,
             product: 'DashPro',
             description: 'DashPro',
             price: amount,
@@ -210,17 +216,10 @@ export default function DashProPurchase() {
         }
 
         if (!cartItemId) {
-          const guestName = (user as any)?.guest_name || recipientFullName || 'Guest User'
-          const guestEmail =
-            getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
-            (user as any)?.guest_email ||
-            data.email?.trim() ||
-            ''
           const cartId = getGuestCartUuid() ?? getGuestCartId() ?? undefined
 
           const addResult = await addGuestCard({
-            guest_name: guestName,
-            guest_email: guestEmail,
+            ...guestIdentity,
             card_id: String(cardId),
             quantity: 1,
             ...(cartId !== undefined && { cart_id: cartId }),
@@ -279,14 +278,30 @@ export default function DashProPurchase() {
 
       // Only include name, email, phone if assign_to_self is false
       if (!data.assign_to_self) {
-        if (recipientFullName) {
-          assignPayload.name = recipientFullName
-        }
-        if (data.email && data.email.trim().length > 0) {
-          assignPayload.email = data.email.trim()
-        }
-        if (data.phone && data.phone.trim().length > 0) {
-          assignPayload.phone = data.phone.trim()
+        if (isGuestAuth) {
+          if (recipientFullName) {
+            assignPayload.recipient_name = recipientFullName
+          }
+          const recipientEmail = data.email?.trim()
+          if (recipientEmail) {
+            assignPayload.recipient_email = recipientEmail
+          }
+          const recipientPhone = data.phone?.trim()
+          if (recipientPhone) {
+            assignPayload.recipient_phone = recipientPhone
+          }
+        } else {
+          if (recipientFullName) {
+            assignPayload.name = recipientFullName
+          }
+          const recipientEmail = data.email?.trim()
+          if (recipientEmail) {
+            assignPayload.email = recipientEmail
+          }
+          const recipientPhone = data.phone?.trim()
+          if (recipientPhone) {
+            assignPayload.phone = recipientPhone
+          }
         }
       }
 
@@ -553,7 +568,10 @@ export default function DashProPurchase() {
               )}
               <div>
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Phone Number {!assignToSelf && '*'}
+                  Phone Number
+                  {!assignToSelf && (
+                    <span className="text-gray-400 font-normal"> (optional)</span>
+                  )}
                 </label>
                 <Controller
                   name="phone"
@@ -576,7 +594,10 @@ export default function DashProPurchase() {
               </div>
               <div>
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Email Address {!assignToSelf && '*'}
+                  Email Address
+                  {!assignToSelf && (
+                    <span className="text-gray-400 font-normal"> (optional)</span>
+                  )}
                 </label>
                 <input
                   type="email"

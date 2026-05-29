@@ -13,6 +13,7 @@ import {
   GUEST_NAME_STORAGE_KEY,
   getGuestContactSessionItem,
 } from '@/utils/constants'
+import { pickGuestCartIdentityFields } from '@/utils/guestContact'
 import { useToast } from '@/hooks'
 
 export type CardItemHookProps = {
@@ -94,15 +95,10 @@ export function useCardItem(props: CardItemHookProps) {
           getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
           (user as { guest_email?: string } | null)?.guest_email ||
           ''
-        if (!guestName.trim() || !guestEmail.trim()) {
-          openGuestAddToCartModal(pending)
-          return
-        }
         try {
           await ensureGuestCartAndAddCard({
             card_id: String(card_id),
-            guest_name: guestName.trim(),
-            guest_email: guestEmail.trim(),
+            ...pickGuestCartIdentityFields(guestName, guestEmail),
             getGuestCartId,
             getGuestCartUuid,
             setGuestCartId,

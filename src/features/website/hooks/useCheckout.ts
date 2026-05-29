@@ -12,8 +12,10 @@ import { MODAL_NAMES } from '@/utils/constants'
 import { bulkAssignRecipients } from '@/features/dashboard/services'
 import {
   UserInfoSchema,
+  GuestUserInfoSchema,
   PaymentMethodSchema,
   type UserInfoFormData,
+  type GuestUserInfoFormData,
   type PaymentMethodFormData,
 } from '@/utils/schemas/checkout'
 import { getCardBackground, getImageUrl, getCardTypeName } from '@/utils/cardDisplay'
@@ -86,8 +88,13 @@ export function useCheckout() {
   const isPersonalDetailsCompleted =
     (userProfileData as any)?.onboarding_progress?.personal_details_completed === true
 
-  const userInfoForm = useForm<UserInfoFormData>({
-    resolver: zodResolver(UserInfoSchema),
+  const checkoutUserInfoSchema = useMemo(
+    () => (isGuestAuth ? GuestUserInfoSchema : UserInfoSchema),
+    [isGuestAuth],
+  )
+
+  const userInfoForm = useForm<UserInfoFormData | GuestUserInfoFormData>({
+    resolver: zodResolver(checkoutUserInfoSchema),
     defaultValues: {
       full_name: (userProfileData as any)?.fullname ?? '',
       email: (userProfileData as any)?.email ?? '',
@@ -231,7 +238,9 @@ export function useCheckout() {
   const amountDue = totalAmount + serviceFee
   const checkoutAmountDue = totalAmount
 
-  const isUserInfoIncomplete = !userInfoForm.watch('full_name') || !userInfoForm.watch('email')
+  const isUserInfoIncomplete = isGuestAuth
+    ? !userInfoForm.watch('phone_number')?.trim()
+    : !userInfoForm.watch('full_name')?.trim() || !userInfoForm.watch('email')?.trim()
 
   const itemsMissingRecipients = useMemo(() => {
     return displayCartItems.filter((item) => {
@@ -306,10 +315,10 @@ export function useCheckout() {
 
       const guestBase: GuestCheckoutPayloadBase = {
         guest_cart_id: guestCartUuid,
-        full_name: userValues.full_name,
-        email: userValues.email,
         phone_number: userValues.phone_number,
         amount_due: amountDue,
+        ...(userValues.full_name?.trim() ? { full_name: userValues.full_name.trim() } : {}),
+        ...(userValues.email?.trim() ? { email: userValues.email.trim() } : {}),
       }
 
       if (isHostedRedirectGateway(gateway)) {
@@ -357,8 +366,8 @@ export function useCheckout() {
 
     const memberBase: CheckoutPayloadBase = {
       cart_id: firstCart.cart_id,
-      full_name: userValues.full_name,
-      email: userValues.email,
+      full_name: userValues.full_name ?? '',
+      email: userValues.email ?? '',
       phone_number: userValues.phone_number,
       amount_due: amountDue,
     }
@@ -476,6 +485,7 @@ export function useCheckout() {
     checkoutGateway,
     isPersonalDetailsCompleted,
     isUserInfoIncomplete,
+    isGuestAuth,
     recipientsByCartItem,
     itemsMissingRecipients,
     allRecipientsAssigned: itemsMissingRecipients.length === 0,

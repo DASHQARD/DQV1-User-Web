@@ -16,11 +16,13 @@ import { useAuthStore } from '@/stores'
 import {
   EXAMPLE_PHONE_PLACEHOLDER,
   GUEST_EMAIL_STORAGE_KEY,
+  GUEST_NAME_STORAGE_KEY,
   PURCHASE_WHATSAPP_HI_PROMPT,
   getGuestContactSessionItem,
 } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
 import { formatPersonName, splitPersonName } from '@/utils/personName'
+import { pickGuestCartIdentityFields } from '@/utils/guestContact'
 import {
   addGuestCard,
   createGuestDashGo,
@@ -226,14 +228,18 @@ export default function DashGoPurchase() {
     }))
 
     try {
+      const guestIdentity = pickGuestCartIdentityFields(
+        (user as any)?.guest_name ||
+          getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
+          recipientFullName,
+        (user as any)?.guest_email ||
+          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
+          data.recipient_email,
+      )
+
       const createResponse = isGuestAuth
         ? await createGuestDashGo({
-            guest_name: (user as any)?.guest_name || recipientFullName || 'Guest User',
-            guest_email:
-              getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
-              (user as any)?.guest_email ||
-              data.recipient_email ||
-              '',
+            ...guestIdentity,
             vendor_id: data.vendor_id,
             product: 'DashGo Gift Card',
             description: `Custom DashGo card for ${vendorName}`,
@@ -284,17 +290,10 @@ export default function DashGoPurchase() {
         }
 
         if (!cartItemId) {
-          const guestName = (user as any)?.guest_name || recipientFullName || 'Guest User'
-          const guestEmail =
-            getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
-            (user as any)?.guest_email ||
-            data.recipient_email ||
-            ''
           const cartId = getGuestCartUuid() ?? getGuestCartId() ?? undefined
 
           const addResult = await addGuestCard({
-            guest_name: guestName,
-            guest_email: guestEmail,
+            ...guestIdentity,
             card_id: String(cardId),
             quantity: 1,
             ...(cartId !== undefined && { cart_id: cartId }),
@@ -346,9 +345,17 @@ export default function DashGoPurchase() {
       }
 
       if (!data.assign_to_self) {
-        assignPayload.name = recipientFullName
-        assignPayload.phone = data.recipient_phone
-        assignPayload.email = data.recipient_email
+        if (recipientFullName) {
+          assignPayload.recipient_name = recipientFullName
+        }
+        const recipientPhone = data.recipient_phone?.trim()
+        if (recipientPhone) {
+          assignPayload.recipient_phone = recipientPhone
+        }
+        const recipientEmail = data.recipient_email?.trim()
+        if (recipientEmail) {
+          assignPayload.recipient_email = recipientEmail
+        }
       }
 
       if (isGuestAuth) {
@@ -636,7 +643,10 @@ export default function DashGoPurchase() {
               )}
               <div>
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Phone Number {!assignToSelf && '*'}
+                  Phone Number
+                  {!assignToSelf && (
+                    <span className="text-gray-400 font-normal"> (optional)</span>
+                  )}
                 </label>
                 <Controller
                   control={control}
@@ -660,7 +670,10 @@ export default function DashGoPurchase() {
 
               <div>
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Email Address {!assignToSelf && '*'}
+                  Email Address
+                  {!assignToSelf && (
+                    <span className="text-gray-400 font-normal"> (optional)</span>
+                  )}
                 </label>
                 <input
                   type="email"
