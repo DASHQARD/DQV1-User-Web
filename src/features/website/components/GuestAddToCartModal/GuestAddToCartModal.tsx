@@ -4,7 +4,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { Modal, Button, Text, Input, OTPInput, BasePhoneInput, PhoneFormatHint } from '@/components'
+import { Modal, Button, Text, Input, OTPInput, BasePhoneInput, PhoneFormatHint, Loader } from '@/components'
 import { getApiErrorMessage } from '@/utils/apiError'
 import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { Icon } from '@/libs'
@@ -24,18 +24,19 @@ import {
   setGuestContactSessionItem,
 } from '@/utils/constants'
 import { useToast } from '@/hooks'
-import {
-  getRequiredInternationalPhoneSchema,
-  INVALID_EMAIL_MESSAGE,
-  isValidEmailAddress,
-} from '@/utils/schemas/shared'
+import { getOptionalEmailSchema, getRequiredInternationalPhoneSchema } from '@/utils/schemas/shared'
+import { formatPersonName, splitPersonName } from '@/utils/personName'
+import { pickGuestCartIdentityFields } from '@/utils/guestContact'
+import { useGuestLocalCartStore } from '@/stores/guestLocalCart'
+import { runGuestCheckoutBagSync } from '@/features/website/utils/runGuestCheckoutBagSync'
+import { GuestCartSyncError } from '@/features/website/utils/guestCartSyncError'
+import { setGuestBrowsingAck } from '@/features/website/utils/guestBrowsingSession'
 
 const ContactSchema = z.object({
-  guest_name: z.string().trim().min(1, 'Name is required'),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
   guest_phone: getRequiredInternationalPhoneSchema('Phone number'),
-  email: z.string().refine((val) => isValidEmailAddress(val), {
-    message: INVALID_EMAIL_MESSAGE,
-  }),
+  email: getOptionalEmailSchema(),
 })
 
 const OTPSchema = z.object({
@@ -45,13 +46,13 @@ const OTPSchema = z.object({
 type ContactFormData = z.infer<typeof ContactSchema>
 type OTPFormData = z.infer<typeof OTPSchema>
 
-type Step = 'choice' | 'contact' | 'otp'
+type Step = 'choice' | 'contact' | 'otp' | 'syncing' | 'sync-error'
 
 export default function GuestAddToCartModal() {
   const navigate = useNavigate()
   const toast = useToast()
   const queryClient = useQueryClient()
-  const { isOpen, pendingItem, close } = useGuestAddToCartModalStore()
+  const { isOpen, pendingItem, checkoutOtpPrefill, close } = useGuestAddToCartModalStore()
   const authenticate = useAuthStore((s) => s.authenticate)
   const getGuestCartId = useAuthStore((s) => s.getGuestCartId)
   const getGuestCartUuid = useAuthStore((s) => s.getGuestCartUuid)
@@ -65,10 +66,12 @@ export default function GuestAddToCartModal() {
   const [submittedPhone, setSubmittedPhone] = useState('')
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
+  const [syncError, setSyncError] = useState('')
+  const [isSyncingBag, setIsSyncingBag] = useState(false)
 
   const contactForm = useForm<ContactFormData>({
     resolver: zodResolver(ContactSchema),
-    defaultValues: { guest_name: '', guest_phone: '', email: '' },
+    defaultValues: { first_name: '', last_name: '', guest_phone: '', email: '' },
   })
 
   const otpForm = useForm<OTPFormData>({
@@ -78,25 +81,48 @@ export default function GuestAddToCartModal() {
 
   useEffect(() => {
     if (!isOpen || !pendingItem) return
-    if (pendingItem.redemptionOnly) {
+    if (pendingItem.checkoutSync && checkoutOtpPrefill) {
+      setStep('otp')
+      setSubmittedPhone(checkoutOtpPrefill.phone)
+      setGuestName(
+        formatPersonName(checkoutOtpPrefill.first_name, checkoutOtpPrefill.last_name),
+      )
+      setGuestEmail(checkoutOtpPrefill.email)
+      otpForm.reset({ otp: '' })
+      return
+    }
+    if (pendingItem.redemptionOnly || pendingItem.checkoutSync) {
       setStep('contact')
-      const phone = getGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY) ?? ''
+      const phone =
+        useGuestLocalCartStore.getState().contact.phone ??
+        getGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY) ??
+        ''
+      const savedName =
+        formatPersonName(
+          useGuestLocalCartStore.getState().contact.first_name ?? '',
+          useGuestLocalCartStore.getState().contact.last_name ?? '',
+        ) ||
+        getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
+        ''
       contactForm.reset({
-        guest_name: getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ?? '',
+        ...splitPersonName(savedName),
         guest_phone: phone,
-        email: getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ?? '',
+        email:
+          useGuestLocalCartStore.getState().contact.email ??
+          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ??
+          '',
       })
       otpForm.reset({ otp: '' })
     } else {
       setStep('choice')
-      contactForm.reset({ guest_name: '', guest_phone: '', email: '' })
+      contactForm.reset({ first_name: '', last_name: '', guest_phone: '', email: '' })
       otpForm.reset({ otp: '' })
       setSubmittedPhone('')
       setGuestName('')
       setGuestEmail('')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset forms when opening modal / switching item
-  }, [isOpen, pendingItem])
+  }, [isOpen, pendingItem, checkoutOtpPrefill])
 
   const handleClose = () => {
     setStep('choice')
@@ -105,7 +131,51 @@ export default function GuestAddToCartModal() {
     setSubmittedPhone('')
     setGuestName('')
     setGuestEmail('')
+    setSyncError('')
+    setIsSyncingBag(false)
     close()
+  }
+
+  const runCheckoutBagSync = async () => {
+    const nameParts = splitPersonName(guestName)
+    await runGuestCheckoutBagSync({
+      contact: {
+        phone: submittedPhone,
+        first_name: nameParts.first_name,
+        last_name: nameParts.last_name,
+        email: guestEmail || undefined,
+      },
+      setters: {
+        getGuestCartId,
+        getGuestCartUuid,
+        setGuestCartId,
+        setGuestCartUuid,
+      },
+    })
+  }
+
+  const handleRetryCheckoutSync = async () => {
+    setIsSyncingBag(true)
+    setSyncError('')
+    setStep('syncing')
+    try {
+      await runCheckoutBagSync()
+      await queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+      useGuestAddToCartModalStore.getState().checkoutOnSuccess?.()
+      handleClose()
+      toast.success('Your cart is ready. Assign recipients and complete your purchase.')
+    } catch (error) {
+      const message =
+        error instanceof GuestCartSyncError
+          ? error.failedLine
+            ? `${error.failedLine.product}: ${error.message}`
+            : error.message
+          : getApiErrorMessage(error, 'Could not add your gift cards to checkout.')
+      setSyncError(message)
+      setStep('sync-error')
+    } finally {
+      setIsSyncingBag(false)
+    }
   }
 
   const handleSignIn = () => {
@@ -114,6 +184,7 @@ export default function GuestAddToCartModal() {
   }
 
   const handleContinueAsGuest = () => {
+    setGuestBrowsingAck()
     setStep('contact')
   }
 
@@ -121,13 +192,15 @@ export default function GuestAddToCartModal() {
     if (!pendingItem) return
     setIsRequestingOtp(true)
     try {
+      const guestFullName = formatPersonName(data.first_name ?? '', data.last_name ?? '')
       await guestAuthOtpRequest({ guest_phone: data.guest_phone })
-      setGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY, data.email)
+      const guestEmail = data.email?.trim() ?? ''
+      if (guestEmail) setGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY, guestEmail)
       setGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY, data.guest_phone)
-      setGuestName(data.guest_name)
-      setGuestEmail(data.email)
+      setGuestName(guestFullName)
+      setGuestEmail(guestEmail)
       setSubmittedPhone(data.guest_phone)
-      contactForm.reset({ guest_name: '', guest_phone: '', email: '' })
+      contactForm.reset({ first_name: '', last_name: '', guest_phone: '', email: '' })
       otpForm.reset({ otp: '' })
       setStep('otp')
       toast.success('Verification code sent to your phone')
@@ -170,6 +243,7 @@ export default function GuestAddToCartModal() {
         refreshToken: refreshToken ?? null,
         isGuestAuth: true,
       })
+      setGuestBrowsingAck()
       if (guestName) setGuestContactSessionItem(GUEST_NAME_STORAGE_KEY, guestName)
       if (submittedPhone) setGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY, submittedPhone)
 
@@ -177,6 +251,31 @@ export default function GuestAddToCartModal() {
         useGuestAddToCartModalStore.getState().redemptionOnSuccess?.()
         handleClose()
         toast.success("You're signed in. Continue by selecting your vendor.")
+        return
+      }
+
+      if (pendingItem.checkoutSync) {
+        setStep('syncing')
+        setIsSyncingBag(true)
+        try {
+          await runCheckoutBagSync()
+          await queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+          useGuestAddToCartModalStore.getState().checkoutOnSuccess?.()
+          handleClose()
+          toast.success('Your cart is ready. Assign recipients and complete your purchase.')
+        } catch (error) {
+          const message =
+            error instanceof GuestCartSyncError
+              ? error.failedLine
+                ? `${error.failedLine.product}: ${error.message}`
+                : error.message
+              : getApiErrorMessage(error, 'Could not add your gift cards to checkout.')
+          setSyncError(message)
+          setStep('sync-error')
+        } finally {
+          setIsSyncingBag(false)
+          setIsVerifyingOtp(false)
+        }
         return
       }
 
@@ -193,8 +292,7 @@ export default function GuestAddToCartModal() {
 
       await ensureGuestCartAndAddCard({
         card_id: String(pendingItem.card_id),
-        guest_name: guestName,
-        guest_email: guestEmail,
+        ...pickGuestCartIdentityFields(guestName, guestEmail),
         getGuestCartId,
         getGuestCartUuid,
         setGuestCartId,
@@ -218,20 +316,26 @@ export default function GuestAddToCartModal() {
       isOpen={isOpen}
       setIsOpen={(open) => !open && handleClose()}
       title={
-        step === 'choice'
-          ? pendingItem?.authOnly
-            ? 'Continue'
-            : 'Add to cart'
-          : step === 'contact'
-            ? pendingItem?.redemptionOnly
-              ? 'Verify your details'
-              : 'Continue as guest'
-            : 'Verify your phone'
+        step === 'syncing'
+          ? 'Setting up your bag'
+          : step === 'sync-error'
+            ? 'Could not finish setup'
+            : step === 'choice'
+              ? pendingItem?.authOnly
+                ? 'Continue'
+                : 'Add to cart'
+              : step === 'contact'
+                ? pendingItem?.redemptionOnly
+                  ? 'Verify your details'
+                  : pendingItem?.checkoutSync
+                    ? 'Verify your phone'
+                    : 'Continue as guest'
+                : 'Verify your phone'
       }
       panelClass="!max-w-md max-md:!max-w-[94vw] max-md:!my-4 max-md:max-h-[calc(100dvh-2rem)] max-md:overflow-y-auto"
     >
       <div className="px-6 py-6 max-md:px-4 max-md:py-5">
-        {step === 'choice' && !pendingItem?.redemptionOnly && (
+        {step === 'choice' && !pendingItem?.redemptionOnly && !pendingItem?.checkoutSync && (
           <>
             <div className="text-center mb-8 max-md:mb-6">
               <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-[#402D87] to-[#7950ed] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#402D87]/20">
@@ -293,19 +397,29 @@ export default function GuestAddToCartModal() {
                 <Icon icon="bi:phone" className="text-[#402D87]" />
               </div>
               <p className="text-sm text-gray-600">
-                We’ll send a one-time code to your phone. Your email is saved for later.
+                We&apos;ll send a one-time code to your phone. Name and email are optional.
               </p>
             </div>
-            <Input
-              label="Full name"
-              id="guest-name"
-              type="text"
-              {...contactForm.register('guest_name')}
-              error={contactForm.formState.errors.guest_name?.message}
-              placeholder="Your name"
-              className="w-full"
-              isRequired
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="First name"
+                id="guest-first-name"
+                type="text"
+                {...contactForm.register('first_name')}
+                error={contactForm.formState.errors.first_name?.message}
+                placeholder="First name (optional)"
+                className="w-full"
+              />
+              <Input
+                label="Last name"
+                id="guest-last-name"
+                type="text"
+                {...contactForm.register('last_name')}
+                error={contactForm.formState.errors.last_name?.message}
+                placeholder="Last name (optional)"
+                className="w-full"
+              />
+            </div>
             <Controller
               control={contactForm.control}
               name="guest_phone"
@@ -327,9 +441,8 @@ export default function GuestAddToCartModal() {
               type="email"
               {...contactForm.register('email')}
               error={contactForm.formState.errors.email?.message}
-              placeholder="you@example.com"
+              placeholder="you@example.com (optional)"
               className="w-full"
-              isRequired
             />
 
             <div className="flex gap-3 pt-2">
@@ -396,8 +509,12 @@ export default function GuestAddToCartModal() {
                   type="button"
                   variant="outline"
                   onClick={() => {
+                    if (pendingItem?.checkoutSync && checkoutOtpPrefill) {
+                      handleClose()
+                      return
+                    }
                     contactForm.reset({
-                      guest_name: guestName,
+                      ...splitPersonName(guestName),
                       guest_phone: submittedPhone,
                       email: guestEmail,
                     })
@@ -414,15 +531,68 @@ export default function GuestAddToCartModal() {
                   disabled={!otpForm.formState.isValid || isVerifyingOtp}
                   className="flex-1 bg-linear-to-r from-[#402D87] to-[#7950ed] hover:from-[#402D87]/90 hover:to-[#7950ed]/90 text-white border-0"
                 >
-                  {pendingItem?.redemptionOnly
+                  {pendingItem?.checkoutSync
                     ? 'Verify & continue'
-                    : pendingItem?.authOnly
+                    : pendingItem?.redemptionOnly
                       ? 'Verify & continue'
-                      : 'Verify & add to cart'}
+                      : pendingItem?.authOnly
+                        ? 'Verify & continue'
+                        : 'Verify & add to cart'}
                 </Button>
               </div>
             </form>
           </>
+        )}
+
+        {step === 'syncing' && (
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <Loader />
+            <div>
+              <p className="text-sm font-medium text-gray-900">Adding your gift cards…</p>
+              <p className="mt-1 text-sm text-gray-500">
+                Your phone is verified. We&apos;re syncing your bag — this only takes a moment.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {step === 'sync-error' && (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+              <div className="flex items-start gap-3">
+                <Icon icon="bi:exclamation-triangle" className="mt-0.5 size-5 shrink-0 text-red-600" />
+                <div>
+                  <p className="text-sm font-semibold text-red-900">We couldn&apos;t add everything to your bag</p>
+                  <p className="mt-1 text-sm text-red-800">{syncError}</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600">
+              Your phone number is verified. Update the item in your bag or try again.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  handleClose()
+                  navigate(ROUTES.IN_APP.VIEW_BAG)
+                }}
+              >
+                Edit bag
+              </Button>
+              <Button
+                type="button"
+                className="flex-1 bg-linear-to-r from-[#402D87] to-[#7950ed] hover:from-[#402D87]/90 hover:to-[#7950ed]/90 text-white border-0"
+                loading={isSyncingBag}
+                disabled={isSyncingBag}
+                onClick={() => void handleRetryCheckoutSync()}
+              >
+                Try again
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </Modal>

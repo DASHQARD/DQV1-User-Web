@@ -1,7 +1,8 @@
+import { roundMoney } from '@/utils/pricingFees'
 import { CHECKOUT_GATEWAY } from './paymentConstants'
 
 export function roundCheckoutAmount(amount: number): number {
-  return Math.round(amount * 100) / 100
+  return roundMoney(amount)
 }
 
 type GatewayPaymentValues = {

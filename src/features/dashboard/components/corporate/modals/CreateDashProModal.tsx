@@ -6,6 +6,7 @@ import { Button, Input, Modal, Text, BasePhoneInput, GiftCardPriceFormField } fr
 import { usePersistedModalState, useCountriesData, useToast } from '@/hooks'
 import { EXAMPLE_PHONE_PLACEHOLDER_E164, MODALS } from '@/utils/constants'
 import { AssignRecipientSchema } from '@/utils/schemas'
+import { formatPersonName } from '@/utils/personName'
 import {
   INVALID_PHONE_MESSAGE,
   isValidInternationalPhoneDigits,
@@ -16,26 +17,13 @@ const DashProAssignSchema = AssignRecipientSchema.safeExtend({
   phone: z.string().optional(),
   email: z.string().optional(),
 }).superRefine((data, ctx) => {
-  // If assign_to_self is false, phone and email are required
   if (!data.assign_to_self) {
-    if (!data.phone || data.phone.trim().length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Phone number is required',
-        path: ['phone'],
-      })
-    } else if (!isValidInternationalPhoneDigits(data.phone)) {
+    const phone = data.phone?.trim()
+    if (phone && !isValidInternationalPhoneDigits(phone)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: INVALID_PHONE_MESSAGE,
         path: ['phone'],
-      })
-    }
-    if (!data.email || data.email.trim().length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Email address is required',
-        path: ['email'],
       })
     }
   }
@@ -60,7 +48,8 @@ export function CreateDashProModal() {
     resolver: zodResolver(DashProAssignSchema),
     defaultValues: {
       assign_to_self: false,
-      name: '',
+      first_name: '',
+      last_name: '',
       phone: '',
       email: '',
       message: '',
@@ -86,7 +75,8 @@ export function CreateDashProModal() {
     setValue('assign_to_self', newValue)
     if (newValue) {
       // Clear recipient fields when assigning to self
-      setValue('name', '')
+      setValue('first_name', '')
+      setValue('last_name', '')
       setValue('phone', '')
       setValue('email', '')
     }
@@ -98,13 +88,14 @@ export function CreateDashProModal() {
 
       // If not assigning to self, create recipient first
       if (!data.assign_to_self) {
-        if (!data.name || !data.phone || !data.email) {
+        const recipientFullName = formatPersonName(data.first_name ?? '', data.last_name ?? '')
+        if (!recipientFullName || !data.phone || !data.email) {
           toast.error('Please fill in all required recipient fields')
           return
         }
 
         const recipientResponse = await addRecipientMutation.mutateAsync({
-          name: data.name,
+          name: recipientFullName,
           phone: data.phone,
           email: data.email,
         })
@@ -194,19 +185,29 @@ export function CreateDashProModal() {
           iconBefore={<span className="text-gray-400 font-medium">GHS</span>}
         />
 
-        {/* Recipient's Full Name */}
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-gray-700">
-            Recipient&apos;s Full Name
-          </label>
-          <Input
-            type="text"
-            placeholder="Enter recipient's full name"
-            {...register('name')}
-            error={errors.name?.message}
-            disabled={assignToSelf || isPending}
-            className={assignToSelf ? 'bg-gray-100' : ''}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-700">First Name</label>
+            <Input
+              type="text"
+              placeholder="First name"
+              {...register('first_name')}
+              error={errors.first_name?.message}
+              disabled={assignToSelf || isPending}
+              className={assignToSelf ? 'bg-gray-100' : ''}
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-700">Last Name</label>
+            <Input
+              type="text"
+              placeholder="Last name"
+              {...register('last_name')}
+              error={errors.last_name?.message}
+              disabled={assignToSelf || isPending}
+              className={assignToSelf ? 'bg-gray-100' : ''}
+            />
+          </div>
         </div>
 
         {/* Phone Number */}

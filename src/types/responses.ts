@@ -202,8 +202,8 @@ export type AddToCartPayload = {
 
 /** Payload for POST /guest-carts/add-card. cart_id is optional when adding the first item. */
 export type GuestAddCardPayload = {
-  guest_name: string
-  guest_email: string
+  guest_name?: string | null
+  guest_email?: string | null
   /** Catalog cards use UUID strings from cards-info; coerce at the call site with String(id). */
   card_id: string
   quantity: number

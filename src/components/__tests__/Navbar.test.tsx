@@ -134,7 +134,7 @@ describe('Navbar', () => {
   })
 
   describe('mobile menu', () => {
-    it('opens mobile menu and shows nav items, Search, and Login/Register when not authenticated', async () => {
+    it('opens mobile menu and shows nav items and Login/Register when not authenticated', async () => {
       const user = userEvent.setup()
       const { container } = renderWithProviders(<Navbar />)
       await user.click(screen.getByRole('button', { name: 'Menu' }))
@@ -147,9 +147,6 @@ describe('Navbar', () => {
       expect(mobileMenu!.querySelector('a[href="/vendors"]')).toHaveTextContent('Vendors')
       expect(mobileMenu!.querySelector('a[href="/redeem"]')).toHaveTextContent('Redeem')
       expect(mobileMenu!.querySelector('a[href="/contact"]')).toHaveTextContent('Contact')
-
-      const mobileSearch = mobileMenu!.querySelector('button')
-      expect(mobileSearch).toHaveTextContent('Search')
 
       expect(mobileMenu!.querySelector('a[href="/auth/login"]')).toHaveTextContent('Login')
       expect(mobileMenu!.querySelector('a[href="/auth/register"]')).toHaveTextContent('Sign up')
@@ -170,18 +167,11 @@ describe('Navbar', () => {
       expect(screen.getByRole('button', { name: 'Sign Out' })).toBeInTheDocument()
     })
 
-    it('mobile Search button navigates to DASHQARDS and closes menu', async () => {
+    it('mobile Search button in navbar navigates to DASHQARDS', async () => {
       const user = userEvent.setup()
-      const { container } = renderWithProviders(<Navbar />)
-      await user.click(screen.getByRole('button', { name: 'Menu' }))
-      const mobileMenu = container.querySelector('.lg\\:hidden.border-t.border-gray-200.bg-white')
-      const mobileSearchBtn = mobileMenu!.querySelector('button')
-      expect(mobileSearchBtn).toHaveTextContent('Search')
-      await user.click(mobileSearchBtn!)
+      renderWithProviders(<Navbar />)
+      await user.click(screen.getByRole('button', { name: 'Search' }))
       expect(mockNavigate).toHaveBeenCalledWith(ROUTES.IN_APP.DASHQARDS)
-      expect(
-        container.querySelector('.lg\\:hidden.border-t.border-gray-200.bg-white'),
-      ).not.toBeInTheDocument()
     })
   })
 

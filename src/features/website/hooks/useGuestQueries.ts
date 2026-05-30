@@ -1,5 +1,6 @@
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores'
+import { isLocalGuestCartLineId } from '@/stores/guestLocalCart'
 import {
   getGuestCards,
   getGuestCardSingle,
@@ -37,7 +38,12 @@ export function useGuestQueries() {
     return useQuery({
       queryKey: ['guest-cart-recipients', cartItemId],
       queryFn: () => getGuestCartRecipients({ cart_item_id: cartItemId! }),
-      enabled: isGuestAuth && enabled && cartItemId != null && cartItemId !== '',
+      enabled:
+        isGuestAuth &&
+        enabled &&
+        cartItemId != null &&
+        cartItemId !== '' &&
+        !isLocalGuestCartLineId(cartItemId),
     })
   }
 
@@ -59,7 +65,12 @@ export function useGuestRecipientsByCartItems(
     queries: cartItemIds.map((cartItemId) => ({
       queryKey: ['guest-cart-recipients', cartItemId],
       queryFn: () => getGuestCartRecipients({ cart_item_id: cartItemId }),
-      enabled: enabled && isGuestAuth && cartItemId != null && cartItemId !== '',
+      enabled:
+        enabled &&
+        isGuestAuth &&
+        cartItemId != null &&
+        cartItemId !== '' &&
+        !isLocalGuestCartLineId(cartItemId),
     })),
   })
 

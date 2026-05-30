@@ -1,32 +1,36 @@
-/** sessionStorage key for guest email (collected during guest OTP flow; tab-scoped) */
+/** localStorage key for guest email (optional enrichment) */
 export const GUEST_EMAIL_STORAGE_KEY = 'dashqard-guest-email'
-/** sessionStorage key for guest name (collected during guest OTP flow; tab-scoped) */
+/** localStorage key for guest name (optional enrichment) */
 export const GUEST_NAME_STORAGE_KEY = 'dashqard-guest-name'
-/** sessionStorage key for guest phone (assign-to-self / redemption prefill when JWT omits it) */
+/** localStorage key for guest phone (checkout / prefill when JWT omits it) */
 export const GUEST_PHONE_STORAGE_KEY = 'dashqard-guest-phone'
 
-/** Read guest contact from sessionStorage; migrates legacy localStorage once if present. */
+/** Read guest contact from localStorage; migrates legacy sessionStorage once if present. */
 export function getGuestContactSessionItem(key: string): string {
-  if (typeof sessionStorage === 'undefined') return ''
-  let value = sessionStorage.getItem(key) ?? ''
-  if (!value && typeof localStorage !== 'undefined') {
-    const legacy = localStorage.getItem(key)
+  if (typeof localStorage === 'undefined') return ''
+  let value = localStorage.getItem(key) ?? ''
+  if (!value && typeof sessionStorage !== 'undefined') {
+    const legacy = sessionStorage.getItem(key)
     if (legacy != null && legacy !== '') {
-      sessionStorage.setItem(key, legacy)
-      localStorage.removeItem(key)
+      localStorage.setItem(key, legacy)
+      sessionStorage.removeItem(key)
       value = legacy
     }
   }
   return value
 }
 
-/** Persist guest contact for the browser tab only; clears matching legacy localStorage key. */
+/** Persist guest contact in localStorage. */
 export function setGuestContactSessionItem(key: string, value: string): void {
-  if (typeof sessionStorage !== 'undefined') {
-    sessionStorage.setItem(key, value)
-  }
   if (typeof localStorage !== 'undefined') {
-    localStorage.removeItem(key)
+    if (value.trim()) {
+      localStorage.setItem(key, value)
+    } else {
+      localStorage.removeItem(key)
+    }
+  }
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.removeItem(key)
   }
 }
 

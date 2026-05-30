@@ -20,6 +20,8 @@ type GiftCardPriceFormFieldProps<T extends FieldValues> = {
   showRangeHint?: boolean
   iconBefore?: React.ReactNode
   className?: string
+  innerClassName?: string
+  inputClassName?: string
 }
 
 export function GiftCardPriceFormField<T extends FieldValues>({
@@ -32,6 +34,8 @@ export function GiftCardPriceFormField<T extends FieldValues>({
   showRangeHint = true,
   iconBefore,
   className,
+  innerClassName,
+  inputClassName,
 }: GiftCardPriceFormFieldProps<T>) {
   return (
     <div className={className}>
@@ -48,6 +52,8 @@ export function GiftCardPriceFormField<T extends FieldValues>({
             placeholder={placeholder}
             disabled={disabled}
             iconBefore={iconBefore}
+            innerClassName={innerClassName}
+            inputClassName={inputClassName}
             value={toGiftCardPriceInputValue(field.value)}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               field.onChange(fromGiftCardPriceInputChange(e.target.value))

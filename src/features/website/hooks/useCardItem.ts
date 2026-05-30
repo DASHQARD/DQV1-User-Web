@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAuthStore, useGuestAddToCartModalStore } from '@/stores'
+import { useAuthStore, useGuestLocalCartStore } from '@/stores'
 import { useCart } from './useCart'
 import { useCartStore } from '@/stores/cart'
 import { getApiErrorMessage } from '@/utils/apiError'
@@ -13,6 +13,7 @@ import {
   GUEST_NAME_STORAGE_KEY,
   getGuestContactSessionItem,
 } from '@/utils/constants'
+import { pickGuestCartIdentityFields } from '@/utils/guestContact'
 import { useToast } from '@/hooks'
 
 export type CardItemHookProps = {
@@ -55,7 +56,7 @@ export function useCardItem(props: CardItemHookProps) {
   const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
-  const openGuestAddToCartModal = useGuestAddToCartModalStore((s) => s.open)
+  const addLocalGuestCard = useGuestLocalCartStore((s) => s.addCatalogCard)
   const queryClient = useQueryClient()
   const toast = useToast()
   const navigate = useNavigate()
@@ -94,15 +95,10 @@ export function useCardItem(props: CardItemHookProps) {
           getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
           (user as { guest_email?: string } | null)?.guest_email ||
           ''
-        if (!guestName.trim() || !guestEmail.trim()) {
-          openGuestAddToCartModal(pending)
-          return
-        }
         try {
           await ensureGuestCartAndAddCard({
             card_id: String(card_id),
-            guest_name: guestName.trim(),
-            guest_email: guestEmail.trim(),
+            ...pickGuestCartIdentityFields(guestName, guestEmail),
             getGuestCartId,
             getGuestCartUuid,
             setGuestCartId,
@@ -115,7 +111,15 @@ export function useCardItem(props: CardItemHookProps) {
         }
         return
       }
-      openGuestAddToCartModal(pending)
+      addLocalGuestCard({
+        card_id: String(card_id),
+        product,
+        price: pending.price,
+        currency,
+        type,
+      })
+      openCart()
+      toast.success('Added to cart')
       return
     }
     if (onGetQard) {

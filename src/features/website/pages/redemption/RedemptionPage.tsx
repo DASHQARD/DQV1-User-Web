@@ -402,7 +402,13 @@ export default function RedemptionPage() {
     }
 
     return cards
-  }, [isGuestAuth, guestAssignedCards, guestAssignedPayload.currency, selectedVendor, selectedVendorId])
+  }, [
+    isGuestAuth,
+    guestAssignedCards,
+    guestAssignedPayload.currency,
+    selectedVendor,
+    selectedVendorId,
+  ])
 
   // Extract unique branches from vendor
   const availableBranches = useMemo(() => {
@@ -1128,7 +1134,7 @@ export default function RedemptionPage() {
               guestRedemptionPayload.card_type === 'DashX' ||
               guestRedemptionPayload.card_type === 'DashPass'
                 ? guestRedemptionPayload.card_id
-                : selectedCard?.card_id ?? null
+                : (selectedCard?.card_id ?? null)
             if (redeemedId) {
               setRedeemedCardId(redeemedId)
             }
@@ -1335,10 +1341,10 @@ export default function RedemptionPage() {
                 <div className="space-y-6">
                   <div className="mb-6">
                     <Text variant="h3" weight="semibold" className="text-gray-900 mb-1">
-                      Select Redemption Method
+                      Find your card by vendor
                     </Text>
                     <Text variant="span" className="text-sm text-gray-500">
-                      Choose how you want to redeem your gift card
+                      Search for the business where you&apos;ll redeem your gift card
                     </Text>
                   </div>
 
@@ -1387,9 +1393,9 @@ export default function RedemptionPage() {
                               Continue as guest
                             </Text>
                             <Text variant="span" className="text-sm text-gray-500">
-                              Use the same guest verification as checkout: your name, phone, and
-                              email. We&apos;ll send a one-time code to your phone; after you
-                              verify, you can search for your vendor and branch.
+                              Verify your phone with a one-time code (same as guest checkout). Name
+                              and email are optional. After verification, search for your vendor and
+                              branch.
                             </Text>
                           </>
                         ) : (
@@ -1418,7 +1424,7 @@ export default function RedemptionPage() {
                             }
                           >
                             <Icon icon="bi:shield-lock" className="mr-2 inline" />
-                            Verify phone &amp; email
+                            Verify your phone
                           </Button>
                         </div>
                       )}
@@ -1672,7 +1678,6 @@ export default function RedemptionPage() {
                                                   )}
                                                 </div>
 
-
                                                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
                                                   <div className="flex items-center gap-1">
                                                     <Icon icon="bi:calendar3" className="text-sm" />
@@ -1681,8 +1686,14 @@ export default function RedemptionPage() {
                                                     </Text>
                                                   </div>
                                                   <div className="flex min-w-0 items-center gap-1">
-                                                    <Icon icon="bi:shop" className="shrink-0 text-sm" />
-                                                    <Text variant="span" className="truncate text-sm">
+                                                    <Icon
+                                                      icon="bi:shop"
+                                                      className="shrink-0 text-sm"
+                                                    />
+                                                    <Text
+                                                      variant="span"
+                                                      className="truncate text-sm"
+                                                    >
                                                       {card.vendor_name ||
                                                         vendorName ||
                                                         selectedVendor?.vendor_name ||
@@ -1822,7 +1833,7 @@ export default function RedemptionPage() {
                                       !(getGuestPhoneFromAuth(jwtUser) || phoneNumber).trim() && (
                                         <div className="p-4 bg-gray-50 rounded-lg">
                                           <Text variant="span" className="text-gray-600 text-sm">
-                                            Verify phone &amp; email above to view balance
+                                            Verify your phone above to view balance
                                           </Text>
                                         </div>
                                       )}
@@ -1850,7 +1861,8 @@ export default function RedemptionPage() {
                                         (availableBranches.length > 0 &&
                                           selectedBranchId === null))) ||
                                     (isGuestAuth &&
-                                      (selectedBranchId === null && !selectedCard?.branch_id)) ||
+                                      selectedBranchId === null &&
+                                      !selectedCard?.branch_id) ||
                                     (!isAuthenticated &&
                                       !(getGuestPhoneFromAuth(jwtUser) || phoneNumber).trim()) ||
                                     isProcessingRedemption
@@ -1910,16 +1922,16 @@ export default function RedemptionPage() {
                   {balance !== null &&
                     (cardType === 'dashpro' || cardType === 'dashgo') &&
                     redemptionSuccess?.amount == null && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <Text variant="span" className="text-gray-600">
-                        Remaining Balance: GHS{' '}
-                        {(
-                          (cardType === 'dashgo' ? (dashGoBalance ?? balance) : balance)! -
-                          parseFloat(amount)
-                        ).toFixed(2)}
-                      </Text>
-                    </div>
-                  )}
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <Text variant="span" className="text-gray-600">
+                          Remaining Balance: GHS{' '}
+                          {(
+                            (cardType === 'dashgo' ? (dashGoBalance ?? balance) : balance)! -
+                            parseFloat(amount)
+                          ).toFixed(2)}
+                        </Text>
+                      </div>
+                    )}
                   <div className="flex flex-col gap-3">
                     {isGuestAuth && recentGuestRedemptions.length > 0 && (
                       <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-left">

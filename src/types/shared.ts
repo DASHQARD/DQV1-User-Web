@@ -148,7 +148,7 @@ export type FeaturedCardProps = {
   price: string
   base_price: string
   markup_price: number | null
-  service_fee: string
+  service_fee?: string
   currency: string
   expiry_date: string
   status: string
@@ -181,6 +181,8 @@ export type FlattenedCartItem = {
   images?: Array<{ file_url: string; file_name: string }>
   cart_item_id?: string | number
   total_quantity?: number
+  /** When a line has qty > 1, one flattened row per unit (0-based). */
+  quantity_index?: number
   recipients?: Array<{
     id?: string | number
     recipient_id?: string | number

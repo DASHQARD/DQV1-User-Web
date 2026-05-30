@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useAuthStore } from '@/stores'
-import { useCartStore } from '@/stores/cart'
+import { useGuestLocalCartStore } from '@/stores/guestLocalCart'
 import { useCart } from './useCart'
 import { useGuestCart } from './useGuestCart'
 import { useViewBagMutations } from './useViewBagMutations'
@@ -13,11 +13,17 @@ import { MODAL_NAMES } from '@/utils/constants'
 import { getCardBackground, getImageUrl } from '@/utils/cardDisplay'
 import type { CartListResponse } from '@/types/responses'
 import type { FlattenedCartItem } from '@/types'
+import {
+  flattenLocalGuestCartLines,
+  localRecipientToDisplayRow,
+} from '@/features/website/utils/guestLocalCartDisplay'
+import { getRecipientsForCartUnit, type CartRecipient } from '@/features/website/utils/cartRecipientUnits'
+import {
+  computeAmountCharged,
+  computeServiceFee,
+  resolveServiceFeeRate,
+} from '@/utils/pricingFees'
 
-/**
- * Id for DELETE /carts/recipients/:id. Supports UUID strings (e.g. v7) and legacy numeric ids.
- * Never coerce with Number() — UUID strings become NaN and delete would be skipped.
- */
 function resolveRecipientDeleteId(recipient: unknown): string | null {
   if (!recipient || typeof recipient !== 'object') return null
   const r = recipient as Record<string, unknown>
@@ -27,6 +33,7 @@ function resolveRecipientDeleteId(recipient: unknown): string | null {
     'id',
     'cart_recipient_id',
     'cartRecipientId',
+    'draftId',
   ] as const
   for (const key of keys) {
     const raw = r[key]
@@ -41,16 +48,14 @@ export function useViewBag() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const { recipientActionsBlocked } = useMemberMustCompleteOnboardingForCustomCards()
-  /** Legacy local-store bag (unauthenticated). OTP guests use API guest cart via isGuestAuth. */
-  const isGuestCart = !isAuthenticated && !isGuestAuth
+  const isLocalGuestCart = !isAuthenticated && !isGuestAuth
 
-  const {
-    items: guestItems,
-    removeItem: removeGuestItem,
-    updateQuantity: updateGuestQuantity,
-    getTotalPrice: getGuestTotalPrice,
-    getTotalItems: getGuestTotalItems,
-  } = useCartStore()
+  const localLines = useGuestLocalCartStore((s) => s.lines)
+  const removeLocalLine = useGuestLocalCartStore((s) => s.removeLine)
+  const updateLocalLineQuantity = useGuestLocalCartStore((s) => s.updateLineQuantity)
+  const removeLocalRecipientDraft = useGuestLocalCartStore((s) => s.removeRecipientDraft)
+  const getLocalSubtotal = useGuestLocalCartStore((s) => s.getSubtotal)
+  const getLocalTotalItems = useGuestLocalCartStore((s) => s.getTotalItems)
 
   const userCart = useCart()
   const guestCart = useGuestCart()
@@ -67,8 +72,7 @@ export function useViewBag() {
   const { useGetCartAllRecipientsService } = usePublicCatalogQueries()
   const { useServiceFeesConfig } = usePayments()
   const { data: serviceFeesConfig } = useServiceFeesConfig()
-  /** Members only — guests load recipients from GET /guest-carts/items on each cart line */
-  useGetCartAllRecipientsService(!isGuestAuth)
+  useGetCartAllRecipientsService(!isGuestAuth && !isLocalGuestCart)
 
   const modal = usePersistedModalState<{
     cart_item_id: string | number
@@ -82,18 +86,33 @@ export function useViewBag() {
     recipient_email?: string
     message?: string
     assign_to_self?: boolean
+    quantity_index?: number
+    local_draft_id?: string
   }>({
     paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
   })
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [recipientToDelete, setRecipientToDelete] = useState<any | null>(null)
+  const [recipientToDelete, setRecipientToDelete] = useState<{
+    lineId?: string
+    draftId?: string
+    name?: string
+    recipient_name?: string
+    email?: string
+    recipient_email?: string
+    phone?: string
+    recipient_phone?: string
+    amount?: string | number
+    recipient_amount?: string | number
+  } | null>(null)
 
   const activeCartItems = useMemo(() => {
+    if (isLocalGuestCart) return []
     if (!Array.isArray(cartItems)) return []
     return cartItems.filter((cart: CartListResponse) => cart.cart_status?.toLowerCase() !== 'paid')
-  }, [cartItems])
+  }, [cartItems, isLocalGuestCart])
 
-  const displayCartItems = useMemo(() => {
+  const apiDisplayCartItems = useMemo(() => {
+    if (isLocalGuestCart) return []
     if (!Array.isArray(activeCartItems)) return []
     const flattened: FlattenedCartItem[] = []
     activeCartItems.forEach((cart: CartListResponse) => {
@@ -118,7 +137,14 @@ export function useViewBag() {
       }
     })
     return flattened
-  }, [activeCartItems])
+  }, [activeCartItems, isLocalGuestCart])
+
+  const localDisplayCartItems = useMemo(
+    () => (isLocalGuestCart ? flattenLocalGuestCartLines(localLines) : []),
+    [isLocalGuestCart, localLines],
+  )
+
+  const displayCartItems = isLocalGuestCart ? localDisplayCartItems : apiDisplayCartItems
 
   const guestCartItemIds = useMemo(
     () =>
@@ -137,19 +163,36 @@ export function useViewBag() {
 
   const recipientsByCartItem = useMemo(() => {
     const map: Record<string, any[]> = {}
+    if (isLocalGuestCart) {
+      displayCartItems.forEach((item) => {
+        const cid = item.cart_item_id
+        if (cid == null || cid === '') return
+        const key = `${cid}-${item.quantity_index ?? 0}`
+        const draft = localLines
+          .find((l) => l.lineId === cid)
+          ?.recipientDrafts.find((d) => d.quantity_index === (item.quantity_index ?? 0))
+        map[key] = draft ? [localRecipientToDisplayRow(draft)] : []
+      })
+      return map
+    }
+    if (isGuestAuth) {
+      displayCartItems.forEach((item) => {
+        const cid = item.cart_item_id
+        if (cid == null || cid === '') return
+        const key = `${cid}-${item.quantity_index ?? 0}`
+        const all = (guestRecipientsByCartItem[String(cid)] ?? []) as CartRecipient[]
+        const unitAmount = parseFloat(item.amount || '0')
+        map[key] = getRecipientsForCartUnit(all, item.quantity_index ?? 0, unitAmount)
+      })
+      return map
+    }
     displayCartItems.forEach((item) => {
       const cid = item.cart_item_id
       if (cid == null || cid === '') return
-      const key = String(cid)
-      if (isGuestAuth) {
-        const fromApi = guestRecipientsByCartItem[key]
-        map[key] = fromApi?.length ? fromApi : (item.recipients ?? [])
-      } else {
-        map[key] = item.recipients ?? []
-      }
+      map[String(cid)] = item.recipients ?? []
     })
     return map
-  }, [displayCartItems, isGuestAuth, guestRecipientsByCartItem])
+  }, [displayCartItems, isGuestAuth, isLocalGuestCart, localLines, guestRecipientsByCartItem])
 
   const subtotalFromApi = useMemo(
     () => activeCartItems.reduce((sum, cart) => sum + parseFloat(cart.total_amount || '0'), 0),
@@ -165,42 +208,49 @@ export function useViewBag() {
     [activeCartItems],
   )
 
-  const subtotal = isGuestCart ? getGuestTotalPrice() : subtotalFromApi
-  const totalItems = isGuestCart ? getGuestTotalItems() : totalItemsFromApi
-  const serviceFeeRate = Number(serviceFeesConfig?.serviceFeeRate ?? 0)
-  const serviceFee = subtotal * serviceFeeRate
-  const total = subtotal + serviceFee
+  const subtotal = isLocalGuestCart ? getLocalSubtotal() : subtotalFromApi
+  const totalItems = isLocalGuestCart ? getLocalTotalItems() : totalItemsFromApi
+  const serviceFeeRate = resolveServiceFeeRate(serviceFeesConfig?.serviceFeeRate)
+  const serviceFee = computeServiceFee(subtotal, serviceFeeRate)
+  const total = computeAmountCharged(subtotal, serviceFeeRate)
 
   const handleRemoveItem = useCallback(
     async (cartItemId: string | number) => {
+      if (isLocalGuestCart) {
+        removeLocalLine(String(cartItemId))
+        return
+      }
       await deleteCartItemAsync(cartItemId)
     },
-    [deleteCartItemAsync],
+    [deleteCartItemAsync, isLocalGuestCart, removeLocalLine],
   )
 
   const handleQuantityChange = useCallback(
     (cartItemId: string | number, quantity: number) => {
+      if (isLocalGuestCart) {
+        updateLocalLineQuantity(String(cartItemId), quantity)
+        return
+      }
       if (quantity < 1) {
         handleRemoveItem(cartItemId)
         return
       }
       updateCartItem({ cart_item_id: cartItemId, quantity })
     },
-    [updateCartItem, handleRemoveItem],
+    [updateCartItem, handleRemoveItem, isLocalGuestCart, updateLocalLineQuantity],
   )
 
   const handleAddRecipient = useCallback(
     (item: FlattenedCartItem) => {
       if (recipientActionsBlocked) return
       const amount = parseFloat(item.amount || '0')
-      const totalQuantity = item.total_quantity || 1
-      const perRecipientAmount = totalQuantity > 0 ? amount / totalQuantity : amount
       modal.openModal(MODAL_NAMES.RECIPIENT.ASSIGN, {
         cart_item_id: item.cart_item_id!,
         cardType: item.type,
         cardProduct: item.product,
         cardCurrency: item.currency || 'GHS',
-        amount: perRecipientAmount,
+        amount,
+        quantity_index: item.quantity_index ?? 0,
       })
     },
     [modal, recipientActionsBlocked],
@@ -219,7 +269,9 @@ export function useViewBag() {
         cardProduct: item.product,
         cardCurrency: item.currency || 'GHS',
         amount,
-        recipient_id: recipientId ?? undefined,
+        quantity_index: item.quantity_index ?? 0,
+        recipient_id: isLocalGuestCart ? undefined : recipientId ?? undefined,
+        local_draft_id: isLocalGuestCart ? recipientId ?? undefined : undefined,
         recipient_name: String(recipient.name ?? recipient.recipient_name ?? ''),
         recipient_phone: String(recipient.phone ?? recipient.recipient_phone ?? ''),
         recipient_email: String(recipient.email ?? recipient.recipient_email ?? ''),
@@ -227,15 +279,32 @@ export function useViewBag() {
         assign_to_self: Boolean(recipient.assign_to_self),
       })
     },
-    [modal, recipientActionsBlocked],
+    [modal, recipientActionsBlocked, isLocalGuestCart],
   )
 
-  const handleDeleteRecipient = useCallback((recipient: any) => {
-    setRecipientToDelete(recipient)
+  const handleDeleteRecipient = useCallback((recipient: any, lineId?: string) => {
+    setRecipientToDelete({
+      lineId,
+      draftId: recipient.draftId ?? resolveRecipientDeleteId(recipient) ?? undefined,
+      name: recipient.name ?? recipient.recipient_name,
+      recipient_name: recipient.recipient_name,
+      email: recipient.email ?? recipient.recipient_email,
+      recipient_email: recipient.recipient_email,
+      phone: recipient.phone ?? recipient.recipient_phone,
+      recipient_phone: recipient.recipient_phone,
+      amount: recipient.amount ?? recipient.recipient_amount,
+      recipient_amount: recipient.recipient_amount,
+    })
     setIsDeleteModalOpen(true)
   }, [])
 
   const confirmDeleteRecipient = useCallback(() => {
+    if (isLocalGuestCart && recipientToDelete?.lineId && recipientToDelete.draftId) {
+      removeLocalRecipientDraft(recipientToDelete.lineId, recipientToDelete.draftId)
+      setIsDeleteModalOpen(false)
+      setRecipientToDelete(null)
+      return
+    }
     const recipientId = resolveRecipientDeleteId(recipientToDelete)
     if (recipientId) {
       deleteRecipientMutation.mutate(recipientId, {
@@ -251,19 +320,19 @@ export function useViewBag() {
       setIsDeleteModalOpen(false)
       setRecipientToDelete(null)
     }
-  }, [recipientToDelete, deleteRecipientMutation, toast])
+  }, [recipientToDelete, deleteRecipientMutation, toast, isLocalGuestCart, removeLocalRecipientDraft])
 
   return {
-    isGuestCart,
-    isLoading: isLoadingCart,
-    guestItems,
-    removeGuestItem,
-    updateGuestQuantity,
+    isGuestCart: isLocalGuestCart,
+    isLoading: isLocalGuestCart ? false : isLoadingCart,
+    localLines,
+    removeGuestItem: removeLocalLine,
+    updateGuestQuantity: updateLocalLineQuantity,
     displayCartItems,
     recipientsByCartItem,
     handleRemoveItem,
     handleQuantityChange,
-    isUpdating,
+    isUpdating: isLocalGuestCart ? false : isUpdating,
     handleAddRecipient,
     handleEditRecipient,
     handleDeleteRecipient,

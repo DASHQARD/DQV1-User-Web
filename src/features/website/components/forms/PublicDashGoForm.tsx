@@ -15,11 +15,7 @@ import { useAuthStore } from '@/stores'
 import { useGuestAddToCartModalStore } from '@/stores/guestAddToCartModal'
 import { useToast } from '@/hooks'
 import { createCustomDashGoAndAddToCart } from '../../services/cards'
-import {
-  getGuestEmailFromAuth,
-  getGuestNameFromAuth,
-  getGuestPhoneFromAuth,
-} from '../../utils/guestAuth'
+import { getGuestEmailFromAuth, getGuestNameFromAuth } from '../../utils/guestAuth'
 import React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { VENDOR_DASHGO_FORM } from '../../pages/vendors/vendorProfileUtils'
@@ -113,7 +109,6 @@ export default function PublicDashGoForm({
         isGuestAuth,
         guestContact: isGuestAuth
           ? {
-              guest_phone: getGuestPhoneFromAuth(user),
               guest_name: getGuestNameFromAuth(user),
               guest_email: getGuestEmailFromAuth(user),
             }

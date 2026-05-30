@@ -29,8 +29,8 @@ export const addGuestCard = async (data: GuestAddCardPayload): Promise<GuestAddC
 }
 
 export const createGuestCart = async (data: {
-  guest_name: string
-  guest_email: string
+  guest_name?: string | null
+  guest_email?: string | null
 }): Promise<GuestAddCardResponse> => {
   const res = await postMethod('/guest-carts', data)
   const body = res?.data ?? res
@@ -129,8 +129,9 @@ function syncGuestCartIds(
 /** Create guest cart if needed, then POST /guest-carts/add-card (never /carts). */
 export async function ensureGuestCartAndAddCard(args: {
   card_id: string
-  guest_name: string
-  guest_email: string
+  guest_name?: string | null
+  guest_email?: string | null
+  quantity?: number
   getGuestCartId: () => number | null
   getGuestCartUuid?: () => string | null
   setGuestCartId: (id: number | null) => void
@@ -140,11 +141,16 @@ export async function ensureGuestCartAndAddCard(args: {
     card_id,
     guest_name,
     guest_email,
+    quantity = 1,
     getGuestCartId,
     getGuestCartUuid,
     setGuestCartId,
     setGuestCartUuid,
   } = args
+  const identity = {
+    ...(guest_name?.trim() ? { guest_name: guest_name.trim() } : {}),
+    ...(guest_email?.trim() ? { guest_email: guest_email.trim() } : {}),
+  }
 
   const storedUuid = getGuestCartUuid?.()?.trim()
   const storedNumeric = getGuestCartId()
@@ -158,19 +164,15 @@ export async function ensureGuestCartAndAddCard(args: {
   }
 
   if (cartRef === undefined) {
-    const createCartResult = await createGuestCart({
-      guest_name,
-      guest_email,
-    })
+    const createCartResult = await createGuestCart(identity)
     syncGuestCartIds(createCartResult, setGuestCartId, setGuestCartUuid)
     cartRef = resolveGuestCartRef(createCartResult)
   }
 
   const addResult = await addGuestCard({
-    guest_name,
-    guest_email,
+    ...identity,
     card_id,
-    quantity: 1,
+    quantity: Math.max(1, quantity),
     ...(cartRef !== undefined && { cart_id: cartRef }),
   })
   syncGuestCartIds(addResult, setGuestCartId, setGuestCartUuid)
@@ -234,9 +236,8 @@ export function extractGuestCreateCartMeta(response: unknown): {
 }
 
 export type CustomDashGoGuestContact = {
-  guest_phone: string
-  guest_name: string
-  guest_email: string
+  guest_name?: string | null
+  guest_email?: string | null
 }
 
 /** Create custom DashGo and add to cart — guest uses /guest-cards/dash-go + guest-carts; members use /carts/create-dashgo. */
@@ -260,12 +261,12 @@ export async function createCustomDashGoAndAddToCart(options: {
 
   if (options.isGuestAuth) {
     const contact = options.guestContact
-    if (!contact?.guest_phone?.trim() || !contact.guest_name?.trim() || !contact.guest_email?.trim()) {
-      throw new Error('Guest contact details are required. Please verify your phone number first.')
+    const identity = {
+      ...(contact?.guest_name?.trim() ? { guest_name: contact.guest_name.trim() } : {}),
+      ...(contact?.guest_email?.trim() ? { guest_email: contact.guest_email.trim() } : {}),
     }
     const createResponse = await createGuestDashGo({
-      guest_name: contact.guest_name.trim(),
-      guest_email: contact.guest_email.trim(),
+      ...identity,
       vendor_id: options.vendor_id,
       product,
       description,
@@ -287,8 +288,7 @@ export async function createCustomDashGoAndAddToCart(options: {
     }
     await ensureGuestCartAndAddCard({
       card_id: cardId,
-      guest_name: contact.guest_name.trim(),
-      guest_email: contact.guest_email.trim(),
+      ...identity,
       getGuestCartId: options.getGuestCartId,
       getGuestCartUuid: options.getGuestCartUuid,
       setGuestCartId: options.setGuestCartId,
@@ -324,8 +324,8 @@ export const createDashGoAndAssign = async (data: {
 
 /** Guest identity comes from the Bearer token; do not send guest_phone (rejected by API). */
 export const createGuestDashGo = async (data: {
-  guest_name: string
-  guest_email: string
+  guest_name?: string | null
+  guest_email?: string | null
   vendor_id: string
   product: string
   description: string
@@ -353,8 +353,8 @@ export const createDashProAndAssign = async (data: {
 }
 
 export const createGuestDashPro = async (data: {
-  guest_name: string
-  guest_email: string
+  guest_name?: string | null
+  guest_email?: string | null
   product: string
   description: string
   price: number

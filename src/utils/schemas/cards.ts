@@ -9,7 +9,8 @@ import {
 
 export const DashGoAndDashProPurchaseFormSchema = z.object({
   assign_to_self: z.boolean(),
-  recipient_name: z.string().min(1),
+  recipient_first_name: z.string().min(1),
+  recipient_last_name: z.string().min(1),
   recipient_phone: getRequiredInternationalPhoneSchema('Recipient phone'),
   recipient_email: z.string().refine((val) => isValidEmailAddress(val), {
     message: 'Invalid email address',
@@ -41,7 +42,8 @@ export const DashGoPurchaseFormSchema = z
   .object({
     assign_to_self: z.boolean(),
     vendor_id: z.string().min(1, 'Vendor is required'),
-    recipient_name: z.string().optional(),
+    recipient_first_name: z.string().optional(),
+    recipient_last_name: z.string().optional(),
     recipient_phone: z.string().optional(),
     recipient_email: z.string().optional(),
     recipient_message: z.string().min(1),
@@ -63,33 +65,30 @@ export const DashGoPurchaseFormSchema = z
   .superRefine((data, ctx) => {
     // If assign_to_self is false, recipient details are required
     if (!data.assign_to_self) {
-      if (!data.recipient_name || data.recipient_name.trim().length === 0) {
+      if (!data.recipient_first_name || data.recipient_first_name.trim().length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Recipient name is required when not assigning to self',
-          path: ['recipient_name'],
+          message: 'First name is required when not assigning to self',
+          path: ['recipient_first_name'],
         })
       }
-      if (!data.recipient_phone || data.recipient_phone.trim().length === 0) {
+      if (!data.recipient_last_name || data.recipient_last_name.trim().length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Recipient phone is required when not assigning to self',
-          path: ['recipient_phone'],
+          message: 'Last name is required when not assigning to self',
+          path: ['recipient_last_name'],
         })
-      } else if (!isValidInternationalPhoneDigits(data.recipient_phone)) {
+      }
+      const recipientPhone = data.recipient_phone?.trim()
+      if (recipientPhone && !isValidInternationalPhoneDigits(recipientPhone)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: INVALID_PHONE_MESSAGE,
           path: ['recipient_phone'],
         })
       }
-      if (!data.recipient_email || data.recipient_email.trim().length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Recipient email is required when not assigning to self',
-          path: ['recipient_email'],
-        })
-      } else if (!isValidEmailAddress(data.recipient_email)) {
+      const recipientEmail = data.recipient_email?.trim()
+      if (recipientEmail && !isValidEmailAddress(recipientEmail)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Please provide a valid email address',
@@ -102,7 +101,8 @@ export const DashGoPurchaseFormSchema = z
 export const AssignRecipientSchema = z
   .object({
     assign_to_self: z.boolean(),
-    name: z.string().optional(),
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
     phone: z.string().optional(),
     email: z.string().optional(),
     message: z.string().refine((val) => val.trim().length > 0, {
@@ -115,33 +115,30 @@ export const AssignRecipientSchema = z
   })
   .superRefine((data, ctx) => {
     if (!data.assign_to_self) {
-      if (!data.name || data.name.trim().length === 0) {
+      if (!data.first_name || data.first_name.trim().length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Name is required when not assigning to yourself',
-          path: ['name'],
+          message: 'First name is required when not assigning to yourself',
+          path: ['first_name'],
         })
       }
-      if (!data.phone || data.phone.trim().length === 0) {
+      if (!data.last_name || data.last_name.trim().length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Phone number is required when not assigning to yourself',
-          path: ['phone'],
+          message: 'Last name is required when not assigning to yourself',
+          path: ['last_name'],
         })
-      } else if (!isValidInternationalPhoneDigits(data.phone)) {
+      }
+      const recipientPhone = data.phone?.trim()
+      if (recipientPhone && !isValidInternationalPhoneDigits(recipientPhone)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: INVALID_PHONE_MESSAGE,
           path: ['phone'],
         })
       }
-      if (!data.email || data.email.trim().length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Email is required when not assigning to yourself',
-          path: ['email'],
-        })
-      } else if (!isValidEmailAddress(data.email)) {
+      const recipientEmail = data.email?.trim()
+      if (recipientEmail && !isValidEmailAddress(recipientEmail)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Please provide a valid email address',
@@ -157,14 +154,7 @@ export const AssignRecipientSchema = z
           path: ['email'],
         })
       }
-      const phone = data.phone?.trim()
-      if (phone && !isValidInternationalPhoneDigits(phone)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: INVALID_PHONE_MESSAGE,
-          path: ['phone'],
-        })
-      }
+      // Phone is optional when assigning to self (guests verify at checkout).
     }
   })
 
@@ -172,7 +162,8 @@ export const DashGoAssignRecipientSchema = z
   .object({
     assign_to_self: z.boolean(),
     vendor_id: z.string().min(1, 'Vendor is required'),
-    recipient_name: z.string().optional().or(z.literal('')),
+    recipient_first_name: z.string().optional().or(z.literal('')),
+    recipient_last_name: z.string().optional().or(z.literal('')),
     recipient_phone: z.string().optional().or(z.literal('')),
     recipient_email: z.string().optional().or(z.literal('')),
     recipient_message: z.string().optional(),
@@ -191,33 +182,30 @@ export const DashGoAssignRecipientSchema = z
   })
   .superRefine((data, ctx) => {
     if (!data.assign_to_self) {
-      if (!data.recipient_name || data.recipient_name.trim() === '') {
+      if (!data.recipient_first_name || data.recipient_first_name.trim() === '') {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Recipient name is required when not assigning to yourself',
-          path: ['recipient_name'],
+          message: 'First name is required when not assigning to yourself',
+          path: ['recipient_first_name'],
         })
       }
-      if (!data.recipient_phone || data.recipient_phone.trim() === '') {
+      if (!data.recipient_last_name || data.recipient_last_name.trim() === '') {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Recipient phone is required when not assigning to yourself',
-          path: ['recipient_phone'],
+          message: 'Last name is required when not assigning to yourself',
+          path: ['recipient_last_name'],
         })
-      } else if (!isValidInternationalPhoneDigits(data.recipient_phone)) {
+      }
+      const recipientPhone = data.recipient_phone?.trim()
+      if (recipientPhone && !isValidInternationalPhoneDigits(recipientPhone)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: INVALID_PHONE_MESSAGE,
           path: ['recipient_phone'],
         })
       }
-      if (!data.recipient_email || data.recipient_email.trim() === '') {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Recipient email is required when not assigning to yourself',
-          path: ['recipient_email'],
-        })
-      } else if (!isValidEmailAddress(data.recipient_email)) {
+      const recipientEmail = data.recipient_email?.trim()
+      if (recipientEmail && !isValidEmailAddress(recipientEmail)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Please provide a valid email address',

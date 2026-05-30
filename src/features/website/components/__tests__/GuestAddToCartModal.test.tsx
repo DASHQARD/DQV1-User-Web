@@ -6,6 +6,7 @@ vi.mock('@/stores', () => ({
   useGuestAddToCartModalStore: () => ({
     isOpen: true,
     pendingItem: { card_id: 1, product: 'Test', price: 100 },
+    checkoutOtpPrefill: null,
     close: vi.fn(),
   }),
   useAuthStore: (fn: (s: any) => any) =>

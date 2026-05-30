@@ -94,12 +94,6 @@ function GuestCreatedCardItem({ card }: { card: GuestCreatedCard }) {
               Created {formatDate(card.created_at)}
             </Text>
           ) : null}
-
-          {card.service_fee != null && card.service_fee > 0 ? (
-            <Text variant="span" className="text-xs text-gray-500 block mt-1">
-              Service fee {formatCurrency(card.service_fee, card.currency)}
-            </Text>
-          ) : null}
         </div>
 
         <div className="text-right shrink-0">

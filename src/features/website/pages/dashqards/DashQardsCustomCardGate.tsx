@@ -3,6 +3,7 @@ import { Button, Text } from '@/components'
 import { Icon } from '@/libs'
 import { useGuestAddToCartModalStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
+import { setGuestBrowsingAck } from '@/features/website/utils/guestBrowsingSession'
 
 type CardKind = 'DashPro' | 'DashGo'
 
@@ -11,6 +12,7 @@ export function DashQardsCustomCardGate({ cardKind }: { cardKind: CardKind }) {
   const openGuestModal = useGuestAddToCartModalStore((s) => s.open)
 
   const handleContinueAsGuest = () => {
+    setGuestBrowsingAck()
     openGuestModal({
       card_id: 0,
       product: `Custom ${cardKind}`,

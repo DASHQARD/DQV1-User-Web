@@ -3,6 +3,7 @@ import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { getStatusVariant } from '@/utils/helpers'
 import { formatCurrency, formatFullDate } from '@/utils/format'
+import { getPaymentReceiptBreakdown } from '@/utils/pricingFees'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks'
 import { Icon } from '@/libs'
 import { TransactionDetailsSkeleton } from './skeletons'
@@ -35,6 +36,8 @@ export function TransactionDetails() {
   const isPending = isLoading
   const cartDetails = paymentData?.cart_details || null
   const cartItems = cartDetails?.items || []
+  const currency = paymentData?.currency || 'GHS'
+  const receipt = getPaymentReceiptBreakdown(paymentData ?? {})
 
   const transactionInfo = [
     {
@@ -64,9 +67,33 @@ export function TransactionDetails() {
         : '-',
     },
     {
-      label: 'Amount',
-      value: formatCurrency(Number(paymentData?.amount) || 0, paymentData?.currency || 'GHS'),
+      label: receipt.hasBreakdown ? 'Total charged' : 'Amount',
+      value: formatCurrency(Number(paymentData?.amount) || 0, currency),
     },
+    ...(receipt.hasBreakdown
+      ? [
+          {
+            label: 'Items total',
+            value: formatCurrency(receipt.itemsTotal, currency),
+          },
+          ...(receipt.serviceFeeAmount > 0
+            ? [
+                {
+                  label: 'Service fee',
+                  value: formatCurrency(receipt.serviceFeeAmount, currency),
+                },
+              ]
+            : []),
+          ...(receipt.markupAmount > 0
+            ? [
+                {
+                  label: 'Platform markup',
+                  value: formatCurrency(receipt.markupAmount, currency),
+                },
+              ]
+            : []),
+        ]
+      : []),
     {
       label: 'User Name',
       value: paymentData?.user_name || '-',
@@ -165,12 +192,6 @@ export function TransactionDetails() {
                                 item.currency || 'GHS',
                               )}
                             </Text>
-                            {item.service_fee > 0 && (
-                              <Text variant="p" className="text-xs text-gray-500">
-                                Service Fee:{' '}
-                                {formatCurrency(item.service_fee, item.currency || 'GHS')}
-                              </Text>
-                            )}
                           </div>
                         </div>
 

@@ -41,7 +41,6 @@ describe('createCustomDashGoAndAddToCart', () => {
       redemption_branches: [{ branch_id: 'b1' }],
       isGuestAuth: true,
       guestContact: {
-        guest_phone: '+233551234567',
         guest_name: 'Jane',
         guest_email: 'jane@example.com',
       },
@@ -80,7 +79,6 @@ describe('createCustomDashGoAndAddToCart', () => {
       redemption_branches: [{ branch_id: 'b1' }],
       isGuestAuth: true,
       guestContact: {
-        guest_phone: '+233551234567',
         guest_name: 'Jane',
         guest_email: 'jane@example.com',
       },

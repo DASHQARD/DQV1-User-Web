@@ -6,16 +6,12 @@ import { useViewBag } from '@/features/website/hooks/useViewBag'
 import { MemberOnboardingRecipientBlock } from '@/features/website/components/MemberOnboardingRecipientBlock'
 import { formatCurrency } from '@/utils/format'
 import type { FlattenedCartItem } from '@/types'
-import type { CartItem } from '@/stores/cart'
 
 export default function ViewBag() {
   const navigate = useNavigate()
   const {
     isGuestCart,
     isLoading,
-    guestItems,
-    removeGuestItem,
-    updateGuestQuantity,
     displayCartItems,
     recipientsByCartItem,
     handleRemoveItem,
@@ -47,7 +43,7 @@ export default function ViewBag() {
     )
   }
 
-  const hasItems = isGuestCart ? guestItems.length > 0 : displayCartItems.length > 0
+  const hasItems = displayCartItems.length > 0
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -74,81 +70,20 @@ export default function ViewBag() {
                   Browse Cards
                 </Button>
               </div>
-            ) : isGuestCart ? (
-              /* Guest cart list */
-              <div
-                className="bg-white rounded-2xl p-6"
-                style={{ boxShadow: '0px 4px 40px 0px rgba(0, 0, 0, 0.04)' }}
-              >
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Items Name</h2>
-                <div className="space-y-0">
-                  {guestItems.map((item: CartItem, index: number) => {
-                    const cardBackground = getCardBackground(item.type || 'dashx')
-                    const displayPrice = (item.price || 0) * item.quantity
-                    return (
-                      <div key={item.id}>
-                        {index > 0 && <hr className="border-gray-200 my-4" />}
-                        <div className="flex items-center gap-4 py-4">
-                          <div className="w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-gray-200 relative">
-                            <img
-                              src={cardBackground}
-                              alt={`${item.type} card background`}
-                              className="absolute inset-0 w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-normal text-gray-900 text-base">{item.title}</h3>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() =>
-                                item.quantity <= 1
-                                  ? removeGuestItem(item.id)
-                                  : updateGuestQuantity(item.id, item.quantity - 1)
-                              }
-                              className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                              aria-label="Decrease quantity"
-                              disabled={item.quantity <= 1}
-                            >
-                              <Icon icon="bi:dash" className="text-sm" />
-                            </button>
-                            <span className="text-gray-900 font-medium min-w-[40px] text-center">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() => updateGuestQuantity(item.id, item.quantity + 1)}
-                              className="w-8 h-8 rounded-full bg-[#402D87] flex items-center justify-center text-white hover:bg-[#402D87]/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                              aria-label="Increase quantity"
-                            >
-                              <Icon icon="bi:plus" className="text-sm" />
-                            </button>
-                            <button
-                              onClick={() => removeGuestItem(item.id)}
-                              className="text-[#402D87] hover:underline text-sm font-medium ml-2"
-                              aria-label="Remove item"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-bold text-gray-900 text-base">
-                              {formatCurrency(displayPrice)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
             ) : (
-              /* Logged-in cart list (API cart with recipients) */
+              /* Cart list (member, API guest, or local guest) */
               <div
                 className="bg-white rounded-2xl p-6"
                 style={{ boxShadow: '0px 4px 40px 0px rgba(0, 0, 0, 0.04)' }}
               >
                 <div className="mb-4 space-y-4">
                   <h2 className="text-lg font-semibold text-gray-900">Items Name</h2>
+                  {isGuestCart ? (
+                    <p className="text-sm text-gray-500">
+                      Your bag is saved on this device. Verify your phone at checkout to complete
+                      your purchase.
+                    </p>
+                  ) : null}
                   {recipientActionsBlocked ? <MemberOnboardingRecipientBlock /> : null}
                 </div>
                 <div className="space-y-0">
@@ -157,24 +92,36 @@ export default function ViewBag() {
                     const cardImageUrl = item.images?.[0]?.file_url
                       ? getImageUrl(item.images[0].file_url)
                       : null
-                    const itemRecipients =
-                      item.cart_item_id && recipientsByCartItem[item.cart_item_id]
-                        ? recipientsByCartItem[item.cart_item_id]
-                        : []
-                    // `item.amount` comes from API `total_amount` — already the line total, not per-unit price
-                    const lineTotal = parseFloat(item.amount || '0')
+                    const recipientKey =
+                      item.cart_item_id != null
+                        ? `${item.cart_item_id}-${item.quantity_index ?? 0}`
+                        : ''
+                    const itemRecipients = recipientKey ? (recipientsByCartItem[recipientKey] ?? []) : []
+                    const unitAmount = parseFloat(item.amount || '0')
+                    const lineTotal = isGuestCart
+                      ? unitAmount
+                      : parseFloat(item.amount || '0')
                     const hasRecipients = itemRecipients.length > 0
                     const quantity = item.total_quantity || 1
-                    const totalAssignedQuantity = itemRecipients.reduce(
-                      (sum: number, recipient: any) =>
-                        sum + (recipient.quantity ?? recipient.recipient_quantity ?? 1),
-                      0,
-                    )
+                    const showLineControls = !isGuestCart || (item.quantity_index ?? 0) === 0
+                    const assignedOnLine = isGuestCart
+                      ? Object.keys(recipientsByCartItem).filter((k) =>
+                          k.startsWith(`${item.cart_item_id}-`),
+                        ).length
+                      : itemRecipients.reduce(
+                          (sum: number, recipient: any) =>
+                            sum + (recipient.quantity ?? recipient.recipient_quantity ?? 1),
+                          0,
+                        )
+                    const totalAssignedQuantity = assignedOnLine
 
                     return (
-                      <div key={`${item.cart_id}-${item.cart_item_id || item.card_id}`}>
+                      <div
+                        key={`${item.cart_id}-${item.cart_item_id || item.card_id}-${item.quantity_index ?? 0}`}
+                      >
                         {index > 0 && <hr className="border-gray-200 my-4" />}
-                        <div className="flex items-center gap-4 py-4">
+                        <div className={`flex items-center gap-4 py-4 ${showLineControls ? '' : 'pt-0'}`}>
+                          {showLineControls ? (
                           <div className="w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-gray-200 relative">
                             <img
                               src={cardBackground}
@@ -193,11 +140,17 @@ export default function ViewBag() {
                               />
                             )}
                           </div>
+                          ) : (
+                            <div className="w-20 shrink-0" />
+                          )}
                           <div className="flex-1 min-w-0">
                             <h3 className="font-normal text-gray-900 text-base">
-                              {item.product || `Card #${item.card_id}`}
+                              {showLineControls
+                                ? item.product || `Card #${item.card_id}`
+                                : `Recipient ${(item.quantity_index ?? 0) + 1}`}
                             </h3>
                           </div>
+                          {showLineControls ? (
                           <div className="flex items-center gap-3">
                             {quantity === 1 ? (
                               <>
@@ -276,11 +229,14 @@ export default function ViewBag() {
                               Remove
                             </button>
                           </div>
+                          ) : null}
+                          {showLineControls ? (
                           <div className="text-right">
                             <span className="font-bold text-gray-900 text-base">
-                              {formatCurrency(lineTotal)}
+                              {formatCurrency(lineTotal * (isGuestCart ? quantity : 1))}
                             </span>
                           </div>
+                          ) : null}
                         </div>
 
                         {hasRecipients && (
@@ -326,7 +282,9 @@ export default function ViewBag() {
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => handleDeleteRecipient(recipient)}
+                                    onClick={() =>
+                                      handleDeleteRecipient(recipient, String(item.cart_item_id))
+                                    }
                                     className="text-red-600 hover:text-red-700 p-1"
                                     aria-label="Delete recipient"
                                   >
@@ -435,8 +393,7 @@ export default function ViewBag() {
         </div>
       </div>
 
-      {!isGuestCart && (
-        <>
+      <>
           <PurchaseModal />
           <Modal isOpen={isDeleteModalOpen} setIsOpen={setIsDeleteModalOpen} panelClass="!max-w-md">
             <div className="p-6">
@@ -500,8 +457,7 @@ export default function ViewBag() {
               </div>
             </div>
           </Modal>
-        </>
-      )}
+      </>
     </div>
   )
 }

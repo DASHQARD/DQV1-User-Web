@@ -300,6 +300,11 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
     })
   }
 
+  const handleSearchNavigate = () => {
+    navigate(ROUTES.IN_APP.DASHQARDS)
+    setMobileMenuOpen(false)
+  }
+
   return (
     <>
       <nav
@@ -318,6 +323,16 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
           <Link to={ROUTES.IN_APP.HOME} className="shrink-0">
             <img src={Logo} alt="Logo" className="h-8 w-auto object-contain" />
           </Link>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSearchNavigate}
+              className="bg-gray-50 p-2.5 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Search"
+            >
+              <Icon icon="hugeicons:search-02" className="size-5 text-gray-700" />
+            </button>
 
           {/* Desktop Navigation */}
           <section className="hidden lg:flex items-center gap-3">
@@ -348,15 +363,6 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
-              {/* Search Button */}
-              <button
-                onClick={() => navigate(ROUTES.IN_APP.DASHQARDS)}
-                className="bg-gray-50 p-2.5 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-                aria-label="Search"
-              >
-                <Icon icon="hugeicons:search-02" className="size-5 text-gray-700" />
-              </button>
-
               {/* Cart Button */}
               <button
                 type="button"
@@ -507,6 +513,7 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
               />
             </button>
           </div>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -538,18 +545,6 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
                       )
                     })}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate(ROUTES.IN_APP.DASHQARDS)
-                      setMobileMenuOpen(false)
-                    }}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 hover:text-primary-600 rounded-lg transition-colors w-full text-left"
-                  >
-                    <Icon icon="hugeicons:search-02" className="text-lg text-gray-400" />
-                    <span>Search</span>
-                  </button>
                 </>
               ) : null}
 

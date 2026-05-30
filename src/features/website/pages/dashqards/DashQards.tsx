@@ -6,9 +6,7 @@ import DashGoImage from '@/assets/images/DashGo.png'
 import DashProImage from '@/assets/images/DashPro.png'
 import { CardItems, DashProPurchase, DashGoPurchase } from '../../components'
 import { useDashQards } from '../../hooks'
-import { DashQardsCustomCardGate } from './DashQardsCustomCardGate'
 import { DashQardsOnboardingGate } from './DashQardsOnboardingGate'
-import { useCanUseCustomGiftCardFlow } from './useCanUseCustomGiftCardFlow'
 import { useMemberMustCompleteOnboardingForCustomCards } from '@/features/website/hooks/useMemberMustCompleteOnboardingForCustomCards'
 import { DashQardsFilters } from './DashQardsFilters'
 
@@ -45,7 +43,6 @@ export default function DashQards() {
     [query.min_price, query.max_price, query.search, query.vendor_ids],
   )
 
-  const canUseCustomGiftCardFlow = useCanUseCustomGiftCardFlow()
   const { profilePending, mustCompleteOnboarding } = useMemberMustCompleteOnboardingForCustomCards()
 
   return (
@@ -229,9 +226,7 @@ export default function DashQards() {
 
               {activeTab === 'dashpro' ? (
                 <div className="w-full">
-                  {!canUseCustomGiftCardFlow ? (
-                    <DashQardsCustomCardGate cardKind="DashPro" />
-                  ) : profilePending ? (
+                  {profilePending ? (
                     <div className="flex min-h-[240px] items-center justify-center py-12">
                       <Loader />
                     </div>
@@ -243,9 +238,7 @@ export default function DashQards() {
                 </div>
               ) : activeTab === 'dashgo' ? (
                 <div className="w-full">
-                  {!canUseCustomGiftCardFlow ? (
-                    <DashQardsCustomCardGate cardKind="DashGo" />
-                  ) : profilePending ? (
+                  {profilePending ? (
                     <div className="flex min-h-[240px] items-center justify-center py-12">
                       <Loader />
                     </div>
@@ -288,7 +281,6 @@ export default function DashQards() {
                               cardData.base_price || card.price || cardData.card_price || '0'
                             }
                             markup_price={cardData.markup_price ?? null}
-                            service_fee={cardData.service_fee || '0'}
                             currency={card.currency || 'GHS'}
                             expiry_date={card.expiry_date || ''}
                             status={card.status || cardData.card_status || 'active'}

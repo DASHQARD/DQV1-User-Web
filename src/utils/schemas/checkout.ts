@@ -11,6 +11,14 @@ export const UserInfoSchema = z.object({
   phone_number: getRequiredInternationalPhoneSchema('Phone number'),
 })
 
+/** Guest checkout — first/last name, email, and phone required. */
+export const GuestUserInfoSchema = z.object({
+  first_name: getRequiredStringSchema('First name'),
+  last_name: getRequiredStringSchema('Last name'),
+  email: getRequiredEmailSchema('Email'),
+  phone_number: getRequiredInternationalPhoneSchema('Phone number'),
+})
+
 export const PaymentMethodSchema = z.object({
   payment_method_type: z.enum(['mobile_money', 'card']).optional(),
   /** For Egnanow mobile: MTNGH | ATGH | TCELGH */
@@ -27,5 +35,6 @@ export const PaymentMethodSchema = z.object({
 })
 
 export type UserInfoFormData = z.infer<typeof UserInfoSchema>
+export type GuestUserInfoFormData = z.infer<typeof GuestUserInfoSchema>
 /** RHF holds raw input values; Zod coerces to numbers on parse. */
 export type PaymentMethodFormData = z.input<typeof PaymentMethodSchema>
