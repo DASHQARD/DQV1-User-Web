@@ -6,11 +6,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import OtpLoginModal from '../modals/OtpLoginModal'
 import { useLoginForm } from '../../hooks'
 import { getVisibleFieldError } from '../../utils/showFieldError'
+import { useGuestAddToCartModalStore } from '@/stores'
+import { GuestAddToCartModal } from '@/features/website/components/GuestAddToCartModal'
 
 export default function LoginForm() {
   const { form, onSubmit, isPending, modal } = useLoginForm()
   const { isValid } = form.formState
   const navigate = useNavigate()
+  const openGuestLoginModal = useGuestAddToCartModalStore((s) => s.open)
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -100,6 +103,18 @@ export default function LoginForm() {
 
             <hr className="border-gray-200" />
 
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-[#402D87]/30 text-[#402D87] hover:bg-[#402D87]/5"
+              onClick={() => openGuestLoginModal({ guestLoginOnly: true })}
+            >
+              Continue as guest
+            </Button>
+            <p className="text-xs text-center text-gray-500">
+              Verify your phone to browse gift cards, your bag, and My cards without a full account.
+            </p>
+
             <div className="flex items-center gap-2">
               <p>
                 Don't have an account?{' '}
@@ -119,6 +134,8 @@ export default function LoginForm() {
       >
         <OtpLoginModal />
       </Modal>
+
+      <GuestAddToCartModal />
     </>
   )
 }

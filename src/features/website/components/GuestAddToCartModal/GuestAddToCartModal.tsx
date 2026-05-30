@@ -91,7 +91,7 @@ export default function GuestAddToCartModal() {
       otpForm.reset({ otp: '' })
       return
     }
-    if (pendingItem.redemptionOnly || pendingItem.checkoutSync) {
+    if (pendingItem.guestLoginOnly || pendingItem.redemptionOnly || pendingItem.checkoutSync) {
       setStep('contact')
       const phone =
         useGuestLocalCartStore.getState().contact.phone ??
@@ -286,6 +286,13 @@ export default function GuestAddToCartModal() {
         return
       }
 
+      if (pendingItem.guestLoginOnly) {
+        queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+        handleClose()
+        toast.success("You're signed in as a guest.")
+        return
+      }
+
       if (pendingItem.card_id == null) {
         throw new Error('Missing card')
       }
@@ -325,11 +332,13 @@ export default function GuestAddToCartModal() {
                 ? 'Continue'
                 : 'Add to cart'
               : step === 'contact'
-                ? pendingItem?.redemptionOnly
-                  ? 'Verify your details'
-                  : pendingItem?.checkoutSync
-                    ? 'Verify your phone'
-                    : 'Continue as guest'
+                ? pendingItem?.guestLoginOnly
+                  ? 'Continue as guest'
+                  : pendingItem?.redemptionOnly
+                    ? 'Verify your details'
+                    : pendingItem?.checkoutSync
+                      ? 'Verify your phone'
+                      : 'Continue as guest'
                 : 'Verify your phone'
       }
       panelClass="!max-w-md max-md:!max-w-[94vw] max-md:!my-4 max-md:max-h-[calc(100dvh-2rem)] max-md:overflow-y-auto"
@@ -449,7 +458,11 @@ export default function GuestAddToCartModal() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => (pendingItem?.redemptionOnly ? handleClose() : setStep('choice'))}
+                onClick={() =>
+                  pendingItem?.redemptionOnly || pendingItem?.guestLoginOnly || pendingItem?.checkoutSync
+                    ? handleClose()
+                    : setStep('choice')
+                }
                 disabled={isRequestingOtp}
                 className="flex-1"
               >
@@ -533,7 +546,7 @@ export default function GuestAddToCartModal() {
                 >
                   {pendingItem?.checkoutSync
                     ? 'Verify & continue'
-                    : pendingItem?.redemptionOnly
+                    : pendingItem?.redemptionOnly || pendingItem?.guestLoginOnly
                       ? 'Verify & continue'
                       : pendingItem?.authOnly
                         ? 'Verify & continue'

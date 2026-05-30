@@ -10,7 +10,7 @@ vi.mock('../../hooks', () => ({
         fn()
       },
       register: () => ({}),
-      formState: { errors: {}, isValid: true },
+      formState: { errors: {}, isValid: true, touchedFields: {}, submitCount: 0 },
     },
     onSubmit: vi.fn(),
     isPending: false,
@@ -22,6 +22,23 @@ vi.mock('../../hooks', () => ({
     },
   }),
 }))
+
+vi.mock('@/features/website/components/GuestAddToCartModal', () => ({
+  GuestAddToCartModal: () => null,
+}))
+
+vi.mock('@/stores', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/stores')>()
+  return {
+    ...actual,
+    useGuestAddToCartModalStore: () => ({
+      isOpen: false,
+      pendingItem: null,
+      open: vi.fn(),
+      close: vi.fn(),
+    }),
+  }
+})
 
 describe('Login (auth)', () => {
   beforeEach(() => {

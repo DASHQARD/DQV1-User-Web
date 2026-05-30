@@ -58,4 +58,37 @@ describe('parseGuestCreatedCardsResponse', () => {
     expect(cards[0].product).toBe('DashPro')
     expect(cards[0].amount).toBe(10)
   })
+
+  it('parses flat purchased guest card rows', () => {
+    const cards = parseGuestCreatedCardsResponse({
+      status: 'success',
+      data: [
+        {
+          recipient_id: '019e78a2-5020-7291-b82b-56f24a000f3c',
+          gift_card_id: '019e409a-6d06-7b22-b38c-0900e8381593',
+          card_reference: 'X-2064-01-01-01-0001-000001',
+          card_type: 'DashX',
+          product: 'The Elevate Card',
+          currency: 'GHS',
+          amount: 22,
+          price: 22,
+          vendor_name: 'Surge Africa',
+          expiry_date: '2026-05-31T00:00:00.000Z',
+          cart_status: 'paid',
+          purchased_at: '2026-05-30T11:26:03.795Z',
+        },
+      ],
+    })
+
+    expect(cards).toHaveLength(1)
+    expect(cards[0]).toMatchObject({
+      guest_card_id: '019e78a2-5020-7291-b82b-56f24a000f3c',
+      gift_card_id: '019e409a-6d06-7b22-b38c-0900e8381593',
+      card_type: 'DashX',
+      product: 'The Elevate Card',
+      amount: 22,
+      vendor_name: 'Surge Africa',
+      status: 'paid',
+    })
+  })
 })

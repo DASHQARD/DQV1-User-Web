@@ -16,6 +16,7 @@ vi.mock('@/services/requests', () => ({
 import {
   ensureGuestCartAndAddCard,
   getGuestCart,
+  getGuestCartItems,
   isGuestCartNotFoundError,
   resolveGuestCartRef,
   resolveGuestCartUuid,
@@ -39,6 +40,11 @@ describe('guest cart helpers', () => {
   it('getGuestCart rethrows non-404 errors', async () => {
     getListMock.mockRejectedValueOnce({ status: 500, message: 'Server error' })
     await expect(getGuestCart()).rejects.toMatchObject({ status: 500 })
+  })
+
+  it('getGuestCartItems returns empty array on 404 instead of throwing', async () => {
+    getListMock.mockRejectedValueOnce({ status: 404, message: 'Cart not found' })
+    await expect(getGuestCartItems()).resolves.toEqual([])
   })
 
   it('resolveGuestCartUuid reads string cart id as UUID', () => {

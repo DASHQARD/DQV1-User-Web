@@ -3,6 +3,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/stores'
 
 import { ENV_VARS, ROUTES } from '../utils/constants'
+import { isInvalidTokenTypeMessage, refreshStoredAccessToken } from '@/utils/authSession'
 
 const instance = axios.create({
   baseURL: `${ENV_VARS.API_BASE_URL}/api/v1`,
@@ -10,16 +11,13 @@ const instance = axios.create({
 
 const CANCELLED_STATUS_CODE = 499
 
-// Flag to prevent multiple simultaneous refresh attempts
 let isRefreshing = false
-// Queue to store failed requests while token is being refreshed
 let failedQueue: Array<{
-  resolve: (value?: any) => void
-  reject: (error?: any) => void
+  resolve: (value?: unknown) => void
+  reject: (error?: unknown) => void
 }> = []
 
-// Process queued requests after token refresh
-const processQueue = (error: any = null) => {
+const processQueue = (error: unknown = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error)
@@ -30,84 +28,37 @@ const processQueue = (error: any = null) => {
   failedQueue = []
 }
 
-const extractTokens = (payload: any) => {
-  const data = payload?.data ?? payload
-  const nested = data?.data ?? data
-  const tokens = nested?.tokens ?? data?.tokens ?? {}
-
-  const accessToken =
-    tokens?.access_token ??
-    tokens?.accessToken ??
-    nested?.access_token ??
-    nested?.accessToken ??
-    data?.access_token ??
-    data?.accessToken
-
-  const refreshToken =
-    tokens?.refresh_token ??
-    tokens?.refreshToken ??
-    nested?.refresh_token ??
-    nested?.refreshToken ??
-    data?.refresh_token ??
-    data?.refreshToken
-
-  return { accessToken, refreshToken }
-}
-
-// Refresh token function (uses auth/refresh-token or guest-auth/token/refresh based on isGuestAuth)
-const refreshAccessToken = async (): Promise<string | null> => {
-  const state = useAuthStore.getState()
-  const refreshTokenValue = state.getRefreshToken()
-  const isGuestAuth = state.isGuestAuth
-  if (!refreshTokenValue) {
-    throw new Error('No refresh token available')
-  }
-
-  const url = isGuestAuth
-    ? `${ENV_VARS.API_BASE_URL}/api/v1/guest-auth/token/refresh`
-    : `${ENV_VARS.API_BASE_URL}/api/v1/auth/refresh-token`
-  const body = { refresh_token: refreshTokenValue }
-
-  try {
-    const response = await axios.post(url, body)
-    const { accessToken, refreshToken: newRefreshToken } = extractTokens(response?.data)
-
-    if (!accessToken) {
-      throw new Error('Unable to refresh access token')
-    }
-
-    const { setToken, setRefreshToken } = useAuthStore.getState()
-    setToken(accessToken)
-    setRefreshToken(newRefreshToken || refreshTokenValue)
-    return accessToken
-  } catch (error) {
-    const reset = useAuthStore.getState().reset
-    reset()
-    const path = window.location.pathname
-    if (!path.includes('auth') && !path.includes('/redeem')) {
-      window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN
-    }
-    throw error
-  }
-}
-
 const shouldRedirectToLogin = () => {
   const path = window.location.pathname
   return !path.includes('auth') && !path.includes('/redeem')
+}
+
+function getErrorMessage(error: AxiosError): string {
+  const errorData = error?.response?.data
+  return typeof errorData === 'string'
+    ? errorData
+    : (errorData as { message?: string })?.message || error.message || ''
 }
 
 function errorHandler(error: AxiosError) {
   let { status } = error.response || {}
   status = error.code === 'ERR_CANCELED' ? CANCELLED_STATUS_CODE : status
 
-  const errorData = error?.response?.data
-  const errorMessage =
-    typeof errorData === 'string'
-      ? errorData
-      : (errorData as any)?.message || error.message || 'Sorry, an unexpected error occurred.'
   throw {
     status,
-    message: errorMessage,
+    message: getErrorMessage(error) || 'Sorry, an unexpected error occurred.',
+  }
+}
+
+function clearAuthAndMaybeRedirect() {
+  const wasGuest = useAuthStore.getState().isGuestAuth
+  if (wasGuest) {
+    useAuthStore.getState().logout()
+    return
+  }
+  useAuthStore.getState().reset()
+  if (shouldRedirectToLogin()) {
+    window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN
   }
 }
 
@@ -122,86 +73,68 @@ instance.interceptors.request.use((request: InternalAxiosRequestConfig) => {
 })
 
 instance.interceptors.response.use(
-  (response) => {
-    const setToken = useAuthStore.getState().setToken
-    const { data } = response
-    if (data?.token) setToken(data.token)
-    return data
-  },
+  (response) => response.data,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
     let { status } = error.response || {}
     status = error.code === 'ERR_CANCELED' ? CANCELLED_STATUS_CODE : status
 
-    // Handle 401 Unauthorized errors
     if (status === 401 && !window.location.pathname.includes('auth')) {
-      // Skip refresh for refresh token endpoints to avoid infinite loop
+      const errorMessage = getErrorMessage(error)
+
       if (
         originalRequest?.url?.includes('/auth/refresh-token') ||
         originalRequest?.url?.includes('/guest-auth/token/refresh')
       ) {
-        const reset = useAuthStore.getState().reset
-        reset()
-        if (shouldRedirectToLogin()) {
-          window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN
-        }
+        clearAuthAndMaybeRedirect()
         return errorHandler(error)
       }
 
-      // If already retried, don't retry again
+      if (isInvalidTokenTypeMessage(errorMessage)) {
+        clearAuthAndMaybeRedirect()
+        return errorHandler(error)
+      }
+
       if (originalRequest._retry) {
-        const reset = useAuthStore.getState().reset
-        reset()
-        if (shouldRedirectToLogin()) {
-          window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN
-        }
+        clearAuthAndMaybeRedirect()
         return errorHandler(error)
       }
 
-      // If refresh is in progress, queue this request
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
         })
           .then(() => {
-            // Retry the original request with new token
             const newToken = useAuthStore.getState().getToken()
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${newToken}`
             }
             return instance(originalRequest)
           })
-          .catch((err) => {
-            return Promise.reject(err)
-          })
+          .catch((err) => Promise.reject(err))
       }
 
-      // Start token refresh
       originalRequest._retry = true
       isRefreshing = true
 
       try {
-        const newToken = await refreshAccessToken()
+        const newToken = await refreshStoredAccessToken()
         isRefreshing = false
 
-        // Update the original request with new token
         if (originalRequest.headers && newToken) {
           originalRequest.headers.Authorization = `Bearer ${newToken}`
         }
 
-        // Process queued requests
         processQueue()
-
-        // Retry the original request
         return instance(originalRequest)
-      } catch (refreshError) {
+      } catch {
         isRefreshing = false
-        processQueue(refreshError)
+        processQueue(new Error('Token refresh failed'))
+        clearAuthAndMaybeRedirect()
         return errorHandler(error)
       }
     }
 
-    // For non-401 errors, use the standard error handler
     return errorHandler(error)
   },
 )

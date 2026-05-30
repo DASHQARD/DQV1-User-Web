@@ -375,32 +375,37 @@ export const getCartItems = async (query?: Record<string, any>): Promise<CartLis
 export const getGuestCartItems = async (
   query?: Record<string, any>,
 ): Promise<CartListResponse[]> => {
-  const res = await getList<GuestCartApiResponse>('/guest-carts/items', query)
-  const payload = (res as { data?: GuestCartApiResponse })?.data ?? res
-  if (!payload?.cart || !Array.isArray(payload.items)) return []
-  const { cart, items } = payload
-  const cartUuid = resolveGuestCartUuid(payload)
-  const normalized: CartListResponse = {
-    cart_id: typeof cart.id === 'number' ? cart.id : 0,
-    guest_cart_uuid: cartUuid,
-    cart_status: cart.status,
-    cart_created_at: cart.created_at,
-    cart_updated_at: cart.updated_at,
-    item_count: String(items.length),
-    total_amount: cart.total_amount,
-    user_id: 0,
-    items: items.map((row) => ({
-      card_id: row.card?.id ?? row.cart_item?.card_id,
-      cart_item_id: row.cart_item_id,
-      product: row.card?.product ?? '',
-      type: row.card?.type ?? 'dashx',
-      total_amount: row.cart_item?.total_amount ?? row.card?.price ?? '0',
-      total_quantity: row.cart_item?.total_quantity ?? 1,
-      images: row.card?.images ?? [],
-      recipients: row.recipients ?? [],
-    })) as unknown as CartListResponse['items'],
+  try {
+    const res = await getList<GuestCartApiResponse>('/guest-carts/items', query)
+    const payload = (res as { data?: GuestCartApiResponse })?.data ?? res
+    if (!payload?.cart || !Array.isArray(payload.items)) return []
+    const { cart, items } = payload
+    const cartUuid = resolveGuestCartUuid(payload)
+    const normalized: CartListResponse = {
+      cart_id: typeof cart.id === 'number' ? cart.id : 0,
+      guest_cart_uuid: cartUuid,
+      cart_status: cart.status,
+      cart_created_at: cart.created_at,
+      cart_updated_at: cart.updated_at,
+      item_count: String(items.length),
+      total_amount: cart.total_amount,
+      user_id: 0,
+      items: items.map((row) => ({
+        card_id: row.card?.id ?? row.cart_item?.card_id,
+        cart_item_id: row.cart_item_id,
+        product: row.card?.product ?? '',
+        type: row.card?.type ?? 'dashx',
+        total_amount: row.cart_item?.total_amount ?? row.card?.price ?? '0',
+        total_quantity: row.cart_item?.total_quantity ?? 1,
+        images: row.card?.images ?? [],
+        recipients: row.recipients ?? [],
+      })) as unknown as CartListResponse['items'],
+    }
+    return [normalized]
+  } catch (error) {
+    if (isGuestCartNotFoundError(error)) return []
+    throw error
   }
-  return [normalized]
 }
 
 export const getCartItem = async (id: string | number): Promise<CartItemResponse> => {

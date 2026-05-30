@@ -1,4 +1,4 @@
-/** Flattened row from GET /guest-cards → data[] items ({ guest_card, gift_card }). */
+/** Flattened row from GET /guest-cards → data[] (nested or purchased flat items). */
 export type GuestCreatedCard = {
   guest_card_id: string
   gift_card_id: string
@@ -9,13 +9,22 @@ export type GuestCreatedCard = {
   price: number
   currency: string
   base_price?: number
+  markup_amount?: number | null
   status: string
   gift_card_status?: string
   guest_name?: string
   guest_email?: string
   guest_phone?: string
+  vendor_id?: string | null
+  vendor_name?: string | null
+  expiry_date?: string | null
+  issue_date?: string | null
+  purchased_at?: string | null
+  redemption_code?: string | null
+  recipient_name?: string | null
   created_at: string
   updated_at?: string
+  images?: Array<{ file_url?: string; file_name?: string }>
 }
 
 function parseAmount(value: unknown): number {
@@ -58,6 +67,44 @@ function mapNestedGuestCardRow(row: Record<string, unknown>): GuestCreatedCard |
   }
 }
 
+function mapPurchasedGuestCardRow(row: Record<string, unknown>): GuestCreatedCard | null {
+  const recipientId = String(row.recipient_id ?? '')
+  const giftCardId = String(row.gift_card_id ?? '')
+  if (!recipientId && !giftCardId) return null
+
+  const cardType = String(row.card_type ?? '')
+  const amount = parseAmount(row.amount ?? row.price)
+
+  return {
+    guest_card_id: recipientId || giftCardId,
+    gift_card_id: giftCardId || recipientId,
+    card_id: row.card_reference != null ? String(row.card_reference) : undefined,
+    card_type: cardType,
+    product: String(row.product ?? (cardType || 'Gift card')),
+    amount,
+    price: parseAmount(row.price ?? row.amount),
+    currency: String(row.currency ?? 'GHS'),
+    base_price: row.base_price != null ? parseAmount(row.base_price) : undefined,
+    markup_amount:
+      row.markup_amount != null && row.markup_amount !== ''
+        ? parseAmount(row.markup_amount)
+        : null,
+    status: String(row.cart_status ?? row.status ?? ''),
+    vendor_id: row.vendor_id != null ? String(row.vendor_id) : null,
+    vendor_name: row.vendor_name != null ? String(row.vendor_name) : null,
+    expiry_date: row.expiry_date != null ? String(row.expiry_date) : null,
+    issue_date: row.issue_date != null ? String(row.issue_date) : null,
+    purchased_at: row.purchased_at != null ? String(row.purchased_at) : null,
+    redemption_code: row.redemption_code != null ? String(row.redemption_code) : null,
+    recipient_name: row.recipient_name != null ? String(row.recipient_name) : null,
+    guest_name: row.recipient_name != null ? String(row.recipient_name) : undefined,
+    created_at: String(row.purchased_at ?? row.issue_date ?? ''),
+    images: Array.isArray(row.images)
+      ? (row.images as Array<{ file_url?: string; file_name?: string }>)
+      : undefined,
+  }
+}
+
 function mapLegacyGuestCardRow(row: Record<string, unknown>): GuestCreatedCard | null {
   const guestCardId = String(row.id ?? row.guest_card_id ?? '')
   if (!guestCardId && !row.product && !row.card_type) return null
@@ -97,6 +144,9 @@ export function parseGuestCreatedCardsResponse(response: unknown): GuestCreatedC
       const row = item as Record<string, unknown>
       if (row.guest_card != null || row.gift_card != null) {
         return mapNestedGuestCardRow(row)
+      }
+      if (row.recipient_id != null || row.purchased_at != null || row.cart_status != null) {
+        return mapPurchasedGuestCardRow(row)
       }
       return mapLegacyGuestCardRow(row)
     })

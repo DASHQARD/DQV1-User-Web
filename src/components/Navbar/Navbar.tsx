@@ -6,7 +6,7 @@ import { ROUTES } from '../../utils/constants'
 import { Icon } from '@/libs'
 
 // import { useCart } from '@/features/website/hooks/useCart'
-import { useAuthStore, useCartStore } from '@/stores'
+import { useAuthStore, useCartStore, useGuestAddToCartModalStore } from '@/stores'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { Modal } from '@/components'
 import { CartPopoverContent } from '@/components/CartModal'
@@ -54,6 +54,7 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
   const { isAuthenticated, isGuestAuth, user, logout: clearAuthState } = useAuthStore()
   const { useLogoutService } = useAuth()
   const { mutateAsync: logoutMutation } = useLogoutService()
+  const openGuestLoginModal = useGuestAddToCartModalStore((s) => s.open)
   const [accountPopoverOpen, setAccountPopoverOpen] = useState(false)
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
@@ -133,7 +134,7 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
           path: ROUTES.IN_APP.VIEW_BAG,
         },
         {
-          label: 'Cards',
+          label: 'My cards',
           icon: 'bi:credit-card-2-front',
           path: ROUTES.IN_APP.GUEST.CARDS,
         },
@@ -305,6 +306,11 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
     setMobileMenuOpen(false)
   }
 
+  const handleOpenGuestLogin = () => {
+    setMobileMenuOpen(false)
+    openGuestLoginModal({ guestLoginOnly: true })
+  }
+
   return (
     <>
       <nav
@@ -460,6 +466,14 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
                 </Popover>
               ) : (
                 <div className="flex items-center gap-2 bg-gray-50 py-2 px-4 rounded-full">
+                  <button
+                    type="button"
+                    onClick={handleOpenGuestLogin}
+                    className="text-sm text-[#402D87] font-medium hover:text-[#402D87]/80 transition-colors whitespace-nowrap"
+                  >
+                    Continue as guest
+                  </button>
+                  <span className="text-gray-300">|</span>
                   <Link
                     to={ROUTES.IN_APP.AUTH.LOGIN}
                     className="text-sm text-gray-700 font-medium hover:text-primary-600 transition-colors"
@@ -609,6 +623,13 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
             {!isAuthenticated && (
               <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-3">
                 <div className="wrapper flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenGuestLogin}
+                    className="flex items-center justify-center w-full px-4 py-2.5 text-[#402D87] font-medium border border-[#402D87]/30 hover:bg-[#402D87]/5 rounded-lg transition-colors"
+                  >
+                    Continue as guest
+                  </button>
                   <Link
                     to={ROUTES.IN_APP.AUTH.LOGIN}
                     onClick={() => setMobileMenuOpen(false)}

@@ -143,11 +143,6 @@ export default function GuestOrdersPage() {
                           {methodLabel ? ` · ${methodLabel}` : ''}
                         </Text>
                       ) : null}
-                      {row.transaction_reference ? (
-                        <Text variant="span" className="text-xs text-gray-500 block mt-1 font-mono truncate max-w-full">
-                          Ref: {row.transaction_reference}
-                        </Text>
-                      ) : null}
                       {row.redemption_code ? (
                         <Text variant="span" className="text-xs text-gray-600 block mt-1 font-mono">
                           Code: {row.redemption_code}

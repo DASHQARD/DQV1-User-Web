@@ -4,6 +4,7 @@ import { Providers } from '../Providers/Providers'
 
 vi.mock('@/hooks', () => ({
   useAutoRefreshToken: vi.fn(),
+  useAuthSessionBootstrap: vi.fn(),
 }))
 
 describe('Providers', () => {
