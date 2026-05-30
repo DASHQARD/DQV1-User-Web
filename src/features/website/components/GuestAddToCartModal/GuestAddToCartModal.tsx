@@ -16,7 +16,6 @@ import {
 } from '@/features/auth/services'
 import { ensureGuestCartAndAddCard } from '@/features/website/services/cards'
 import {
-  GUEST_EMAIL_STORAGE_KEY,
   GUEST_NAME_STORAGE_KEY,
   GUEST_PHONE_STORAGE_KEY,
   ROUTES,
