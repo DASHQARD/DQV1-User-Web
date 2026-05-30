@@ -15,6 +15,7 @@ export type GuestGiftCardTileProps = {
   images?: Array<{ file_url?: string; file_name?: string }>
   statusLabel?: string | null
   statusClassName?: string
+  redemptionCode?: string | null
   selected?: boolean
   onSelect?: () => void
 }
@@ -29,6 +30,7 @@ export function GuestGiftCardTile({
   images,
   statusLabel,
   statusClassName,
+  redemptionCode,
   selected = false,
   onSelect,
 }: GuestGiftCardTileProps) {
@@ -91,6 +93,12 @@ export function GuestGiftCardTile({
           <Text variant="span" className="mb-2 flex items-center gap-0.5 text-[10px] text-gray-500">
             <Icon icon="bi:calendar-event" className="size-2.5" />
             Expires {formatDate(expiryDate)}
+          </Text>
+        ) : null}
+
+        {redemptionCode ? (
+          <Text variant="span" className="mb-2 text-[10px] font-medium text-gray-600">
+            Code: {redemptionCode}
           </Text>
         ) : null}
 

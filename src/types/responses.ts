@@ -544,7 +544,7 @@ export type GuestDeleteRecipientParams = {
 
 /** Query params for GET /guest-cards */
 export type GuestGetCardsParams = {
-  card_type?: 'DashGo' | 'DashPro'
+  card_type?: 'DashGo' | 'DashPro' | 'DashX' | 'DashPass'
 }
 
 /** Query params for GET /guest-cards/single */
