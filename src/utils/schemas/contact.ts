@@ -1,8 +1,5 @@
 import { z } from 'zod'
-import {
-  CONTACT_SUBJECT_VALUES,
-  DEFAULT_CONTACT_SUBJECT,
-} from '@/utils/constants/contact'
+import { CONTACT_SUBJECT_VALUES, DEFAULT_CONTACT_SUBJECT } from '@/utils/constants/contact'
 import {
   getOptionalInternationalPhoneSchema,
   getRequiredEmailSchema,

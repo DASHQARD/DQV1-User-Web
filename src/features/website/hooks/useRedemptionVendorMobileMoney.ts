@@ -49,14 +49,18 @@ export function useRedemptionVendorMobileMoney(enabled: boolean) {
     validateMutate(
       { phone_number: convertToInternationalFormat(debouncedVendorPhone), provider },
       {
-        onSuccess: (response: { data?: { vendor_name?: string; account_name?: string }; message?: string }) => {
+        onSuccess: (response: {
+          data?: { vendor_name?: string; account_name?: string }
+          message?: string
+        }) => {
           const name = response?.data?.vendor_name || response?.data?.account_name
           if (name) {
             setVendorPhoneName(name)
             setVendorPhoneError(null)
           } else {
             setVendorPhoneError(
-              response?.message || 'Could not verify this mobile money number. Please check and try again.',
+              response?.message ||
+                'Could not verify this mobile money number. Please check and try again.',
             )
             setVendorPhoneName(null)
           }

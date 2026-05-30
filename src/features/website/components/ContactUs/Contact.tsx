@@ -14,10 +14,7 @@ import {
   SUPPORT_PHONE_DISPLAY_SHORT,
   SUPPORT_PHONE_E164,
 } from '@/utils/constants'
-import {
-  CONTACT_SUBJECT_OPTIONS,
-  getContactSubjectLabel,
-} from '@/utils/constants/contact'
+import { CONTACT_SUBJECT_OPTIONS, getContactSubjectLabel } from '@/utils/constants/contact'
 import { ContactUsSchema } from '@/utils/schemas'
 import { z } from 'zod'
 

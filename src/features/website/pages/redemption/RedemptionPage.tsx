@@ -168,15 +168,20 @@ export default function RedemptionPage() {
     useGetGuestAssignedCardsService,
     useGetGuestRedemptionsService,
   } = useRedemptionQueries()
-  const { useProcessRedemptionCardsService, useProcessGuestCardsRedemptionService, useProcessDashProRedemptionForUserService } =
-    useRedemptionMutation()
+  const {
+    useProcessRedemptionCardsService,
+    useProcessGuestCardsRedemptionService,
+    useProcessDashProRedemptionForUserService,
+  } = useRedemptionMutation()
   const processRedemptionMutation = useProcessRedemptionCardsService()
   const processGuestCardsRedemptionMutation = useProcessGuestCardsRedemptionService()
   const processDashProForUserMutation = useProcessDashProRedemptionForUserService()
   const rateCardMutation = useRateCard()
   const { countries } = useCountriesData()
 
-  const vendorMobileMoney = useRedemptionVendorMobileMoney(redemptionMethod === 'vendor_mobile_money')
+  const vendorMobileMoney = useRedemptionVendorMobileMoney(
+    redemptionMethod === 'vendor_mobile_money',
+  )
   const vendorLookup = useRedemptionVendorLookup(
     redemptionMethod === 'vendor_id' && step === 'details' && isAuthenticated,
   )
@@ -1421,7 +1426,7 @@ export default function RedemptionPage() {
     }
   }
 
-  const handleResetVendor = () => {
+  const handleResetVendor = useCallback(() => {
     setSelectedVendor(null)
     setSelectedVendorId('')
     setVendorName('')
@@ -1433,13 +1438,13 @@ export default function RedemptionPage() {
     setDashGoBalance(null)
     setRedemptionSuccess(null)
     resetVendorLookup()
-  }
+  }, [resetVendorLookup])
 
   useEffect(() => {
     if (redemptionMethod !== 'vendor_id' || isAuthenticated) return
     if (!selectedVendorId) return
     handleResetVendor()
-  }, [redemptionMethod, isAuthenticated, selectedVendorId])
+  }, [redemptionMethod, isAuthenticated, selectedVendorId, handleResetVendor])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#e2e8f0]">
@@ -1608,7 +1613,11 @@ export default function RedemptionPage() {
                       {isAuthenticated && (
                         <>
                           <div className="rounded-xl border border-primary-100 bg-primary-50/40 p-4">
-                            <Text variant="span" weight="semibold" className="text-primary-800 text-sm">
+                            <Text
+                              variant="span"
+                              weight="semibold"
+                              className="text-primary-800 text-sm"
+                            >
                               DashPro only
                             </Text>
                             <Text variant="span" className="block text-sm text-primary-700 mt-1">
@@ -1652,9 +1661,16 @@ export default function RedemptionPage() {
                             ) : null}
                             {isVendorPhoneVerified && vendorPhoneName ? (
                               <div className="mt-3 p-3 border border-green-200 rounded-xl bg-green-50 flex items-center gap-3">
-                                <Icon icon="bi:patch-check-fill" className="text-green-600 text-xl" />
+                                <Icon
+                                  icon="bi:patch-check-fill"
+                                  className="text-green-600 text-xl"
+                                />
                                 <div>
-                                  <Text variant="span" weight="semibold" className="text-gray-900 text-sm">
+                                  <Text
+                                    variant="span"
+                                    weight="semibold"
+                                    className="text-gray-900 text-sm"
+                                  >
                                     {vendorPhoneName}
                                   </Text>
                                   <Text variant="span" className="block text-xs text-gray-500">
@@ -1865,7 +1881,10 @@ export default function RedemptionPage() {
                                         {vendorName}
                                       </Text>
                                       {selectedVendor?.gvid ? (
-                                        <Text variant="span" className="text-gray-500 text-sm block">
+                                        <Text
+                                          variant="span"
+                                          className="text-gray-500 text-sm block"
+                                        >
                                           ID: {selectedVendor.gvid}
                                         </Text>
                                       ) : null}

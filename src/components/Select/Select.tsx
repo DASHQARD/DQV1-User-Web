@@ -92,18 +92,16 @@ export const Select = React.memo(
       <div className={cn('', className)}>
         {/* LABEL */}
         {label ? (
-          <InputLabel htmlFor={props.name} className="flex gap-1 items-center text-[#151819] text-sm">
+          <InputLabel
+            htmlFor={props.name}
+            className="flex gap-1 items-center text-[#151819] text-sm"
+          >
             {label}
           </InputLabel>
         ) : null}
 
         {/* INNER */}
-        <Root
-          value={value || undefined}
-          onValueChange={handleValueChange}
-          name={name}
-          disabled={disabled}
-        >
+        <Root value={value ?? ''} onValueChange={handleValueChange} name={name} disabled={disabled}>
           <Trigger
             data-testid={`select-${label ?? ''}`}
             data-value={value}

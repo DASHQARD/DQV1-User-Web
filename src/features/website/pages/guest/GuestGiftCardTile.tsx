@@ -35,11 +35,14 @@ export function GuestGiftCardTile({
   const firstImageUrl = images?.[0]?.file_url
   const typeKey = cardType?.toLowerCase()?.trim() || 'dashx'
   const vendorDisplay =
-    vendorName?.trim() || (typeKey === 'dashpro' ? 'DashQard' : getCardTypeName(typeKey) || 'Vendor')
+    vendorName?.trim() ||
+    (typeKey === 'dashpro' ? 'DashQard' : getCardTypeName(typeKey) || 'Vendor')
 
   const tileClassName = cn(
     'flex flex-col bg-white overflow-hidden rounded-xl border text-left transition-all',
-    onSelect ? 'cursor-pointer hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]' : 'border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)]',
+    onSelect
+      ? 'cursor-pointer hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]'
+      : 'border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)]',
     selected
       ? 'border-primary-500 ring-2 ring-primary-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
       : onSelect
@@ -76,7 +79,11 @@ export function GuestGiftCardTile({
           {(cardType || 'DashX').toUpperCase()}
         </span>
 
-        <Text variant="span" weight="semibold" className="mb-2 line-clamp-2 text-xs leading-snug text-gray-900">
+        <Text
+          variant="span"
+          weight="semibold"
+          className="mb-2 line-clamp-2 text-xs leading-snug text-gray-900"
+        >
           {product}
         </Text>
 
@@ -98,7 +105,11 @@ export function GuestGiftCardTile({
                 fallbackIcon="bi:shop"
               />
             </div>
-            <Text variant="span" weight="semibold" className="min-w-0 truncate text-xs text-gray-900">
+            <Text
+              variant="span"
+              weight="semibold"
+              className="min-w-0 truncate text-xs text-gray-900"
+            >
               {formatCardDisplayTitle(vendorDisplay)}
             </Text>
           </div>

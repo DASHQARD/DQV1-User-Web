@@ -51,7 +51,13 @@ describe('parseGuestCreatedCardsResponse', () => {
   it('parses a direct data array', () => {
     const cards = parseGuestCreatedCardsResponse([
       {
-        guest_card: { id: 'g1', card_type: 'DashPro', amount: '10', status: 'pending', created_at: '2026-01-01' },
+        guest_card: {
+          id: 'g1',
+          card_type: 'DashPro',
+          amount: '10',
+          status: 'pending',
+          created_at: '2026-01-01',
+        },
         gift_card: { product: 'DashPro', type: 'DashPro', price: '10', currency: 'GHS' },
       },
     ])

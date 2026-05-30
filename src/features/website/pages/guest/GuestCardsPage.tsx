@@ -44,13 +44,7 @@ function PurchasedGuestCardTile({ card }: { card: GuestCreatedCard }) {
   )
 }
 
-function AssignedGuestCardTile({
-  card,
-  currency,
-}: {
-  card: GuestAssignedCard
-  currency: string
-}) {
+function AssignedGuestCardTile({ card, currency }: { card: GuestAssignedCard; currency: string }) {
   const balance = card.balance ?? card.amount ?? card.price ?? 0
 
   return (
@@ -95,7 +89,9 @@ export default function GuestCardsPage() {
         <div className="wrapper">
           <div className="text-center">
             <h1 className="text-[clamp(28px,5vw,42px)] font-bold mb-2">My Cards</h1>
-            <p className="text-lg opacity-90">Cards you purchased and cards assigned to your phone</p>
+            <p className="text-lg opacity-90">
+              Cards you purchased and cards assigned to your phone
+            </p>
           </div>
         </div>
       </div>
@@ -126,10 +122,7 @@ export default function GuestCardsPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {createdCards.map((card) => (
-                <PurchasedGuestCardTile
-                  key={card.guest_card_id || card.gift_card_id}
-                  card={card}
-                />
+                <PurchasedGuestCardTile key={card.guest_card_id || card.gift_card_id} card={card} />
               ))}
             </div>
           )}
@@ -163,9 +156,7 @@ export default function GuestCardsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {assignedCards.map((card: GuestAssignedCard, index) => {
                 const key = String(card.guest_recipient_id ?? card.gift_card_id ?? index)
-                return (
-                  <AssignedGuestCardTile key={key} card={card} currency={assignedCurrency} />
-                )
+                return <AssignedGuestCardTile key={key} card={card} currency={assignedCurrency} />
               })}
             </div>
           )}

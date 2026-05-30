@@ -29,8 +29,7 @@ export function useRedemptionVendorLookup(enabled: boolean) {
     return (
       searchResults.find(
         (row) =>
-          row.gvid?.toLowerCase() === normalized ||
-          row.vendor_id?.toLowerCase() === normalized,
+          row.gvid?.toLowerCase() === normalized || row.vendor_id?.toLowerCase() === normalized,
       ) ?? null
     )
   }, [debouncedVendorId, searchResults])

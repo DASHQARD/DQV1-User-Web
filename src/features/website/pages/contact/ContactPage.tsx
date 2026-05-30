@@ -16,10 +16,7 @@ import {
 } from '@/utils/constants'
 import { ROUTES } from '@/utils/constants/shared'
 import { ContactPageFormSchema, type ContactPageFormData } from '@/utils/schemas/contact'
-import {
-  CONTACT_SUBJECT_OPTIONS,
-  getContactSubjectLabel,
-} from '@/utils/constants/contact'
+import { CONTACT_SUBJECT_OPTIONS, getContactSubjectLabel } from '@/utils/constants/contact'
 
 const CONTACT_PAGE_DEFAULT_VALUES: ContactPageFormData = {
   name: '',

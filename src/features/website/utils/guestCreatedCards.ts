@@ -86,9 +86,7 @@ function mapPurchasedGuestCardRow(row: Record<string, unknown>): GuestCreatedCar
     currency: String(row.currency ?? 'GHS'),
     base_price: row.base_price != null ? parseAmount(row.base_price) : undefined,
     markup_amount:
-      row.markup_amount != null && row.markup_amount !== ''
-        ? parseAmount(row.markup_amount)
-        : null,
+      row.markup_amount != null && row.markup_amount !== '' ? parseAmount(row.markup_amount) : null,
     status: String(row.cart_status ?? row.status ?? ''),
     vendor_id: row.vendor_id != null ? String(row.vendor_id) : null,
     vendor_name: row.vendor_name != null ? String(row.vendor_name) : null,
