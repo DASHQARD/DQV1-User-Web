@@ -16,6 +16,7 @@ import { usePersistedModalState, useToast } from '@/hooks'
 import { useUserProfile } from '@/hooks'
 import { MODAL_NAMES } from '@/utils/constants'
 import { bulkAssignRecipients } from '@/features/dashboard/services'
+import { isValidEmailAddress } from '@/utils/schemas/shared'
 import {
   UserInfoSchema,
   GuestUserInfoSchema,
@@ -129,6 +130,7 @@ export function useCheckout() {
 
   const userInfoForm = useForm<UserInfoFormData | GuestUserInfoFormData>({
     resolver: zodResolver(checkoutUserInfoSchema),
+    mode: 'onChange',
     defaultValues: isGuestAuth || isLocalGuestCart
       ? {
           first_name: '',
@@ -314,13 +316,19 @@ export function useCheckout() {
   const amountDue = computeAmountCharged(totalAmount, serviceFeeRate)
   const checkoutAmountDue = totalAmount
 
+  const contactPhone = userInfoForm.watch('phone_number')
+  const contactEmail = userInfoForm.watch('email')
+  const contactFirstName = userInfoForm.watch('first_name')
+  const contactLastName = userInfoForm.watch('last_name')
+  const contactFullName = userInfoForm.watch('full_name')
+
   const isUserInfoIncomplete =
     isGuestAuth || isLocalGuestCart
-      ? !userInfoForm.watch('phone_number')?.trim() ||
-        !userInfoForm.watch('first_name')?.trim() ||
-        !userInfoForm.watch('last_name')?.trim() ||
-        !userInfoForm.watch('email')?.trim()
-      : !userInfoForm.watch('full_name')?.trim() || !userInfoForm.watch('email')?.trim()
+      ? !contactPhone?.trim() ||
+        !contactFirstName?.trim() ||
+        !contactLastName?.trim() ||
+        !isValidEmailAddress(contactEmail ?? '')
+      : !contactFullName?.trim() || !isValidEmailAddress(contactEmail ?? '')
 
   const needsPhoneVerification = guestBagNotReady && !isGuestAuth
 

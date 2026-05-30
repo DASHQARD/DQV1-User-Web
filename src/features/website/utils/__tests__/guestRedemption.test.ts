@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildGuestCardsRedemptionPayload,
+  filterGuestAssignedByType,
+  filterGuestAssignedByVendorAndBranch,
+  isGuestAssignedCardRedeemable,
   isGuestRedemptionSuccess,
   isValidRedemptionAmountInput,
   pickGuestRedemptionCardId,
@@ -43,17 +46,33 @@ describe('guestRedemption', () => {
     })
   })
 
-  it('buildGuestCardsRedemptionPayload omits card_id for DashGo', () => {
+  it('buildGuestCardsRedemptionPayload includes card_id for DashGo', () => {
     expect(
       buildGuestCardsRedemptionPayload({
         card_type: 'DashGo',
         branch_id: 'branch-1',
         amount: 25.5,
+        card_id: '019e7875-c849-71f2-9f5e-ab4cee3fbb55',
       }),
     ).toEqual({
       card_type: 'DashGo',
       branch_id: 'branch-1',
       amount: 25.5,
+      card_id: '019e7875-c849-71f2-9f5e-ab4cee3fbb55',
+    })
+  })
+
+  it('buildGuestCardsRedemptionPayload omits card_id for DashPro', () => {
+    expect(
+      buildGuestCardsRedemptionPayload({
+        card_type: 'DashPro',
+        branch_id: 'branch-1',
+        amount: 100,
+      }),
+    ).toEqual({
+      card_type: 'DashPro',
+      branch_id: 'branch-1',
+      amount: 100,
     })
   })
 
@@ -68,5 +87,33 @@ describe('guestRedemption', () => {
   it('isValidRedemptionAmountInput rejects more than 2 decimal places', () => {
     expect(isValidRedemptionAmountInput('10.001')).toBe(false)
     expect(isValidRedemptionAmountInput('10.50')).toBe(true)
+  })
+
+  it('isGuestAssignedCardRedeemable excludes redeemed rows', () => {
+    expect(isGuestAssignedCardRedeemable({ redeemed: false })).toBe(true)
+    expect(isGuestAssignedCardRedeemable({ redeemed: true })).toBe(false)
+  })
+
+  it('filterGuestAssignedByType omits redeemed DashPass cards', () => {
+    const cards = filterGuestAssignedByType(
+      [
+        { card_type: 'DashPass', redeemed: false, gift_card_id: 'a' },
+        { card_type: 'DashPass', redeemed: true, gift_card_id: 'b' },
+      ],
+      'dashpass',
+    )
+    expect(cards).toHaveLength(1)
+    expect(cards[0].gift_card_id).toBe('a')
+  })
+
+  it('filterGuestAssignedByVendorAndBranch scopes by vendor and branch', () => {
+    const cards = [
+      { vendor_id: 'v1', branch_id: 'b1' },
+      { vendor_id: 'v1', branch_id: 'b2' },
+      { vendor_id: 'v2', branch_id: 'b1' },
+    ]
+    expect(filterGuestAssignedByVendorAndBranch(cards, { vendorId: 'v1', branchId: 'b1' })).toEqual([
+      { vendor_id: 'v1', branch_id: 'b1' },
+    ])
   })
 })
