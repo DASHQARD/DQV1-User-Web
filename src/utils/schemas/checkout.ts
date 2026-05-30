@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import {
-  getOptionalEmailSchema,
   getRequiredEmailSchema,
   getRequiredInternationalPhoneSchema,
   getRequiredStringSchema,
@@ -12,10 +11,11 @@ export const UserInfoSchema = z.object({
   phone_number: getRequiredInternationalPhoneSchema('Phone number'),
 })
 
-/** Guest checkout — phone required (OTP identity); name and email optional enrichment. */
+/** Guest checkout — first/last name, email, and phone required. */
 export const GuestUserInfoSchema = z.object({
-  full_name: z.string().optional(),
-  email: getOptionalEmailSchema(),
+  first_name: getRequiredStringSchema('First name'),
+  last_name: getRequiredStringSchema('Last name'),
+  email: getRequiredEmailSchema('Email'),
   phone_number: getRequiredInternationalPhoneSchema('Phone number'),
 })
 

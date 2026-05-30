@@ -1,639 +1,72 @@
-import React from 'react'
-import { BasePhoneInput, Button, Text } from '@/components'
-import { Icon } from '@/libs'
+import { Button } from '@/components'
 import DashProBG from '@/assets/svgs/dashpro_bg.svg'
-import { Controller, useForm, useWatch } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { CURRENCY_PREFIX, DEFAULT_CURRENCY, formatCurrency } from '@/utils/format'
-import { AssignRecipientSchema } from '@/utils/schemas'
-import { useCreateCard } from '@/features/dashboard/hooks'
-import { useCart, useGuestCart } from '../../hooks'
-import { useCartStore } from '@/stores/cart'
-import { useUserProfile } from '@/hooks'
-import { useRecipients } from '@/features/dashboard/hooks'
-import { useAuthStore } from '@/stores'
+import { EXAMPLE_PHONE_PLACEHOLDER_E164 } from '@/utils/constants'
+import { useDashProPurchase } from '../../hooks/useDashProPurchase'
 import {
-  EXAMPLE_PHONE_PLACEHOLDER_E164,
-  GUEST_EMAIL_STORAGE_KEY,
-  GUEST_NAME_STORAGE_KEY,
-  PURCHASE_WHATSAPP_HI_PROMPT,
-  getGuestContactSessionItem,
-} from '@/utils/constants'
-import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
-import { formatPersonName, splitPersonName } from '@/utils/personName'
-import { pickGuestCartIdentityFields } from '@/utils/guestContact'
-import {
-  addGuestCard,
-  createGuestDashPro,
-  extractGiftCardIdFromGuestCreate,
-  extractGuestCardRecordId,
-  extractGuestCreateCartMeta,
-  getGuestCardSingle,
-} from '../../services/cards'
-import { useToast } from '@/hooks'
-import { getApiErrorMessage, isGuestAmountThresholdMessage } from '@/utils/apiError'
+  AssignToSelfToggle,
+  GiftCardAmountSection,
+  GiftCardFlipPreview,
+  GiftCardRecipientFields,
+  GiftCardRecipientFormActions,
+  GiftCardRecipientFormHeader,
+  getAssignToSelfDescription,
+} from '@/components/GiftCardRecipientForm'
 
 export default function DashProPurchase() {
-  const [isCardFlipped, setIsCardFlipped] = React.useState(false)
-  const [isMobile, setIsMobile] = React.useState(false)
-  const [assignToSelf, setAssignToSelf] = React.useState(true)
-
-  const form = useForm<z.infer<typeof AssignRecipientSchema>>({
-    resolver: zodResolver(AssignRecipientSchema),
-    defaultValues: {
-      assign_to_self: true,
-      amount: 1000,
-      first_name: '',
-      last_name: '',
-      phone: '',
-      email: '',
-      message: '',
-    },
-  })
-
   const {
     control,
     register,
     handleSubmit,
-    formState: { errors },
-    setValue,
-    setError,
-  } = form
-
-  // Watch form values for card preview
-  const amount = useWatch({ control, name: 'amount' })
-  const recipientFirstName = useWatch({ control, name: 'first_name' })
-  const recipientLastName = useWatch({ control, name: 'last_name' })
-  const recipientName = formatPersonName(recipientFirstName ?? '', recipientLastName ?? '')
-  const message = useWatch({ control, name: 'message' })
-  const assignToSelfFormValue = useWatch({ control, name: 'assign_to_self' })
-
-  const { mutate: createDashProCard, isPending: isCreatingDashProCard } = useCreateCard()
-  const { addToCartAsync, refetch: refetchCart } = useCart()
-  const { refetch: refetchGuestCart } = useGuestCart()
-  const { openCart } = useCartStore()
-  const { useGetUserProfileService } = useUserProfile()
-  const { data: userProfileData } = useGetUserProfileService()
-  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
-  const user = useAuthStore((state) => state.user)
-  const getGuestCartId = useAuthStore((state) => state.getGuestCartId)
-  const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
-  const getGuestCartUuid = useAuthStore((state) => state.getGuestCartUuid)
-  const setGuestCartUuid = useAuthStore((state) => state.setGuestCartUuid)
-  const { useAssignRecipientService, useAssignGuestRecipientService } = useRecipients()
-  const assignRecipientMutation = useAssignRecipientService()
-  const assignGuestRecipientMutation = useAssignGuestRecipientService()
-  const toast = useToast()
-
-  // Sync assignToSelf state with form value
-  React.useEffect(() => {
-    setAssignToSelf(assignToSelfFormValue)
-  }, [assignToSelfFormValue])
-
-  const toggleCardFlip = () => {
-    if (!isMobile) setIsCardFlipped((prev) => !prev)
-  }
-
-  const handleAssignToSelf = () => {
-    const newValue = !assignToSelf
-    setAssignToSelf(newValue)
-    setValue('assign_to_self', newValue)
-
-    if (newValue) {
-      const contact = getAssignToSelfContactPrefill({
-        isGuestAuth,
-        user,
-        userProfileData: userProfileData ?? null,
-      })
-      const { first_name, last_name } = splitPersonName(contact.name)
-      setValue('first_name', first_name)
-      setValue('last_name', last_name)
-      setValue('email', contact.email)
-      setValue('phone', contact.phone)
-    } else {
-      // Clear fields when not assigning to self
-      setValue('first_name', '')
-      setValue('last_name', '')
-      setValue('email', '')
-      setValue('phone', '')
-    }
-  }
-
-  // Populate form fields when assign-to-self (profile API for members; JWT + session for guests)
-  React.useEffect(() => {
-    if (!assignToSelf) return
-    const contact = getAssignToSelfContactPrefill({
-      isGuestAuth,
-      user,
-      userProfileData: userProfileData ?? null,
-    })
-    const { first_name, last_name } = splitPersonName(contact.name)
-    setValue('first_name', first_name)
-    setValue('last_name', last_name)
-    setValue('email', contact.email)
-    setValue('phone', contact.phone)
-  }, [assignToSelf, isGuestAuth, user, userProfileData, setValue])
-
-  const onSubmit = async (data: z.infer<typeof AssignRecipientSchema>) => {
-    try {
-      const recipientFullName = formatPersonName(data.first_name ?? '', data.last_name ?? '')
-      const today = new Date()
-      const issueDate = today.toISOString().split('T')[0]
-
-      const guestIdentity = pickGuestCartIdentityFields(
-        (user as any)?.guest_name ||
-          getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
-          recipientFullName,
-        (user as any)?.guest_email ||
-          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
-          data.email,
-      )
-
-      const cardResponse = isGuestAuth
-        ? await createGuestDashPro({
-            ...guestIdentity,
-            product: 'DashPro',
-            description: 'DashPro',
-            price: amount,
-            currency: 'GHS',
-            issue_date: issueDate,
-            images: [],
-            terms_and_conditions: [],
-            country_code: (user as any)?.country_code || 'GH',
-          })
-        : await new Promise<any>((resolve, reject) => {
-            createDashProCard(
-              {
-                product: 'DashPro',
-                description: 'DashPro',
-                type: 'DashPro',
-                price: amount,
-                currency: 'GHS',
-                issue_date: issueDate,
-                images: [],
-                terms_and_conditions: [],
-              },
-              {
-                onSuccess: (response: any) => {
-                  resolve(response)
-                },
-                onError: (error: any) => {
-                  reject(error)
-                },
-              },
-            )
-          })
-
-      const cardId = isGuestAuth
-        ? extractGiftCardIdFromGuestCreate(cardResponse)
-        : cardResponse?.data?.id ||
-          cardResponse?.data?.card_id ||
-          cardResponse?.data?.card?.id ||
-          cardResponse?.id
-      if (!cardId) {
-        console.error('Failed to get card ID from response')
-        toast.error('Failed to create DashPro card. Please try again.')
-        return
-      }
-
-      if (isGuestAuth) {
-        const guestCardRecordId = extractGuestCardRecordId(cardResponse)
-        if (guestCardRecordId) {
-          await getGuestCardSingle({ guest_card_id: guestCardRecordId })
-        }
-      }
-
-      let cartItemId: string | number | null = null
-
-      if (isGuestAuth) {
-        const guestCartMeta = extractGuestCreateCartMeta(cardResponse)
-        if (guestCartMeta.cartId) {
-          setGuestCartUuid(guestCartMeta.cartId)
-        }
-        if (guestCartMeta.cartItemId) {
-          cartItemId = guestCartMeta.cartItemId
-        }
-
-        if (!cartItemId) {
-          const cartId = getGuestCartUuid() ?? getGuestCartId() ?? undefined
-
-          const addResult = await addGuestCard({
-            ...guestIdentity,
-            card_id: String(cardId),
-            quantity: 1,
-            ...(cartId !== undefined && { cart_id: cartId }),
-          })
-          const nextCartId = addResult?.cart_id ?? (addResult as any)?.data?.cart_id
-          if (typeof nextCartId === 'number') {
-            setGuestCartId(nextCartId)
-          }
-          if (typeof nextCartId === 'string') {
-            setGuestCartUuid(nextCartId)
-          }
-        }
-      } else {
-        await addToCartAsync({
-          card_id: cardId,
-          quantity: 1,
-        })
-      }
-
-      if (!cartItemId) {
-        const cartItemsResponse = isGuestAuth ? await refetchGuestCart() : await refetchCart()
-        const cartItems = cartItemsResponse?.data || []
-
-        if (Array.isArray(cartItems)) {
-          for (const cart of cartItems) {
-            if (cart.items) {
-              const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
-              const matchingItem = itemsArray.find(
-                (item: any) =>
-                  String(item.card_id) === String(cardId) ||
-                  String(item.gift_card_id) === String(cardId),
-              )
-              if (matchingItem?.cart_item_id) {
-                cartItemId = matchingItem.cart_item_id
-                break
-              }
-            }
-          }
-        }
-      }
-
-      if (!cartItemId) {
-        console.error('Failed to get cart_item_id after adding to cart')
-        toast.error('Card was created but could not be assigned. Check your bag.')
-        openCart()
-        return
-      }
-
-      const assignPayload: any = {
-        cart_item_id: cartItemId,
-        assign_to_self: data.assign_to_self,
-        quantity: 1,
-        amount: amount,
-        message: data.message || '',
-      }
-
-      // Only include name, email, phone if assign_to_self is false
-      if (!data.assign_to_self) {
-        if (isGuestAuth) {
-          if (recipientFullName) {
-            assignPayload.recipient_name = recipientFullName
-          }
-          const recipientEmail = data.email?.trim()
-          if (recipientEmail) {
-            assignPayload.recipient_email = recipientEmail
-          }
-          const recipientPhone = data.phone?.trim()
-          if (recipientPhone) {
-            assignPayload.recipient_phone = recipientPhone
-          }
-        } else {
-          if (recipientFullName) {
-            assignPayload.name = recipientFullName
-          }
-          const recipientEmail = data.email?.trim()
-          if (recipientEmail) {
-            assignPayload.email = recipientEmail
-          }
-          const recipientPhone = data.phone?.trim()
-          if (recipientPhone) {
-            assignPayload.phone = recipientPhone
-          }
-        }
-      }
-
-      if (isGuestAuth) {
-        await assignGuestRecipientMutation.mutateAsync(assignPayload)
-      } else {
-        await assignRecipientMutation.mutateAsync(assignPayload)
-      }
-
-      toast.success('DashPro gift card added to cart')
-      openCart()
-    } catch (error: unknown) {
-      console.error('Error creating DashPro card and assigning recipient:', error)
-      const message = getApiErrorMessage(error)
-      if (isGuestAmountThresholdMessage(message)) {
-        setError('amount', { type: 'server', message })
-      }
-      toast.error(message)
-    }
-  }
-
-  React.useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768)
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  // Computed values for card preview
-  const displayedCardAmount = formatCurrency(amount ? amount.toString() : 0, DEFAULT_CURRENCY)
-  const displayedCardRecipient = React.useMemo(() => {
-    if (assignToSelf) {
-      const contact = getAssignToSelfContactPrefill({
-        isGuestAuth,
-        user,
-        userProfileData: userProfileData ?? null,
-      })
-      return contact.name || recipientName || 'Your Name'
-    }
-    return recipientName || 'Recipient Name'
-  }, [assignToSelf, recipientName, isGuestAuth, user, userProfileData])
-  const displayedCardMessage = message || 'Your personalized message will appear here...'
+    errors,
+    assignToSelf,
+    handleAssignToSelf,
+    isCardFlipped,
+    isMobile,
+    toggleCardFlip,
+    displayedCardAmount,
+    displayedCardRecipient,
+    displayedCardMessage,
+    onSubmit,
+    isSubmitting,
+  } = useDashProPurchase()
 
   return (
     <div>
       <div className="max-w-[900px] w-full">
-        {/* Modal Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-t-[20px] border-b-2 border-[#ffc40033] bg-linear-to-br from-[#402d87] to-[#2d1a72] px-8 py-6 text-white">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-linear-to-br from-[#ffc400] to-[#f0b90b] text-primary-500 shadow-[0_4px_12px_#ffc4004d]">
-              <Icon icon="bi:person-plus-fill" className="size-6" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Text as="h2" variant="h2" weight="bold" className="text-white">
-                Create and customize a personalized DashPro gift card recipient
-              </Text>
-              <Text as="p" variant="span" weight="medium" className="text-white/80">
-                Create and customize a personalized DashPro gift card recipient
-              </Text>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 rounded-full border border-[#ffc4004d] bg-[#ffc40033] px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-[#ffc400]">
-            <Icon icon="bi:shield-check" className="size-4" />
-            Secure
-          </div>
-        </div>
+        <GiftCardRecipientFormHeader
+          title="Create DashPro gift card"
+          subtitle="Set the amount, assign a recipient, and add a personal message"
+        />
 
-        {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
-          {/* Card Preview Section */}
-          <section className="border-b border-[#f1f3f4] bg-linear-to-br from-[#f8f9fa] to-[#e9ecef] px-10 py-8">
-            <div className="flex flex-col gap-6">
-              <h3 className="text-xl font-semibold text-[#212529]">Card Preview</h3>
-              <div className="flex justify-center">
-                <div
-                  className="relative h-[320px] w-full max-w-[520px] cursor-pointer perspective-[1000px]"
-                  onClick={toggleCardFlip}
-                >
-                  <div
-                    className={`relative h-full w-full transition-transform duration-700 transform-3d ${
-                      isCardFlipped && !isMobile ? 'transform-[rotateY(180deg)]' : ''
-                    }`}
-                  >
-                    {/* Front */}
-                    <div className="absolute inset-0 rounded-2xl shadow-xl backface-hidden">
-                      <img
-                        src={DashProBG}
-                        alt={`DashPro background`}
-                        className="h-full w-full object-cover"
-                      />
-                      <div className="absolute inset-0 grid grid-cols-2 grid-rows-[auto_1fr_auto] text-white">
-                        <div className="p-4 text-2xl font-black tracking-[0.3em]">DashPro</div>
-                        <div className="p-4 text-right text-2xl font-semibold">
-                          {displayedCardAmount}
-                        </div>
-                        <div className="p-4 text-lg font-semibold uppercase">
-                          {displayedCardRecipient}
-                        </div>
-                        <div className="flex items-end justify-end p-4" />
-                      </div>
-                      {!isMobile && (
-                        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/70 px-3 py-1 text-[11px] uppercase text-white">
-                          <Icon icon="bi:arrow-repeat" className="size-4" />
-                          Click to flip
-                        </div>
-                      )}
-                    </div>
+          <GiftCardFlipPreview
+            cardTypeName="DashPro"
+            backgroundImage={DashProBG}
+            displayAmount={displayedCardAmount}
+            displayRecipient={displayedCardRecipient}
+            displayMessage={displayedCardMessage}
+            isCardFlipped={isCardFlipped}
+            isMobile={isMobile}
+            onToggleFlip={toggleCardFlip}
+          />
 
-                    {/* Back */}
-                    <div className="absolute inset-0 rounded-2xl bg-white p-6 shadow-xl backface-hidden transform-[rotateY(180deg)]">
-                      <div className="flex h-full flex-col gap-4 text-sm text-[#333]">
-                        <div>
-                          <div className="mb-2 flex items-center gap-2 text-base font-semibold text-[#d25e8d]">
-                            <Icon icon="bi:heart-fill" className="size-4" />
-                            Personal Message
-                          </div>
-                          <p className="rounded-xl border border-yellow-200 bg-white/90 p-4 text-sm italic shadow-sm">
-                            {displayedCardMessage}
-                          </p>
-                          <p className="text-right text-xs text-gray-600">From: Sender Name</p>
-                        </div>
+          <AssignToSelfToggle
+            checked={assignToSelf}
+            onChange={handleAssignToSelf}
+            description={getAssignToSelfDescription({ assignToSelf })}
+          />
 
-                        <div>
-                          <div className="mb-3 flex items-center gap-2 text-base font-semibold text-green-600">
-                            <Icon icon="bi:gift-fill" className="size-4" />
-                            How to Redeem
-                          </div>
-                          <div className="grid gap-3 md:grid-cols-2">
-                            <div className="rounded-lg border border-green-200 bg-white/90 p-3 shadow-sm">
-                              <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                                <Icon icon="bi:phone-fill" className="size-4" />
-                                USSD Code
-                              </div>
-                              <p className="text-xs text-gray-600">1. Dial *800*0000#</p>
-                              <p className="text-xs text-gray-600">2. Select “Redemption”</p>
-                            </div>
-                            <div className="rounded-lg border border-green-200 bg-white/90 p-3 shadow-sm">
-                              <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                                <Icon icon="bi:whatsapp" className="size-4" />
-                                WhatsApp
-                              </div>
-                              <p className="text-xs text-gray-600">
-                                1. {PURCHASE_WHATSAPP_HI_PROMPT}
-                              </p>
-                              <p className="text-xs text-gray-600">2. Follow the prompts</p>
-                            </div>
-                          </div>
-                        </div>
+          <GiftCardAmountSection control={control} name="amount" error={errors.amount?.message} />
 
-                        <div className="mt-auto flex items-center justify-center gap-2 text-[11px] uppercase text-gray-500">
-                          <Icon icon="bi:arrow-repeat" className="size-4" />
-                          Click to flip back
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+          <GiftCardRecipientFields
+            control={control}
+            register={register}
+            errors={errors}
+            assignToSelf={assignToSelf}
+            phonePlaceholder={EXAMPLE_PHONE_PLACEHOLDER_E164}
+          />
 
-          {/* Assign to self */}
-          <section className="border-b border-gray-100 px-10 py-8">
-            <div className="rounded-2xl bg-[#f8f9fa] p-6 text-center">
-              <div className="flex flex-col items-center gap-4">
-                <label className="inline-flex cursor-pointer items-center gap-3">
-                  <div className="relative h-6 w-11">
-                    <input
-                      type="checkbox"
-                      {...register('assign_to_self')}
-                      checked={assignToSelf}
-                      onChange={handleAssignToSelf}
-                      className="peer sr-only"
-                    />
-                    <span className="absolute inset-0 rounded-full bg-gray-300 transition peer-checked:bg-primary-500" />
-                    <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5" />
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700">
-                    <Icon icon="bi:person-check" className="mr-2 inline size-4 text-primary-500" />
-                    Assign to Self
-                  </span>
-                </label>
-                <p className="text-xs text-gray-500">
-                  {assignToSelf
-                    ? 'Card will be assigned to your account. Name, email, and phone fields will be ignored.'
-                    : 'Card will be assigned to someone else. Please provide recipient details below.'}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Amount Section */}
-          <section className="border-b border-gray-100 px-10 py-8">
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-[#212529]">Gift Card Amount</h3>
-              <p className="text-sm text-gray-500">Set an amount up to GHS 10,000 per recipient</p>
-            </div>
-            <div className="max-w-md space-y-4">
-              <div className="relative">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-primary-500">
-                  {CURRENCY_PREFIX}
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  max={10000}
-                  step="0.01"
-                  {...register('amount', { valueAsNumber: true })}
-                  placeholder="0.00"
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 pl-16 text-lg font-semibold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-                />
-                {errors.amount && (
-                  <p className="mt-1 text-xs text-red-500">{errors.amount.message}</p>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* Recipient Details */}
-          <section className="border-b border-gray-100 px-10 py-8">
-            <div className="mb-6 space-y-1">
-              <h3 className="text-xl font-semibold text-[#212529]">Recipient Details</h3>
-              <p className="text-sm text-gray-500">Who will receive this gift card?</p>
-            </div>
-            <div className="grid max-w-2xl gap-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    First Name {!assignToSelf && '*'}
-                  </label>
-                  <input
-                    type="text"
-                    {...register('first_name')}
-                    disabled={assignToSelf}
-                    className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
-                      assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder={assignToSelf ? 'Will use your account information' : 'First name'}
-                  />
-                  {errors.first_name && (
-                    <p className="mt-1 text-xs text-red-500">{errors.first_name.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    Last Name {!assignToSelf && '*'}
-                  </label>
-                  <input
-                    type="text"
-                    {...register('last_name')}
-                    disabled={assignToSelf}
-                    className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
-                      assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    placeholder={assignToSelf ? 'Will use your account information' : 'Last name'}
-                  />
-                  {errors.last_name && (
-                    <p className="mt-1 text-xs text-red-500">{errors.last_name.message}</p>
-                  )}
-                </div>
-              </div>
-              {assignToSelf && (
-                <p className="text-xs text-gray-500 -mt-2">Will use your account name</p>
-              )}
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Phone Number
-                  {!assignToSelf && (
-                    <span className="text-gray-400 font-normal"> (optional)</span>
-                  )}
-                </label>
-                <Controller
-                  name="phone"
-                  control={control}
-                  render={({ field }) => (
-                    <BasePhoneInput
-                      selectedVal={field.value || ''}
-                      handleChange={field.onChange}
-                      disabled={assignToSelf}
-                      placeholder={
-                        assignToSelf ? 'Will use your account phone' : EXAMPLE_PHONE_PLACEHOLDER_E164
-                      }
-                      error={errors.phone?.message}
-                    />
-                  )}
-                />
-                {assignToSelf && (
-                  <p className="mt-1 text-xs text-gray-500">Will use your account phone number</p>
-                )}
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Email Address
-                  {!assignToSelf && (
-                    <span className="text-gray-400 font-normal"> (optional)</span>
-                  )}
-                </label>
-                <input
-                  type="email"
-                  {...register('email')}
-                  disabled={assignToSelf}
-                  className={`w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 ${
-                    assignToSelf ? 'bg-gray-100 cursor-not-allowed' : ''
-                  }`}
-                  placeholder={assignToSelf ? 'Will use your account email' : 'Enter email address'}
-                />
-                {errors.email && (
-                  <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
-                )}
-                {assignToSelf && (
-                  <p className="mt-1 text-xs text-gray-500">Will use your account email</p>
-                )}
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Personal Message *
-                </label>
-                <textarea
-                  rows={3}
-                  {...register('message')}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-                  placeholder="Write a personal message for the recipient..."
-                />
-                {errors.message && (
-                  <p className="mt-1 text-xs text-red-500">{errors.message.message}</p>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* Actions */}
-          <div className="flex flex-col gap-3 border-t border-gray-100 bg-[#f8f9fa] px-10 py-6 md:flex-row md:justify-end">
+          <GiftCardRecipientFormActions>
             <Button type="button" variant="outline" className="md:w-auto">
               Cancel
             </Button>
@@ -641,20 +74,12 @@ export default function DashProPurchase() {
               type="submit"
               variant="secondary"
               className="md:w-auto"
-              disabled={
-                isCreatingDashProCard ||
-                assignRecipientMutation.isPending ||
-                assignGuestRecipientMutation.isPending
-              }
-              loading={
-                isCreatingDashProCard ||
-                assignRecipientMutation.isPending ||
-                assignGuestRecipientMutation.isPending
-              }
+              disabled={isSubmitting}
+              loading={isSubmitting}
             >
               Create DashPro Gift Card
             </Button>
-          </div>
+          </GiftCardRecipientFormActions>
         </form>
       </div>
     </div>

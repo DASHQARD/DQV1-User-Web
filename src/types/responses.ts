@@ -555,8 +555,8 @@ export type GuestGetCardSingleParams = {
 /** POST /payments/guest/checkout — guest_cart_id is the cart UUID from GET /guest-carts */
 export type GuestCheckoutPayloadBase = {
   guest_cart_id: string
-  full_name?: string | null
-  email?: string | null
+  full_name: string
+  email: string
   phone_number: string
   amount_due: number
 }

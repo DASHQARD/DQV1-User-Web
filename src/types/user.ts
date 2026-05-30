@@ -85,6 +85,8 @@ export type UserProfileResponse = {
 
 export type PaymentInfoData = {
   amount: number
+  service_fee_amount?: number
+  markup_amount?: number
   card_type: string | null
   created_at: string
   currency: string

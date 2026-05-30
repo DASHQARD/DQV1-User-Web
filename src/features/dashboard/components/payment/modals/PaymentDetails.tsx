@@ -3,6 +3,7 @@ import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { formatCurrency } from '@/utils/format'
 import type { PaymentInfoData } from '@/types/user'
+import { getPaymentReceiptBreakdown } from '@/utils/pricingFees'
 import { Icon } from '@/libs'
 import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
@@ -61,10 +62,45 @@ export function PaymentDetails() {
     paramName: MODALS.PAYMENT.ROOT,
   })
 
-  const paymentData = modal.modalData as any // Extend type to include cart_details
+  const paymentData = modal.modalData as PaymentInfoData & {
+    cart_details?: { items?: unknown[] }
+  }
 
   // Get cart items from cart_details
   const cartItems = paymentData?.cart_details?.items || []
+  const currency = paymentData?.currency || 'GHS'
+  const receipt = getPaymentReceiptBreakdown(paymentData ?? {})
+
+  const amountDetailRows: Array<{ label: string; value: string }> = receipt.hasBreakdown
+    ? [
+        {
+          label: 'Total charged',
+          value: formatCurrency(receipt.amountCharged, currency),
+        },
+        {
+          label: 'Items total',
+          value: formatCurrency(receipt.itemsTotal, currency),
+        },
+        ...(receipt.serviceFeeAmount > 0
+          ? [
+              {
+                label: 'Service fee',
+                value: formatCurrency(receipt.serviceFeeAmount, currency),
+              },
+            ]
+          : []),
+        ...(receipt.markupAmount > 0
+          ? [
+              {
+                label: 'Platform markup',
+                value: formatCurrency(receipt.markupAmount, currency),
+              },
+            ]
+          : []),
+      ]
+    : paymentData?.amount
+      ? [{ label: 'Amount', value: formatCurrency(paymentData.amount, currency) }]
+      : []
 
   // Build display details array
   const displayDetails: Array<{
@@ -85,16 +121,10 @@ export function PaymentDetails() {
       label: 'Receipt Number',
       value: paymentData?.receipt_number || 'N/A',
     },
-    {
-      label: 'Amount',
-      value:
-        paymentData?.amount && paymentData?.currency
-          ? formatCurrency(paymentData.amount, paymentData.currency)
-          : 'N/A',
-    },
+    ...amountDetailRows,
     {
       label: 'Currency',
-      value: paymentData?.currency || 'N/A',
+      value: currency,
     },
     {
       label: 'Transaction ID',
@@ -226,12 +256,6 @@ export function PaymentDetails() {
                                   item.currency || 'GHS',
                                 )}
                               </Text>
-                              {item.service_fee && (
-                                <Text variant="span" className="text-xs text-gray-500">
-                                  Service Fee:{' '}
-                                  {formatCurrency(item.service_fee, item.currency || 'GHS')}
-                                </Text>
-                              )}
                             </div>
                           </div>
 

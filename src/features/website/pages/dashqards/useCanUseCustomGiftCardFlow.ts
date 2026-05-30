@@ -1,6 +1,4 @@
-import { useAuthStore } from '@/stores'
-
-/** True when user may use custom DashPro / DashGo flows (logged-in or guest OTP). */
+/** Custom DashPro / DashGo builder is available to everyone; guests save locally until checkout OTP. */
 export function useCanUseCustomGiftCardFlow(): boolean {
-  return useAuthStore((s) => s.isAuthenticated)
+  return true
 }

@@ -131,13 +131,22 @@ export async function ensureGuestCartAndAddCard(args: {
   card_id: string
   guest_name?: string | null
   guest_email?: string | null
+  quantity?: number
   getGuestCartId: () => number | null
   getGuestCartUuid?: () => string | null
   setGuestCartId: (id: number | null) => void
   setGuestCartUuid: (uuid: string | null) => void
 }): Promise<GuestAddCardResponse> {
-  const { card_id, guest_name, guest_email, getGuestCartId, getGuestCartUuid, setGuestCartId, setGuestCartUuid } =
-    args
+  const {
+    card_id,
+    guest_name,
+    guest_email,
+    quantity = 1,
+    getGuestCartId,
+    getGuestCartUuid,
+    setGuestCartId,
+    setGuestCartUuid,
+  } = args
   const identity = {
     ...(guest_name?.trim() ? { guest_name: guest_name.trim() } : {}),
     ...(guest_email?.trim() ? { guest_email: guest_email.trim() } : {}),
@@ -163,7 +172,7 @@ export async function ensureGuestCartAndAddCard(args: {
   const addResult = await addGuestCard({
     ...identity,
     card_id,
-    quantity: 1,
+    quantity: Math.max(1, quantity),
     ...(cartRef !== undefined && { cart_id: cartRef }),
   })
   syncGuestCartIds(addResult, setGuestCartId, setGuestCartUuid)

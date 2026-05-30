@@ -9,7 +9,6 @@ export type GuestCreatedCard = {
   price: number
   currency: string
   base_price?: number
-  service_fee?: number
   status: string
   gift_card_status?: string
   guest_name?: string
@@ -49,7 +48,6 @@ function mapNestedGuestCardRow(row: Record<string, unknown>): GuestCreatedCard |
     price,
     currency: String(giftCard?.currency ?? 'GHS'),
     base_price: parseAmount(giftCard?.base_price) || undefined,
-    service_fee: parseAmount(giftCard?.service_fee) || undefined,
     status: String(guestCard?.status ?? ''),
     gift_card_status: giftCard?.status != null ? String(giftCard.status) : undefined,
     guest_name: guestCard?.guest_name != null ? String(guestCard.guest_name) : undefined,

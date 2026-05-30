@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAuthStore, useGuestAddToCartModalStore } from '@/stores'
+import { useAuthStore, useGuestLocalCartStore } from '@/stores'
 import { useCart } from './useCart'
 import { useCartStore } from '@/stores/cart'
 import { getApiErrorMessage } from '@/utils/apiError'
@@ -56,7 +56,7 @@ export function useCardItem(props: CardItemHookProps) {
   const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
-  const openGuestAddToCartModal = useGuestAddToCartModalStore((s) => s.open)
+  const addLocalGuestCard = useGuestLocalCartStore((s) => s.addCatalogCard)
   const queryClient = useQueryClient()
   const toast = useToast()
   const navigate = useNavigate()
@@ -111,7 +111,15 @@ export function useCardItem(props: CardItemHookProps) {
         }
         return
       }
-      openGuestAddToCartModal(pending)
+      addLocalGuestCard({
+        card_id: String(card_id),
+        product,
+        price: pending.price,
+        currency,
+        type,
+      })
+      openCart()
+      toast.success('Added to cart')
       return
     }
     if (onGetQard) {

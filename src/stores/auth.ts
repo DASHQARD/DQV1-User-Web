@@ -6,6 +6,7 @@ import {
   GUEST_NAME_STORAGE_KEY,
   GUEST_PHONE_STORAGE_KEY,
 } from '@/utils/constants'
+import { clearGuestBrowsingAck } from '@/features/website/utils/guestBrowsingSession'
 
 type State = {
   token: string | null
@@ -70,15 +71,16 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
     })
   },
   logout: () => {
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.removeItem(GUEST_EMAIL_STORAGE_KEY)
-      sessionStorage.removeItem(GUEST_NAME_STORAGE_KEY)
-      sessionStorage.removeItem(GUEST_PHONE_STORAGE_KEY)
-    }
+    clearGuestBrowsingAck()
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(GUEST_EMAIL_STORAGE_KEY)
       localStorage.removeItem(GUEST_NAME_STORAGE_KEY)
       localStorage.removeItem(GUEST_PHONE_STORAGE_KEY)
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(GUEST_EMAIL_STORAGE_KEY)
+      sessionStorage.removeItem(GUEST_NAME_STORAGE_KEY)
+      sessionStorage.removeItem(GUEST_PHONE_STORAGE_KEY)
     }
     set({
       token: null,
@@ -107,7 +109,7 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
 const useAuthStore = create(
   persist(authStore, {
     name: 'dashqard-web-auth-store',
-    storage: createJSONStorage(() => sessionStorage),
+    storage: createJSONStorage(() => localStorage),
   }),
 )
 

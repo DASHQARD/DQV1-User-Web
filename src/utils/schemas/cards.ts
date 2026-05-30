@@ -154,14 +154,7 @@ export const AssignRecipientSchema = z
           path: ['email'],
         })
       }
-      const phone = data.phone?.trim()
-      if (phone && !isValidInternationalPhoneDigits(phone)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: INVALID_PHONE_MESSAGE,
-          path: ['phone'],
-        })
-      }
+      // Phone is optional when assigning to self (guests verify at checkout).
     }
   })
 

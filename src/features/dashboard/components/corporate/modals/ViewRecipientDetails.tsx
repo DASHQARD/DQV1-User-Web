@@ -116,13 +116,17 @@ export function ViewRecipientDetails() {
             recipientData.card.currency || 'GHS',
           ),
         },
-        {
-          label: 'Service Fee',
-          value: formatCurrency(
-            recipientData.card.service_fee || 0,
-            recipientData.card.currency || 'GHS',
-          ),
-        },
+        ...(recipientData.card.markup_price != null && recipientData.card.markup_price > 0
+          ? [
+              {
+                label: 'Platform markup',
+                value: formatCurrency(
+                  recipientData.card.markup_price,
+                  recipientData.card.currency || 'GHS',
+                ),
+              },
+            ]
+          : []),
         {
           label: 'Description',
           value: recipientData.card.description || '-',

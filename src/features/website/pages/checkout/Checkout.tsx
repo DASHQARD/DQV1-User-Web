@@ -70,9 +70,17 @@ export default function Checkout() {
     checkoutGateway,
     isPersonalDetailsCompleted,
     isGuestAuth,
+    isLocalGuestCart,
+    isGuestCheckoutReady,
+    guestSyncFailed,
+    guestBagNotReady,
+    lastSyncError,
+    needsPhoneVerification,
     recipientsByCartItem,
     itemsMissingRecipients,
     handleCheckout,
+    handleVerifyGuestDetails,
+    handleRetryGuestCartSync,
     bulkAssignMutation,
     handleBulkUpload,
     getCardBackground,
@@ -88,6 +96,7 @@ export default function Checkout() {
     bulkFile,
     setBulkFile,
     allRecipientsAssigned,
+    isUserInfoIncomplete,
     recipientActionsBlocked,
     paymentPromptData,
     isPaymentPromptModalOpen,
@@ -133,6 +142,8 @@ export default function Checkout() {
     }
   }, [isEgnanow, isKowri, isMobileMoney, paymentForm, phoneNumber, showPaymentMethodSection])
 
+  const isGuestCheckoutFlow = isLocalGuestCart || isGuestAuth || guestBagNotReady
+
   if (isLoadingCart) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -141,11 +152,10 @@ export default function Checkout() {
     )
   }
 
-  if (
-    !Array.isArray(pendingCartItems) ||
-    pendingCartItems.length === 0 ||
-    displayCartItems.length === 0
-  ) {
+  const hasCheckoutItems =
+    guestBagNotReady || (Array.isArray(pendingCartItems) && pendingCartItems.length > 0)
+
+  if (!hasCheckoutItems || displayCartItems.length === 0) {
     return (
       <div className="min-h-screen bg-linear-to-br from-[#f8fafc] to-[#e2e8f0] flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center">
@@ -172,11 +182,65 @@ export default function Checkout() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
           <p className="text-gray-600">Review your order and complete your purchase</p>
+          {isGuestCheckoutFlow ? (
+            <div className="mt-4 space-y-3">
+              <ol className="flex items-center gap-2 text-sm font-medium">
+                <li
+                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 ${
+                    needsPhoneVerification
+                      ? 'bg-primary-100 text-primary-700'
+                      : 'bg-green-50 text-green-700'
+                  }`}
+                >
+                  <span
+                    className={`flex size-5 items-center justify-center rounded-full text-xs ${
+                      needsPhoneVerification
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-green-600 text-white'
+                    }`}
+                  >
+                    {needsPhoneVerification ? '1' : '✓'}
+                  </span>
+                  Contact
+                </li>
+                <Icon icon="bi:chevron-right" className="size-4 text-gray-400 shrink-0" />
+                <li
+                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 ${
+                    isGuestCheckoutReady
+                      ? 'bg-green-50 text-green-700'
+                      : !needsPhoneVerification
+                        ? 'bg-primary-100 text-primary-700'
+                        : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  <span
+                    className={`flex size-5 items-center justify-center rounded-full text-xs ${
+                      isGuestCheckoutReady
+                        ? 'bg-green-600 text-white'
+                        : !needsPhoneVerification
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-gray-300 text-gray-600'
+                    }`}
+                  >
+                    {isGuestCheckoutReady ? '✓' : '2'}
+                  </span>
+                  Recipients & pay
+                </li>
+              </ol>
+              <p className="text-sm text-gray-600">
+                {needsPhoneVerification
+                  ? 'Step 1 of 2: Confirm your contact details. You can assign recipients after verification.'
+                  : guestSyncFailed
+                    ? 'Your phone is verified. Finish syncing your bag to continue.'
+                    : 'Step 2 of 2: Assign recipients to your gift cards, then complete your purchase.'}
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            {!recipientActionsBlocked && !isPersonalDetailsCompleted && (
+            {!recipientActionsBlocked && needsPhoneVerification && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
                 {showPaymentMethodSection && (
@@ -188,16 +252,185 @@ export default function Checkout() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                        Full Name {!isGuestAuth && <span className="text-red-500">*</span>}
-                        {isGuestAuth && (
-                          <span className="text-gray-400 font-normal"> (optional)</span>
+                        First name <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        {...userInfoForm.register('first_name')}
+                        error={
+                          'first_name' in userInfoForm.formState.errors
+                            ? userInfoForm.formState.errors.first_name?.message
+                            : undefined
+                        }
+                        placeholder="John"
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Last name <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        {...userInfoForm.register('last_name')}
+                        error={
+                          'last_name' in userInfoForm.formState.errors
+                            ? userInfoForm.formState.errors.last_name?.message
+                            : undefined
+                        }
+                        placeholder="Doe"
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Phone Number <span className="text-red-500">*</span>
+                      </label>
+                      <Controller
+                        name="phone_number"
+                        control={userInfoForm.control}
+                        render={({ field }) => (
+                          <BasePhoneInput
+                            selectedVal={field.value || ''}
+                            handleChange={field.onChange}
+                            error={userInfoForm.formState.errors.phone_number?.message}
+                            placeholder={EXAMPLE_PHONE_LOCAL}
+                          />
                         )}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                      Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="email"
+                      {...userInfoForm.register('email')}
+                      error={userInfoForm.formState.errors.email?.message}
+                      placeholder="john@example.com"
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2 border-t border-gray-100 pt-4">
+                    <p className="text-sm text-gray-600">
+                      We will send a code to your phone to confirm your details and sync your bag.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full sm:w-auto"
+                      onClick={handleVerifyGuestDetails}
+                      disabled={recipientActionsBlocked || isUserInfoIncomplete}
+                    >
+                      Verify your details
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {!recipientActionsBlocked && guestSyncFailed && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 border border-green-200">
+                    <Icon icon="bi:check-circle" className="size-3.5" />
+                    Verified
+                  </span>
+                </div>
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <Icon icon="bi:exclamation-triangle" className="mt-0.5 size-5 shrink-0 text-red-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-red-900">Couldn&apos;t sync your bag</p>
+                      <p className="mt-1 text-sm text-red-800">
+                        {lastSyncError || 'One or more gift cards could not be added. Edit your bag or try again.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={() => navigate('/view-bag')}
+                  >
+                    Edit bag
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full sm:w-auto"
+                    onClick={handleRetryGuestCartSync}
+                  >
+                    Try again
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {!recipientActionsBlocked && isGuestCheckoutReady && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 border border-green-200">
+                    <Icon icon="bi:check-circle" className="size-3.5" />
+                    Verified
+                  </span>
+                </div>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                  <div>
+                    <dt className="text-gray-500">Name</dt>
+                    <dd className="font-medium text-gray-900">
+                      {[userInfoForm.watch('first_name'), userInfoForm.watch('last_name')]
+                        .filter(Boolean)
+                        .join(' ') || '—'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-gray-500">Phone</dt>
+                    <dd className="font-medium text-gray-900">
+                      {userInfoForm.watch('phone_number') || '—'}
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-gray-500">Email</dt>
+                    <dd className="font-medium text-gray-900">
+                      {userInfoForm.watch('email') || '—'}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            )}
+
+            {!recipientActionsBlocked &&
+              !isPersonalDetailsCompleted &&
+              !isGuestAuth &&
+              !isLocalGuestCart && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
+                {showPaymentMethodSection && (
+                  <p className="text-sm text-gray-500 mb-4">
+                    Your phone number is used for mobile money payments when you select that option.
+                  </p>
+                )}
+                <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Full Name <span className="text-red-500">*</span>
                       </label>
                       <Input
                         type="text"
                         {...userInfoForm.register('full_name')}
-                        error={userInfoForm.formState.errors.full_name?.message}
-                        placeholder={isGuestAuth ? 'Your name (optional)' : 'John Doe'}
+                        error={
+                          'full_name' in userInfoForm.formState.errors
+                            ? userInfoForm.formState.errors.full_name?.message
+                            : undefined
+                        }
+                        placeholder="John Doe"
                         className="w-full"
                       />
                     </div>
@@ -221,16 +454,13 @@ export default function Checkout() {
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                      Email Address {!isGuestAuth && <span className="text-red-500">*</span>}
-                      {isGuestAuth && (
-                        <span className="text-gray-400 font-normal"> (optional)</span>
-                      )}
+                      Email Address <span className="text-red-500">*</span>
                     </label>
                     <Input
                       type="email"
                       {...userInfoForm.register('email')}
                       error={userInfoForm.formState.errors.email?.message}
-                      placeholder={isGuestAuth ? 'you@example.com (optional)' : 'john@example.com'}
+                      placeholder="john@example.com"
                       className="w-full"
                     />
                   </div>
@@ -238,6 +468,7 @@ export default function Checkout() {
               </div>
             )}
 
+            {!guestBagNotReady && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200 space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900">Order Items</h2>
@@ -354,8 +585,11 @@ export default function Checkout() {
                   })}
               </div>
             </div>
+            )}
 
-            {!recipientActionsBlocked && showPaymentMethodSection && (
+            {!recipientActionsBlocked &&
+              !guestBagNotReady &&
+              showPaymentMethodSection && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Payment method</h3>
                 <div className="flex gap-2 p-1 bg-gray-100 rounded-lg mb-4">
@@ -447,18 +681,59 @@ export default function Checkout() {
                 {isCard && isKowri && (
                   <div className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          Full name <span className="text-red-500">*</span>
-                        </label>
-                        <Input
-                          type="text"
-                          {...userInfoForm.register('full_name')}
-                          error={userInfoForm.formState.errors.full_name?.message}
-                          placeholder="John Doe"
-                          className="w-full bg-white"
-                        />
-                      </div>
+                      {isGuestAuth || isLocalGuestCart ? (
+                        <>
+                          <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">
+                              First name <span className="text-red-500">*</span>
+                            </label>
+                            <Input
+                              type="text"
+                              {...userInfoForm.register('first_name')}
+                              error={
+                                'first_name' in userInfoForm.formState.errors
+                                  ? userInfoForm.formState.errors.first_name?.message
+                                  : undefined
+                              }
+                              placeholder="John"
+                              className="w-full bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">
+                              Last name <span className="text-red-500">*</span>
+                            </label>
+                            <Input
+                              type="text"
+                              {...userInfoForm.register('last_name')}
+                              error={
+                                'last_name' in userInfoForm.formState.errors
+                                  ? userInfoForm.formState.errors.last_name?.message
+                                  : undefined
+                              }
+                              placeholder="Doe"
+                              className="w-full bg-white"
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <div>
+                          <label className="mb-1 block text-sm font-medium text-gray-700">
+                            Full name <span className="text-red-500">*</span>
+                          </label>
+                          <Input
+                            type="text"
+                            {...userInfoForm.register('full_name')}
+                            error={
+                              'full_name' in userInfoForm.formState.errors
+                                ? userInfoForm.formState.errors.full_name?.message
+                                : undefined
+                            }
+                            placeholder="John Doe"
+                            className="w-full bg-white"
+                          />
+                        </div>
+                      )}
                       <div>
                         <label className="mb-1 block text-sm font-medium text-gray-700">
                           Email <span className="text-red-500">*</span>
@@ -587,20 +862,53 @@ export default function Checkout() {
                   Complete onboarding in your dashboard before you can assign recipients or complete
                   this purchase.
                 </p>
+              ) : needsPhoneVerification ? (
+                <p className="text-sm text-gray-600 mb-3">
+                  Verify your contact details to continue to recipient assignment and payment.
+                </p>
+              ) : guestSyncFailed ? (
+                <p className="text-sm text-amber-700 mb-3">
+                  Sync your bag to continue. Edit invalid items or try again above.
+                </p>
               ) : !allRecipientsAssigned ? (
                 <p className="text-sm text-amber-600 mb-3">
                   Assign recipients to all gift cards before completing your purchase.
                 </p>
               ) : null}
+              {isGuestCheckoutReady || !isGuestCheckoutFlow ? (
               <Button
                 variant="secondary"
                 className="w-full"
                 onClick={handleCheckout}
                 loading={isCheckingOut}
-                disabled={isCheckingOut || !allRecipientsAssigned || recipientActionsBlocked}
+                disabled={
+                  isCheckingOut ||
+                  guestSyncFailed ||
+                  !allRecipientsAssigned ||
+                  recipientActionsBlocked ||
+                  isUserInfoIncomplete
+                }
               >
                 {isCheckingOut ? 'Processing...' : 'Complete Purchase'}
               </Button>
+              ) : guestSyncFailed ? (
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={handleRetryGuestCartSync}
+              >
+                Try syncing bag again
+              </Button>
+              ) : (
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={handleVerifyGuestDetails}
+                disabled={recipientActionsBlocked || isUserInfoIncomplete}
+              >
+                Verify your details
+              </Button>
+              )}
             </div>
           </div>
         </div>

@@ -26,7 +26,7 @@ import {
   type RedemptionBranch,
   type UseCardDetailsReturn,
 } from '../types/cardDetails'
-import { useAuthStore, useGuestAddToCartModalStore } from '@/stores'
+import { useAuthStore, useGuestLocalCartStore } from '@/stores'
 import { useCart } from './useCart'
 import { useCartStore } from '@/stores/cart'
 import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
@@ -65,7 +65,7 @@ export function useCardDetails(): UseCardDetailsReturn {
   const getGuestCartId = useAuthStore((s) => s.getGuestCartId)
   const getGuestCartUuid = useAuthStore((s) => s.getGuestCartUuid)
   const setGuestCartId = useAuthStore((s) => s.setGuestCartId)
-  const openGuestAddToCartModal = useGuestAddToCartModalStore((s) => s.open)
+  const addLocalGuestCard = useGuestLocalCartStore((s) => s.addCatalogCard)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
   const queryClient = useQueryClient()
@@ -157,7 +157,15 @@ export function useCardDetails(): UseCardDetailsReturn {
         }
         return
       }
-      openGuestAddToCartModal(pending)
+      addLocalGuestCard({
+        card_id: String(cardIdRaw),
+        product: pending.product,
+        price: pending.price,
+        currency: typeof pending.currency === 'string' ? pending.currency : 'GHS',
+        type: pending.type,
+      })
+      openCart()
+      toast.success('Added to cart')
       return
     }
     if (!id) return
@@ -174,7 +182,7 @@ export function useCardDetails(): UseCardDetailsReturn {
     user,
     getGuestCartId,
     setGuestCartId,
-    openGuestAddToCartModal,
+    addLocalGuestCard,
     addToCartAsync,
     openCart,
     queryClient,
