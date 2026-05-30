@@ -12,6 +12,7 @@ import {
 } from '@/features/website/utils/guestAssignedCards'
 import {
   formatGuestCardStatusLabel,
+  getGuestCreatedCardRowKey,
   type GuestCreatedCard,
 } from '@/features/website/utils/guestCreatedCards'
 import { GuestGiftCardTile } from './GuestGiftCardTile'
@@ -38,6 +39,7 @@ function PurchasedGuestCardTile({ card }: { card: GuestCreatedCard }) {
       expiryDate={card.expiry_date}
       vendorName={card.vendor_name}
       images={card.images}
+      redemptionCode={card.redemption_code}
       statusLabel={statusLabel}
       statusClassName={statusLabel ? guestStatusBadgeClass(card.status) : undefined}
     />
@@ -121,8 +123,11 @@ export default function GuestCardsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {createdCards.map((card) => (
-                <PurchasedGuestCardTile key={card.guest_card_id || card.gift_card_id} card={card} />
+              {createdCards.map((card, index) => (
+                <PurchasedGuestCardTile
+                  key={getGuestCreatedCardRowKey(card, index)}
+                  card={card}
+                />
               ))}
             </div>
           )}

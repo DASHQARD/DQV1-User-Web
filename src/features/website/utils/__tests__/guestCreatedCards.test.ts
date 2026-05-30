@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { parseGuestCreatedCardsResponse } from '../guestCreatedCards'
+import {
+  getGuestCreatedCardRowKey,
+  parseGuestCreatedCardsResponse,
+} from '../guestCreatedCards'
 
 describe('parseGuestCreatedCardsResponse', () => {
   it('flattens nested guest_card and gift_card from API envelope', () => {
@@ -89,12 +92,61 @@ describe('parseGuestCreatedCardsResponse', () => {
     expect(cards).toHaveLength(1)
     expect(cards[0]).toMatchObject({
       guest_card_id: '019e78a2-5020-7291-b82b-56f24a000f3c',
+      recipient_id: '019e78a2-5020-7291-b82b-56f24a000f3c',
       gift_card_id: '019e409a-6d06-7b22-b38c-0900e8381593',
+      card_reference: 'X-2064-01-01-01-0001-000001',
       card_type: 'DashX',
       product: 'The Elevate Card',
       amount: 22,
       vendor_name: 'Surge Africa',
       status: 'paid',
     })
+  })
+
+  it('maps full purchased guest-cards API row', () => {
+    const cards = parseGuestCreatedCardsResponse({
+      status: 'success',
+      data: [
+        {
+          recipient_id: '019e7968-6f91-797d-8fd3-6578b47a6e1e',
+          gift_card_id: '019e6a99-8f7c-7aa6-9657-ad9a9ad4d48e',
+          card_reference: 'X-1397-01-01-01-0001-000001',
+          card_type: 'DashX',
+          product: 'FlexiWorkGh Retail Rewards Card',
+          currency: 'GHS',
+          amount: 151.5,
+          quantity: 1,
+          vendor_name: 'FlexiWorkGh',
+          recipient_name: 'Guest',
+          recipient_phone: '+233559617908',
+          recipient_email: null,
+          redemption_code: '7CR5J5',
+          cart_status: 'paid',
+          purchased_at: '2026-05-30T15:02:27.979Z',
+          guest_cart_item_id: '019e7966-b147-71ad-b526-785af81aa31b',
+        },
+      ],
+    })
+
+    expect(cards[0]).toMatchObject({
+      recipient_id: '019e7968-6f91-797d-8fd3-6578b47a6e1e',
+      gift_card_id: '019e6a99-8f7c-7aa6-9657-ad9a9ad4d48e',
+      redemption_code: '7CR5J5',
+      guest_phone: '+233559617908',
+      guest_email: null,
+      status: 'paid',
+      quantity: 1,
+    })
+    expect(getGuestCreatedCardRowKey(cards[0])).toContain('019e7968-6f91-797d-8fd3-6578b47a6e1e')
+  })
+
+  it('sorts purchased cards by purchased_at descending', () => {
+    const cards = parseGuestCreatedCardsResponse({
+      data: [
+        { recipient_id: 'a', gift_card_id: 'g1', card_type: 'DashPro', purchased_at: '2026-05-01' },
+        { recipient_id: 'b', gift_card_id: 'g2', card_type: 'DashPro', purchased_at: '2026-05-30' },
+      ],
+    })
+    expect(cards[0].recipient_id).toBe('b')
   })
 })
