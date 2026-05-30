@@ -81,12 +81,34 @@ export function mapGuestAssignedCardToVendorCard(
   }
 }
 
+/** Guest assigned-cards row is still redeemable when `redeemed` is not true */
+export function isGuestAssignedCardRedeemable(card: { redeemed?: boolean } | null | undefined): boolean {
+  return card?.redeemed !== true
+}
+
 export function filterGuestAssignedByType(cards: any[], type: 'dashx' | 'dashpass'): any[] {
   const needle = type === 'dashx' ? 'dashx' : 'dashpass'
   return cards.filter((card) => {
     const normalized = String(card.card_type || '').toLowerCase()
-    return normalized.includes(needle)
+    return normalized.includes(needle) && isGuestAssignedCardRedeemable(card)
   })
+}
+
+/** Narrow guest assigned-cards by vendor and/or branch (vendor_id redemption flow) */
+export function filterGuestAssignedByVendorAndBranch(
+  cards: any[],
+  options: { vendorId?: string | null; branchId?: string | null },
+): any[] {
+  let result = cards
+  const vendorId = options.vendorId?.trim()
+  if (vendorId) {
+    result = result.filter((card) => String(card.vendor_id ?? '') === vendorId)
+  }
+  const branchId = options.branchId?.trim()
+  if (branchId) {
+    result = result.filter((card) => String(card.branch_id ?? '') === branchId)
+  }
+  return result
 }
 
 export function filterCardsByBranch<T extends { branch_id?: string }>(
@@ -139,15 +161,24 @@ export function isValidRedemptionAmountInput(value: string): boolean {
 /** Build type-discriminated POST /guest-redemptions/cards body */
 export function buildGuestCardsRedemptionPayload(
   input:
-    | { card_type: 'DashGo' | 'DashPro'; branch_id: string; amount: number }
+    | { card_type: 'DashPro'; branch_id: string; amount: number }
+    | { card_type: 'DashGo'; branch_id: string; amount: number; card_id: string }
     | { card_type: 'DashX' | 'DashPass'; branch_id: string; card_id: string },
 ): GuestCardsRedemptionPayload {
   const branch_id = input.branch_id.trim()
-  if (input.card_type === 'DashGo' || input.card_type === 'DashPro') {
+  if (input.card_type === 'DashPro') {
     return {
-      card_type: input.card_type,
+      card_type: 'DashPro',
       branch_id,
       amount: roundRedemptionAmount(input.amount),
+    }
+  }
+  if (input.card_type === 'DashGo') {
+    return {
+      card_type: 'DashGo',
+      branch_id,
+      amount: roundRedemptionAmount(input.amount),
+      card_id: input.card_id.trim(),
     }
   }
   if (input.card_type === 'DashX' || input.card_type === 'DashPass') {

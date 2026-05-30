@@ -377,31 +377,68 @@ export default function Checkout() {
                   <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
                   <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 border border-green-200">
                     <Icon icon="bi:check-circle" className="size-3.5" />
-                    Verified
+                    Phone verified
                   </span>
                 </div>
-                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                  <div>
-                    <dt className="text-gray-500">Name</dt>
-                    <dd className="font-medium text-gray-900">
-                      {[userInfoForm.watch('first_name'), userInfoForm.watch('last_name')]
-                        .filter(Boolean)
-                        .join(' ') || '—'}
-                    </dd>
+                <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        First name <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        {...userInfoForm.register('first_name')}
+                        error={
+                          'first_name' in userInfoForm.formState.errors
+                            ? userInfoForm.formState.errors.first_name?.message
+                            : undefined
+                        }
+                        placeholder="John"
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Last name <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        {...userInfoForm.register('last_name')}
+                        error={
+                          'last_name' in userInfoForm.formState.errors
+                            ? userInfoForm.formState.errors.last_name?.message
+                            : undefined
+                        }
+                        placeholder="Doe"
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Phone Number
+                      </label>
+                      <Input
+                        type="text"
+                        value={userInfoForm.watch('phone_number') || ''}
+                        disabled
+                        className="w-full bg-gray-50"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <dt className="text-gray-500">Phone</dt>
-                    <dd className="font-medium text-gray-900">
-                      {userInfoForm.watch('phone_number') || '—'}
-                    </dd>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                      Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="email"
+                      {...userInfoForm.register('email')}
+                      error={userInfoForm.formState.errors.email?.message}
+                      placeholder="john@example.com"
+                      className="w-full"
+                    />
                   </div>
-                  <div className="sm:col-span-2">
-                    <dt className="text-gray-500">Email</dt>
-                    <dd className="font-medium text-gray-900">
-                      {userInfoForm.watch('email') || '—'}
-                    </dd>
-                  </div>
-                </dl>
+                </form>
               </div>
             )}
 

@@ -35,7 +35,9 @@ import {
   buildGuestCardsRedemptionPayload,
   extractGuestRedemptionSuccess,
   filterGuestAssignedByType,
+  filterGuestAssignedByVendorAndBranch,
   formatBranchLabel,
+  isGuestAssignedCardRedeemable,
   isGuestRedemptionSuccess,
   isValidRedemptionAmountInput,
   mapGuestAssignedCardToVendorCard,
@@ -338,6 +340,7 @@ export default function RedemptionPage() {
         { vendor_id: string; business_name: string; vendor_name: string }
       >()
       guestAssignedCards.forEach((card: any) => {
+        if (!isGuestAssignedCardRedeemable(card)) return
         const id = String(card.vendor_id ?? '')
         if (!id) return
         if (!vendorMap.has(id)) {
@@ -369,7 +372,11 @@ export default function RedemptionPage() {
 
     if (isGuestAuth) {
       return guestAssignedCards
-        .filter((card: any) => String(card.vendor_id ?? '') === String(selectedVendorId))
+        .filter(
+          (card: any) =>
+            isGuestAssignedCardRedeemable(card) &&
+            String(card.vendor_id ?? '') === String(selectedVendorId),
+        )
         .map((card: any) => ({
           card_id: resolveRedemptionCardId(card),
           card_name: card.product || 'Unknown Card',
@@ -491,7 +498,11 @@ export default function RedemptionPage() {
   // DashX / DashPass: guests use assigned-cards (no balance API per guest spec)
   const dashXCards = useMemo(() => {
     if (isGuestAuth) {
-      return filterGuestAssignedByType(guestAssignedCards, 'dashx').map((card) =>
+      const scoped = filterGuestAssignedByVendorAndBranch(
+        filterGuestAssignedByType(guestAssignedCards, 'dashx'),
+        { vendorId: selectedVendorId, branchId: selectedBranchId },
+      )
+      return scoped.map((card) =>
         mapGuestAssignedCardToVendorCard(card, 'dashx', guestAssignedCurrency),
       )
     }
@@ -519,11 +530,22 @@ export default function RedemptionPage() {
       expiry_date: card.expiry_date,
       description: card.description,
     }))
-  }, [isGuestAuth, guestAssignedCards, guestAssignedCurrency, redemptionsAmountDashX])
+  }, [
+    isGuestAuth,
+    guestAssignedCards,
+    guestAssignedCurrency,
+    redemptionsAmountDashX,
+    selectedVendorId,
+    selectedBranchId,
+  ])
 
   const dashPassCards = useMemo(() => {
     if (isGuestAuth) {
-      return filterGuestAssignedByType(guestAssignedCards, 'dashpass').map((card) =>
+      const scoped = filterGuestAssignedByVendorAndBranch(
+        filterGuestAssignedByType(guestAssignedCards, 'dashpass'),
+        { vendorId: selectedVendorId, branchId: selectedBranchId },
+      )
+      return scoped.map((card) =>
         mapGuestAssignedCardToVendorCard(card, 'dashpass', guestAssignedCurrency),
       )
     }
@@ -551,7 +573,14 @@ export default function RedemptionPage() {
       expiry_date: card.expiry_date,
       description: card.description,
     }))
-  }, [isGuestAuth, guestAssignedCards, guestAssignedCurrency, redemptionsAmountDashPass])
+  }, [
+    isGuestAuth,
+    guestAssignedCards,
+    guestAssignedCurrency,
+    redemptionsAmountDashPass,
+    selectedVendorId,
+    selectedBranchId,
+  ])
 
   // Filter cards by selected card type and branch
   const filteredCards = useMemo(() => {
@@ -1287,11 +1316,33 @@ export default function RedemptionPage() {
 
           let guestRedemptionPayload
           if (cardTypeForAPI === 'DashGo' || cardTypeForAPI === 'DashPro') {
-            guestRedemptionPayload = buildGuestCardsRedemptionPayload({
-              card_type: cardTypeForAPI,
-              branch_id: branchId,
-              amount: roundRedemptionAmount(parseFloat(amount)),
-            })
+            const dashGoCards =
+              redemptionsAmountDashGo?.data?.cards || redemptionsAmountDashGo?.cards || []
+            const dashProCards =
+              redemptionsAmountDashPro?.data?.cards || redemptionsAmountDashPro?.cards || []
+            const activeCards = cardType === 'dashgo' ? dashGoCards : dashProCards
+            const redeemAmount = roundRedemptionAmount(parseFloat(amount))
+
+            if (cardTypeForAPI === 'DashGo') {
+              const redemptionCardId = pickGuestRedemptionCardId(activeCards, redeemAmount)
+              if (!redemptionCardId) {
+                toast.error('Could not find a gift card to redeem. Please try again.')
+                setIsProcessingRedemption(false)
+                return
+              }
+              guestRedemptionPayload = buildGuestCardsRedemptionPayload({
+                card_type: 'DashGo',
+                branch_id: branchId,
+                amount: redeemAmount,
+                card_id: redemptionCardId,
+              })
+            } else {
+              guestRedemptionPayload = buildGuestCardsRedemptionPayload({
+                card_type: 'DashPro',
+                branch_id: branchId,
+                amount: redeemAmount,
+              })
+            }
           } else {
             const cardId = String(selectedCard?.card_id ?? '').trim()
             if (!cardId) {
@@ -1311,8 +1362,7 @@ export default function RedemptionPage() {
           if (isGuestRedemptionSuccess(response)) {
             setRedemptionSuccess(extractGuestRedemptionSuccess(response))
             const redeemedId =
-              guestRedemptionPayload.card_type === 'DashX' ||
-              guestRedemptionPayload.card_type === 'DashPass'
+              'card_id' in guestRedemptionPayload
                 ? guestRedemptionPayload.card_id
                 : (selectedCard?.card_id ?? null)
             if (redeemedId) {

@@ -4,7 +4,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { Modal, Button, Text, Input, OTPInput, BasePhoneInput, PhoneFormatHint, Loader } from '@/components'
+import { Modal, Button, Text, OTPInput, BasePhoneInput, PhoneFormatHint, Loader } from '@/components'
 import { getApiErrorMessage } from '@/utils/apiError'
 import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { Icon } from '@/libs'
@@ -24,26 +24,22 @@ import {
   setGuestContactSessionItem,
 } from '@/utils/constants'
 import { useToast } from '@/hooks'
-import { getOptionalEmailSchema, getRequiredInternationalPhoneSchema } from '@/utils/schemas/shared'
 import { formatPersonName, splitPersonName } from '@/utils/personName'
+import {
+  guestAddToCartContactSchema,
+  type GuestAddToCartContactFormData,
+} from './guestAddToCartContactSchema'
 import { pickGuestCartIdentityFields } from '@/utils/guestContact'
 import { useGuestLocalCartStore } from '@/stores/guestLocalCart'
 import { runGuestCheckoutBagSync } from '@/features/website/utils/runGuestCheckoutBagSync'
 import { GuestCartSyncError } from '@/features/website/utils/guestCartSyncError'
 import { setGuestBrowsingAck } from '@/features/website/utils/guestBrowsingSession'
 
-const ContactSchema = z.object({
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
-  guest_phone: getRequiredInternationalPhoneSchema('Phone number'),
-  email: getOptionalEmailSchema(),
-})
-
 const OTPSchema = z.object({
   otp: z.string().min(4, 'OTP must be 4 digits').max(4, 'OTP must be 4 digits'),
 })
 
-type ContactFormData = z.infer<typeof ContactSchema>
+type ContactFormData = GuestAddToCartContactFormData
 type OTPFormData = z.infer<typeof OTPSchema>
 
 type Step = 'choice' | 'contact' | 'otp' | 'syncing' | 'sync-error'
@@ -70,8 +66,8 @@ export default function GuestAddToCartModal() {
   const [isSyncingBag, setIsSyncingBag] = useState(false)
 
   const contactForm = useForm<ContactFormData>({
-    resolver: zodResolver(ContactSchema),
-    defaultValues: { first_name: '', last_name: '', guest_phone: '', email: '' },
+    resolver: zodResolver(guestAddToCartContactSchema),
+    defaultValues: { guest_phone: '' },
   })
 
   const otpForm = useForm<OTPFormData>({
@@ -97,25 +93,13 @@ export default function GuestAddToCartModal() {
         useGuestLocalCartStore.getState().contact.phone ??
         getGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY) ??
         ''
-      const savedName =
-        formatPersonName(
-          useGuestLocalCartStore.getState().contact.first_name ?? '',
-          useGuestLocalCartStore.getState().contact.last_name ?? '',
-        ) ||
-        getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
-        ''
       contactForm.reset({
-        ...splitPersonName(savedName),
         guest_phone: phone,
-        email:
-          useGuestLocalCartStore.getState().contact.email ??
-          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ??
-          '',
       })
       otpForm.reset({ otp: '' })
     } else {
       setStep('choice')
-      contactForm.reset({ first_name: '', last_name: '', guest_phone: '', email: '' })
+      contactForm.reset({ guest_phone: '' })
       otpForm.reset({ otp: '' })
       setSubmittedPhone('')
       setGuestName('')
@@ -192,15 +176,12 @@ export default function GuestAddToCartModal() {
     if (!pendingItem) return
     setIsRequestingOtp(true)
     try {
-      const guestFullName = formatPersonName(data.first_name ?? '', data.last_name ?? '')
       await guestAuthOtpRequest({ guest_phone: data.guest_phone })
-      const guestEmail = data.email?.trim() ?? ''
-      if (guestEmail) setGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY, guestEmail)
       setGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY, data.guest_phone)
-      setGuestName(guestFullName)
-      setGuestEmail(guestEmail)
+      setGuestName('')
+      setGuestEmail('')
       setSubmittedPhone(data.guest_phone)
-      contactForm.reset({ first_name: '', last_name: '', guest_phone: '', email: '' })
+      contactForm.reset({ guest_phone: '' })
       otpForm.reset({ otp: '' })
       setStep('otp')
       toast.success('Verification code sent to your phone')
@@ -406,28 +387,8 @@ export default function GuestAddToCartModal() {
                 <Icon icon="bi:phone" className="text-[#402D87]" />
               </div>
               <p className="text-sm text-gray-600">
-                We&apos;ll send a one-time code to your phone. Name and email are optional.
+                We&apos;ll send a one-time code to your phone number.
               </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="First name"
-                id="guest-first-name"
-                type="text"
-                {...contactForm.register('first_name')}
-                error={contactForm.formState.errors.first_name?.message}
-                placeholder="First name (optional)"
-                className="w-full"
-              />
-              <Input
-                label="Last name"
-                id="guest-last-name"
-                type="text"
-                {...contactForm.register('last_name')}
-                error={contactForm.formState.errors.last_name?.message}
-                placeholder="Last name (optional)"
-                className="w-full"
-              />
             </div>
             <Controller
               control={contactForm.control}
@@ -442,16 +403,6 @@ export default function GuestAddToCartModal() {
                   error={contactForm.formState.errors.guest_phone?.message} hint={<PhoneFormatHint />}
                 />
               )}
-            />
-
-            <Input
-              label="Email"
-              id="guest-email"
-              type="email"
-              {...contactForm.register('email')}
-              error={contactForm.formState.errors.email?.message}
-              placeholder="you@example.com (optional)"
-              className="w-full"
             />
 
             <div className="flex gap-3 pt-2">
@@ -526,11 +477,7 @@ export default function GuestAddToCartModal() {
                       handleClose()
                       return
                     }
-                    contactForm.reset({
-                      ...splitPersonName(guestName),
-                      guest_phone: submittedPhone,
-                      email: guestEmail,
-                    })
+                    contactForm.reset({ guest_phone: submittedPhone })
                     setStep('contact')
                   }}
                   disabled={isVerifyingOtp}
