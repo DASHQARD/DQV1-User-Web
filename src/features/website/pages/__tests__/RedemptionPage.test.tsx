@@ -37,12 +37,15 @@ vi.mock('@/features/dashboard/hooks', () => ({
     useGetRedemptionsAmountDashPassService: () => ({ data: null, isLoading: false }),
     useGetGuestAssignedCardsService: () => ({ data: null, isLoading: false }),
     useGetGuestRedemptionsService: () => ({ data: null, isLoading: false }),
+    useSearchVendorsService: () => ({ data: null, isFetching: false }),
   }),
   useRedemptionMutation: () => ({
     useProcessRedemptionCardsService: () => ({ mutateAsync: vi.fn() }),
     useProcessCardsRedemptionService: () => ({ mutateAsync: vi.fn() }),
     useProcessGuestCardsRedemptionService: () => ({ mutateAsync: vi.fn() }),
+    useProcessDashProRedemptionForUserService: () => ({ mutateAsync: vi.fn() }),
     useInitiateRedemptionService: () => ({ mutateAsync: vi.fn() }),
+    useValidateVendorMobileMoneyService: () => ({ mutate: vi.fn(), isPending: false }),
   }),
   useRateCard: () => ({}),
 }))
@@ -56,5 +59,7 @@ describe('RedemptionPage (website)', () => {
     expect(screen.getByText('Redeem Your Gift Card')).toBeInTheDocument()
     expect(screen.getByText('Secure Gift Card Redemption')).toBeInTheDocument()
     expect(screen.getByText('Select Redemption Method')).toBeInTheDocument()
+    expect(screen.getByText('Vendor mobile money')).toBeInTheDocument()
+    expect(screen.getByText('Vendor ID')).toBeInTheDocument()
   })
 })

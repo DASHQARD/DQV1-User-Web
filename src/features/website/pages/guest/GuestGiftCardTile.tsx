@@ -1,5 +1,5 @@
 import { Text } from '@/components'
-import { Icon } from '@/libs'
+import { cn, Icon } from '@/libs'
 import { CardItemImage } from '@/features/website/components/CardItems/CardItemImage'
 import { VendorLogoImage } from '@/features/website/components/VendorLogo/VendorLogoImage'
 import { formatCardDisplayTitle, getCardTypeName } from '@/utils/cardDisplay'
@@ -15,6 +15,8 @@ export type GuestGiftCardTileProps = {
   images?: Array<{ file_url?: string; file_name?: string }>
   statusLabel?: string | null
   statusClassName?: string
+  selected?: boolean
+  onSelect?: () => void
 }
 
 export function GuestGiftCardTile({
@@ -27,14 +29,26 @@ export function GuestGiftCardTile({
   images,
   statusLabel,
   statusClassName,
+  selected = false,
+  onSelect,
 }: GuestGiftCardTileProps) {
   const firstImageUrl = images?.[0]?.file_url
   const typeKey = cardType?.toLowerCase()?.trim() || 'dashx'
   const vendorDisplay =
     vendorName?.trim() || (typeKey === 'dashpro' ? 'DashQard' : getCardTypeName(typeKey) || 'Vendor')
 
-  return (
-    <article className="flex flex-col bg-white overflow-hidden rounded-xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+  const tileClassName = cn(
+    'flex flex-col bg-white overflow-hidden rounded-xl border text-left transition-all',
+    onSelect ? 'cursor-pointer hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]' : 'border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)]',
+    selected
+      ? 'border-primary-500 ring-2 ring-primary-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
+      : onSelect
+        ? 'border-gray-200'
+        : 'border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)]',
+  )
+
+  const content = (
+    <>
       <div className="relative aspect-video bg-gray-100 overflow-hidden">
         <CardItemImage
           fileUrl={firstImageUrl}
@@ -47,6 +61,11 @@ export function GuestGiftCardTile({
             className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClassName ?? 'bg-white/90 text-gray-700'}`}
           >
             {statusLabel}
+          </span>
+        ) : null}
+        {selected ? (
+          <span className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 shadow-sm">
+            <Icon icon="bi:check" className="text-sm text-white" />
           </span>
         ) : null}
       </div>
@@ -88,6 +107,16 @@ export function GuestGiftCardTile({
           </Text>
         </div>
       </div>
-    </article>
+    </>
   )
+
+  if (onSelect) {
+    return (
+      <button type="button" onClick={onSelect} className={cn('w-full', tileClassName)}>
+        {content}
+      </button>
+    )
+  }
+
+  return <article className={tileClassName}>{content}</article>
 }
