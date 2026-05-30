@@ -9,8 +9,8 @@ describe('ContactPageFormSchema', () => {
       email: 'jane@example.com',
       phone: '',
       inquiryType: 'bug-report',
-      subject: 'Login issue',
-      message: 'Details here',
+      subject: 'website-inquiry',
+      message: 'Login issue',
     })
     expect(result.success).toBe(true)
   })
@@ -21,7 +21,7 @@ describe('ContactPageFormSchema', () => {
       email: 'jane@example.com',
       phone: EXAMPLE_PHONE_E164,
       inquiryType: 'feature-request',
-      subject: 'New feature',
+      subject: 'general-support',
       message: 'Details',
     })
     expect(result.success).toBe(true)
@@ -33,7 +33,7 @@ describe('ContactPageFormSchema', () => {
       email: 'jane@example.com',
       phone: '+233',
       inquiryType: 'bug-report',
-      subject: 'Login',
+      subject: 'website-inquiry',
       message: 'Hi',
     })
     expect(result.success).toBe(true)
@@ -45,7 +45,7 @@ describe('ContactPageFormSchema', () => {
       email: 'jane@example.com',
       phone: '+2335596178',
       inquiryType: 'bug-report',
-      subject: 'Login',
+      subject: 'website-inquiry',
       message: 'Hi',
     })
     expect(result.success).toBe(false)
@@ -56,7 +56,7 @@ describe('ContactPageFormSchema', () => {
       ContactUsSchema.safeParse({
         name: 'Jane',
         email: 'jane@example.com',
-        subject: 'Help',
+        subject: 'website-inquiry',
         message: 'Hi',
       }).success,
     ).toBe(true)

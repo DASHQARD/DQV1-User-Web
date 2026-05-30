@@ -3,9 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen } from '@/test/test-utils'
 import Contact from '../ContactUs/Contact'
 
-vi.mock('@/hooks', () => ({
-  useToast: () => ({ success: vi.fn(), error: vi.fn() }),
-}))
+vi.mock('@/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/hooks')>()
+  return {
+    ...actual,
+    useToast: () => ({ success: vi.fn(), error: vi.fn() }),
+  }
+})
 
 vi.mock('@/services', () => ({
   createTicket: vi.fn().mockResolvedValue({ message: 'Success' }),

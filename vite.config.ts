@@ -37,6 +37,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    env: {
+      VITE_NODE_ENV: 'test',
+    },
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/*.config.{ts,js}'],
     // Reduce parallelism under coverage to avoid OOM (single fork = one process)

@@ -19,6 +19,8 @@ type State = {
   guestCartId: number | null
   /** Guest cart UUID — required for POST /payments/guest/checkout */
   guestCartUuid: string | null
+  /** False until persisted auth is rehydrated and optional boot refresh completes. */
+  isSessionReady: boolean
 }
 
 type Actions = {
@@ -36,6 +38,7 @@ type Actions = {
   getGuestCartId: () => State['guestCartId']
   setGuestCartUuid: (uuid: string | null) => void
   getGuestCartUuid: () => State['guestCartUuid']
+  setSessionReady: (ready: boolean) => void
   logout: () => void
 }
 
@@ -56,11 +59,12 @@ const initialState: State = {
   isGuestAuth: false,
   guestCartId: null,
   guestCartUuid: null,
+  isSessionReady: false,
 }
 
 const authStore: StateCreator<State & Actions> = (set, get) => ({
   ...initialState,
-  reset: () => set({ ...initialState }),
+  reset: () => set({ ...initialState, isSessionReady: true }),
   authenticate: ({ token, refreshToken, isGuestAuth = false }) => {
     set({
       user: decodeUser(token),
@@ -68,6 +72,13 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
       refreshToken: refreshToken ?? null,
       isAuthenticated: true,
       isGuestAuth,
+      isSessionReady: true,
+      ...(isGuestAuth
+        ? {}
+        : {
+            guestCartId: null,
+            guestCartUuid: null,
+          }),
     })
   },
   logout: () => {
@@ -90,6 +101,7 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
       isGuestAuth: false,
       guestCartId: null,
       guestCartUuid: null,
+      isSessionReady: true,
     })
   },
   getToken: () => get().token,
@@ -98,6 +110,7 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
   getGuestCartId: () => get().guestCartId,
   setGuestCartUuid: (uuid) => set({ guestCartUuid: uuid }),
   getGuestCartUuid: () => get().guestCartUuid,
+  setSessionReady: (ready) => set({ isSessionReady: ready }),
   setToken: (newToken: string) =>
     set({
       token: newToken,
@@ -110,6 +123,15 @@ const useAuthStore = create(
   persist(authStore, {
     name: 'dashqard-web-auth-store',
     storage: createJSONStorage(() => localStorage),
+    partialize: (state) => ({
+      token: state.token,
+      refreshToken: state.refreshToken,
+      user: state.user,
+      isAuthenticated: state.isAuthenticated,
+      isGuestAuth: state.isGuestAuth,
+      guestCartId: state.guestCartId,
+      guestCartUuid: state.guestCartUuid,
+    }),
   }),
 )
 

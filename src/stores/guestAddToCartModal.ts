@@ -12,6 +12,8 @@ export type GuestAddToCartPendingItem = {
   redemptionOnly?: boolean
   /** After OTP, sync localStorage guest cart to API (checkout flow). */
   checkoutSync?: boolean
+  /** Standalone guest sign-in from navbar or login page (phone OTP only). */
+  guestLoginOnly?: boolean
 }
 
 /** Contact already collected on checkout; modal opens at OTP only. */

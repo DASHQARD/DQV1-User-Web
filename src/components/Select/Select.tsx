@@ -91,18 +91,24 @@ export const Select = React.memo(
       /* WRAPPER */
       <div className={cn('', className)}>
         {/* LABEL */}
-        {label ? <InputLabel htmlFor={props.name}>{label}</InputLabel> : null}
+        {label ? (
+          <InputLabel
+            htmlFor={props.name}
+            className="flex gap-1 items-center text-[#151819] text-sm"
+          >
+            {label}
+          </InputLabel>
+        ) : null}
 
         {/* INNER */}
-        <Root value={value} onValueChange={handleValueChange} name={name} disabled={disabled}>
+        <Root value={value ?? ''} onValueChange={handleValueChange} name={name} disabled={disabled}>
           <Trigger
             data-testid={`select-${label ?? ''}`}
             data-value={value}
             className={cn(
-              'bg-white text-[13px] flex justify-between w-full outline-none ring-1 ring-gray-200 items-center py-2.5 px-4 rounded-lg h-12 disabled:cursor-not-allowed',
-              ' focus:ring-primary-500',
-              { 'ring-1 ring-error-500': !!error },
-              { 'text-[#9DA1A8]': !!placeholder && !value },
+              'flex h-12 min-h-12 w-full items-center justify-between rounded-lg border border-gray-300 bg-transparent px-3 text-sm outline-none disabled:cursor-not-allowed',
+              'focus:border-primary-400 data-[state=open]:border-primary-400',
+              { 'border-red-500': !!error },
               innerClassName,
             )}
             onBlur={onElementBlur}
@@ -169,5 +175,8 @@ export const Select = React.memo(
 )
 
 function DefaultValue({ value, currentOption, placeholder }: DefaultValueProps) {
-  return value ? currentOption?.label : placeholder
+  if (!value) {
+    return <span className="text-gray-300">{placeholder}</span>
+  }
+  return <span className="text-grey-600">{currentOption?.label}</span>
 }

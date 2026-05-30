@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { renderWithProviders, screen } from '@/test/test-utils'
+import { renderWithProviders, screen, within } from '@/test/test-utils'
 import { Select } from '../Select/Select'
 
 const options = [
@@ -22,7 +22,7 @@ describe('Select', () => {
 
   it('renders current value label when value is set', () => {
     renderWithProviders(<Select options={options} value="a" placeholder="Select..." />)
-    expect(screen.getByText('Option A')).toBeInTheDocument()
+    expect(within(screen.getByRole('combobox')).getByText('Option A')).toBeInTheDocument()
   })
 
   it('renders error message when error is provided', () => {

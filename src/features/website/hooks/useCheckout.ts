@@ -79,6 +79,7 @@ export function useCheckout() {
   const toast = useToast()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
+  const isSessionReady = useAuthStore((state) => state.isSessionReady)
   const { recipientActionsBlocked } = useMemberMustCompleteOnboardingForCustomCards()
   const localLines = useGuestLocalCartStore((s) => s.lines)
   const localContact = useGuestLocalCartStore((s) => s.contact)
@@ -256,7 +257,7 @@ export function useCheckout() {
 
   const { recipientsByCartItem: guestRecipientsByCartItem } = useGuestRecipientsByCartItems(
     guestCheckoutCartItemIds,
-    isGuestAuth && !guestBagNotReady,
+    isGuestAuth && !guestBagNotReady && isSessionReady,
   )
 
   const recipientsByCartItem = useMemo(() => {

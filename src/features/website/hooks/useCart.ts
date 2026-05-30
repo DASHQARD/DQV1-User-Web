@@ -15,6 +15,7 @@ export function useCart(query?: Record<string, any>) {
   const queryClient = useQueryClient()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
+  const isSessionReady = useAuthStore((state) => state.isSessionReady)
   const guestCartId = useAuthStore((state) => state.guestCartId)
   const { success, error: toastError } = useToast()
 
@@ -22,7 +23,7 @@ export function useCart(query?: Record<string, any>) {
     queryKey: ['cart-items', 'user', query],
     queryFn: () => getCartItems(query),
     // If a guest cart exists, avoid calling authenticated cart endpoints even if auth flags briefly flip.
-    enabled: isAuthenticated && !isGuestAuth && guestCartId == null,
+    enabled: isAuthenticated && !isGuestAuth && guestCartId == null && isSessionReady,
   })
 
   const cartItems = cartItemsQuery.data ?? []

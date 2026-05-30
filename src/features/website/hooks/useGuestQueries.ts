@@ -8,15 +8,22 @@ import {
 } from '../services/cards'
 import type { GuestGetCardsParams } from '@/types/responses'
 import { parseGuestCreatedCardsResponse } from '../utils/guestCreatedCards'
+import { useGuestBagNotReady } from './useGuestBagNotReady'
+
+function useGuestApiQueriesEnabled(enabled = true) {
+  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
+  const isSessionReady = useAuthStore((state) => state.isSessionReady)
+  const guestBagNotReady = useGuestBagNotReady()
+  return enabled && isGuestAuth && isSessionReady && !guestBagNotReady
+}
 
 export function useGuestQueries() {
-  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
-
   function useGetGuestCardsService(params?: GuestGetCardsParams, enabled = true) {
+    const guestQueriesEnabled = useGuestApiQueriesEnabled(enabled)
     return useQuery({
       queryKey: ['guest-cards', params],
       queryFn: async () => parseGuestCreatedCardsResponse(await getGuestCards(params)),
-      enabled: isGuestAuth && enabled,
+      enabled: guestQueriesEnabled,
     })
   }
 
@@ -24,10 +31,12 @@ export function useGuestQueries() {
     guestCardId: number | string | null | undefined,
     enabled = true,
   ) {
+    const guestQueriesEnabled = useGuestApiQueriesEnabled(enabled)
     return useQuery({
       queryKey: ['guest-cards', 'single', guestCardId],
       queryFn: () => getGuestCardSingle({ guest_card_id: guestCardId! }),
-      enabled: isGuestAuth && enabled && guestCardId != null && guestCardId !== '',
+      enabled:
+        guestQueriesEnabled && guestCardId != null && guestCardId !== '',
     })
   }
 
@@ -35,12 +44,12 @@ export function useGuestQueries() {
     cartItemId: string | number | null | undefined,
     enabled = true,
   ) {
+    const guestQueriesEnabled = useGuestApiQueriesEnabled(enabled)
     return useQuery({
       queryKey: ['guest-cart-recipients', cartItemId],
       queryFn: () => getGuestCartRecipients({ cart_item_id: cartItemId! }),
       enabled:
-        isGuestAuth &&
-        enabled &&
+        guestQueriesEnabled &&
         cartItemId != null &&
         cartItemId !== '' &&
         !isLocalGuestCartLineId(cartItemId),
@@ -60,14 +69,16 @@ export function useGuestRecipientsByCartItems(
   enabled: boolean,
 ) {
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
+  const isSessionReady = useAuthStore((state) => state.isSessionReady)
+  const guestBagNotReady = useGuestBagNotReady()
+  const guestQueriesEnabled = enabled && isGuestAuth && isSessionReady && !guestBagNotReady
 
   const queries = useQueries({
     queries: cartItemIds.map((cartItemId) => ({
       queryKey: ['guest-cart-recipients', cartItemId],
       queryFn: () => getGuestCartRecipients({ cart_item_id: cartItemId }),
       enabled:
-        enabled &&
-        isGuestAuth &&
+        guestQueriesEnabled &&
         cartItemId != null &&
         cartItemId !== '' &&
         !isLocalGuestCartLineId(cartItemId),

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button, BasePhoneInput, Input, PhoneFormatHint } from '@/components'
+import { Select } from '@/components/Select'
 import { Icon } from '@/libs'
 import { useCountriesData, useToast } from '@/hooks'
 import { createTicket } from '@/services'
@@ -15,6 +16,7 @@ import {
 } from '@/utils/constants'
 import { ROUTES } from '@/utils/constants/shared'
 import { ContactPageFormSchema, type ContactPageFormData } from '@/utils/schemas/contact'
+import { CONTACT_SUBJECT_OPTIONS, getContactSubjectLabel } from '@/utils/constants/contact'
 
 const CONTACT_PAGE_DEFAULT_VALUES: ContactPageFormData = {
   name: '',
@@ -30,13 +32,13 @@ function buildTicketPayload(data: ContactPageFormData) {
   return {
     name: data.name,
     email: data.email,
-    subject: `[${inquiryLabel.toUpperCase()}] ${data.subject}`,
+    subject: `[${inquiryLabel.toUpperCase()}] ${getContactSubjectLabel(data.subject)}`,
     message: [
       `Name: ${data.name}`,
       `Email: ${data.email}`,
       `Phone: ${data.phone?.trim() || 'Not provided'}`,
       `Feedback type: ${inquiryLabel}`,
-      `Subject: ${data.subject}`,
+      `Subject: ${getContactSubjectLabel(data.subject)}`,
       '',
       'Message:',
       data.message,
@@ -361,15 +363,21 @@ export default function ContactPage() {
                   </div>
 
                   <div>
-                    <label className="flex items-center text-sm font-semibold text-primary-500 mb-2">
-                      <Icon icon="bi:chat-text-fill" className="size-4 mr-2" />
-                      Subject *
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="Brief description of your inquiry"
-                      {...form.register('subject')}
-                      error={form.formState.errors.subject?.message}
+                    <Controller
+                      control={form.control}
+                      name="subject"
+                      render={({ field }) => (
+                        <Select
+                          label="Subject *"
+                          placeholder="Select a subject"
+                          className="[&_label]:text-sm [&_label]:font-semibold [&_label]:text-primary-500"
+                          options={CONTACT_SUBJECT_OPTIONS}
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          error={form.formState.errors.subject?.message}
+                        />
+                      )}
                     />
                   </div>
 

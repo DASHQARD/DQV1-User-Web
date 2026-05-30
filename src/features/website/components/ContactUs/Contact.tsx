@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { Input, Text } from '@/components'
+import { Select } from '@/components/Select'
 import { Button } from '@/components/Button'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { cn, Icon } from '@/libs'
@@ -12,11 +14,9 @@ import {
   SUPPORT_PHONE_DISPLAY_SHORT,
   SUPPORT_PHONE_E164,
 } from '@/utils/constants'
+import { CONTACT_SUBJECT_OPTIONS, getContactSubjectLabel } from '@/utils/constants/contact'
 import { ContactUsSchema } from '@/utils/schemas'
-import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-
-const MOBILE_DEFAULT_SUBJECT = 'Website inquiry'
 
 const QUICK_CONTACT_LINKS = [
   {
@@ -52,7 +52,7 @@ export default function Contact() {
     defaultValues: {
       name: '',
       email: '',
-      subject: MOBILE_DEFAULT_SUBJECT,
+      subject: '',
       message: '',
     },
   })
@@ -63,14 +63,14 @@ export default function Contact() {
       const response = await createTicket({
         name: data.name,
         email: data.email,
-        subject: data.subject?.trim() || MOBILE_DEFAULT_SUBJECT,
+        subject: getContactSubjectLabel(data.subject),
         message: data.message,
       })
       success(response?.message || "Ticket created successfully. We'll get back to you soon!")
       form.reset({
         name: '',
         email: '',
-        subject: MOBILE_DEFAULT_SUBJECT,
+        subject: '',
         message: '',
       })
       setShowMobileForm(false)
@@ -103,12 +103,21 @@ export default function Contact() {
           error={form.formState.errors.email?.message}
         />
       </div>
-      <Input
-        label="Subject"
-        placeholder="How can we help?"
-        className="hidden md:block"
-        {...form.register('subject')}
-        error={form.formState.errors.subject?.message}
+      <Controller
+        control={form.control}
+        name="subject"
+        render={({ field }) => (
+          <Select
+            label="Subject"
+            placeholder="Select a subject"
+            className="max-md:[&_label]:text-xs"
+            options={CONTACT_SUBJECT_OPTIONS}
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            error={form.formState.errors.subject?.message}
+          />
+        )}
       />
       <Input
         type="textarea"
