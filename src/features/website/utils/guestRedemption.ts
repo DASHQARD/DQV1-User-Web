@@ -84,7 +84,15 @@ export function mapGuestAssignedCardToVendorCard(
 
 /** Guest assigned-cards row is still redeemable (not redeemed, not expired). */
 export function isGuestAssignedCardRedeemable(
-  card: { redeemed?: boolean; status?: string; card_status?: string; expiry_date?: string | null } | null | undefined,
+  card:
+    | {
+        redeemed?: boolean
+        status?: string | null
+        card_status?: string | null
+        expiry_date?: string | null
+      }
+    | null
+    | undefined,
 ): boolean {
   if (!card) return false
   return isAssignedCardRedeemable(card)
@@ -108,7 +116,12 @@ export function parseGuestRecipientAmountTotalBalance(payload: unknown): number 
 
 /** Card-type toggles for guest redeem (no GET /redemptions/redeemable-cards). */
 export function buildGuestCardTypeAvailability(input: {
-  assignedCards: Array<{ card_type?: string; redeemed?: boolean; status?: string; expiry_date?: string | null }>
+  assignedCards: Array<{
+    card_type?: string
+    redeemed?: boolean
+    status?: string | null
+    expiry_date?: string | null
+  }>
   dashProBalance?: number | null
   dashGoBalance?: number | null
 }): Partial<Record<GuestCardTypeUi, boolean>> {
