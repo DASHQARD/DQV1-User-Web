@@ -3,6 +3,10 @@ import { cn, Icon } from '@/libs'
 import { CardItemImage } from '@/features/website/components/CardItems/CardItemImage'
 import { VendorLogoImage } from '@/features/website/components/VendorLogo/VendorLogoImage'
 import { formatCardDisplayTitle, getCardTypeName } from '@/utils/cardDisplay'
+import {
+  getCardStatusBarWidth,
+  resolveGuestGiftCardTileDisplayStatus,
+} from '@/utils/cardExpiry'
 import { formatCurrency, formatDate } from '@/utils/format'
 
 export type GuestGiftCardTileProps = {
@@ -39,6 +43,9 @@ export function GuestGiftCardTile({
   const vendorDisplay =
     vendorName?.trim() ||
     (typeKey === 'dashpro' ? 'DashQard' : getCardTypeName(typeKey) || 'Vendor')
+  const displayStatus = resolveGuestGiftCardTileDisplayStatus(statusLabel, expiryDate)
+  const statusBarWidth = getCardStatusBarWidth(displayStatus)
+  const isExpired = displayStatus === 'expired'
 
   const tileClassName = cn(
     'flex flex-col bg-white overflow-hidden rounded-xl border text-left transition-all',
@@ -89,18 +96,33 @@ export function GuestGiftCardTile({
           {product}
         </Text>
 
-        {expiryDate ? (
-          <Text variant="span" className="mb-2 flex items-center gap-0.5 text-[10px] text-gray-500">
-            <Icon icon="bi:calendar-event" className="size-2.5" />
-            Expires {formatDate(expiryDate)}
-          </Text>
-        ) : null}
+        <Text variant="span" className="mb-2 flex items-center gap-0.5 text-[10px] text-gray-500">
+          <Icon icon="bi:calendar-event" className="size-2.5" />
+          {expiryDate ? `Expires ${formatDate(expiryDate)}` : 'No expiry date'}
+        </Text>
 
         {redemptionCode ? (
           <Text variant="span" className="mb-2 text-[10px] font-medium text-gray-600">
             Code: {redemptionCode}
           </Text>
         ) : null}
+
+        <div className="mb-2">
+          <div className="h-1 overflow-hidden rounded-full bg-gray-100">
+            <div
+              className={cn(
+                'h-full rounded-full transition-all',
+                isExpired ? 'bg-gray-500' : 'bg-[#402D87]',
+              )}
+              style={{ width: `${statusBarWidth}%` }}
+              role="progressbar"
+              aria-valuenow={statusBarWidth}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Card status: ${displayStatus}`}
+            />
+          </div>
+        </div>
 
         <div className="flex items-center gap-2 border-t border-gray-100 pt-2">
           <div className="flex min-w-0 flex-1 items-center gap-2">

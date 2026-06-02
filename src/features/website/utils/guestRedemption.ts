@@ -1,4 +1,5 @@
 import { getImageUrl } from '@/utils/cardDisplay'
+import { isAssignedCardRedeemable } from '@/utils/cardExpiry'
 import { formatBranchLabel } from '@/utils/format'
 
 export { formatBranchLabel }
@@ -81,9 +82,66 @@ export function mapGuestAssignedCardToVendorCard(
   }
 }
 
-/** Guest assigned-cards row is still redeemable when `redeemed` is not true */
-export function isGuestAssignedCardRedeemable(card: { redeemed?: boolean } | null | undefined): boolean {
-  return card?.redeemed !== true
+/** Guest assigned-cards row is still redeemable (not redeemed, not expired). */
+export function isGuestAssignedCardRedeemable(
+  card:
+    | {
+        redeemed?: boolean
+        status?: string | null
+        card_status?: string | null
+        expiry_date?: string | null
+      }
+    | null
+    | undefined,
+): boolean {
+  if (!card) return false
+  return isAssignedCardRedeemable(card)
+}
+
+export type GuestCardTypeUi = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
+
+/** Read total_balance from GET /guest-redemptions/recipient-amounts/* responses. */
+export function parseGuestRecipientAmountTotalBalance(payload: unknown): number | null {
+  if (payload == null || typeof payload !== 'object') return null
+  const root = payload as Record<string, unknown>
+  const data =
+    root.data != null && typeof root.data === 'object'
+      ? (root.data as Record<string, unknown>)
+      : root
+  const raw = data.total_balance ?? root.total_balance
+  if (raw === undefined || raw === null || raw === '') return null
+  const num = typeof raw === 'number' ? raw : parseFloat(String(raw))
+  return Number.isFinite(num) ? num : null
+}
+
+/** Card-type toggles for guest redeem (no GET /redemptions/redeemable-cards). */
+export function buildGuestCardTypeAvailability(input: {
+  assignedCards: Array<{
+    card_type?: string
+    redeemed?: boolean
+    status?: string | null
+    expiry_date?: string | null
+  }>
+  dashProBalance?: number | null
+  dashGoBalance?: number | null
+}): Partial<Record<GuestCardTypeUi, boolean>> {
+  const hasAssignedType = (needle: string) =>
+    input.assignedCards.some((card) => {
+      if (!isGuestAssignedCardRedeemable(card)) return false
+      return String(card.card_type ?? '')
+        .toLowerCase()
+        .includes(needle)
+    })
+
+  const proBalance = input.dashProBalance ?? 0
+  const goBalance = input.dashGoBalance ?? 0
+
+  return {
+    dashpro: proBalance > 0 || hasAssignedType('dashpro'),
+    dashgo: goBalance > 0 || hasAssignedType('dashgo'),
+    dashx: hasAssignedType('dashx'),
+    dashpass: hasAssignedType('dashpass'),
+  }
 }
 
 export function filterGuestAssignedByType(cards: any[], type: 'dashx' | 'dashpass'): any[] {
@@ -162,7 +220,7 @@ export function isValidRedemptionAmountInput(value: string): boolean {
 export function buildGuestCardsRedemptionPayload(
   input:
     | { card_type: 'DashPro'; branch_id: string; amount: number }
-    | { card_type: 'DashGo'; branch_id: string; amount: number; card_id: string }
+    | { card_type: 'DashGo'; branch_id: string; amount: number }
     | { card_type: 'DashX' | 'DashPass'; branch_id: string; card_id: string },
 ): GuestCardsRedemptionPayload {
   const branch_id = input.branch_id.trim()
@@ -178,7 +236,6 @@ export function buildGuestCardsRedemptionPayload(
       card_type: 'DashGo',
       branch_id,
       amount: roundRedemptionAmount(input.amount),
-      card_id: input.card_id.trim(),
     }
   }
   if (input.card_type === 'DashX' || input.card_type === 'DashPass') {

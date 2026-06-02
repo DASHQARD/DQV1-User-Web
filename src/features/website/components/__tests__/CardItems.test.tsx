@@ -11,6 +11,7 @@ vi.mock('@/features/website/hooks/useCardItem', () => ({
     cardBackground: '/test-bg.png',
     cardTypeName: 'DashX',
     displayPrice: 'GHS 100',
+    displayProduct: 'Test Card',
     handleQuickAdd: vi.fn(),
     handleCardClick: vi.fn(),
     product: 'Test Card',
@@ -20,6 +21,7 @@ vi.mock('@/features/website/hooks/useCardItem', () => ({
     buttonText: 'Quick Add',
     rating: 4,
     isAdding: false,
+    isPurchasable: true,
   }),
 }))
 
@@ -40,12 +42,20 @@ describe('CardItems', () => {
     expect(screen.getAllByText('GHS 100').length).toBeGreaterThan(0)
   })
 
-  it('renders Quick Add button', () => {
+  it('renders status progress bar in compact density', () => {
     renderWithProviders(
       <CardItems
-        {...({ product: 'Test', price: '50', currency: 'GHS', type: 'dashx' } as FeaturedCardProps)}
+        {...({
+          product: 'Test',
+          price: '50',
+          currency: 'GHS',
+          type: 'dashx',
+          status: 'active',
+          expiry_date: '2026-06-30T00:00:00.000Z',
+        } as FeaturedCardProps)}
+        density="compact"
       />,
     )
-    expect(screen.getAllByRole('button', { name: /Quick Add/i }).length).toBeGreaterThan(0)
+    expect(screen.getByRole('progressbar', { name: /Card status: active/i })).toBeInTheDocument()
   })
 })

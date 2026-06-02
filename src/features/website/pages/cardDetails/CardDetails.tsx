@@ -42,6 +42,8 @@ export default function CardDetails() {
     vendorDisplayName,
     priceBreakdown,
     formattedExpiry,
+    isPurchasable,
+    displayStatus,
   } = useCardDetails()
 
   const typeLabel = getCardTypeName()
@@ -98,8 +100,8 @@ export default function CardDetails() {
     )
   }
 
-  const statusLabel = card.status
-    ? card.status.charAt(0).toUpperCase() + card.status.slice(1)
+  const statusLabel = displayStatus
+    ? displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)
     : null
   const currency = card.currency || 'GHS'
   const images = card.images ?? []
@@ -130,9 +132,11 @@ export default function CardDetails() {
             {statusLabel && (
               <span
                 className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold ${
-                  card.status === 'active'
+                  displayStatus === 'active'
                     ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-600'
+                    : displayStatus === 'expired'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-gray-100 text-gray-600'
                 }`}
               >
                 {statusLabel}
@@ -306,11 +310,16 @@ export default function CardDetails() {
               </section>
             )}
 
+            {!isPurchasable ? (
+              <p className="hidden md:block text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                This gift card has expired and is no longer available for purchase.
+              </p>
+            ) : null}
             <div className="hidden md:flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={handleAddToCart}
-                disabled={isAdding}
+                disabled={isAdding || !isPurchasable}
                 className="flex-1 flex items-center justify-center gap-2 min-h-12 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl disabled:opacity-70"
               >
                 {isAdding ? (
@@ -365,11 +374,13 @@ export default function CardDetails() {
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={isAdding}
+            disabled={isAdding || !isPurchasable}
             className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary-500 px-5 min-h-11 text-sm font-bold text-white hover:bg-primary-600 disabled:opacity-70"
           >
             {isAdding ? (
               <Icon icon="mdi:loading" className="size-5 animate-spin" />
+            ) : !isPurchasable ? (
+              'Expired'
             ) : (
               <>
                 <Icon icon="bi:cart-plus" className="size-5" />

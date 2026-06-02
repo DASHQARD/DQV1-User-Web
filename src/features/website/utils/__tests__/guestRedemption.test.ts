@@ -1,11 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
+  buildGuestCardTypeAvailability,
   buildGuestCardsRedemptionPayload,
   filterGuestAssignedByType,
   filterGuestAssignedByVendorAndBranch,
   isGuestAssignedCardRedeemable,
   isGuestRedemptionSuccess,
   isValidRedemptionAmountInput,
+  parseGuestRecipientAmountTotalBalance,
   pickGuestRedemptionCardId,
   resolveRedemptionCardId,
   roundRedemptionAmount,
@@ -46,19 +48,17 @@ describe('guestRedemption', () => {
     })
   })
 
-  it('buildGuestCardsRedemptionPayload includes card_id for DashGo', () => {
+  it('buildGuestCardsRedemptionPayload omits card_id for DashGo (amount-only)', () => {
     expect(
       buildGuestCardsRedemptionPayload({
         card_type: 'DashGo',
         branch_id: 'branch-1',
         amount: 25.5,
-        card_id: '019e7875-c849-71f2-9f5e-ab4cee3fbb55',
       }),
     ).toEqual({
       card_type: 'DashGo',
       branch_id: 'branch-1',
       amount: 25.5,
-      card_id: '019e7875-c849-71f2-9f5e-ab4cee3fbb55',
     })
   })
 
@@ -94,6 +94,19 @@ describe('guestRedemption', () => {
     expect(isGuestAssignedCardRedeemable({ redeemed: true })).toBe(false)
   })
 
+  it('isGuestAssignedCardRedeemable excludes expired rows', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-02T00:00:00.000Z'))
+    expect(
+      isGuestAssignedCardRedeemable({
+        redeemed: false,
+        status: 'active',
+        expiry_date: '2026-06-30T00:00:00.000Z',
+      }),
+    ).toBe(false)
+    vi.useRealTimers()
+  })
+
   it('filterGuestAssignedByType omits redeemed DashPass cards', () => {
     const cards = filterGuestAssignedByType(
       [
@@ -115,5 +128,20 @@ describe('guestRedemption', () => {
     expect(filterGuestAssignedByVendorAndBranch(cards, { vendorId: 'v1', branchId: 'b1' })).toEqual([
       { vendor_id: 'v1', branch_id: 'b1' },
     ])
+  })
+
+  it('parseGuestRecipientAmountTotalBalance reads total_balance from envelope', () => {
+    expect(parseGuestRecipientAmountTotalBalance({ data: { total_balance: 1910 } })).toBe(1910)
+  })
+
+  it('buildGuestCardTypeAvailability uses dash-pro balance and assigned cards', () => {
+    const map = buildGuestCardTypeAvailability({
+      assignedCards: [{ card_type: 'DashX', redeemed: false }],
+      dashProBalance: 100,
+      dashGoBalance: 0,
+    })
+    expect(map.dashpro).toBe(true)
+    expect(map.dashx).toBe(true)
+    expect(map.dashgo).toBe(false)
   })
 })

@@ -317,6 +317,10 @@ export function useBusinessDetailsForm() {
     navigate(-1)
   }, [navigate])
 
+  const handleFormSubmit = form.handleSubmit(onSubmit, () => {
+    void form.trigger()
+  })
+
   return {
     form,
     documentUrls,
@@ -324,7 +328,7 @@ export function useBusinessDetailsForm() {
     phoneCountries,
     isPending,
     isSavingProgress,
-    onSubmit,
+    handleFormSubmit,
     handleSaveProgress,
     handleDiscard,
   }

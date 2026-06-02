@@ -17,3 +17,12 @@ export function getVisibleFieldError<T extends FieldValues>(
   const message = form.formState.errors[name]?.message
   return typeof message === 'string' ? message : undefined
 }
+
+export function getVisibleControllerError<T extends FieldValues>(
+  form: UseFormReturn<T>,
+  name: keyof T & string,
+  message?: string,
+): string | undefined {
+  if (!shouldShowFieldError(form, name)) return undefined
+  return message
+}

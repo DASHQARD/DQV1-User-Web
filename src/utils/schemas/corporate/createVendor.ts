@@ -81,5 +81,15 @@ export const CreateVendorFormSchema = vendorNameSchema
   .merge(businessDetailsSchemaWithoutName)
   .merge(uploadBusinessIDSchemaWithoutFiles)
   .merge(conditionalBusinessDocsSchema)
+  .superRefine((data, ctx) => {
+    if (data.checkbox_profile_same_as_corporate) return
+    if (data.id_type === 'national_id' && !data.back_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Back of National ID photo is required',
+        path: ['back_id'],
+      })
+    }
+  })
 
 export type CreateVendorFormData = z.infer<typeof CreateVendorFormSchema>

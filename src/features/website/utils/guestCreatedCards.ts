@@ -16,6 +16,8 @@ export type GuestCreatedCard = {
   base_price?: number
   markup_amount?: number | null
   status: string
+  /** Checkout/payment state from flat purchased rows (`cart_status` on API) */
+  cart_status?: string
   gift_card_status?: string
   guest_name?: string
   guest_email?: string | null
@@ -118,6 +120,7 @@ function mapPurchasedGuestCardRow(row: Record<string, unknown>): GuestCreatedCar
     base_price: row.base_price != null ? parseAmount(row.base_price) : undefined,
     markup_amount:
       row.markup_amount != null && row.markup_amount !== '' ? parseAmount(row.markup_amount) : null,
+    cart_status: row.cart_status != null ? String(row.cart_status) : undefined,
     status: String(row.cart_status ?? row.status ?? ''),
     vendor_id: row.vendor_id != null ? String(row.vendor_id) : null,
     vendor_name: row.vendor_name != null ? String(row.vendor_name) : null,
@@ -160,8 +163,17 @@ function mapLegacyGuestCardRow(row: Record<string, unknown>): GuestCreatedCard |
   }
 }
 
+/** True when a guest-cards row represents a completed purchase (not checkout pending). */
+export function isGuestCreatedCardPaid(card: GuestCreatedCard): boolean {
+  const status = String(card.cart_status ?? card.status ?? '')
+    .trim()
+    .toLowerCase()
+  return status === 'paid'
+}
+
 /**
  * Unwrap GET /guest-cards list (axios may return envelope or inner data array).
+ * Only returns rows with paid cart/checkout status.
  */
 export function parseGuestCreatedCardsResponse(response: unknown): GuestCreatedCard[] {
   let items: unknown[] = []
@@ -191,6 +203,7 @@ export function parseGuestCreatedCardsResponse(response: unknown): GuestCreatedC
       return mapLegacyGuestCardRow(row)
     })
     .filter((card): card is GuestCreatedCard => card != null)
+    .filter(isGuestCreatedCardPaid)
 
   return cards.sort((a, b) => {
     const aTime = Date.parse(a.purchased_at ?? a.created_at ?? '') || 0

@@ -4,6 +4,7 @@ import { useRedemptionQueries } from './redemption/useRedemptionQueries'
 import { useAuthStore } from '@/stores'
 import { detectMobileMoneyProvider, convertToInternationalFormat } from '../services/redemptions'
 import type { VendorSearchResult } from '../services/redemptions'
+import { buildCardsRedemptionPayload } from '@/features/website/utils/cardsRedemption'
 
 export type CardType = 'DashPro' | 'DashGo' | 'DashX' | 'DashPass'
 
@@ -207,12 +208,17 @@ export function useRedemptionForm() {
         if (result?.data?.reference_id) setRedemptionReferenceId(result.data.reference_id)
         setShowSummaryModal(true)
       } else {
-        if (!selectedVendor) return
-        const result = await cardsMutation.mutateAsync({
-          vendor_id: selectedVendor.vendor_id,
+        if (!selectedVendor?.gvid) return
+        const branchId = selectedVendor.branches?.[0]?.id
+        if (!branchId) return
+        if (cardType === 'DashX' || cardType === 'DashPass') return
+        const payload = buildCardsRedemptionPayload({
+          branch_id: String(branchId),
+          vendor_gvid: selectedVendor.gvid,
           card_type: cardType,
           amount: redemptionAmount,
         })
+        const result = await cardsMutation.mutateAsync(payload)
         if (result?.data?.reference_id) setRedemptionReferenceId(result.data.reference_id)
         setShowSummaryModal(true)
       }

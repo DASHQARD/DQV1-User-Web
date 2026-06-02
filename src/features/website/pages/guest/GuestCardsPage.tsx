@@ -15,6 +15,7 @@ import {
   getGuestCreatedCardRowKey,
   type GuestCreatedCard,
 } from '@/features/website/utils/guestCreatedCards'
+import { isAssignedCardRedeemable, resolveCardDisplayStatus } from '@/utils/cardExpiry'
 import { GuestGiftCardTile } from './GuestGiftCardTile'
 
 function guestStatusBadgeClass(status: string): string {
@@ -48,6 +49,16 @@ function PurchasedGuestCardTile({ card }: { card: GuestCreatedCard }) {
 
 function AssignedGuestCardTile({ card, currency }: { card: GuestAssignedCard; currency: string }) {
   const balance = card.balance ?? card.amount ?? card.price ?? 0
+  const displayStatus = resolveCardDisplayStatus(card.status, card.expiry_date)
+  const redeemable = isAssignedCardRedeemable(card)
+
+  const statusLabel = card.redeemed
+    ? 'Redeemed'
+    : !redeemable
+      ? displayStatus === 'expired'
+        ? 'Expired'
+        : 'Not redeemable'
+      : undefined
 
   return (
     <GuestGiftCardTile
@@ -58,6 +69,15 @@ function AssignedGuestCardTile({ card, currency }: { card: GuestAssignedCard; cu
       expiryDate={card.expiry_date}
       vendorName={card.vendor_name || card.branch_name}
       images={card.images}
+      redemptionCode={card.redemption_code}
+      statusLabel={statusLabel}
+      statusClassName={
+        card.redeemed
+          ? 'bg-gray-100 text-gray-700'
+          : !redeemable
+            ? 'bg-red-50 text-red-800'
+            : undefined
+      }
     />
   )
 }

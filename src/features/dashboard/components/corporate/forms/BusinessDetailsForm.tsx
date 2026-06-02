@@ -3,7 +3,7 @@ import { Button } from '@/components/Button'
 import { Input, FileUploader, CreatableCombobox, Text, Modal, ImageUpload } from '@/components'
 import { BasePhoneInput, PhoneFormatHint, RadioGroup, RadioGroupItem } from '@/components'
 import { isDialCodeOnlyPhone } from '@/utils/schemas/shared'
-import { getVisibleFieldError } from '@/utils/showFieldError'
+import { getVisibleControllerError, getVisibleFieldError } from '@/utils/showFieldError'
 import {
   BUSINESS_FILE_UPLOAD_ACCEPT,
   BUSINESS_FILE_UPLOAD_HINT,
@@ -25,13 +25,13 @@ export default function BusinessDetailsForm() {
     phoneCountries,
     isPending,
     isSavingProgress,
-    onSubmit,
+    handleFormSubmit,
     handleSaveProgress,
     handleDiscard,
   } = useBusinessDetailsForm()
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+    <form onSubmit={handleFormSubmit} className="flex flex-col gap-6">
       <section className="flex flex-col gap-8">
         <div className="flex flex-col gap-1">
           <Text variant="h3" weight="semibold">
@@ -50,6 +50,7 @@ export default function BusinessDetailsForm() {
             name="logo"
             render={({ field: { onChange, value }, fieldState: { error } }) => {
               const existingUrl = documentUrls['logo']
+              const logoError = getVisibleControllerError(form, 'logo', error?.message)
               return (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1">
@@ -66,7 +67,7 @@ export default function BusinessDetailsForm() {
                     currentImageUrl={existingUrl && !value ? existingUrl : undefined}
                     size="md"
                   />
-                  {error && <p className="text-sm text-red-500">{error.message}</p>}
+                  {logoError && <p className="text-sm text-red-500">{logoError}</p>}
                 </div>
               )
             }}
@@ -74,7 +75,9 @@ export default function BusinessDetailsForm() {
           <Controller
             control={form.control}
             name="type"
-            render={({ field: { value, onChange }, fieldState: { error } }) => (
+            render={({ field: { value, onChange }, fieldState: { error } }) => {
+              const typeError = getVisibleControllerError(form, 'type', error?.message)
+              return (
               <div className="flex flex-col gap-2">
                 <Text variant="h3" weight="semibold">
                   Business Type
@@ -111,9 +114,9 @@ export default function BusinessDetailsForm() {
                     )
                   })}
                 </RadioGroup>
-                {error && <p className="text-sm text-red-500">{error.message}</p>}
+                {typeError && <p className="text-sm text-red-500">{typeError}</p>}
               </div>
-            )}
+            )}}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
@@ -121,7 +124,7 @@ export default function BusinessDetailsForm() {
               isRequired
               placeholder="Provide your business name"
               {...form.register('name')}
-              error={form.formState.errors.name?.message}
+              error={getVisibleFieldError(form, 'name')}
             />
             <Controller
               control={form.control}
@@ -157,7 +160,7 @@ export default function BusinessDetailsForm() {
             placeholder="Enter your email"
             {...form.register('email')}
             type="email"
-            error={form.formState.errors.email?.message}
+            error={getVisibleFieldError(form, 'email')}
           />
 
           <Input
@@ -165,7 +168,7 @@ export default function BusinessDetailsForm() {
             isRequired
             placeholder="Enter your business registration number (VAT)"
             {...form.register('registration_number')}
-            error={form.formState.errors.registration_number?.message}
+            error={getVisibleFieldError(form, 'registration_number')}
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -174,7 +177,7 @@ export default function BusinessDetailsForm() {
               isRequired
               placeholder="Enter your Taxpayer Identification Number (TIN)"
               {...form.register('employer_identification_number')}
-              error={form.formState.errors.employer_identification_number?.message}
+              error={getVisibleFieldError(form, 'employer_identification_number')}
             />
             <Controller
               control={form.control}
@@ -188,7 +191,7 @@ export default function BusinessDetailsForm() {
                   name={name}
                   value={value}
                   onChange={onChange}
-                  error={error?.message}
+                  error={getVisibleControllerError(form, 'business_industry', error?.message)}
                 />
               )}
             />
@@ -200,14 +203,14 @@ export default function BusinessDetailsForm() {
               isRequired
               placeholder="Enter your business street address"
               {...form.register('street_address')}
-              error={form.formState.errors.street_address?.message}
+              error={getVisibleFieldError(form, 'street_address')}
             />
             <Input
               label="Business Ghana Post Digital Address"
               isRequired
               placeholder="Enter your Ghana Post Digital Address"
               {...form.register('digital_address')}
-              error={form.formState.errors.digital_address?.message}
+              error={getVisibleFieldError(form, 'digital_address')}
             />
           </div>
         </section>
@@ -264,7 +267,11 @@ export default function BusinessDetailsForm() {
                       }
                       value={value}
                       onChange={onChange}
-                      error={error?.message}
+                      error={getVisibleControllerError(
+                        form,
+                        'certificate_of_incorporation',
+                        error?.message,
+                      )}
                       id="certificate_of_incorporation"
                       accept={BUSINESS_FILE_UPLOAD_ACCEPT}
                       formatHint={BUSINESS_FILE_UPLOAD_HINT}
@@ -304,7 +311,7 @@ export default function BusinessDetailsForm() {
                       }
                       value={value}
                       onChange={onChange}
-                      error={error?.message}
+                      error={getVisibleControllerError(form, 'business_license', error?.message)}
                       id="business_license"
                       accept={BUSINESS_FILE_UPLOAD_ACCEPT}
                       formatHint={BUSINESS_FILE_UPLOAD_HINT}
@@ -344,7 +351,11 @@ export default function BusinessDetailsForm() {
                       }
                       value={value || null}
                       onChange={onChange}
-                      error={error?.message}
+                      error={getVisibleControllerError(
+                        form,
+                        'articles_of_incorporation',
+                        error?.message,
+                      )}
                       id="articles_of_incorporation"
                       accept={BUSINESS_FILE_UPLOAD_ACCEPT}
                       formatHint={BUSINESS_FILE_UPLOAD_HINT}
@@ -371,7 +382,8 @@ export default function BusinessDetailsForm() {
           {isSavingProgress ? 'Saving...' : 'Save Progress'}
         </Button>
         <Button
-          disabled={!form.formState.isValid || isPending}
+          disabled={isPending}
+          loading={isPending}
           type="submit"
           variant="secondary"
           className="w-fit"

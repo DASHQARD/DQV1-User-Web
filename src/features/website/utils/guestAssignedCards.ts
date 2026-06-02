@@ -24,6 +24,8 @@ export type GuestAssignedCard = {
   vendor_name?: string | null
   issue_date?: string | null
   expiry_date?: string | null
+  status?: string | null
+  redeemed?: boolean
   images?: Array<{ file_url?: string; file_name?: string }>
   terms_and_conditions?: Array<{ file_url?: string; file_name?: string }>
 }

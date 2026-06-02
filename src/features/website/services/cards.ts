@@ -16,6 +16,7 @@ import type {
   GuestGetCardsParams,
   GuestGetCardSingleParams,
 } from '@/types/responses'
+import { assertGuestCartAmountWithinLimit } from '@/features/website/utils/validateGuestLocalCart'
 
 export const addToCart = async (data: AddToCartPayload): Promise<any> => {
   return await postMethod('/carts', data)
@@ -129,6 +130,8 @@ function syncGuestCartIds(
 /** Create guest cart if needed, then POST /guest-carts/add-card (never /carts). */
 export async function ensureGuestCartAndAddCard(args: {
   card_id: string
+  /** Card unit price — validated against guest per-card maximum when provided. */
+  amount?: number
   guest_name?: string | null
   guest_email?: string | null
   quantity?: number
@@ -139,6 +142,7 @@ export async function ensureGuestCartAndAddCard(args: {
 }): Promise<GuestAddCardResponse> {
   const {
     card_id,
+    amount,
     guest_name,
     guest_email,
     quantity = 1,
@@ -147,6 +151,10 @@ export async function ensureGuestCartAndAddCard(args: {
     setGuestCartId,
     setGuestCartUuid,
   } = args
+
+  if (amount != null) {
+    assertGuestCartAmountWithinLimit(amount)
+  }
   const identity = {
     ...(guest_name?.trim() ? { guest_name: guest_name.trim() } : {}),
     ...(guest_email?.trim() ? { guest_email: guest_email.trim() } : {}),
@@ -260,6 +268,7 @@ export async function createCustomDashGoAndAddToCart(options: {
   const description = `Custom DashGo card for ${options.vendorName}`
 
   if (options.isGuestAuth) {
+    assertGuestCartAmountWithinLimit(options.price)
     const contact = options.guestContact
     const identity = {
       ...(contact?.guest_name?.trim() ? { guest_name: contact.guest_name.trim() } : {}),
@@ -288,6 +297,7 @@ export async function createCustomDashGoAndAddToCart(options: {
     }
     await ensureGuestCartAndAddCard({
       card_id: cardId,
+      amount: options.price,
       ...identity,
       getGuestCartId: options.getGuestCartId,
       getGuestCartUuid: options.getGuestCartUuid,

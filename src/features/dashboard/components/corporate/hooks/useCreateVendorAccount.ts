@@ -69,6 +69,7 @@ export function useCreateVendorAccount({
 
   const handleProfileSubmit = React.useCallback(() => {
     const checkboxProfileSameAsCorporate = methods.getValues('checkbox_profile_same_as_corporate')
+    const idType = methods.getValues('id_type')
     const fieldsToValidate = checkboxProfileSameAsCorporate
       ? ([
           'first_name',
@@ -88,6 +89,7 @@ export function useCreateVendorAccount({
           'id_type',
           'id_number',
           'front_id',
+          ...(idType === 'national_id' ? (['back_id'] as const) : []),
           'phone',
           'email',
         ] as const)

@@ -3,6 +3,10 @@ import { Icon } from '@/libs'
 import { CURRENCY_PREFIX, DEFAULT_CURRENCY, formatCurrencyLabel } from '@/utils/format'
 import { getApiErrorMessage, isGuestAmountThresholdMessage } from '@/utils/apiError'
 import {
+  assertGuestCartAmountWithinLimit,
+  GuestCartAmountLimitError,
+} from '@/features/website/utils/validateGuestLocalCart'
+import {
   GIFT_CARD_AMOUNT_MAX,
   GIFT_CARD_AMOUNT_MIN,
   normalizeGiftCardAmountInput,
@@ -83,6 +87,16 @@ export default function PublicDashGoForm({
     }
 
     if (!isAuthenticated) {
+      try {
+        assertGuestCartAmountWithinLimit(cardAmount)
+      } catch (err: unknown) {
+        const message = getApiErrorMessage(err, 'Failed to add DashGo to cart')
+        if (err instanceof GuestCartAmountLimitError || isGuestAmountThresholdMessage(message)) {
+          form.setError('amount', { type: 'server', message })
+        }
+        toast.error(message)
+        return
+      }
       openGuestModal({
         card_id: 0,
         product: 'DashGo Gift Card',
@@ -123,7 +137,10 @@ export default function PublicDashGoForm({
       openCart()
     } catch (err: unknown) {
       const message = getApiErrorMessage(err, 'Failed to add DashGo to cart')
-      if (isGuestAmountThresholdMessage(message)) {
+      if (
+        err instanceof GuestCartAmountLimitError ||
+        isGuestAmountThresholdMessage(message)
+      ) {
         form.setError('amount', { type: 'server', message })
       }
       toast.error(message)

@@ -33,6 +33,10 @@ import {
 import { useToast } from '@/hooks'
 import { getApiErrorMessage, isGuestAmountThresholdMessage } from '@/utils/apiError'
 import {
+  assertGuestCartAmountWithinLimit,
+  GuestCartAmountLimitError,
+} from '@/features/website/utils/validateGuestLocalCart'
+import {
   AssignToSelfToggle,
   DASHGO_RECIPIENT_FIELDS,
   GiftCardAmountSection,
@@ -204,23 +208,39 @@ export default function DashGoPurchase() {
 
     try {
       if (isLocalGuest) {
-        addCustomDashGoLine({
-          vendor_id: data.vendor_id,
-          product: 'DashGo Gift Card',
-          description: `Custom DashGo card for ${vendorName}`,
-          amount: data.recipient_card_amount,
-          currency: data.recipient_card_currency || 'GHS',
-          redemption_branches: redemptionBranches,
-          assign_to_self: data.assign_to_self,
-          first_name: data.assign_to_self ? '' : data.recipient_first_name,
-          last_name: data.assign_to_self ? '' : data.recipient_last_name,
-          phone: data.assign_to_self ? '' : data.recipient_phone,
-          email: data.assign_to_self ? '' : data.recipient_email,
-          message: data.recipient_message || '',
-        })
-        toast.success('DashGo gift card saved to your bag')
-        openCart()
+        try {
+          assertGuestCartAmountWithinLimit(data.recipient_card_amount)
+          addCustomDashGoLine({
+            vendor_id: data.vendor_id,
+            product: 'DashGo Gift Card',
+            description: `Custom DashGo card for ${vendorName}`,
+            amount: data.recipient_card_amount,
+            currency: data.recipient_card_currency || 'GHS',
+            redemption_branches: redemptionBranches,
+            assign_to_self: data.assign_to_self,
+            first_name: data.assign_to_self ? '' : data.recipient_first_name,
+            last_name: data.assign_to_self ? '' : data.recipient_last_name,
+            phone: data.assign_to_self ? '' : data.recipient_phone,
+            email: data.assign_to_self ? '' : data.recipient_email,
+            message: data.recipient_message || '',
+          })
+          toast.success('DashGo gift card saved to your bag')
+          openCart()
+        } catch (error: unknown) {
+          const message = getApiErrorMessage(error)
+          if (
+            error instanceof GuestCartAmountLimitError ||
+            isGuestAmountThresholdMessage(message)
+          ) {
+            form.setError('recipient_card_amount', { type: 'server', message })
+          }
+          toast.error(message)
+        }
         return
+      }
+
+      if (isGuestAuth) {
+        assertGuestCartAmountWithinLimit(data.recipient_card_amount)
       }
 
       const guestIdentity = pickGuestCartIdentityFields(
@@ -363,7 +383,10 @@ export default function DashGoPurchase() {
     } catch (error: unknown) {
       console.error('Failed to create DashGo card:', error)
       const message = getApiErrorMessage(error, 'Failed to add DashGo to cart')
-      if (isGuestAmountThresholdMessage(message)) {
+      if (
+        error instanceof GuestCartAmountLimitError ||
+        isGuestAmountThresholdMessage(message)
+      ) {
         setError('recipient_card_amount', { type: 'server', message })
       }
       toast.error(message)
@@ -447,7 +470,6 @@ export default function DashGoPurchase() {
             assignToSelf={assignToSelf}
             fieldNames={DASHGO_RECIPIENT_FIELDS}
             phonePlaceholder={EXAMPLE_PHONE_PLACEHOLDER}
-            messageRequired={false}
           />
 
           <GiftCardRecipientFormActions>

@@ -31,6 +31,7 @@ export function useRedemptionMutation() {
       onSuccess: (data: any) => {
         success(data?.message || 'Redemption successful')
         queryClient.invalidateQueries({ queryKey: ['redemptions'] })
+        queryClient.invalidateQueries({ queryKey: ['redeemable-cards'] })
       },
       onError: (err: any) => {
         error(err?.message || 'Redemption failed')
@@ -53,6 +54,7 @@ export function useRedemptionMutation() {
       onSuccess: (response: any) => {
         success(response?.message || 'Redemption processed successfully')
         queryClient.invalidateQueries({ queryKey: ['redemptions'] })
+        queryClient.invalidateQueries({ queryKey: ['redeemable-cards'] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to process redemption. Please try again.')
@@ -145,6 +147,10 @@ export function useRedemptionMutation() {
       onSuccess: (response: any) => {
         success(response?.message || 'Redemption processed successfully')
         queryClient.invalidateQueries({ queryKey: ['redemptions'] })
+        queryClient.invalidateQueries({ queryKey: ['redeemable-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['guest-assigned-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['redemptions-amount-dash-go'] })
+        queryClient.invalidateQueries({ queryKey: ['redemptions-amount-dash-pro'] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to process redemption. Please try again.')

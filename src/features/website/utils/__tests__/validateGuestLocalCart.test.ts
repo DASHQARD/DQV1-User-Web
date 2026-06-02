@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { validateGuestLocalCartForCheckout } from '../validateGuestLocalCart'
+import {
+  assertGuestCartAmountWithinLimit,
+  getGuestCartAmountLimitError,
+  GuestCartAmountLimitError,
+  validateGuestLocalCartForCheckout,
+} from '../validateGuestLocalCart'
 import type { LocalGuestCartLine } from '@/stores/guestLocalCart'
+
+describe('assertGuestCartAmountWithinLimit', () => {
+  it('allows amounts at the guest per-card maximum', () => {
+    expect(() => assertGuestCartAmountWithinLimit(1000)).not.toThrow()
+    expect(getGuestCartAmountLimitError(1000)).toBeNull()
+  })
+
+  it('throws GuestCartAmountLimitError above the maximum', () => {
+    expect(() => assertGuestCartAmountWithinLimit(1000.01)).toThrow(GuestCartAmountLimitError)
+    expect(getGuestCartAmountLimitError(1500)).toMatch(/limited to GHS 1,000/)
+  })
+})
 
 describe('validateGuestLocalCartForCheckout', () => {
   it('flags DashPro below custom card minimum', () => {

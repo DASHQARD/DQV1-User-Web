@@ -92,5 +92,24 @@ describe('personalInformation validation', () => {
       })
       expect(result.success).toBe(false)
     })
+
+    it('rejects invalid national_id numbers', () => {
+      const result = OnboardingSchema.safeParse({
+        ...validCorporatePayload,
+        id_number: '1234',
+      })
+      expect(result.success).toBe(false)
+      if (result.success) return
+      expect(result.error.issues.some((issue) => issue.path[0] === 'id_number')).toBe(true)
+    })
+
+    it('accepts passport with non-Ghana Card id numbers', () => {
+      const result = OnboardingSchema.safeParse({
+        ...validCorporatePayload,
+        id_type: 'passport',
+        id_number: 'AB1234567',
+      })
+      expect(result.success).toBe(true)
+    })
   })
 })

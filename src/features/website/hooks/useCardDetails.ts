@@ -31,6 +31,7 @@ import { useCart } from './useCart'
 import { useCartStore } from '@/stores/cart'
 import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
 import { ensureGuestCartAndAddCard } from '@/features/website/services/cards'
+import { assertGuestCartAmountWithinLimit } from '@/features/website/utils/validateGuestLocalCart'
 import {
   GUEST_EMAIL_STORAGE_KEY,
   GUEST_NAME_STORAGE_KEY,
@@ -38,6 +39,11 @@ import {
 } from '@/utils/constants'
 import { pickGuestCartIdentityFields } from '@/utils/guestContact'
 import { useToast } from '@/hooks'
+import {
+  CARD_EXPIRED_MESSAGE,
+  isCatalogCardPurchasable,
+  resolveCardDisplayStatus,
+} from '@/utils/cardExpiry'
 
 export type {
   CardDetailsCard,
@@ -118,8 +124,28 @@ export function useCardDetails(): UseCardDetailsReturn {
   const getCardBackground = useCallback(() => getCardBg(card?.type), [card?.type])
   const getCardTypeName = useCallback(() => getCardTypeDisplayName(card?.type), [card?.type])
 
+  const isPurchasable = useMemo(
+    () =>
+      card
+        ? isCatalogCardPurchasable({
+            status: card.status,
+            expiry_date: card.expiry_date,
+          })
+        : false,
+    [card],
+  )
+
+  const displayStatus = useMemo(
+    () => (card ? resolveCardDisplayStatus(card.status, card.expiry_date) : 'active'),
+    [card],
+  )
+
   const handleAddToCart = useCallback(async () => {
     if (!card) return
+    if (!isPurchasable) {
+      toast.error(CARD_EXPIRED_MESSAGE)
+      return
+    }
     const cardIdRaw = (card as { card_id?: unknown }).card_id ?? (card as { id?: unknown }).id
     const price = parseFloat(String((card as { price?: unknown }).price)) || 0
     const pending = {
@@ -142,8 +168,10 @@ export function useCardDetails(): UseCardDetailsReturn {
           (user as { guest_email?: string } | null)?.guest_email ||
           ''
         try {
+          assertGuestCartAmountWithinLimit(price)
           await ensureGuestCartAndAddCard({
             card_id: String(cardIdRaw),
+            amount: price,
             ...pickGuestCartIdentityFields(guestName, guestEmail),
             getGuestCartId,
             getGuestCartUuid,
@@ -157,15 +185,19 @@ export function useCardDetails(): UseCardDetailsReturn {
         }
         return
       }
-      addLocalGuestCard({
-        card_id: String(cardIdRaw),
-        product: pending.product,
-        price: pending.price,
-        currency: typeof pending.currency === 'string' ? pending.currency : 'GHS',
-        type: pending.type,
-      })
-      openCart()
-      toast.success('Added to cart')
+      try {
+        addLocalGuestCard({
+          card_id: String(cardIdRaw),
+          product: pending.product,
+          price: pending.price,
+          currency: typeof pending.currency === 'string' ? pending.currency : 'GHS',
+          type: pending.type,
+        })
+        openCart()
+        toast.success('Added to cart')
+      } catch (err: unknown) {
+        toast.error(getApiErrorMessage(err, 'Failed to add to cart'))
+      }
       return
     }
     if (!id) return
@@ -187,6 +219,7 @@ export function useCardDetails(): UseCardDetailsReturn {
     openCart,
     queryClient,
     toast,
+    isPurchasable,
   ])
 
   const lightboxImages = useMemo((): LightboxSlide[] => {
@@ -258,5 +291,7 @@ export function useCardDetails(): UseCardDetailsReturn {
     cardBackground,
     priceBreakdown,
     formattedExpiry,
+    isPurchasable,
+    displayStatus,
   }
 }

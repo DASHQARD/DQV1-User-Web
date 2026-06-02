@@ -1,4 +1,5 @@
 import type { VendorLogoFields } from '@/utils/vendorLogo'
+import { isCatalogCardPurchasable } from '@/utils/cardExpiry'
 
 export type PublicVendorFilterOption = {
   id: number | string
@@ -26,8 +27,18 @@ export type PublicVendorRecord = VendorLogoFields & {
   vendor_cards?: Array<Record<string, unknown>>
 }
 
+function branchHasPurchasableCards(branch: PublicVendorBranchRecord): boolean {
+  return (branch.cards ?? []).some((card) => {
+    const row = card as { card_status?: string; status?: string; expiry_date?: string | null }
+    return isCatalogCardPurchasable({
+      card_status: row.card_status ?? row.status,
+      expiry_date: row.expiry_date,
+    })
+  })
+}
+
 function vendorHasCards(vendor: PublicVendorRecord): boolean {
-  return (vendor.branches_with_cards ?? []).some((branch) => (branch.cards?.length ?? 0) > 0)
+  return (vendor.branches_with_cards ?? []).some(branchHasPurchasableCards)
 }
 
 export function normalizePublicVendorsResponse(vendorsResponse: unknown): PublicVendorRecord[] {

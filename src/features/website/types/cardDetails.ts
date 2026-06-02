@@ -68,4 +68,6 @@ export interface UseCardDetailsReturn {
   cardBackground: string
   priceBreakdown: CardPriceBreakdown | null
   formattedExpiry: string | null
+  isPurchasable: boolean
+  displayStatus: string
 }

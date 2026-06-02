@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRedemptionQueries } from '@/features/dashboard/hooks'
+import { isFullGvidInput } from '@/features/website/utils/cardsRedemption'
 import type { VendorSearchResult } from '@/types/redemptions'
 
 export function useRedemptionVendorLookup(enabled: boolean) {
-  const { useSearchVendorsService } = useRedemptionQueries()
+  const { useSearchVendorsService, useSearchVendorByGvidService } = useRedemptionQueries()
   const [vendorIdInput, setVendorIdInput] = useState('')
   const [debouncedVendorId, setDebouncedVendorId] = useState('')
 
@@ -13,18 +14,29 @@ export function useRedemptionVendorLookup(enabled: boolean) {
     return () => clearTimeout(timer)
   }, [vendorIdInput, enabled])
 
-  const searchTerm = debouncedVendorId.length >= 2 ? debouncedVendorId : undefined
-  const { data: searchResponse, isFetching: isSearchingById } = useSearchVendorsService(
-    enabled && searchTerm ? { search: searchTerm } : undefined,
+  const isExactGvidLookup = isFullGvidInput(debouncedVendorId)
+  const partialSearchTerm =
+    !isExactGvidLookup && debouncedVendorId.length >= 2 ? debouncedVendorId : undefined
+
+  const { data: partialSearchResponse, isFetching: isSearchingPartial } = useSearchVendorsService(
+    enabled && partialSearchTerm ? { search: partialSearchTerm } : undefined,
+  )
+
+  const { data: gvidSearchResponse, isFetching: isSearchingByGvid } = useSearchVendorByGvidService(
+    enabled && isExactGvidLookup ? debouncedVendorId : undefined,
   )
 
   const searchResults = useMemo(() => {
-    const rows = (searchResponse as { data?: VendorSearchResult[] } | undefined)?.data
+    const response = isExactGvidLookup ? gvidSearchResponse : partialSearchResponse
+    const rows = (response as { data?: VendorSearchResult[] } | undefined)?.data
     return Array.isArray(rows) ? rows : []
-  }, [searchResponse])
+  }, [isExactGvidLookup, gvidSearchResponse, partialSearchResponse])
 
   const exactIdMatch = useMemo(() => {
     if (!debouncedVendorId.trim()) return null
+    if (isExactGvidLookup) {
+      return searchResults[0] ?? null
+    }
     const normalized = debouncedVendorId.trim().toLowerCase()
     return (
       searchResults.find(
@@ -32,7 +44,7 @@ export function useRedemptionVendorLookup(enabled: boolean) {
           row.gvid?.toLowerCase() === normalized || row.vendor_id?.toLowerCase() === normalized,
       ) ?? null
     )
-  }, [debouncedVendorId, searchResults])
+  }, [debouncedVendorId, isExactGvidLookup, searchResults])
 
   const resetVendorLookup = () => {
     setVendorIdInput('')
@@ -45,7 +57,7 @@ export function useRedemptionVendorLookup(enabled: boolean) {
     debouncedVendorId,
     searchResults,
     exactIdMatch,
-    isSearchingById,
+    isSearchingById: isSearchingPartial || isSearchingByGvid,
     resetVendorLookup,
   }
 }
