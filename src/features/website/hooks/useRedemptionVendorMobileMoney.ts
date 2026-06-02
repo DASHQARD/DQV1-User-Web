@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react'
 import {
   convertToInternationalFormat,
-  detectMobileMoneyProvider,
+  resolveMomoAccountName,
 } from '@/features/dashboard/services/redemptions'
-import { useRedemptionMutation } from '@/features/dashboard/hooks'
+import { interpretMomoResolveResponse } from '@/features/website/utils/momoResolve'
 
 export function useRedemptionVendorMobileMoney(enabled: boolean) {
-  const { useValidateVendorMobileMoneyService } = useRedemptionMutation()
-  const validateVendorMutation = useValidateVendorMobileMoneyService()
-  const { mutate: validateMutate } = validateVendorMutation
-
   const [rawVendorPhone, setRawVendorPhone] = useState('')
   const [debouncedVendorPhone, setDebouncedVendorPhone] = useState('')
   const [validatingVendor, setValidatingVendor] = useState(false)
   const [vendorPhoneError, setVendorPhoneError] = useState<string | null>(null)
   const [vendorPhoneName, setVendorPhoneName] = useState<string | null>(null)
+  const [momoResolveWarning, setMomoResolveWarning] = useState<string | null>(null)
 
   useEffect(() => {
     if (!enabled) return
@@ -25,61 +22,52 @@ export function useRedemptionVendorMobileMoney(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return
 
-    if (!debouncedVendorPhone || debouncedVendorPhone.replace(/[^0-9]/g, '').length < 10) {
+    const digits = debouncedVendorPhone.replace(/[^0-9]/g, '')
+    if (!debouncedVendorPhone || digits.length < 10) {
       setVendorPhoneName(null)
       setVendorPhoneError(null)
+      setMomoResolveWarning(null)
       setValidatingVendor(false)
       return
     }
 
-    const provider = detectMobileMoneyProvider(debouncedVendorPhone)
-    if (!provider) {
-      setVendorPhoneError(
-        'Unable to detect mobile money provider. Please enter a valid Ghana phone number.',
-      )
-      setVendorPhoneName(null)
-      setValidatingVendor(false)
-      return
-    }
-
+    let cancelled = false
     setValidatingVendor(true)
     setVendorPhoneError(null)
     setVendorPhoneName(null)
+    setMomoResolveWarning(null)
 
-    validateMutate(
-      { phone_number: convertToInternationalFormat(debouncedVendorPhone), provider },
-      {
-        onSuccess: (response: {
-          data?: { vendor_name?: string; account_name?: string }
-          message?: string
-        }) => {
-          const name = response?.data?.vendor_name || response?.data?.account_name
-          if (name) {
-            setVendorPhoneName(name)
-            setVendorPhoneError(null)
-          } else {
-            setVendorPhoneError(
-              response?.message ||
-                'Could not verify this mobile money number. Please check and try again.',
-            )
-            setVendorPhoneName(null)
-          }
-          setValidatingVendor(false)
-        },
-        onError: (err: { message?: string }) => {
-          setVendorPhoneError(err?.message || 'Could not verify this mobile money number.')
-          setVendorPhoneName(null)
-          setValidatingVendor(false)
-        },
-      },
-    )
-  }, [debouncedVendorPhone, enabled, validateMutate])
+    const phone_number = convertToInternationalFormat(debouncedVendorPhone)
+
+    resolveMomoAccountName({ phone_number })
+      .then((response) => {
+        if (cancelled) return
+        const { vendorPhoneName, vendorPhoneError, momoResolveWarning } =
+          interpretMomoResolveResponse(response)
+        setVendorPhoneName(vendorPhoneName)
+        setVendorPhoneError(vendorPhoneError)
+        setMomoResolveWarning(momoResolveWarning)
+      })
+      .catch((err: { message?: string }) => {
+        if (cancelled) return
+        setVendorPhoneError(err?.message || 'Could not verify this mobile money number.')
+        setVendorPhoneName(null)
+      })
+      .finally(() => {
+        if (!cancelled) setValidatingVendor(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [debouncedVendorPhone, enabled])
 
   const resetVendorMobileMoney = () => {
     setRawVendorPhone('')
     setDebouncedVendorPhone('')
     setVendorPhoneName(null)
     setVendorPhoneError(null)
+    setMomoResolveWarning(null)
     setValidatingVendor(false)
   }
 
@@ -88,9 +76,10 @@ export function useRedemptionVendorMobileMoney(enabled: boolean) {
   return {
     rawVendorPhone,
     setRawVendorPhone,
-    validatingVendor: validatingVendor || validateVendorMutation.isPending,
+    validatingVendor,
     vendorPhoneError,
     vendorPhoneName,
+    momoResolveWarning,
     isVendorPhoneVerified,
     resetVendorMobileMoney,
   }

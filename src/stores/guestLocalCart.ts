@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { formatPersonName } from '@/utils/personName'
 import { setGuestBrowsingAck } from '@/features/website/utils/guestBrowsingSession'
+import { assertGuestCartAmountWithinLimit } from '@/features/website/utils/validateGuestLocalCart'
 
 export type LocalRecipientDraft = {
   draftId: string
@@ -125,6 +126,7 @@ const useGuestLocalCartStore = create<State & Actions>()(
       contact: {},
       lastSyncError: null,
       addCatalogCard: ({ card_id, product, price, currency = 'GHS', type }) => {
+        assertGuestCartAmountWithinLimit(price)
         setGuestBrowsingAck()
         const existing = get().lines.find(
           (l) => isCatalogLocalLine(l) && l.card_id === card_id && l.type === type,
@@ -171,6 +173,7 @@ const useGuestLocalCartStore = create<State & Actions>()(
         message,
         country_code = 'GH',
       }) => {
+        assertGuestCartAmountWithinLimit(amount)
         setGuestBrowsingAck()
         const lineId = newLineId()
         const draft: LocalRecipientDraft = {
@@ -216,6 +219,7 @@ const useGuestLocalCartStore = create<State & Actions>()(
         email,
         message,
       }) => {
+        assertGuestCartAmountWithinLimit(amount)
         setGuestBrowsingAck()
         const lineId = newLineId()
         const draft: LocalRecipientDraft = {

@@ -10,6 +10,32 @@ export const GUEST_CHECKOUT_MAX_CARD_AMOUNT = 1000
 /** Minimum for custom DashPro/DashGo at guest checkout (stricter than generic GHS 1 min). */
 export const GUEST_CUSTOM_CARD_MIN_AMOUNT = 50
 
+export class GuestCartAmountLimitError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'GuestCartAmountLimitError'
+  }
+}
+
+/** User-facing message when a guest amount exceeds the per-card limit. */
+export function getGuestCartAmountLimitError(amount: number): string | null {
+  if (!Number.isFinite(amount)) {
+    return 'Enter a valid amount for this gift card.'
+  }
+  if (amount > GUEST_CHECKOUT_MAX_CARD_AMOUNT) {
+    return `Guest purchases are limited to GHS ${GUEST_CHECKOUT_MAX_CARD_AMOUNT.toLocaleString('en-GH')} per card.`
+  }
+  return null
+}
+
+/** Throws {@link GuestCartAmountLimitError} when amount is above the guest per-card maximum. */
+export function assertGuestCartAmountWithinLimit(amount: number): void {
+  const message = getGuestCartAmountLimitError(amount)
+  if (message) {
+    throw new GuestCartAmountLimitError(message)
+  }
+}
+
 export type GuestLocalCartValidationIssue = {
   lineId: string
   product: string
@@ -40,10 +66,7 @@ function validateLinePrice(line: LocalGuestCartLine): string | null {
   if (price > GIFT_CARD_AMOUNT_MAX) {
     return `Maximum amount is GHS ${GIFT_CARD_AMOUNT_MAX.toLocaleString('en-GH')}.`
   }
-  if (price > GUEST_CHECKOUT_MAX_CARD_AMOUNT) {
-    return `Guest purchases are limited to GHS ${GUEST_CHECKOUT_MAX_CARD_AMOUNT.toLocaleString('en-GH')} per card.`
-  }
-  return null
+  return getGuestCartAmountLimitError(price)
 }
 
 /** Client-side checks before OTP / server sync at guest checkout. */

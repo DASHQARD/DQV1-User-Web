@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   getGuestCreatedCardRowKey,
+  isGuestCreatedCardPaid,
   parseGuestCreatedCardsResponse,
 } from '../guestCreatedCards'
 
@@ -18,7 +19,7 @@ describe('parseGuestCreatedCardsResponse', () => {
             guest_email: 'djokotoabeeku619@gmail.com',
             card_type: 'DashGo',
             amount: '100.00',
-            status: 'pending',
+            status: 'paid',
             created_at: '2026-05-21T12:49:27.343Z',
           },
           gift_card: {
@@ -45,7 +46,7 @@ describe('parseGuestCreatedCardsResponse', () => {
       amount: 100,
       price: 100,
       currency: 'GHS',
-      status: 'pending',
+      status: 'paid',
       gift_card_status: 'active',
       guest_name: 'Abeeku Djokoto',
     })
@@ -58,7 +59,7 @@ describe('parseGuestCreatedCardsResponse', () => {
           id: 'g1',
           card_type: 'DashPro',
           amount: '10',
-          status: 'pending',
+          status: 'paid',
           created_at: '2026-01-01',
         },
         gift_card: { product: 'DashPro', type: 'DashPro', price: '10', currency: 'GHS' },
@@ -143,10 +144,48 @@ describe('parseGuestCreatedCardsResponse', () => {
   it('sorts purchased cards by purchased_at descending', () => {
     const cards = parseGuestCreatedCardsResponse({
       data: [
-        { recipient_id: 'a', gift_card_id: 'g1', card_type: 'DashPro', purchased_at: '2026-05-01' },
-        { recipient_id: 'b', gift_card_id: 'g2', card_type: 'DashPro', purchased_at: '2026-05-30' },
+        {
+          recipient_id: 'a',
+          gift_card_id: 'g1',
+          card_type: 'DashPro',
+          cart_status: 'paid',
+          purchased_at: '2026-05-01',
+        },
+        {
+          recipient_id: 'b',
+          gift_card_id: 'g2',
+          card_type: 'DashPro',
+          cart_status: 'paid',
+          purchased_at: '2026-05-30',
+        },
       ],
     })
     expect(cards[0].recipient_id).toBe('b')
+  })
+
+  it('excludes rows that are not paid', () => {
+    const cards = parseGuestCreatedCardsResponse({
+      data: [
+        {
+          recipient_id: 'paid-1',
+          gift_card_id: 'g1',
+          card_type: 'DashX',
+          cart_status: 'paid',
+          purchased_at: '2026-05-30',
+        },
+        {
+          recipient_id: 'pending-1',
+          gift_card_id: 'g2',
+          card_type: 'DashX',
+          cart_status: 'pending',
+          purchased_at: '2026-05-21',
+        },
+      ],
+    })
+
+    expect(cards).toHaveLength(1)
+    expect(cards[0].recipient_id).toBe('paid-1')
+    expect(isGuestCreatedCardPaid({ status: 'pending' } as never)).toBe(false)
+    expect(isGuestCreatedCardPaid({ status: 'paid' } as never)).toBe(true)
   })
 })

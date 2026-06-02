@@ -16,6 +16,7 @@ import {
 import { formatPersonName } from '@/utils/personName'
 import { pickGuestCartIdentityFields } from '@/utils/guestContact'
 import { toGuestCartSyncError } from '@/features/website/utils/guestCartSyncError'
+import { assertGuestCartAmountWithinLimit } from '@/features/website/utils/validateGuestLocalCart'
 
 function lineProductLabel(line: LocalGuestCartLine): string {
   if (line.lineKind === 'dashpro') return 'DashPro'
@@ -83,6 +84,7 @@ async function syncCustomLineToServer(
 ): Promise<void> {
   const product = lineProductLabel(line)
   try {
+  assertGuestCartAmountWithinLimit(line.price)
   const issueDate = new Date().toISOString().split('T')[0]
   let cardId: string | null = null
   let cartItemId: string | number | null = null
@@ -134,6 +136,7 @@ async function syncCustomLineToServer(
   if (cartItemId == null) {
     await ensureGuestCartAndAddCard({
       card_id: cardId,
+      amount: line.price,
       ...identity,
       quantity: line.quantity,
       getGuestCartId: setters.getGuestCartId,
@@ -181,6 +184,7 @@ export async function syncGuestLocalCartToServer(args: {
     try {
       await ensureGuestCartAndAddCard({
         card_id: line.card_id,
+        amount: line.price,
         ...identity,
         quantity: line.quantity,
         getGuestCartId: args.getGuestCartId,

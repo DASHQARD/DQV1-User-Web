@@ -31,7 +31,7 @@ export function GiftCardRecipientFields<T extends FieldValues>({
   fieldNames = STANDARD_RECIPIENT_FIELDS,
   variant = 'native',
   phonePlaceholder = EXAMPLE_PHONE_PLACEHOLDER,
-  messageRequired = true,
+  messageRequired = false,
   messageRows = 3,
   className,
 }: GiftCardRecipientFieldsProps<T>) {
@@ -211,7 +211,7 @@ export function GiftCardRecipientFields<T extends FieldValues>({
         </div>
         <div>
           <label className="mb-2 block text-sm font-semibold text-gray-700">
-            Personal Message{messageRequired ? ' *' : ''}
+            Personal Message{messageRequired ? ' *' : ' (optional)'}
           </label>
           {variant === 'design-system' ? (
             <Input

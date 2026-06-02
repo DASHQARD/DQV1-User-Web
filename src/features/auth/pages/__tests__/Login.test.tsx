@@ -23,23 +23,6 @@ vi.mock('../../hooks', () => ({
   }),
 }))
 
-vi.mock('@/features/website/components/GuestAddToCartModal', () => ({
-  GuestAddToCartModal: () => null,
-}))
-
-vi.mock('@/stores', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/stores')>()
-  return {
-    ...actual,
-    useGuestAddToCartModalStore: () => ({
-      isOpen: false,
-      pendingItem: null,
-      open: vi.fn(),
-      close: vi.fn(),
-    }),
-  }
-})
-
 describe('Login (auth)', () => {
   beforeEach(() => {
     vi.clearAllMocks()

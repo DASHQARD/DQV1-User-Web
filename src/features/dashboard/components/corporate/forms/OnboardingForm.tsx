@@ -125,7 +125,9 @@ export default function OnboardingForm() {
           <Input
             label="ID Number"
             isRequired
-            placeholder="Enter your ID number"
+            placeholder={
+              isNationalId ? 'e.g. GHA-123456789-0' : 'Enter your ID number'
+            }
             className="col-span-full sm:col-span-1"
             {...form.register('id_number')}
             error={form.formState.errors.id_number?.message}
@@ -140,8 +142,8 @@ export default function OnboardingForm() {
               {isPassport
                 ? 'Upload a picture of your passport page'
                 : isNationalId
-                  ? 'Upload a picture of the front of your National ID'
-                  : 'Upload pictures of your identification (front only)'}
+                  ? 'Upload pictures of the front and back of your National ID'
+                  : 'Upload pictures of your identification'}
             </Text>
           </div>
 
@@ -182,7 +184,9 @@ export default function OnboardingForm() {
               </div>
               {!needsOnlyFront && backOfIdentification && (
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Back of Identification</p>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    {isNationalId ? 'Back of National ID' : 'Back of Identification'}
+                  </p>
                   <div
                     className={cn(
                       'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
@@ -226,13 +230,17 @@ export default function OnboardingForm() {
                 )}
               />
 
-              {/* {!needsOnlyFront && (
+              {!needsOnlyFront && (
                 <Controller
                   control={form.control}
                   name="back_id"
                   render={({ field: { onChange, value }, fieldState: { error } }) => (
                     <FileUploader
-                      label="Upload Picture of Back of Identification"
+                      label={
+                        isNationalId
+                          ? 'Upload Picture of Back of National ID'
+                          : 'Upload Picture of Back of Identification'
+                      }
                       value={value}
                       onChange={onChange}
                       error={error?.message}
@@ -240,7 +248,7 @@ export default function OnboardingForm() {
                     />
                   )}
                 />
-              )} */}
+              )}
             </section>
           )}
         </section>

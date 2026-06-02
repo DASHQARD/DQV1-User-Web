@@ -14,6 +14,7 @@ import {
   personalInformationIdNumberSchema,
 } from './personalInformation'
 import { validatePersonalInformationIdNumber } from '@/utils/validation/personalInformation'
+import { UploadUserIDSchema } from './auth/auth'
 
 export const UpdateBusinessDetailsSchema = z.object({
   id: z.number(),
@@ -41,6 +42,10 @@ export const SettingsSchema = z.object({
 })
 
 export const PersonalInformationSchema = personalInformationFieldsSchema
+
+/** User dashboard profile completion — personal fields plus Ghana Card front/back uploads */
+export const UserDashboardOnboardingSchema =
+  personalInformationFieldsSchema.merge(UploadUserIDSchema)
 
 /** Settings form for PUT /users/edit-profile */
 export const EditUserProfileSchema = z

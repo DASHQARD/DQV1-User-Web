@@ -21,15 +21,30 @@ const dynamicSchema = (() => {
 
   return baseSchema
     .superRefine((data, ctx) => {
-      if (data.id_type === 'passport' || data.id_type === 'national_id') {
+      if (data.id_type === 'passport') {
         if (!data.front_id) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message:
-              data.id_type === 'passport'
-                ? 'Passport page is required'
-                : 'Front ID photo is required',
+            message: 'Passport page is required',
             path: ['front_id'],
+          })
+        }
+        return
+      }
+
+      if (data.id_type === 'national_id') {
+        if (!data.front_id) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Front of National ID photo is required',
+            path: ['front_id'],
+          })
+        }
+        if (!data.back_id) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Back of National ID photo is required',
+            path: ['back_id'],
           })
         }
       }
@@ -80,7 +95,7 @@ export function useOnboardingForm() {
   const selectedIdType = form.watch('id_type')
   const isPassport = selectedIdType === 'passport'
   const isNationalId = selectedIdType === 'national_id'
-  const needsOnlyFront = isPassport || isNationalId
+  const needsOnlyFront = isPassport
 
   const isPending = isSubmittingPersonalDetailsWithID || isUploading
 

@@ -15,6 +15,9 @@ export function useVendorProfileForm(corporateUser?: UserProfileResponse | null)
   const idType = form.watch('id_type')
   const idNumber = form.watch('id_number')
   const frontId = form.watch('front_id')
+  const backId = form.watch('back_id')
+  const isPassport = idType === 'passport'
+  const isNationalId = idType === 'national_id'
   const phone = form.watch('phone')
   const email = form.watch('email')
 
@@ -52,6 +55,17 @@ export function useVendorProfileForm(corporateUser?: UserProfileResponse | null)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- omit form to avoid clearing fields on every keystroke when form ref changes
   }, [checkboxProfileSameAsCorporate, corporateUser])
 
+  useEffect(() => {
+    if (isPassport) {
+      const currentBackId = form.getValues('back_id')
+      if (currentBackId) {
+        form.setValue('back_id', undefined, { shouldValidate: false })
+        form.clearErrors('back_id')
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- omit form to avoid clearing on every keystroke
+  }, [isPassport])
+
   const isSubmitDisabled = useMemo(() => {
     const { formState } = form
     const hasFieldErrors =
@@ -63,7 +77,8 @@ export function useVendorProfileForm(corporateUser?: UserProfileResponse | null)
       !!formState.errors.id_number ||
       !!formState.errors.phone ||
       !!formState.errors.email ||
-      (!checkboxProfileSameAsCorporate && !!formState.errors.front_id)
+      (!checkboxProfileSameAsCorporate && !!formState.errors.front_id) ||
+      (!checkboxProfileSameAsCorporate && isNationalId && !!formState.errors.back_id)
 
     const missingRequired =
       !firstName ||
@@ -74,7 +89,8 @@ export function useVendorProfileForm(corporateUser?: UserProfileResponse | null)
       !idNumber ||
       !phone ||
       !email ||
-      (!checkboxProfileSameAsCorporate && !frontId)
+      (!checkboxProfileSameAsCorporate && !frontId) ||
+      (!checkboxProfileSameAsCorporate && isNationalId && !backId)
 
     return missingRequired || hasFieldErrors
   }, [
@@ -89,6 +105,8 @@ export function useVendorProfileForm(corporateUser?: UserProfileResponse | null)
     email,
     checkboxProfileSameAsCorporate,
     frontId,
+    backId,
+    isNationalId,
   ])
 
   return {
@@ -96,5 +114,7 @@ export function useVendorProfileForm(corporateUser?: UserProfileResponse | null)
     countries,
     checkboxProfileSameAsCorporate,
     isSubmitDisabled,
+    isPassport,
+    isNationalId,
   }
 }

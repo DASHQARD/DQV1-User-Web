@@ -11,7 +11,10 @@ import type { DropdownOption } from '@/types'
 import { formatBranchLabel } from '@/utils/format'
 import type { CardMetricsDetail } from '@/types'
 import { useRedemptionMutation, useCardMetricsDetails } from '@/features/dashboard/hooks'
-import type { CardsRedemptionPayload } from '@/features/dashboard/services/redemptions'
+import {
+  buildCardsRedemptionPayload,
+  isRedemptionApiSuccess,
+} from '@/features/website/utils/cardsRedemption'
 import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
 import { useDebouncedState } from '@/hooks'
 import { useUserProfile } from '@/hooks'
@@ -87,8 +90,8 @@ export function useCardDetailsPage() {
   const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
   const { usePublicVendorsService } = usePublicCatalogQueries()
-  const { useProcessRedemptionCardsService } = useRedemptionMutation()
-  const processRedemptionMutation = useProcessRedemptionCardsService()
+  const { useProcessUserRedemptionCardsService } = useRedemptionMutation()
+  const processUserRedemptionCardsMutation = useProcessUserRedemptionCardsService()
 
   const cardMetricsParams = useMemo(() => {
     if (!validCardType) return undefined
@@ -306,38 +309,43 @@ export function useCardDetailsPage() {
     const cardTypeForAPI = formatCardTypeForAPI(validCardType)
     if (!cardTypeForAPI) return
 
-    let payload: CardsRedemptionPayload
+    const vendorGvid = String((selectedVendor as { gvid?: string })?.gvid ?? '').trim()
+    if (!vendorGvid) return
 
-    if (validCardType === 'dashgo' || validCardType === 'dashpro') {
-      payload = {
+    const branchId =
+      selectedBranchId !== null
+        ? selectedBranchId
+        : String(selectedCard?.branch_id ?? '').trim()
+    if (!branchId) return
+
+    let payload
+    if (cardTypeForAPI === 'DashGo' || cardTypeForAPI === 'DashPro') {
+      payload = buildCardsRedemptionPayload({
+        branch_id: branchId,
+        vendor_gvid: vendorGvid,
         card_type: cardTypeForAPI,
-        phone_number: userPhone,
         amount: parseFloat(String(selectedCard.balance || selectedCard.amount || 0)),
-        branch_id:
-          selectedBranchId !== null ? selectedBranchId : String(selectedCard?.branch_id ?? ''),
-        card_id: String(selectedCard?.id ?? ''),
-      }
+      })
     } else {
-      payload = {
+      payload = buildCardsRedemptionPayload({
+        branch_id: branchId,
+        vendor_gvid: vendorGvid,
         card_type: cardTypeForAPI,
-        phone_number: userPhone,
-        amount: selectedCard.card_price || selectedCard.balance || selectedCard.amount || 0,
-        branch_id:
-          selectedBranchId !== null ? selectedBranchId : String(selectedCard.branch_id ?? ''),
         card_id: String(selectedCard.id),
-      }
+      })
     }
 
-    if (!payload.card_id || payload.amount <= 0) return
+    if (
+      (validCardType === 'dashgo' || validCardType === 'dashpro') &&
+      ('amount' in payload ? payload.amount <= 0 : true)
+    ) {
+      return
+    }
 
     setIsProcessingRedemption(true)
     try {
-      const response = await processRedemptionMutation.mutateAsync(payload)
-      if (
-        response?.status === 'success' ||
-        response?.statusCode === 200 ||
-        response?.statusCode === 201
-      ) {
+      const response = await processUserRedemptionCardsMutation.mutateAsync(payload)
+      if (isRedemptionApiSuccess(response)) {
         queryClient.invalidateQueries({ queryKey: ['card-metrics-details'] })
         setShowRedemptionModal(false)
         setSelectedCard(null)
@@ -357,7 +365,8 @@ export function useCardDetailsPage() {
     user,
     agreeToTerms,
     selectedBranchId,
-    processRedemptionMutation,
+    processUserRedemptionCardsMutation,
+    selectedVendor,
     queryClient,
   ])
 

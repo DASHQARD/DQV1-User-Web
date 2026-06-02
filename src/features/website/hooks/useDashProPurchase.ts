@@ -31,6 +31,10 @@ import {
 import { useToast } from '@/hooks'
 import { getApiErrorMessage, isGuestAmountThresholdMessage } from '@/utils/apiError'
 import {
+  assertGuestCartAmountWithinLimit,
+  GuestCartAmountLimitError,
+} from '@/features/website/utils/validateGuestLocalCart'
+import {
   useAssignToSelfToggle,
   useCardFlipPreview,
 } from '@/components/GiftCardRecipientForm'
@@ -106,19 +110,32 @@ export function useDashProPurchase() {
       const issueDate = today.toISOString().split('T')[0]
 
       if (isLocalGuest) {
-        addCustomDashProLine({
-          amount,
-          assign_to_self: data.assign_to_self,
-          first_name: data.assign_to_self ? '' : data.first_name,
-          last_name: data.assign_to_self ? '' : data.last_name,
-          phone: data.assign_to_self ? '' : data.phone,
-          email: data.assign_to_self ? '' : data.email,
-          message: data.message || '',
-          country_code: (user as { country_code?: string } | null)?.country_code || 'GH',
-        })
-        toast.success('DashPro gift card saved to your bag')
-        openCart()
+        try {
+          assertGuestCartAmountWithinLimit(amount)
+          addCustomDashProLine({
+            amount,
+            assign_to_self: data.assign_to_self,
+            first_name: data.assign_to_self ? '' : data.first_name,
+            last_name: data.assign_to_self ? '' : data.last_name,
+            phone: data.assign_to_self ? '' : data.phone,
+            email: data.assign_to_self ? '' : data.email,
+            message: data.message || '',
+            country_code: (user as { country_code?: string } | null)?.country_code || 'GH',
+          })
+          toast.success('DashPro gift card saved to your bag')
+          openCart()
+        } catch (error: unknown) {
+          const message = getApiErrorMessage(error)
+          if (error instanceof GuestCartAmountLimitError || isGuestAmountThresholdMessage(message)) {
+            setError('amount', { type: 'server', message })
+          }
+          toast.error(message)
+        }
         return
+      }
+
+      if (isGuestAuth) {
+        assertGuestCartAmountWithinLimit(amount)
       }
 
       const guestIdentity = pickGuestCartIdentityFields(
@@ -295,7 +312,10 @@ export function useDashProPurchase() {
     } catch (error: unknown) {
       console.error('Error creating DashPro card and assigning recipient:', error)
       const message = getApiErrorMessage(error)
-      if (isGuestAmountThresholdMessage(message)) {
+      if (
+        error instanceof GuestCartAmountLimitError ||
+        isGuestAmountThresholdMessage(message)
+      ) {
         setError('amount', { type: 'server', message })
       }
       toast.error(message)

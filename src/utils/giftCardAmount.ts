@@ -84,14 +84,12 @@ export function normalizeGiftCardAmountInput(value: string): string {
   let cleaned = trimmed.replace(/[^\d.]/g, '')
   const dotIndex = cleaned.indexOf('.')
   if (dotIndex !== -1) {
-    cleaned =
-      cleaned.slice(0, dotIndex + 1) + cleaned.slice(dotIndex + 1).replace(/\./g, '')
+    cleaned = cleaned.slice(0, dotIndex + 1) + cleaned.slice(dotIndex + 1).replace(/\./g, '')
   }
 
   const [intPart = '', decPart] = cleaned.split('.')
   const limitedInt = intPart.slice(0, 5)
-  let result =
-    decPart !== undefined ? `${limitedInt}.${decPart.slice(0, 2)}` : limitedInt
+  let result = decPart !== undefined ? `${limitedInt}.${decPart.slice(0, 2)}` : limitedInt
 
   if (result.endsWith('.')) {
     result = result.slice(0, -1)
@@ -119,8 +117,7 @@ export function formatGiftCardAmountPreview(value: string): string {
 
   const normalized = normalizeGiftCardAmountInput(value)
   const parsed = parseGiftCardAmountInput(normalized)
-  const amount =
-    parsed !== null ? clampGiftCardAmount(parsed) : GIFT_CARD_AMOUNT_MIN
+  const amount = parsed !== null ? clampGiftCardAmount(parsed) : GIFT_CARD_AMOUNT_MIN
 
   return amount.toLocaleString('en-GH', {
     minimumFractionDigits: 2,
@@ -130,9 +127,7 @@ export function formatGiftCardAmountPreview(value: string): string {
 
 export function isGiftCardAmountSubmittable(value: string): boolean {
   const parsed = parseGiftCardAmountInput(normalizeGiftCardAmountInput(value))
-  return (
-    parsed !== null && parsed >= GIFT_CARD_AMOUNT_MIN && parsed <= GIFT_CARD_AMOUNT_MAX
-  )
+  return parsed !== null && parsed >= GIFT_CARD_AMOUNT_MIN && parsed <= GIFT_CARD_AMOUNT_MAX
 }
 
 export function getGiftCardAmountValidationMessage(value: string): string | null {

@@ -26,6 +26,10 @@ import type {
   GetRedemptionsAmountDashXParams,
   GetRedemptionsAmountDashPassParams,
   UserRedemptionCardsPayload,
+  ResolveMomoNamePayload,
+  ResolveMomoNameResponse,
+  RedeemableCardsParams,
+  RedeemableCardsResponse,
 } from '@/types'
 import { getQueryString } from '@/utils/helpers'
 
@@ -144,12 +148,46 @@ export const validateVendorMobileMoney = async (
   return await postMethod('/payments/mobile-money/account-details', data)
 }
 
+/** POST /redemptions/momo/resolve-name — recipient name confirmation (Method B) */
+export const resolveMomoAccountName = async (
+  data: ResolveMomoNamePayload,
+): Promise<ResolveMomoNameResponse> => {
+  const response = await axiosClient.post(`${commonUrl}/momo/resolve-name`, data)
+  return response as unknown as ResolveMomoNameResponse
+}
+
 // Search vendors
 export const searchVendors = async (
   params?: SearchVendorsParams,
 ): Promise<SearchVendorsResponse> => {
   const response = await axiosClient.get(`${commonUrl}/search/vendors`, { params })
   return response as unknown as SearchVendorsResponse
+}
+
+/** GET /redemptions/search/vendors/:gvid — exact GVID lookup */
+export const searchVendorByGvid = async (
+  gvid: string,
+  params?: Omit<SearchVendorsParams, 'search'>,
+): Promise<SearchVendorsResponse> => {
+  const encoded = encodeURIComponent(gvid.trim())
+  const response = await axiosClient.get(`${commonUrl}/search/vendors/${encoded}`, { params })
+  return response as unknown as SearchVendorsResponse
+}
+
+/** GET /redemptions/redeemable-cards — guest / public */
+export const getRedeemableCards = async (
+  params: RedeemableCardsParams,
+): Promise<RedeemableCardsResponse> => {
+  const response = await axiosClient.get(`${commonUrl}/redeemable-cards`, { params })
+  return response as unknown as RedeemableCardsResponse
+}
+
+/** GET /redemptions/users/redeemable-cards — authenticated */
+export const getRedeemableCardsForUser = async (
+  params: Omit<RedeemableCardsParams, 'phone_number'>,
+): Promise<RedeemableCardsResponse> => {
+  const response = await axiosClient.get(`${commonUrl}/users/redeemable-cards`, { params })
+  return response as unknown as RedeemableCardsResponse
 }
 
 // Get card balance
@@ -349,4 +387,8 @@ export type {
   GetRedemptionsAmountDashXParams,
   GetRedemptionsAmountDashPassParams,
   UserRedemptionCardsPayload,
+  RedeemableCardsParams,
+  RedeemableCardsResponse,
+  ResolveMomoNamePayload,
+  ResolveMomoNameResponse,
 } from '@/types'

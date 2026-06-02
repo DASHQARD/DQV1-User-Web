@@ -4,6 +4,7 @@ import { useCardItem } from '../../hooks/useCardItem'
 import type { FeaturedCardProps } from '@/types'
 import { formatDate } from '@/utils/format'
 import { formatCardDisplayTitle } from '@/utils/cardDisplay'
+import { getCardStatusBarWidth, resolveCardDisplayStatus } from '@/utils/cardExpiry'
 import { VendorLogoImage } from '../VendorLogo/VendorLogoImage'
 import { CardItemImage } from './CardItemImage'
 import type { VendorLogoFields } from '@/utils/vendorLogo'
@@ -16,11 +17,14 @@ type CardItemsProps = FeaturedCardProps & {
 export const CardItems = (props: CardItemsProps) => {
   const { density = 'default', ...card } = props
   const isCompact = density === 'compact'
-  const { displayPrice, displayProduct, handleCardClick, product, vendor_name, branch_name } =
+  const { displayPrice, displayProduct, handleCardClick, product, vendor_name, branch_name, isPurchasable } =
     useCardItem({
       ...card,
       card_name: (card as { card_name?: string }).card_name,
     })
+  const displayStatus = resolveCardDisplayStatus(card.status, card.expiry_date)
+  const isExpired = displayStatus === 'expired'
+  const statusBarWidth = getCardStatusBarWidth(displayStatus)
   const firstImageUrl = (card as any)?.images?.[0]?.file_url as string | undefined
   const vendorLogo: VendorLogoFields = {
     logo: card.logo,
@@ -30,7 +34,8 @@ export const CardItems = (props: CardItemsProps) => {
   return (
     <article
       className={cn(
-        'flex flex-col bg-white overflow-hidden group cursor-pointer transition-shadow',
+        'flex flex-col bg-white overflow-hidden group transition-shadow',
+        isExpired ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
         isCompact
           ? 'rounded-lg border border-gray-200/80 shadow-none md:rounded-xl md:border-gray-100 md:shadow-[0_2px_8px_rgba(0,0,0,0.06)] md:hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]'
           : 'rounded-xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]',
@@ -46,6 +51,11 @@ export const CardItems = (props: CardItemsProps) => {
       }}
     >
       <div className="relative aspect-video bg-gray-100 overflow-hidden">
+        {isExpired ? (
+          <span className="absolute left-2 top-2 z-10 rounded-full bg-gray-900/80 px-2 py-0.5 text-[10px] font-semibold text-white">
+            Expired
+          </span>
+        ) : null}
         <CardItemImage
           fileUrl={firstImageUrl}
           cardType={card.type}
@@ -101,18 +111,28 @@ export const CardItems = (props: CardItemsProps) => {
             Expires {formatDate(card.expiry_date)}
           </Text>
         ) : null}
-        {!isCompact && card.status ? (
-          <div className="mb-2">
-            <div className="h-1 rounded-full bg-gray-100 overflow-hidden mb-1">
-              <div
-                className="h-full rounded-full bg-[#402D87] transition-all"
-                style={{
-                  width:
-                    card.status === 'active' ? '80%' : card.status === 'expired' ? '100%' : '40%',
-                }}
-              />
-            </div>
+        <div className={cn(isCompact ? 'mb-1.5 md:mb-2' : 'mb-2')}>
+          <div
+            className={cn(
+              'rounded-full bg-gray-100 overflow-hidden',
+              isCompact ? 'h-0.5 md:h-1' : 'h-1',
+            )}
+          >
+            <div
+              className="h-full rounded-full bg-[#402D87] transition-all"
+              style={{ width: `${statusBarWidth}%` }}
+              role="progressbar"
+              aria-valuenow={statusBarWidth}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Card status: ${displayStatus}`}
+            />
           </div>
+        </div>
+        {!isPurchasable && !isExpired ? (
+          <Text variant="span" className="text-[10px] text-amber-700 mb-2 block">
+            Not available for purchase
+          </Text>
         ) : null}
         <div
           className={cn(

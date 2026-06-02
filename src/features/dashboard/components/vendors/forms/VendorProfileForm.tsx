@@ -19,7 +19,7 @@ import type { VendorProfileFormProps } from '@/types'
 import { useVendorProfileForm } from './useVendorProfileForm'
 
 export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorProfileFormProps) {
-  const { form, countries, checkboxProfileSameAsCorporate, isSubmitDisabled } =
+  const { form, countries, checkboxProfileSameAsCorporate, isSubmitDisabled, isPassport, isNationalId } =
     useVendorProfileForm(corporateUser)
   const dobMaxDate = useMemo(() => {
     const today = new Date()
@@ -198,7 +198,9 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
             <Input
               label="ID Number"
               isRequired
-              placeholder="Enter your ID number"
+              placeholder={
+                isNationalId ? 'e.g. GHA-123456789-0' : 'Enter your ID number'
+              }
               className="col-span-full"
               {...form.register('id_number')}
               error={form.formState.errors.id_number?.message}
@@ -214,28 +216,69 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
                 Identity Documents
               </Text>
               <Text variant="span" weight="normal" className="text-gray-500 text-sm">
-                National ID and Passport require the front of your identification only.
+                {isPassport
+                  ? 'Upload a picture of your passport page.'
+                  : isNationalId
+                    ? 'Upload pictures of the front and back of your National ID.'
+                    : 'Upload pictures of your identification.'}
               </Text>
             </div>
 
-            <Controller
-              control={form.control}
-              name="front_id"
-              render={({ field: { onChange, value }, fieldState: { error } }) => (
-                <div
-                  className={checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}
-                >
-                  <FileUploader
-                    label="Front of Identification"
-                    value={value || null}
-                    onChange={onChange}
-                    error={error?.message}
-                    id="front_id"
-                    accept="image/*"
-                  />
-                </div>
+            <div
+              className={
+                isNationalId ? 'grid grid-cols-1 sm:grid-cols-2 gap-4' : 'flex flex-col gap-4'
+              }
+            >
+              <Controller
+                control={form.control}
+                name="front_id"
+                render={({ field: { onChange, value }, fieldState: { error } }) => (
+                  <div
+                    className={
+                      checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''
+                    }
+                  >
+                    <FileUploader
+                      label={
+                        isPassport
+                          ? 'Passport Page'
+                          : isNationalId
+                            ? 'Front of National ID'
+                            : 'Front of Identification'
+                      }
+                      value={value || null}
+                      onChange={onChange}
+                      error={error?.message}
+                      id="front_id"
+                      accept="image/*"
+                    />
+                  </div>
+                )}
+              />
+
+              {isNationalId && (
+                <Controller
+                  control={form.control}
+                  name="back_id"
+                  render={({ field: { onChange, value }, fieldState: { error } }) => (
+                    <div
+                      className={
+                        checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''
+                      }
+                    >
+                      <FileUploader
+                        label="Back of National ID"
+                        value={value || null}
+                        onChange={onChange}
+                        error={error?.message}
+                        id="back_id"
+                        accept="image/*"
+                      />
+                    </div>
+                  )}
+                />
               )}
-            />
+            </div>
           </section>
         )}
 

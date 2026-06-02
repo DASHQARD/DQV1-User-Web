@@ -17,6 +17,8 @@ vi.mock('@/hooks', () => {
     dob: '',
     id_type: '',
     id_number: '',
+    id_images: [],
+    onboarding_progress: { upload_id_completed: false },
   }
   return {
     useUserProfile: () => ({
@@ -24,12 +26,20 @@ vi.mock('@/hooks', () => {
         data: stableUser,
       }),
     }),
+    useUploadFiles: () => ({
+      mutateAsync: vi.fn(),
+      isPending: false,
+    }),
+    useToast: () => ({
+      success: vi.fn(),
+      error: vi.fn(),
+    }),
   }
 })
 vi.mock('@/features/auth/hooks/auth', () => ({
   useAuth: () => ({
-    usePersonalDetailsService: () => ({
-      mutate: vi.fn(),
+    usePersonalDetailsWithIDService: () => ({
+      mutateAsync: vi.fn(),
       isPending: false,
     }),
   }),
@@ -48,5 +58,13 @@ describe('UserDashboard (user)', () => {
   it('renders welcome message', () => {
     const { getByText } = renderWithProviders(<UserDashboard />)
     expect(getByText(/welcome back/i)).toBeInTheDocument()
+  })
+
+  it('renders Ghana Card upload fields in onboarding section', () => {
+    const { getByText } = renderWithProviders(<UserDashboard />)
+    expect(getByText(/let's get to know you/i)).toBeInTheDocument()
+    expect(getByText(/ghana card photos/i)).toBeInTheDocument()
+    expect(getByText(/front of ghana card/i)).toBeInTheDocument()
+    expect(getByText(/back of ghana card/i)).toBeInTheDocument()
   })
 })

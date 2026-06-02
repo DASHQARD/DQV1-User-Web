@@ -14,6 +14,8 @@ import {
   getGuestContactSessionItem,
 } from '@/utils/constants'
 import { pickGuestCartIdentityFields } from '@/utils/guestContact'
+import { assertGuestCartAmountWithinLimit } from '@/features/website/utils/validateGuestLocalCart'
+import { CARD_EXPIRED_MESSAGE, isCatalogCardPurchasable } from '@/utils/cardExpiry'
 import { useToast } from '@/hooks'
 
 export type CardItemHookProps = {
@@ -28,6 +30,8 @@ export type CardItemHookProps = {
   price: string | number
   currency?: string
   type?: string
+  status?: string
+  expiry_date?: string
   onGetQard?: () => void
 }
 
@@ -44,6 +48,8 @@ export function useCardItem(props: CardItemHookProps) {
     price,
     currency = 'GHS',
     type,
+    status,
+    expiry_date,
     onGetQard,
   } = props
 
@@ -70,8 +76,17 @@ export function useCardItem(props: CardItemHookProps) {
     [product, card_name, type],
   )
 
+  const isPurchasable = useMemo(
+    () => isCatalogCardPurchasable({ status, expiry_date }),
+    [status, expiry_date],
+  )
+
   const handleQuickAdd = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
+    if (!isPurchasable) {
+      toast.error(CARD_EXPIRED_MESSAGE)
+      return
+    }
     if (!card_id) {
       console.error('Card ID is required to add item to cart')
       return
@@ -96,8 +111,10 @@ export function useCardItem(props: CardItemHookProps) {
           (user as { guest_email?: string } | null)?.guest_email ||
           ''
         try {
+          assertGuestCartAmountWithinLimit(priceNum)
           await ensureGuestCartAndAddCard({
             card_id: String(card_id),
+            amount: priceNum,
             ...pickGuestCartIdentityFields(guestName, guestEmail),
             getGuestCartId,
             getGuestCartUuid,
@@ -111,15 +128,19 @@ export function useCardItem(props: CardItemHookProps) {
         }
         return
       }
-      addLocalGuestCard({
-        card_id: String(card_id),
-        product,
-        price: pending.price,
-        currency,
-        type,
-      })
-      openCart()
-      toast.success('Added to cart')
+      try {
+        addLocalGuestCard({
+          card_id: String(card_id),
+          product,
+          price: pending.price,
+          currency,
+          type,
+        })
+        openCart()
+        toast.success('Added to cart')
+      } catch (err: unknown) {
+        toast.error(getApiErrorMessage(err, 'Failed to add item to cart'))
+      }
       return
     }
     if (onGetQard) {
@@ -163,5 +184,6 @@ export function useCardItem(props: CardItemHookProps) {
     buttonText,
     rating,
     isAdding,
+    isPurchasable,
   }
 }

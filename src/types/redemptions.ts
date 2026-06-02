@@ -28,12 +28,26 @@ export interface SearchVendorsParams {
   branch?: string
 }
 
+export interface VendorSearchBranch {
+  id: string
+  branch_name: string
+  branch_location?: string
+  branch_code?: string
+  full_branch_id?: string
+  gvid?: string
+}
+
 export interface VendorSearchResult {
   vendor_id: string
+  id?: string
   vendor_name: string
   gvid: string
-  phone_number: string
+  phone_number?: string
   business_name?: string
+  created_at?: string
+  /** SQL COUNT returned as string from API */
+  branch_count?: string | number
+  branches?: VendorSearchBranch[]
 }
 
 export interface SearchVendorsResponse {
@@ -73,22 +87,89 @@ export interface DashProRedemptionPayload {
 export interface DashProRedemptionForUserPayload {
   vendor_phone_number: string
   amount: number
-  user_phone_number: string
+  user_phone_number?: string
+}
+
+export interface ResolveMomoNamePayload {
+  phone_number: string
+}
+
+export interface ResolveMomoNameResponse {
+  status: string
+  statusCode: number
+  message: string
+  data?: {
+    account_name?: string
+    provider?: 'mtn' | 'vodafone' | 'airtel-tigo' | string
+    is_resolved?: boolean
+    is_platform_vendor?: boolean
+    vendor_id?: string | null
+    vendor_name?: string | null
+  }
+}
+
+export type RedemptionMethodParam = 'vendor_id' | 'vendor_mobile_money'
+
+export interface RedeemableCardsParams {
+  phone_number?: string
+  method: RedemptionMethodParam
+  branch_id?: string
+  vendor_gvid?: string
+}
+
+export interface RedeemableCardSummary {
+  card_type: 'DashPro' | 'DashGo' | 'DashX' | 'DashPass' | string
+  total_balance: number
+  currency: string
+  available: boolean
+  card_count: number
+}
+
+export interface RedeemableCardsResponse {
+  status: string
+  statusCode: number
+  message: string
+  data?: {
+    phone_number?: string
+    method?: RedemptionMethodParam
+    cards: RedeemableCardSummary[]
+  }
 }
 
 export interface InitiateRedemptionPayload {
   phone_number: string
 }
 
-export interface CardsRedemptionPayload {
-  branch_id: string
-  card_type: 'DashGo' | 'DashPro' | 'DashX' | 'DashPass'
-  amount: number
-  card_id: string
-  phone_number: string
-  /** OTP token for guest redemptions; required when using /redemptions/cards after /redemptions/initiate */
-  token?: string
-}
+/** POST /redemptions/cards or /redemptions/users/cards — Method A */
+export type CardsRedemptionPayload =
+  | {
+      branch_id: string
+      vendor_gvid: string
+      card_type: 'DashGo'
+      phone_number?: string
+      amount: number
+    }
+  | {
+      branch_id: string
+      vendor_gvid: string
+      card_type: 'DashPro'
+      phone_number?: string
+      amount: number
+    }
+  | {
+      branch_id: string
+      vendor_gvid: string
+      card_type: 'DashX'
+      phone_number?: string
+      card_id: string
+    }
+  | {
+      branch_id: string
+      vendor_gvid: string
+      card_type: 'DashPass'
+      phone_number?: string
+      card_id: string
+    }
 
 /** POST /guest-redemptions/cards — guest identity comes from Bearer token, not body */
 export type GuestCardsRedemptionPayload =
@@ -101,7 +182,6 @@ export type GuestCardsRedemptionPayload =
       card_type: 'DashGo'
       branch_id: string
       amount: number
-      card_id: string
     }
   | {
       card_type: 'DashX' | 'DashPass'
@@ -270,10 +350,4 @@ export interface RecipientAmountResponse {
   }
 }
 
-export interface UserRedemptionCardsPayload {
-  vendor_id?: string
-  branch_id?: string
-  card_type: 'DashGo' | 'DashPro' | 'DashX' | 'DashPass'
-  amount: number
-  card_id?: string
-}
+export type UserRedemptionCardsPayload = CardsRedemptionPayload

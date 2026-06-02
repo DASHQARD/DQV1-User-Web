@@ -2,6 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 
 import {
   searchVendors,
+  searchVendorByGvid,
+  getRedeemableCards,
+  getRedeemableCardsForUser,
   getRedemptions,
   getUserRedemptions,
   getVendorRedemptions,
@@ -25,6 +28,7 @@ import {
   getRedemptionsAmountDashPass,
   type GetRedemptionsAmountDashPassParams,
 } from '../../services/redemptions'
+import type { RedeemableCardsParams } from '@/types'
 import { useAuthStore } from '@/stores'
 import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
 
@@ -34,6 +38,40 @@ export function useRedemptionQueries() {
       queryKey: ['search-vendors', params],
       queryFn: () => searchVendors(params),
       enabled: !!params?.search,
+    })
+  }
+
+  function useSearchVendorByGvidService(gvid?: string) {
+    return useQuery({
+      queryKey: ['search-vendors-gvid', gvid],
+      queryFn: () => searchVendorByGvid(gvid!),
+      enabled: !!gvid?.trim(),
+    })
+  }
+
+  function useGetRedeemableCardsService(
+    params: RedeemableCardsParams | undefined,
+    enabled = true,
+  ) {
+    const { isAuthenticated, isGuestAuth } = useAuthStore()
+    const useUserEndpoint = isAuthenticated && !isGuestAuth
+    return useQuery({
+      queryKey: ['redeemable-cards', params, useUserEndpoint],
+      queryFn: () =>
+        useUserEndpoint
+          ? getRedeemableCardsForUser({
+              method: params!.method,
+              branch_id: params!.branch_id,
+              vendor_gvid: params!.vendor_gvid,
+            })
+          : getRedeemableCards(params!),
+      enabled:
+        enabled &&
+        !isGuestAuth &&
+        !!params?.method &&
+        (params.method === 'vendor_mobile_money' ||
+          !!(params.branch_id?.trim() || params.vendor_gvid?.trim())) &&
+        (useUserEndpoint || !!params.phone_number?.trim()),
     })
   }
 
@@ -162,6 +200,8 @@ export function useRedemptionQueries() {
 
   return {
     useSearchVendorsService,
+    useSearchVendorByGvidService,
+    useGetRedeemableCardsService,
     useGetRedemptionsService,
     useGetUserRedemptionsService,
     useGetVendorRedemptionsService,

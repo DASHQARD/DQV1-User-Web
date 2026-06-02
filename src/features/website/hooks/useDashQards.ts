@@ -5,6 +5,7 @@ import type { PublicCardResponse } from '@/types/responses'
 
 import { enrichCardsWithVendorLogos } from '@/features/website/utils/enrichCardsWithVendorLogos'
 import { mapPublicVendorsForFilter } from '@/features/website/utils/mapPublicVendorsForFilter'
+import { isCatalogCardPurchasable } from '@/utils/cardExpiry'
 import { usePublicCatalog } from './website'
 
 export type DashQardsTabId = 'dashx' | 'dashpro' | 'dashpass' | 'dashgo'
@@ -77,6 +78,9 @@ export function useDashQards() {
     return allCards.filter((card) => {
       const cardType = card.type?.toLowerCase()
       if (cardType !== activeTab) return false
+      if (!isCatalogCardPurchasable({ status: card.status, expiry_date: card.expiry_date })) {
+        return false
+      }
       return filterCardByPrice(card)
     })
   }, [allCards, activeTab, filterCardByPrice])
@@ -94,6 +98,9 @@ export function useDashQards() {
       if (typeId === 'dashpro' || typeId === 'dashgo') return 1
       return allCards.filter((card) => {
         if (card.type?.toLowerCase() !== typeId) return false
+        if (!isCatalogCardPurchasable({ status: card.status, expiry_date: card.expiry_date })) {
+          return false
+        }
         return filterCardByPrice(card)
       }).length
     },

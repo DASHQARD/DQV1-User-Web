@@ -70,6 +70,8 @@ function buildHookReturn(overrides: Record<string, unknown> = {}) {
     cardBackground: '/dashpass-bg.png',
     priceBreakdown: null,
     formattedExpiry: 'Jun 6, 2026',
+    isPurchasable: true,
+    displayStatus: 'active',
     ...overrides,
   }
 }

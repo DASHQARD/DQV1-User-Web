@@ -33,6 +33,7 @@ import { useGuestLocalCartStore } from '@/stores/guestLocalCart'
 import { runGuestCheckoutBagSync } from '@/features/website/utils/runGuestCheckoutBagSync'
 import { GuestCartSyncError } from '@/features/website/utils/guestCartSyncError'
 import { setGuestBrowsingAck } from '@/features/website/utils/guestBrowsingSession'
+import { assertGuestCartAmountWithinLimit } from '@/features/website/utils/validateGuestLocalCart'
 
 const OTPSchema = z.object({
   otp: z.string().min(4, 'OTP must be 4 digits').max(4, 'OTP must be 4 digits'),
@@ -223,6 +224,9 @@ export default function GuestAddToCartModal() {
         refreshToken: refreshToken ?? null,
         isGuestAuth: true,
       })
+      void queryClient.invalidateQueries({ queryKey: ['guest-assigned-cards'] })
+      void queryClient.invalidateQueries({ queryKey: ['redemptions-amount-dash-pro'] })
+      void queryClient.invalidateQueries({ queryKey: ['redemptions-amount-dash-go'] })
       setGuestBrowsingAck()
       if (guestName) setGuestContactSessionItem(GUEST_NAME_STORAGE_KEY, guestName)
       if (submittedPhone) setGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY, submittedPhone)
@@ -277,8 +281,13 @@ export default function GuestAddToCartModal() {
         throw new Error('Missing card')
       }
 
+      if (pendingItem.price != null) {
+        assertGuestCartAmountWithinLimit(pendingItem.price)
+      }
+
       await ensureGuestCartAndAddCard({
         card_id: String(pendingItem.card_id),
+        amount: pendingItem.price,
         ...pickGuestCartIdentityFields(guestName, guestEmail),
         getGuestCartId,
         getGuestCartUuid,

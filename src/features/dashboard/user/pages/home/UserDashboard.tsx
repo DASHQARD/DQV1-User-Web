@@ -2,50 +2,55 @@ import { useMemo, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Text, Loader, Button, Input, Combobox, DateInput } from '@/components'
+import { useQueryClient } from '@tanstack/react-query'
+import { Text, Loader, Button, Input, Combobox, DateInput, FileUploader } from '@/components'
 import { Icon } from '@/libs'
 import { ID_TYPE_OPTIONS } from '@/utils/constants'
-import { PersonalInformationSchema } from '@/utils/schemas/settings'
+import { UserDashboardOnboardingSchema } from '@/utils/schemas/settings'
 import { useGiftCardMetrics } from '@/features/dashboard/hooks/useCards'
 import { usePaymentInfoService } from '@/features/dashboard/hooks'
-import { useUserProfile } from '@/hooks'
+import { useUserProfile, useUploadFiles, useToast } from '@/hooks'
 import { useAuth } from '@/features/auth/hooks/auth'
 import { UserGiftCardMetricsGrid } from '@/features/dashboard/user/components/UserGiftCardMetricsGrid'
 import { UserRecentTransactions } from '@/features/dashboard/user/components/UserRecentTransactions'
 import { UserQuickActions } from '@/features/dashboard/user/components/UserQuickActions'
 import { BackgroundCardImage } from '@/assets/images'
-import type { OnboardingData } from '@/types/auth/auth'
+import type { PersonalDetailsWithIDData } from '@/types/auth/auth'
 
-type PersonalInformationFormData = z.infer<typeof PersonalInformationSchema>
+type UserDashboardOnboardingFormData = z.infer<typeof UserDashboardOnboardingSchema>
 
 export default function UserDashboard() {
+  const queryClient = useQueryClient()
   const { data: metricsResponse, isLoading } = useGiftCardMetrics()
   const { useGetUserProfileService } = useUserProfile()
   const { data: user } = useGetUserProfileService()
-  const { usePersonalDetailsService } = useAuth()
-  const { mutate: updatePersonalDetails, isPending: isSubmittingOnboarding } =
-    usePersonalDetailsService()
+  const { usePersonalDetailsWithIDService } = useAuth()
+  const { mutateAsync: submitPersonalDetailsWithID, isPending: isSubmittingOnboarding } =
+    usePersonalDetailsWithIDService()
+  const { mutateAsync: uploadFiles, isPending: isUploadingFiles } = useUploadFiles()
+  const toast = useToast()
 
-  // Check if user has completed onboarding
-  const hasCompletedOnboarding = useMemo(() => {
-    return !!(
-      user?.fullname &&
+  const hasPersonalDetails = Boolean(
+    user?.fullname &&
       user?.street_address &&
       user?.dob &&
       user?.id_type &&
-      user?.id_number
-    )
-  }, [user])
+      user?.id_number,
+  )
+  const hasGhanaCardUploads = Boolean(
+    user?.onboarding_progress?.upload_id_completed || (user?.id_images?.length ?? 0) >= 2,
+  )
 
-  // Form for onboarding
-  const onboardingForm = useForm<PersonalInformationFormData>({
-    resolver: zodResolver(PersonalInformationSchema),
+  const hasCompletedOnboarding = hasPersonalDetails && hasGhanaCardUploads
+
+  const onboardingForm = useForm<UserDashboardOnboardingFormData>({
+    resolver: zodResolver(UserDashboardOnboardingSchema),
     mode: 'onChange',
     defaultValues: {
       full_name: user?.fullname || '',
       street_address: user?.street_address || '',
       dob: user?.dob || '',
-      id_type: user?.id_type || '',
+      id_type: user?.id_type || 'ghana_card',
       id_number: user?.id_number || '',
     },
   })
@@ -69,23 +74,40 @@ export default function UserDashboard() {
     return maxDate.toISOString().split('T')[0]
   }, [])
 
-  const handleOnboardingSubmit = (data: PersonalInformationFormData) => {
-    const payload: OnboardingData = {
-      full_name: data.full_name,
-      street_address: data.street_address,
-      dob: data.dob,
-      id_type: data.id_type,
-      id_number: data.id_number,
-    }
+  const handleOnboardingSubmit = async (data: UserDashboardOnboardingFormData) => {
+    try {
+      const filesToUpload = [data.front_id, data.back_id]
+      const uploadResponses = await Promise.all(filesToUpload.map((file) => uploadFiles([file])))
 
-    updatePersonalDetails(payload, {
-      onSuccess: () => {
-        onboardingForm.reset(data)
-        // Refetch user profile to update the onboarding status
-        window.location.reload()
-      },
-    })
+      const identificationPhotos = uploadResponses.map(
+        (response: { file_name: string; file_key: string }[], index: number) => ({
+          file_url: response[0].file_key,
+          file_name: filesToUpload[index].name,
+        }),
+      )
+
+      const payload: PersonalDetailsWithIDData = {
+        full_name: data.full_name,
+        street_address: data.street_address,
+        dob: data.dob,
+        id_type: data.id_type,
+        id_number: data.id_number,
+        identification_photos: identificationPhotos,
+      }
+
+      await submitPersonalDetailsWithID(payload)
+      await queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+      onboardingForm.reset(data)
+    } catch (error: unknown) {
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message: unknown }).message)
+          : 'Failed to save your profile. Please try again.'
+      toast.error(message)
+    }
   }
+
+  const isSubmittingProfile = isSubmittingOnboarding || isUploadingFiles
 
   // Fetch payments/transactions using the same endpoint as Orders page
   const { useGetPaymentByIdService } = usePaymentInfoService()
@@ -253,9 +275,50 @@ export default function UserDashboard() {
                   </label>
                   <Input
                     type="text"
-                    placeholder="Enter your ID number"
+                    placeholder="e.g. GHA-123456789-0"
                     {...onboardingForm.register('id_number')}
                     error={onboardingForm.formState.errors.id_number?.message}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <div>
+                  <Text variant="span" weight="semibold" className="text-gray-900 text-sm block">
+                    Ghana Card photos
+                  </Text>
+                  <Text variant="span" className="text-gray-500 text-xs">
+                    Upload clear photos of the front and back of your Ghana Card.
+                  </Text>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Controller
+                    control={onboardingForm.control}
+                    name="front_id"
+                    render={({ field: { onChange, value }, fieldState: { error } }) => (
+                      <FileUploader
+                        label="Front of Ghana Card"
+                        value={value}
+                        onChange={onChange}
+                        error={error?.message}
+                        id="dashboard_onboarding_front_id"
+                        accept="image/*"
+                      />
+                    )}
+                  />
+                  <Controller
+                    control={onboardingForm.control}
+                    name="back_id"
+                    render={({ field: { onChange, value }, fieldState: { error } }) => (
+                      <FileUploader
+                        label="Back of Ghana Card"
+                        value={value}
+                        onChange={onChange}
+                        error={error?.message}
+                        id="dashboard_onboarding_back_id"
+                        accept="image/*"
+                      />
+                    )}
                   />
                 </div>
               </div>
@@ -266,8 +329,8 @@ export default function UserDashboard() {
                 </Text>
                 <Button
                   type="submit"
-                  disabled={isSubmittingOnboarding}
-                  loading={isSubmittingOnboarding}
+                  disabled={isSubmittingProfile}
+                  loading={isSubmittingProfile}
                   variant="secondary"
                   className="min-w-[160px]"
                 >

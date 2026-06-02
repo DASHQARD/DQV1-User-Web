@@ -1,8 +1,11 @@
+import { isCatalogCardPurchasable } from '@/utils/cardExpiry'
+
 export type VendorCatalogCard = {
   card_price?: number
   currency?: string
   card_type?: string
   card_status?: string
+  expiry_date?: string | null
 }
 
 export type VendorBranchWithCards = {
@@ -19,8 +22,7 @@ export type VendorCatalogStats = {
 }
 
 function isActiveCard(card: VendorCatalogCard): boolean {
-  const status = card.card_status?.toLowerCase()
-  return !status || status === 'active'
+  return isCatalogCardPurchasable({ card_status: card.card_status, expiry_date: card.expiry_date })
 }
 
 const CARD_TYPE_LABELS: Record<string, string> = {

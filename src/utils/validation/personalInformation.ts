@@ -70,11 +70,16 @@ export function isPlaceholderIdNumber(value: string): boolean {
   return ID_NUMBER_PLACEHOLDERS.has(value.trim().toLowerCase())
 }
 
+/** Corporate "National ID" uses Ghana Card number format (GHA-123456789-0). */
+export function isValidNationalIdNumber(value: string): boolean {
+  return isValidGhanaCardNumber(value)
+}
+
 export function isValidIdNumberForType(idType: string, idNumber: string): boolean {
   const trimmed = idNumber.trim()
   if (!trimmed || isPlaceholderIdNumber(trimmed)) return false
 
-  if (idType === 'ghana_card') {
+  if (idType === 'ghana_card' || idType === 'national_id') {
     return isValidGhanaCardNumber(trimmed)
   }
 
@@ -101,6 +106,15 @@ export function validatePersonalInformationIdNumber(
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'Enter a valid Ghana Card number (e.g. GHA-123456789-0)',
+      path: ['id_number'],
+    })
+    return
+  }
+
+  if (data.id_type === 'national_id' && !isValidGhanaCardNumber(trimmed)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Enter a valid National ID number (e.g. GHA-123456789-0)',
       path: ['id_number'],
     })
   }

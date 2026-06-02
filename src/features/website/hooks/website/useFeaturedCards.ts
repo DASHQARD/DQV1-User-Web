@@ -3,6 +3,7 @@ import {
   enrichCardsWithVendorLogos,
   type CardWithVendorId,
 } from '@/features/website/utils/enrichCardsWithVendorLogos'
+import { isCatalogCardPurchasable } from '@/utils/cardExpiry'
 import { useHomePageCatalog } from './useHomePageCatalog'
 
 export type FeaturedCardSectionId = 'dashx' | 'dashpass'
@@ -40,7 +41,11 @@ export function useFeaturedCards() {
         const cardType = String(card.type ?? '')
           .toLowerCase()
           .trim()
-        return cardType === id
+        if (cardType !== id) return false
+        return isCatalogCardPurchasable({
+          status: (card as { status?: string }).status,
+          expiry_date: (card as { expiry_date?: string }).expiry_date,
+        })
       })
       const enriched = enrichCardsWithVendorLogos(byType, vendorsResponse)
       return {
