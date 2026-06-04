@@ -14,7 +14,7 @@ vi.mock('@/hooks', async (importOriginal) => {
 
 const mockUseGetRequestsVendorService = vi.fn()
 const mockUseGetRequestsCorporateSuperAdminVendorService = vi.fn()
-const mockUseVendorPendingApprovalsCount = vi.fn(() => ({
+const mockUseVendorPendingApprovalsCount = vi.fn((_options?: { enabled?: boolean }) => ({
   pendingCount: 0,
   isLoading: false,
 }))
@@ -26,8 +26,8 @@ vi.mock('@/features/dashboard/hooks/useVendorOnboardingProgress', () => ({
 }))
 
 vi.mock('@/features/dashboard/hooks/useVendorPendingApprovalsCount', () => ({
-  useVendorPendingApprovalsCount: (...args: unknown[]) =>
-    mockUseVendorPendingApprovalsCount(...args),
+  useVendorPendingApprovalsCount: (options?: { enabled?: boolean }) =>
+    mockUseVendorPendingApprovalsCount(options),
 }))
 
 vi.mock('@/features/dashboard/vendor/hooks', () => ({

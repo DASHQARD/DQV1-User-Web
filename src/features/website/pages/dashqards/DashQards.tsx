@@ -88,8 +88,8 @@ export default function DashQards() {
       <section id="cards-section" className="py-12 bg-white">
         <div className="wrapper">
           {/* E-commerce Layout */}
-          <div className="flex gap-8 items-start max-md:flex-col max-md:gap-6">
-            <div className="max-md:hidden">
+          <div className="flex gap-8 items-start max-xl:flex-col max-xl:gap-6">
+            <div className="shrink-0 max-xl:hidden">
               <DashQardsFilters
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -107,22 +107,19 @@ export default function DashQards() {
             </div>
 
             {/* Products Main */}
-            <main className="flex flex-col gap-4 flex-1 min-w-0">
-              <section className="flex flex-col gap-4">
-                <div className="pt-2 pb-4 pr-4 border-b border-[#e6e6e6]">
-                  <Text variant="h2" weight="medium" className="text-[#212529]">
-                    Results for &quot;{cardTabs.find((t) => t.id === activeTab)?.label ?? 'Gift Cards'}&quot;{' '}
-                    <span className="font-normal">({activeResultsCount})</span>
-                  </Text>
-                  <p className="py-2 opacity-0">check</p>
-                </div>
+            <main className="flex w-full min-w-0 flex-1 flex-col gap-4">
+              <section className="flex w-full flex-col gap-4 border-b border-[#e6e6e6] pb-4">
+                <Text variant="h2" weight="medium" className="text-[#212529] pt-2">
+                  Results for &quot;{cardTabs.find((t) => t.id === activeTab)?.label ?? 'Gift Cards'}&quot;{' '}
+                  <span className="font-normal">({activeResultsCount})</span>
+                </Text>
 
-                <div className="flex items-center gap-2 justify-between max-md:flex-wrap">
-                  <div className="hidden max-md:flex">
+                <div className="flex w-full flex-wrap items-center justify-between gap-3">
+                  <div className="hidden items-center max-xl:flex">
                     <Button
                       variant="outline"
                       size="medium"
-                      className="border border-[#e2e4ed] bg-white rounded-md text-xs text-[#212529] font-medium"
+                      className="h-9 border border-[#e2e4ed] bg-white rounded-md text-xs text-[#212529] font-medium"
                       onClick={() => setIsMobileFiltersOpen(true)}
                     >
                       <span className="inline-flex items-center gap-2">
@@ -137,7 +134,11 @@ export default function DashQards() {
                     </Button>
                   </div>
                   <div className="flex items-center gap-2 ml-auto">
-                    <Text variant="p" weight="medium" className="text-[#212529]">
+                    <Text
+                      variant="p"
+                      weight="medium"
+                      className="text-[#212529] text-sm leading-none whitespace-nowrap"
+                    >
                       Sort by:
                     </Text>
                     <Dropdown
@@ -153,7 +154,7 @@ export default function DashQards() {
                         icon="hugeicons:arrow-down-01"
                         iconPosition="right"
                         size="medium"
-                        className="border border-[#e2e4ed] bg-white py-0 rounded-md w-fit text-xs text-[#7c8689] font-normal capitalize"
+                        className="h-9 border border-[#e2e4ed] bg-white rounded-md w-fit text-xs text-[#7c8689] font-normal capitalize"
                       >
                         {currentSortLabel}
                       </Button>
@@ -261,7 +262,7 @@ export default function DashQards() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-3 gap-6 max-xl:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
+                  <div className="grid w-full gap-4 sm:gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))]">
                     {sortedQards
                       .filter((card) => card.type?.toLowerCase() !== 'dashpro')
                       .map((card) => {

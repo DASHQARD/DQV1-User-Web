@@ -28,8 +28,7 @@ export function parseRedemptionSearchParams(
 ): RedemptionDeepLinkParams {
   const method = searchParams.get('method')
   return {
-    method:
-      method === 'vendor_id' || method === 'vendor_mobile_money' ? method : undefined,
+    method: method === 'vendor_id' || method === 'vendor_mobile_money' ? method : undefined,
     card_type: searchParams.get('card_type') ?? undefined,
     vendor_gvid: searchParams.get('vendor_gvid') ?? undefined,
     vendor_id: searchParams.get('vendor_id') ?? undefined,
@@ -59,9 +58,9 @@ export function buildRedemptionUrlFromCard(card: {
   return buildRedemptionUrl({
     method: 'vendor_id',
     card_type: cardType,
-    vendor_id: card.vendor_id,
+    vendor_id: card.vendor_id != null ? String(card.vendor_id) : undefined,
     vendor_gvid: card.gvid,
-    branch_id: card.branch_id,
-    card_id: isDashXOrPass ? card.card_id : undefined,
+    branch_id: card.branch_id != null ? String(card.branch_id) : undefined,
+    card_id: isDashXOrPass && card.card_id != null ? String(card.card_id) : undefined,
   })
 }
