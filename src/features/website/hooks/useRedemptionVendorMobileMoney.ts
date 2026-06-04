@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useDebouncedValue } from '@/hooks'
 import {
   convertToInternationalFormat,
   resolveMomoAccountName,
@@ -7,17 +8,11 @@ import { interpretMomoResolveResponse } from '@/features/website/utils/momoResol
 
 export function useRedemptionVendorMobileMoney(enabled: boolean) {
   const [rawVendorPhone, setRawVendorPhone] = useState('')
-  const [debouncedVendorPhone, setDebouncedVendorPhone] = useState('')
+  const debouncedVendorPhone = useDebouncedValue(enabled ? rawVendorPhone : '', 800)
   const [validatingVendor, setValidatingVendor] = useState(false)
   const [vendorPhoneError, setVendorPhoneError] = useState<string | null>(null)
   const [vendorPhoneName, setVendorPhoneName] = useState<string | null>(null)
   const [momoResolveWarning, setMomoResolveWarning] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!enabled) return
-    const timer = setTimeout(() => setDebouncedVendorPhone(rawVendorPhone), 800)
-    return () => clearTimeout(timer)
-  }, [rawVendorPhone, enabled])
 
   useEffect(() => {
     if (!enabled) return
@@ -64,7 +59,6 @@ export function useRedemptionVendorMobileMoney(enabled: boolean) {
 
   const resetVendorMobileMoney = () => {
     setRawVendorPhone('')
-    setDebouncedVendorPhone('')
     setVendorPhoneName(null)
     setVendorPhoneError(null)
     setMomoResolveWarning(null)

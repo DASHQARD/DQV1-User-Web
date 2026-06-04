@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   CARD_DISPLAY_NAMES,
@@ -15,6 +15,7 @@ import {
   buildCardsRedemptionPayload,
   isRedemptionApiSuccess,
 } from '@/features/website/utils/cardsRedemption'
+import { buildRedemptionUrlFromCard } from '@/features/website/utils/redemptionDeepLink'
 import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
 import { useDebouncedState } from '@/hooks'
 import { useUserProfile } from '@/hooks'
@@ -71,6 +72,7 @@ export interface CardDetailsDisplayItem {
 }
 
 export function useCardDetailsPage() {
+  const navigate = useNavigate()
   const { cardType } = useParams<{ cardType: string }>()
   const queryClient = useQueryClient()
   const validCardType = getValidCardType(cardType)
@@ -255,14 +257,19 @@ export function useCardDetailsPage() {
     setPaginationAfter('')
   }, [])
 
-  const handleRedeemClick = useCallback((card: CardDetailsDisplayItem) => {
-    setSelectedCard(card)
-    setShowVendorModal(true)
-    setSelectedBranchId(card.branch_id != null ? String(card.branch_id) : null)
-    setSelectedVendor(null)
-    setSelectedVendorId('')
-    setVendorSearch('')
-  }, [])
+  const handleRedeemClick = useCallback(
+    (card: CardDetailsDisplayItem) => {
+      navigate(
+        buildRedemptionUrlFromCard({
+          card_type: card.card_type,
+          vendor_id: card.vendor_id,
+          branch_id: card.branch_id,
+          card_id: card.card_id ?? card.id,
+        }),
+      )
+    },
+    [navigate],
+  )
 
   const handleVendorSelect = useCallback(
     (vendorId: string) => {

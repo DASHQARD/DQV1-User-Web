@@ -43,7 +43,7 @@ vi.mock('@/features/dashboard/corporate/hooks/useCorporateQueries', () => ({
 describe('Requests (vendor)', () => {
   it('renders page content', () => {
     renderWithProviders(<Requests />)
-    expect(screen.getByText('All requests')).toBeInTheDocument()
+    expect(screen.getByText('All requests (0)')).toBeInTheDocument()
     expect(
       screen.getByPlaceholderText(/search by name, description, module, or status/i),
     ).toBeInTheDocument()

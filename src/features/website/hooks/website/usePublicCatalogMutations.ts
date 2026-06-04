@@ -5,13 +5,12 @@ import { createDashGoAndAssign, createDashProAndAssign } from '../../services/ca
 
 export function usePublicCatalogMutations() {
   function useCreateCardService() {
-    const { success, error } = useToast()
+    const { error } = useToast()
     const queryClient = useQueryClient()
     return useMutation({
       mutationKey: ['create-card'],
       mutationFn: createCard,
-      onSuccess: (response) => {
-        success(response.message || 'Card created successfully')
+      onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['cards'] })
       },
       onError: (err: any) => {

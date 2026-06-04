@@ -91,7 +91,7 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
             'relative flex h-12 w-full min-w-0 items-center rounded-lg border border-gray-300 px-3 transition-colors',
             'focus-within:z-50 focus-within:border-primary-400 focus-within:outline-none focus-within:ring-1 focus-within:ring-primary-400',
             error && 'border-red-500',
-            disabled && 'cursor-not-allowed border-gray-300 bg-gray-100 opacity-100',
+            disabled && 'cursor-not-allowed border-gray-300 bg-[#f3f3f4] opacity-100',
           )}
         >
           <PhoneInput
@@ -145,7 +145,7 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
             className="flex-1 min-w-0 bg-transparent"
             inputClassName={cn(
               '!border-0 min-w-0 flex-1 bg-transparent text-sm font-light outline-none placeholder:text-gray-400',
-              disabled && 'text-gray-500 placeholder:text-gray-500',
+              disabled && 'text-gray-400 placeholder:text-gray-400',
             )}
             inputStyle={{ border: 'none' }}
             countrySelectorStyleProps={{

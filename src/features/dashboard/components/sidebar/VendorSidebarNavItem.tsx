@@ -22,6 +22,17 @@ type VendorSidebarNavItemProps = {
   pendingRequestsCount?: number
 }
 
+function formatNavItemLabel(item: VendorNavItem, pendingRequestsCount: number): string {
+  if (
+    item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS &&
+    pendingRequestsCount > 0
+  ) {
+    const count = pendingRequestsCount > 99 ? '99+' : String(pendingRequestsCount)
+    return `${item.label} (${count})`
+  }
+  return item.label
+}
+
 export function VendorSidebarNavItem({
   item,
   isDisabled,
@@ -33,6 +44,7 @@ export function VendorSidebarNavItem({
   const active = isActive(item.path) && !isDisabled
   const showRequestsBadge =
     item.path === ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS && pendingRequestsCount > 0
+  const navLabel = formatNavItemLabel(item, pendingRequestsCount)
 
   return (
     <li
@@ -95,9 +107,8 @@ export function VendorSidebarNavItem({
           </TooltipTrigger>
           <TooltipContent side="right">
             {isDisabled
-              ? `${item.label} — ${VENDOR_NAV_DISABLED_TOOLTIP}`
-              : item.label}
-            {showRequestsBadge && ` (${pendingRequestsCount} pending)`}
+              ? `${navLabel} — ${VENDOR_NAV_DISABLED_TOOLTIP}`
+              : navLabel}
           </TooltipContent>
         </Tooltip>
       ) : (
@@ -114,16 +125,11 @@ export function VendorSidebarNavItem({
                     icon={item.icon}
                     className="w-5 h-5 text-base flex items-center justify-center shrink-0 text-gray-400"
                   />
-                  <span className="flex-1">{item.label}</span>
-                  {showRequestsBadge && (
-                    <span className="shrink-0 min-w-[20px] h-5 flex items-center justify-center rounded-full bg-gray-300 text-gray-600 text-xs font-semibold px-1.5">
-                      {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
-                    </span>
-                  )}
+                  <span className="flex-1">{navLabel}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right">
-                {item.label} — {VENDOR_NAV_DISABLED_TOOLTIP}
+                {navLabel} — {VENDOR_NAV_DISABLED_TOOLTIP}
               </TooltipContent>
             </Tooltip>
           ) : (
@@ -144,12 +150,7 @@ export function VendorSidebarNavItem({
                     'hover:scale-110 hover:rotate-2 hover:text-[#402D87] hover:filter-[drop-shadow(0_2px_4px_rgba(64,45,135,0.3))]',
                 )}
               />
-              <span className="flex-1">{item.label}</span>
-              {showRequestsBadge && (
-                <span className="shrink-0 min-w-[20px] h-5 flex items-center justify-center rounded-full bg-amber-500 text-white text-xs font-semibold px-1.5">
-                  {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
-                </span>
-              )}
+              <span className="flex-1">{navLabel}</span>
             </Link>
           )}
         </>

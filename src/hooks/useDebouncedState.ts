@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 interface DebouncedStateOptions<T> {
   initialValue: T
@@ -34,4 +34,16 @@ export function useDebouncedState<T>({
     value,
     onChangeHandler,
   }
+}
+
+/** Debounces any value — use for search terms, phone input, etc. */
+export function useDebouncedValue<T>(value: T, debounceTime = 500): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), debounceTime)
+    return () => clearTimeout(timer)
+  }, [value, debounceTime])
+
+  return debouncedValue
 }

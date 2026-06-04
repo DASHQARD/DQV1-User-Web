@@ -11,8 +11,7 @@ import {
   isVendorSettingsDisabled,
 } from '@/features/dashboard/utils/vendorOnboardingProgress'
 import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
-import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
-import { countAwaitingApprovalRequests } from '@/utils/requestStatus'
+import { useVendorPendingApprovalsCount } from '@/features/dashboard/hooks/useVendorPendingApprovalsCount'
 import { vendorQueries } from './useVendorQueries'
 
 export function useVendorSidebar() {
@@ -33,37 +32,14 @@ export function useVendorSidebar() {
   const isVendor = userType === 'vendor'
   const displayName = 'Vendor'
 
-  const { useBranchesService, useGetAllVendorsDetailsService, useGetRequestsVendorService } =
-    vendorQueries()
-  const { useGetRequestsCorporateSuperAdminVendorService } = corporateQueries()
+  const { useBranchesService, useGetAllVendorsDetailsService } = vendorQueries()
   const { data: branches } = useBranchesService()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
 
   const currentVendorId = searchParams.get('vendor_id')
   const isCorporateSuperAdminForRequests = userType === 'corporate super admin'
 
-  const { data: vendorRequestsResponse } = useGetRequestsVendorService(
-    isCorporateSuperAdminForRequests ? undefined : { limit: 100, pending: true },
-  )
-  const { data: corporateVendorRequestsResponse } =
-    useGetRequestsCorporateSuperAdminVendorService(
-      isCorporateSuperAdminForRequests && currentVendorId ? currentVendorId : null,
-    )
-
-  const requestsResponse =
-    isCorporateSuperAdminForRequests && currentVendorId
-      ? corporateVendorRequestsResponse
-      : vendorRequestsResponse
-
-  const pendingRequestsCount = useMemo(() => {
-    if (!requestsResponse) return 0
-    const list = Array.isArray(requestsResponse)
-      ? requestsResponse
-      : Array.isArray((requestsResponse as { data?: unknown[] })?.data)
-        ? (requestsResponse as { data: unknown[] }).data
-        : []
-    return countAwaitingApprovalRequests(list as Array<{ status?: string }>)
-  }, [requestsResponse])
+  const { pendingCount: pendingRequestsCount } = useVendorPendingApprovalsCount()
 
   const branchesArray = Array.isArray(branches)
     ? branches

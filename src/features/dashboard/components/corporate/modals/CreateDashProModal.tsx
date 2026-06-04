@@ -19,7 +19,13 @@ const DashProAssignSchema = AssignRecipientSchema.safeExtend({
 }).superRefine((data, ctx) => {
   if (!data.assign_to_self) {
     const phone = data.phone?.trim()
-    if (phone && !isValidInternationalPhoneDigits(phone)) {
+    if (!phone) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Phone number is required when not assigning to yourself',
+        path: ['phone'],
+      })
+    } else if (!isValidInternationalPhoneDigits(phone)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: INVALID_PHONE_MESSAGE,

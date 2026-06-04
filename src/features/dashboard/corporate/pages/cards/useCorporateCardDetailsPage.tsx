@@ -10,6 +10,7 @@ import {
 import type { DropdownOption } from '@/types'
 import { formatBranchLabel } from '@/utils/format'
 import { useRedemptionMutation, useCardMetricsDetails } from '@/features/dashboard/hooks'
+import { buildRedemptionUrlFromCard } from '@/features/website/utils/redemptionDeepLink'
 import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
 import { useDebouncedState } from '@/hooks'
 import { useUserProfile } from '@/hooks'
@@ -276,14 +277,19 @@ export function useCorporateCardDetailsPage() {
     setPaginationAfter('')
   }, [])
 
-  const handleRedeemClick = useCallback((card: CardDisplayItem) => {
-    setSelectedCard(card)
-    setShowVendorModal(true)
-    setSelectedBranchId(card.branch_id ?? null)
-    setSelectedVendor(null)
-    setSelectedVendorId('')
-    setVendorSearch('')
-  }, [])
+  const handleRedeemClick = useCallback(
+    (card: CardDisplayItem) => {
+      navigate(
+        buildRedemptionUrlFromCard({
+          card_type: card.card_type,
+          vendor_id: card.vendor_id,
+          branch_id: card.branch_id,
+          card_id: card.card_id ?? card.id,
+        }),
+      )
+    },
+    [navigate],
+  )
 
   const handleVendorSelect = useCallback(
     (vendorId: string) => {

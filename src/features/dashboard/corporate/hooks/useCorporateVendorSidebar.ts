@@ -11,6 +11,7 @@ import {
   isVendorNavItemDisabled,
   isVendorSettingsDisabled,
 } from '@/features/dashboard/utils/vendorOnboardingProgress'
+import { useVendorPendingApprovalsCount } from '@/features/dashboard/hooks/useVendorPendingApprovalsCount'
 
 export function useCorporateVendorSidebar() {
   const location = useLocation()
@@ -53,6 +54,8 @@ export function useCorporateVendorSidebar() {
   }, [allVendorsCreatedByCorporate])
 
   const currentVendorId = searchParams.get('vendor_id')
+  const { pendingCount: pendingRequestsCount } = useVendorPendingApprovalsCount()
+
   const currentVendor = useMemo(() => {
     if (!currentVendorId || allVendorsCreatedByCorporate.length === 0) return null
     return (
@@ -237,6 +240,7 @@ export function useCorporateVendorSidebar() {
     getIsNavItemDisabled,
     isSettingsDisabled,
     canAccessCorporate,
+    pendingRequestsCount,
     isBranchesExpanded,
     setIsBranchesExpanded,
     isActive,

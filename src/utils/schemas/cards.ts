@@ -80,7 +80,13 @@ export const DashGoPurchaseFormSchema = z
         })
       }
       const recipientPhone = data.recipient_phone?.trim()
-      if (recipientPhone && !isValidInternationalPhoneDigits(recipientPhone)) {
+      if (!recipientPhone) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Phone number is required when not assigning to self',
+          path: ['recipient_phone'],
+        })
+      } else if (!isValidInternationalPhoneDigits(recipientPhone)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: INVALID_PHONE_MESSAGE,
@@ -128,7 +134,13 @@ export const AssignRecipientSchema = z
         })
       }
       const recipientPhone = data.phone?.trim()
-      if (recipientPhone && !isValidInternationalPhoneDigits(recipientPhone)) {
+      if (!recipientPhone) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Phone number is required when not assigning to yourself',
+          path: ['phone'],
+        })
+      } else if (!isValidInternationalPhoneDigits(recipientPhone)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: INVALID_PHONE_MESSAGE,
@@ -152,7 +164,14 @@ export const AssignRecipientSchema = z
           path: ['email'],
         })
       }
-      // Phone is optional when assigning to self (guests verify at checkout).
+      const phone = data.phone?.trim()
+      if (phone && !isValidInternationalPhoneDigits(phone)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: INVALID_PHONE_MESSAGE,
+          path: ['phone'],
+        })
+      }
     }
   })
 
@@ -195,7 +214,13 @@ export const DashGoAssignRecipientSchema = z
         })
       }
       const recipientPhone = data.recipient_phone?.trim()
-      if (recipientPhone && !isValidInternationalPhoneDigits(recipientPhone)) {
+      if (!recipientPhone) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Phone number is required when not assigning to yourself',
+          path: ['recipient_phone'],
+        })
+      } else if (!isValidInternationalPhoneDigits(recipientPhone)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: INVALID_PHONE_MESSAGE,

@@ -1,6 +1,9 @@
 import React from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Text } from '@/components'
+import { Icon } from '@/libs'
+import { ROUTES } from '@/utils/constants'
+import { useVendorPendingApprovalsCount } from '@/features/dashboard/hooks/useVendorPendingApprovalsCount'
 import {
   VendorSummaryCards,
   CompleteVendorWidget,
@@ -12,6 +15,7 @@ import {
 } from '@/features/dashboard/components'
 import { useUserProfile } from '@/hooks'
 import { useVendorOnboardingProgress } from '@/features/dashboard/hooks/useVendorOnboardingProgress'
+import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
 import { isVendorPendingAdminApproval } from '@/features/dashboard/utils/vendorAccountStatus'
 import { vendorQueries } from '@/features'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
@@ -42,6 +46,10 @@ export default function VendorHome() {
   const isBranchManager = userProfileData?.user_type === 'branch'
   // Check if user is corporate super admin
   const isCorporateSuperAdmin = userProfileData?.user_type === 'corporate super admin'
+  const { isOperationalAccessEnabled } = useVendorOperationalAccess()
+  const { pendingCount: pendingApprovalsCount } = useVendorPendingApprovalsCount({
+    enabled: isOperationalAccessEnabled,
+  })
 
   // Get vendor_id from user profile
   const vendorId = userProfileData?.vendor_id ? String(userProfileData.vendor_id) : null
@@ -155,9 +163,23 @@ export default function VendorHome() {
   return (
     <div className="bg-[#f8f9fa] rounded-xl overflow-hidden min-h-[600px]">
       <section className="py-8 flex flex-col gap-6">
-        <Text variant="h2" weight="semibold">
-          Vendor Dashboard
-        </Text>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <Text variant="h2" weight="semibold">
+            Vendor Dashboard
+          </Text>
+          {isOperationalAccessEnabled && pendingApprovalsCount > 0 && (
+            <Link
+              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.VENDOR.REQUESTS)}
+              className="inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-4 py-2 text-sm font-medium text-amber-900 no-underline hover:bg-amber-100 transition-colors"
+            >
+              <Icon icon="bi:bell-fill" className="text-amber-600" aria-hidden />
+              <span>
+                {pendingApprovalsCount} approval{pendingApprovalsCount === 1 ? '' : 's'} need your
+                attention
+              </span>
+            </Link>
+          )}
+        </div>
 
         {showPendingApprovalBanner && (
           <VendorAccountStatusBanner
@@ -376,12 +398,7 @@ export default function VendorHome() {
           />
         </section>
 
-        {/* Recent Requests - Only show for corporate super admin */}
-        {isCorporateSuperAdmin && (
-          <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] overflow-hidden">
-            <RecentRequests />
-          </div>
-        )}
+        {isOperationalAccessEnabled && !isBranchManager && <RecentRequests />}
 
         {/* Branches Overview */}
         <RecentBranches

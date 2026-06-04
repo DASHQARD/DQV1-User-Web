@@ -68,35 +68,61 @@ export function useCreateVendorAccount({
   }, [methods, goToNextStep])
 
   const handleProfileSubmit = React.useCallback(() => {
-    const checkboxProfileSameAsCorporate = methods.getValues('checkbox_profile_same_as_corporate')
+    const profileSameAsCorporate = methods.getValues('checkbox_profile_same_as_corporate')
+
+    if (profileSameAsCorporate) {
+      const business = corporateUser?.business_details?.[0]
+      const hasCorporateProfile = Boolean(
+        corporateUser?.fullname?.trim() &&
+          corporateUser?.street_address?.trim() &&
+          corporateUser?.dob?.trim() &&
+          corporateUser?.id_type?.trim() &&
+          corporateUser?.id_number?.trim() &&
+          (corporateUser?.phonenumber?.trim() || business?.phone?.trim()) &&
+          business?.email?.trim(),
+      )
+
+      if (!hasCorporateProfile) {
+        toast.error(
+          'Corporate profile is incomplete. Complete corporate key person details first.',
+        )
+        return
+      }
+
+      methods.clearErrors([
+        'first_name',
+        'last_name',
+        'dob',
+        'street_address',
+        'id_type',
+        'id_number',
+        'phone',
+        'email',
+        'front_id',
+        'back_id',
+      ])
+      goToNextStep()
+      return
+    }
+
     const idType = methods.getValues('id_type')
-    const fieldsToValidate = checkboxProfileSameAsCorporate
-      ? ([
-          'first_name',
-          'last_name',
-          'dob',
-          'street_address',
-          'id_type',
-          'id_number',
-          'phone',
-          'email',
-        ] as const)
-      : ([
-          'first_name',
-          'last_name',
-          'dob',
-          'street_address',
-          'id_type',
-          'id_number',
-          'front_id',
-          ...(idType === 'national_id' ? (['back_id'] as const) : []),
-          'phone',
-          'email',
-        ] as const)
+    const fieldsToValidate = [
+      'first_name',
+      'last_name',
+      'dob',
+      'street_address',
+      'id_type',
+      'id_number',
+      'front_id',
+      ...(idType === 'national_id' ? (['back_id'] as const) : []),
+      'phone',
+      'email',
+    ] as const
+
     methods.trigger(fieldsToValidate).then((isValid) => {
       if (isValid) goToNextStep()
     })
-  }, [methods, goToNextStep])
+  }, [methods, goToNextStep, corporateUser, toast])
 
   const handleVendorDetailsSubmit = React.useCallback(
     async (data: CreateVendorFormData) => {

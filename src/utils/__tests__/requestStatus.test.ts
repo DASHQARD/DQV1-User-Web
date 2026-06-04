@@ -4,9 +4,11 @@ import {
   canApproveAtCurrentLevel,
   canCorporateUserApproveRequest,
   countAwaitingApprovalRequests,
+  countPendingRequestsForContext,
   isRequestApproved,
   isRequestAwaitingApproval,
   isRequestRejected,
+  parseRequestsListResponse,
 } from '../requestStatus'
 
 describe('requestStatus', () => {
@@ -53,5 +55,22 @@ describe('requestStatus', () => {
         { status: 'approved' },
       ]),
     ).toBe(2)
+  })
+
+  it('parseRequestsListResponse supports array and { data } shapes', () => {
+    expect(parseRequestsListResponse([{ status: 'pending' }])).toHaveLength(1)
+    expect(parseRequestsListResponse({ data: [{ status: 'approved' }] })).toHaveLength(1)
+    expect(parseRequestsListResponse(null)).toEqual([])
+  })
+
+  it('countPendingRequestsForContext counts only actionable requests', () => {
+    const list = [
+      { status: 'Awaiting Vendor Approval', current_approver_level: 'vendor_admin' },
+      { status: 'awaiting corporate approval', current_approver_level: 'corporate_admin' },
+      { status: 'approved', current_approver_level: 'vendor_admin' },
+    ]
+    expect(countPendingRequestsForContext(list, 'vendor')).toBe(1)
+    expect(countPendingRequestsForContext(list, 'corporate')).toBe(1)
+    expect(countPendingRequestsForContext(list, 'corporate-vendor-scoped')).toBe(1)
   })
 })

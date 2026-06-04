@@ -1,3 +1,4 @@
+export { SignUpMarketingPanel } from './SignUpMarketingPanel'
 export { default as AccountType } from './AccountType'
 export { default as PasswordRequirementsChecklist } from './PasswordRequirementsChecklist'
 export * from './forms'

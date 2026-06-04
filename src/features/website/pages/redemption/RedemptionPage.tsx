@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -50,6 +50,11 @@ import { parseGuestRedemptionsResponse } from '@/features/website/utils/guestRed
 import { GuestGiftCardTile } from '@/features/website/pages/guest/GuestGiftCardTile'
 import type { GuestCardsRedemptionData, VendorSearchResult } from '@/types/redemptions'
 import { CARD_EXPIRED_MESSAGE, isAssignedCardRedeemable, isCatalogCardPurchasable } from '@/utils/cardExpiry'
+import {
+  parseRedemptionSearchParams,
+  vendorIdFlowRequiresBranch,
+} from '@/features/website/utils/redemptionDeepLink'
+import { isExactGvidPathLookup } from '@/features/website/utils/cardsRedemption'
 
 type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
@@ -127,9 +132,37 @@ export default function RedemptionPage() {
     return digitsOnly
   }
 
+  const deepLinkApplied = useRef(false)
+
   useEffect(() => {
     if (searchParams.get('redeem') === 'true') {
       setShowActionChoiceModal(true)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (deepLinkApplied.current) return
+    const parsed = parseRedemptionSearchParams(searchParams)
+    if (!parsed.method) return
+    deepLinkApplied.current = true
+    setRedemptionMethod(parsed.method)
+    setStep('details')
+    const normalizedType = parsed.card_type?.toLowerCase()
+    if (
+      normalizedType === 'dashgo' ||
+      normalizedType === 'dashpro' ||
+      normalizedType === 'dashx' ||
+      normalizedType === 'dashpass'
+    ) {
+      setCardType(normalizedType)
+    }
+    if (parsed.vendor_gvid) {
+      setVendorIdInput(parsed.vendor_gvid)
+    } else if (parsed.vendor_id) {
+      setVendorIdInput(parsed.vendor_id)
+    }
+    if (parsed.branch_id) {
+      setSelectedBranchId(parsed.branch_id)
     }
   }, [searchParams])
 
@@ -328,7 +361,7 @@ export default function RedemptionPage() {
   }, [guestRedemptionsHistory])
 
   // Fetch vendors same as Vendors/DashQards: limit 100 when on vendor_id flow
-  const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService(
+  const { data: vendorsResponse } = usePublicVendorsService(
     redemptionMethod === 'vendor_id' ? { limit: 100 } : undefined,
     redemptionMethod === 'vendor_id' && isAuthenticated,
   )
@@ -420,14 +453,6 @@ export default function RedemptionPage() {
     }
     return publicVendorsWithCards
   }, [isGuestAuth, guestAssignedCards, publicVendorsWithCards])
-
-  // Convert to dropdown options (Combobox filters by search internally)
-  const vendorOptions: DropdownOption[] = useMemo(() => {
-    return vendors.map((vendor: any) => ({
-      label: vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
-      value: vendor.vendor_id?.toString() || '',
-    }))
-  }, [vendors])
 
   // Extract cards from selected vendor with branch information
   const vendorCards = useMemo(() => {
@@ -1098,21 +1123,9 @@ export default function RedemptionPage() {
     [vendors, setVendorIdInput],
   )
 
-  const handleVendorSelect = (vendorId: string) => {
-    const vendor = vendors.find((v: { vendor_id?: string | number }) => {
-      return String(v.vendor_id ?? '') === String(vendorId)
-    })
-    if (vendor) {
-      applyVendorSelection(
-        vendorId,
-        vendor.business_name || vendor.vendor_name || 'Unknown Vendor',
-        vendor.gvid,
-      )
-    }
-  }
-
   useEffect(() => {
     if (redemptionMethod !== 'vendor_id' || !vendorIdExactMatch) return
+    if (vendorIdSearchResults.length > 1 && !isExactGvidPathLookup(debouncedVendorId)) return
     if (String(selectedVendorId) === String(vendorIdExactMatch.vendor_id)) return
     applyVendorSelection(
       vendorIdExactMatch.vendor_id,
@@ -1120,7 +1133,14 @@ export default function RedemptionPage() {
       vendorIdExactMatch.gvid,
       vendorIdExactMatch,
     )
-  }, [redemptionMethod, vendorIdExactMatch, selectedVendorId, applyVendorSelection])
+  }, [
+    redemptionMethod,
+    vendorIdExactMatch,
+    vendorIdSearchResults.length,
+    debouncedVendorId,
+    selectedVendorId,
+    applyVendorSelection,
+  ])
 
   const handleMethodSelect = (method: RedemptionMethod) => {
     setRedemptionMethod(method)
@@ -1201,12 +1221,13 @@ export default function RedemptionPage() {
         return
       }
 
-      if (
-        (cardType === 'dashx' || cardType === 'dashpass') &&
-        availableBranches.length > 0 &&
-        selectedBranchId === null
-      ) {
+      if (vendorIdFlowRequiresBranch(availableBranches.length, selectedBranchId)) {
         toast.error('Please select a branch')
+        return
+      }
+
+      if (!selectedVendorGvid) {
+        toast.error('Please select a vendor')
         return
       }
 
@@ -1324,12 +1345,7 @@ export default function RedemptionPage() {
         return
       }
 
-      // For DashX and DashPass, branch must be selected if branches are available
-      if (
-        (cardType === 'dashx' || cardType === 'dashpass') &&
-        availableBranches.length > 0 &&
-        selectedBranchId === null
-      ) {
+      if (vendorIdFlowRequiresBranch(availableBranches.length, selectedBranchId)) {
         toast.error('Please select a branch')
         return
       }
@@ -1824,86 +1840,70 @@ export default function RedemptionPage() {
 
                       {isAuthenticated && (
                         <>
-                          {/* Vendor search and selection */}
                           <div className="form-group">
                             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                              <Icon icon="bi:hash" className="text-primary-600" />
-                              Vendor name or ID
+                              <Icon icon="bi:shop" className="text-primary-600" />
+                              Vendor name or ID <span className="text-red-500">*</span>
                             </label>
-                            <Input
-                              value={vendorIdInput}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                setVendorIdInput(e.target.value)
-                              }
-                              placeholder="Enter vendor name or ID"
-                            />
-                            {isSearchingById ? (
-                              <Text variant="span" className="text-xs text-gray-500 block mt-2">
-                                Looking up vendor…
-                              </Text>
-                            ) : null}
-                            {debouncedVendorId.length >= 2 &&
-                            !vendorIdExactMatch &&
-                            vendorIdSearchResults.length > 0 ? (
-                              <ul className="mt-2 max-h-40 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-                                {vendorIdSearchResults.map((result) => (
-                                  <li key={result.vendor_id}>
-                                    <button
-                                      type="button"
-                                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-primary-50"
-                                      onClick={() =>
-                                        applyVendorSelection(
-                                          result.vendor_id,
-                                          result.vendor_name || result.business_name || '',
-                                          result.gvid,
-                                        )
-                                      }
-                                    >
-                                      <span className="text-sm font-medium text-gray-900">
-                                        {result.vendor_name}
-                                      </span>
-                                      <span className="text-xs text-gray-500">{result.gvid}</span>
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : null}
-                          </div>
-
-                          <div className="form-group">
-                            <div className="flex justify-between items-center mb-2">
-                              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                <Icon icon="bi:shop" className="text-primary-600" />
-                                Search vendor by name <span className="text-red-500">*</span>
-                              </label>
-                              {selectedVendor && (
-                                <span className="flex items-center gap-1 text-xs text-green-600">
-                                  <Icon icon="bi:check-circle-fill" />
-                                  Selected
-                                </span>
-                              )}
-                            </div>
                             {!selectedVendor ? (
                               <>
-                                <Combobox
-                                  options={vendorOptions}
-                                  value={selectedVendorId}
-                                  onChange={(e: any) => {
-                                    const vendorId = e.target.value
-                                    if (vendorId) {
-                                      handleVendorSelect(vendorId)
-                                    }
-                                  }}
-                                  placeholder="Search for a vendor by name..."
-                                  isLoading={isLoadingVendors}
+                                <Input
+                                  value={vendorIdInput}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                    setVendorIdInput(e.target.value)
+                                  }
+                                  placeholder="Search by name (e.g. KFC) or vendor ID (e.g. GH-0001)"
                                 />
-                                {vendors.length === 0 && !isLoadingVendors && (
-                                  <p className="mt-2 text-sm text-gray-500">No vendors found</p>
-                                )}
+                                <Text variant="span" className="text-xs text-gray-500 block mt-2">
+                                  Start typing to search. Select a vendor, then choose a branch.
+                                </Text>
+                                {isSearchingById ? (
+                                  <Text variant="span" className="text-xs text-gray-500 block mt-2">
+                                    Looking up vendor…
+                                  </Text>
+                                ) : null}
+                                {debouncedVendorId.length >= 2 &&
+                                !isSearchingById &&
+                                vendorIdSearchResults.length === 0 ? (
+                                  <Text variant="span" className="text-sm text-amber-700 block mt-2">
+                                    No vendor found for &quot;{debouncedVendorId}&quot;. Try the full
+                                    vendor ID (e.g. GH-0001) or search by business name.
+                                  </Text>
+                                ) : null}
+                                {debouncedVendorId.length >= 2 &&
+                                vendorIdSearchResults.length > 0 ? (
+                                  <ul className="mt-2 max-h-40 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+                                    {vendorIdSearchResults.map((result) => (
+                                      <li key={result.vendor_id}>
+                                        <button
+                                          type="button"
+                                          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-primary-50"
+                                          onClick={() =>
+                                            applyVendorSelection(
+                                              result.vendor_id,
+                                              result.vendor_name ||
+                                                result.business_name ||
+                                                '',
+                                              result.gvid,
+                                              result,
+                                            )
+                                          }
+                                        >
+                                          <span className="text-sm font-medium text-gray-900">
+                                            {result.vendor_name || result.business_name}
+                                          </span>
+                                          <span className="text-xs text-gray-500">
+                                            {result.gvid}
+                                          </span>
+                                        </button>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : null}
                               </>
                             ) : (
                               <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl">
-                                <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                                       <Icon icon="bi:shop-window" className="text-white text-lg" />
@@ -1924,29 +1924,15 @@ export default function RedemptionPage() {
                                           ID: {selectedVendor.gvid}
                                         </Text>
                                       ) : null}
-                                      {vendorCards.length > 0 && (
-                                        <Text
-                                          variant="span"
-                                          className="text-gray-600 text-sm block"
-                                        >
-                                          {vendorCards.length} card
-                                          {vendorCards.length !== 1 ? 's' : ''} available
-                                        </Text>
-                                      )}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <Icon
-                                      icon="bi:patch-check-fill"
-                                      className="text-green-600 text-xl"
-                                    />
-                                    <button
-                                      onClick={handleResetVendor}
-                                      className="text-primary-600 hover:text-primary-700 text-sm font-medium"
-                                    >
-                                      Change
-                                    </button>
-                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={handleResetVendor}
+                                    className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                                  >
+                                    Change
+                                  </button>
                                 </div>
                               </div>
                             )}
@@ -2199,8 +2185,12 @@ export default function RedemptionPage() {
                                   onClick={handleRedeem}
                                   disabled={
                                     !selectedVendor ||
+                                    !selectedVendorGvid ||
                                     !cardType ||
-                                    // For DashGo and DashPro: require valid amount within balance
+                                    vendorIdFlowRequiresBranch(
+                                      availableBranches.length,
+                                      selectedBranchId,
+                                    ) ||
                                     ((cardType === 'dashgo' || cardType === 'dashpro') &&
                                       (!isValidRedemptionAmountInput(amount) ||
                                         (cardType === 'dashgo' &&
@@ -2209,11 +2199,8 @@ export default function RedemptionPage() {
                                         (cardType === 'dashpro' &&
                                           balance !== null &&
                                           parseFloat(amount) > balance))) ||
-                                    // For DashX and DashPass: require selectedCard and branch if available
                                     ((cardType === 'dashx' || cardType === 'dashpass') &&
-                                      (!selectedCard ||
-                                        (availableBranches.length > 0 &&
-                                          selectedBranchId === null))) ||
+                                      !selectedCard) ||
                                     (isGuestAuth &&
                                       selectedBranchId === null &&
                                       !selectedCard?.branch_id) ||

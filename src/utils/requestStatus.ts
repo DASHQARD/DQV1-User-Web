@@ -46,7 +46,10 @@ export function canCorporateUserApproveRequest(
 ): boolean {
   if (canApproveAtCurrentLevel(request, 'corporate')) return true
 
-  if (userType === 'corporate super admin' && canApproveAtCurrentLevel(request, 'corporate-vendor-scoped')) {
+  if (
+    userType === 'corporate super admin' &&
+    canApproveAtCurrentLevel(request, 'corporate-vendor-scoped')
+  ) {
     return true
   }
 
@@ -60,14 +63,41 @@ export function countAwaitingApprovalRequests(
   return requests.filter((r) => isRequestAwaitingApproval(r.status)).length
 }
 
+export type RequestListItem = {
+  status?: string
+  current_approver_level?: string
+}
+
+/** Normalize list responses from `/requests/*` endpoints. */
+export function parseRequestsListResponse(response: unknown): RequestListItem[] {
+  if (!response) return []
+  if (Array.isArray(response)) return response as RequestListItem[]
+  const data = (response as { data?: unknown })?.data
+  if (Array.isArray(data)) return data as RequestListItem[]
+  return []
+}
+
+/** Count requests the current nav context can approve (sidebar badge). */
+export function countPendingRequestsForContext(
+  requests: RequestListItem[] | null | undefined,
+  context: RequestApprovalContext,
+): number {
+  if (!requests?.length) return 0
+  return requests.filter((r) => canApproveAtCurrentLevel(r, context)).length
+}
+
 export function isRequestRejected(status: string | null | undefined): boolean {
-  return String(status ?? '')
-    .toLowerCase()
-    .trim() === 'rejected'
+  return (
+    String(status ?? '')
+      .toLowerCase()
+      .trim() === 'rejected'
+  )
 }
 
 export function isRequestApproved(status: string | null | undefined): boolean {
-  return String(status ?? '')
-    .toLowerCase()
-    .trim() === 'approved'
+  return (
+    String(status ?? '')
+      .toLowerCase()
+      .trim() === 'approved'
+  )
 }

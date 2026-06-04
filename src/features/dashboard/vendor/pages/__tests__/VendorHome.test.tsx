@@ -26,9 +26,26 @@ vi.mock('@/features/dashboard/corporate/hooks/useCorporateQueries', () => ({
   }),
 }))
 
+vi.mock('@/features/dashboard/hooks/useVendorOperationalAccess', () => ({
+  useVendorOperationalAccess: () => ({ isOperationalAccessEnabled: true }),
+}))
+
+vi.mock('@/features/dashboard/hooks/useVendorPendingApprovalsCount', () => ({
+  useVendorPendingApprovalsCount: () => ({ pendingCount: 0, isLoading: false }),
+}))
+
+vi.mock('@/features/dashboard/hooks/useVendorOnboardingProgress', () => ({
+  useVendorOnboardingProgress: () => ({
+    isComplete: true,
+    getIsNavItemDisabled: () => false,
+  }),
+}))
+
 vi.mock('@/features/dashboard/components', () => ({
   VendorSummaryCards: () => <div data-testid="vendor-summary-cards">Summary</div>,
   CompleteVendorWidget: () => <div data-testid="complete-vendor-widget">Widget</div>,
+  VendorAccountStatusBanner: () => null,
+  VendorOnboardingBanner: () => null,
   RecentRequests: () => <div data-testid="recent-requests">Recent Requests</div>,
   RecentExperiences: () => <div data-testid="recent-experiences">Recent Experiences</div>,
   RecentBranches: () => <div data-testid="recent-branches">Recent Branches</div>,
@@ -45,9 +62,10 @@ describe('VendorHome', () => {
     expect(screen.getByTestId('vendor-summary-cards')).toBeInTheDocument()
   })
 
-  it('renders RecentExperiences and RecentBranches', () => {
+  it('renders RecentExperiences, RecentRequests, and RecentBranches', () => {
     renderWithProviders(<VendorHome />)
     expect(screen.getByTestId('recent-experiences')).toBeInTheDocument()
+    expect(screen.getByTestId('recent-requests')).toBeInTheDocument()
     expect(screen.getByTestId('recent-branches')).toBeInTheDocument()
   })
 
