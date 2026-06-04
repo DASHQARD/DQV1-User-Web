@@ -5,7 +5,10 @@ import { useBusinessLogoUrl, usePersistedModalState, useUserProfile } from '@/ho
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { MODALS, ROUTES } from '@/utils/constants'
-import { countAwaitingApprovalRequests } from '@/utils/requestStatus'
+import {
+  countPendingRequestsForContext,
+  parseRequestsListResponse,
+} from '@/utils/requestStatus'
 import { corporateQueries } from './useCorporateQueries'
 
 export interface CorporateNavItem {
@@ -34,17 +37,13 @@ export function useCorporateSidebar() {
   const { data: allVendorsResponse } = useGetAllVendorsManagementService({ limit: 100 })
   const { data: requestsCorporateResponse } = useGetRequestsCorporateService({
     limit: 100,
-    pending: true,
   })
 
   const pendingRequestsCount = useMemo(() => {
-    if (!requestsCorporateResponse) return 0
-    const list = Array.isArray(requestsCorporateResponse)
-      ? requestsCorporateResponse
-      : Array.isArray(requestsCorporateResponse?.data)
-        ? requestsCorporateResponse.data
-        : []
-    return countAwaitingApprovalRequests(list as Array<{ status?: string }>)
+    return countPendingRequestsForContext(
+      parseRequestsListResponse(requestsCorporateResponse),
+      'corporate',
+    )
   }, [requestsCorporateResponse])
 
   const allVendorsCreatedByCorporate = useMemo(() => {

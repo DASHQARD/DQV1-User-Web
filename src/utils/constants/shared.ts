@@ -114,7 +114,7 @@ export const ROUTES = {
       },
       MY_CARDS: '/dashboard/my-cards',
       ORDERS: '/dashboard/orders',
-      REDEEM: '/dashboard/redeem/dashpro',
+      REDEEM: '/redeem',
       REDEMPTIONS: '/dashboard/redemptions',
       RECIPIENTS: '/dashboard/recipients',
       TRANSACTIONS: '/dashboard/transactions',

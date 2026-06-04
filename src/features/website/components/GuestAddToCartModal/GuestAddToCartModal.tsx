@@ -297,7 +297,6 @@ export default function GuestAddToCartModal() {
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
       openCart()
       handleClose()
-      toast.success('Item added to cart')
     } catch (err: any) {
       toast.error(getApiErrorMessage(err, 'Verification failed. Please try again.'))
     } finally {

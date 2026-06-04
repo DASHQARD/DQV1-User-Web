@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/libs/clsx'
 import Logo from '../../assets/images/logo-placeholder.png'
 import { ROUTES } from '../../utils/constants'
@@ -23,6 +23,8 @@ import {
   getCorporateAccessState,
   isAnyCorporateUser,
 } from '@/features/dashboard/corporate/utils/corporateNavAccess'
+import { VendorPendingApprovalsBell } from '@/features/dashboard/components/vendors/VendorPendingApprovalsBell'
+import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
 
 /** Whether a website nav item should appear selected for the current path. */
 function isWebsiteNavItemActive(pathname: string, itemPath: string): boolean {
@@ -47,6 +49,7 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
   const isDashboardVariant = variant === 'dashboard'
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const [searchParams] = useSearchParams()
 
   // const { cartItems } = useCart()
   const { isOpen: isCartOpen, openCart, closeCart } = useCartStore()
@@ -87,6 +90,17 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
   const userType = currentUserType
   const isVendor = userType === 'vendor' || userType === 'corporate_vendor'
   const isBranchManager = userType === 'branch'
+  const isCorporateSuperAdmin = userType === 'corporate super admin'
+  const { isOperationalAccessEnabled } = useVendorOperationalAccess()
+
+  const showVendorApprovalsBell =
+    isDashboardVariant &&
+    !isBranchManager &&
+    isOperationalAccessEnabled &&
+    (isVendor ||
+      (isCorporateSuperAdmin &&
+        (pathname.startsWith(ROUTES.IN_APP.DASHBOARD.VENDOR.HOME) ||
+          searchParams.get('account') === 'vendor')))
   const isApprovedOrVerified = userStatus === 'approved' || userStatus === 'verified'
 
   // Get vendor_id for fetching branches
@@ -333,6 +347,10 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
             >
               <Icon icon="hugeicons:search-02" className="size-5 text-gray-700" />
             </button>
+
+            {showVendorApprovalsBell && (
+              <VendorPendingApprovalsBell className="bg-gray-50 rounded-full" />
+            )}
 
           {/* Desktop Navigation */}
           <section className="hidden lg:flex items-center gap-3">

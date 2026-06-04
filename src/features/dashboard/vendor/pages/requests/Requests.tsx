@@ -78,7 +78,7 @@ export default function Requests() {
           <div className="relative space-y-[37px]">
             <div className="text-[#0c4b77] py-2 border-b-2 border-[#0c4b77] w-fit">
               <Text variant="h6" weight="medium">
-                All requests
+                All requests ({requestsVendorList.length})
               </Text>
             </div>
             <PaginatedTable

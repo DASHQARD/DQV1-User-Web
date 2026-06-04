@@ -3,6 +3,21 @@ import { useFormContext } from 'react-hook-form'
 import { useCountriesData } from '@/hooks'
 import type { UserProfileResponse } from '@/types/user'
 
+const PROFILE_FIELD_NAMES = [
+  'first_name',
+  'last_name',
+  'dob',
+  'street_address',
+  'id_type',
+  'id_number',
+  'phone',
+  'email',
+] as const
+
+/** RHF treats `disabled` registered inputs as undefined — use readOnly on Input inner box only. */
+export const VENDOR_PROFILE_LOCKED_INNER_CLASS =
+  'text-gray-400 bg-[#f3f3f4] cursor-not-allowed'
+
 export function useVendorProfileForm(corporateUser?: UserProfileResponse | null) {
   const form = useFormContext()
   const { countries } = useCountriesData()
@@ -40,6 +55,7 @@ export function useVendorProfileForm(corporateUser?: UserProfileResponse | null)
         shouldValidate: false,
       })
       form.setValue('email', business?.email || '', { shouldValidate: false })
+      form.clearErrors([...PROFILE_FIELD_NAMES])
     } else if (!checkboxProfileSameAsCorporate) {
       form.setValue('first_name', '', { shouldValidate: false })
       form.setValue('last_name', '', { shouldValidate: false })
@@ -68,6 +84,24 @@ export function useVendorProfileForm(corporateUser?: UserProfileResponse | null)
 
   const isSubmitDisabled = useMemo(() => {
     const { formState } = form
+
+    if (checkboxProfileSameAsCorporate) {
+      const business = corporateUser?.business_details?.[0]
+      const hasCorporateProfile = Boolean(
+        corporateUser?.fullname?.trim() &&
+          corporateUser?.street_address?.trim() &&
+          corporateUser?.dob?.trim() &&
+          corporateUser?.id_type?.trim() &&
+          corporateUser?.id_number?.trim() &&
+          (corporateUser?.phonenumber?.trim() || business?.phone?.trim()) &&
+          business?.email?.trim(),
+      )
+      const hasStaleErrors = PROFILE_FIELD_NAMES.some(
+        (name) => !!formState.errors[name],
+      )
+      return !hasCorporateProfile || hasStaleErrors
+    }
+
     const hasFieldErrors =
       !!formState.errors.first_name ||
       !!formState.errors.last_name ||
@@ -77,8 +111,8 @@ export function useVendorProfileForm(corporateUser?: UserProfileResponse | null)
       !!formState.errors.id_number ||
       !!formState.errors.phone ||
       !!formState.errors.email ||
-      (!checkboxProfileSameAsCorporate && !!formState.errors.front_id) ||
-      (!checkboxProfileSameAsCorporate && isNationalId && !!formState.errors.back_id)
+      !!formState.errors.front_id ||
+      (isNationalId && !!formState.errors.back_id)
 
     const missingRequired =
       !firstName ||
@@ -89,12 +123,13 @@ export function useVendorProfileForm(corporateUser?: UserProfileResponse | null)
       !idNumber ||
       !phone ||
       !email ||
-      (!checkboxProfileSameAsCorporate && !frontId) ||
-      (!checkboxProfileSameAsCorporate && isNationalId && !backId)
+      !frontId ||
+      (isNationalId && !backId)
 
     return missingRequired || hasFieldErrors
   }, [
     form,
+    corporateUser,
     firstName,
     lastName,
     dob,

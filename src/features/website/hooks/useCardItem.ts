@@ -137,7 +137,6 @@ export function useCardItem(props: CardItemHookProps) {
           type,
         })
         openCart()
-        toast.success('Added to cart')
       } catch (err: unknown) {
         toast.error(getApiErrorMessage(err, 'Failed to add item to cart'))
       }

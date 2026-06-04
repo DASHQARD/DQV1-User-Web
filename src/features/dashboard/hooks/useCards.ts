@@ -30,7 +30,13 @@ export function useCard(id: string | number | null) {
   })
 }
 
-export function useCreateCard() {
+type UseCreateCardOptions = {
+  /** When false, skips the API success toast (e.g. website purchase then add-to-cart). */
+  showSuccessToast?: boolean
+}
+
+export function useCreateCard(options?: UseCreateCardOptions) {
+  const showSuccessToast = options?.showSuccessToast ?? true
   const queryClient = useQueryClient()
   const toast = useToast()
 
@@ -38,6 +44,7 @@ export function useCreateCard() {
     mutationFn: (data: CreateCardData) => createCard(data),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['cards'] })
+      if (!showSuccessToast) return
       toast.success(response.message || 'Card created successfully')
     },
     onError: (error: { status: number; message: string }) => {

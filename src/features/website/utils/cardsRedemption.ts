@@ -1,12 +1,63 @@
 import { roundRedemptionAmount } from '@/features/website/utils/guestRedemption'
 import type { CardsRedemptionPayload, UserRedemptionCardsPayload } from '@/types/redemptions'
 
+import type { VendorSearchResult } from '@/types/redemptions'
+
 /** GVID format per redemption API (e.g. GH-0001) */
 export const GVID_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/
 
 export function isFullGvidInput(value: string): boolean {
   const trimmed = value.trim()
   return trimmed.length >= 3 && GVID_PATTERN.test(trimmed)
+}
+
+/**
+ * Use GET /search/vendors/:gvid only for complete vendor GVIDs (e.g. GH-0001).
+ * Numeric fragments like "4158-01" should use ?search= instead (partial GVID/name).
+ */
+export function isExactGvidPathLookup(value: string): boolean {
+  const trimmed = value.trim()
+  return trimmed.length >= 4 && /^[A-Za-z]{2,}-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/.test(trimmed)
+}
+
+export function extractVendorSearchRows(
+  response: { data?: VendorSearchResult[] } | null | undefined,
+): VendorSearchResult[] {
+  const rows = response?.data
+  return Array.isArray(rows) ? rows : []
+}
+
+/** Prefer exact-path results; fall back to partial ?search= when exact returns []. */
+export function mergeVendorSearchResults(
+  partial: VendorSearchResult[],
+  exact: VendorSearchResult[],
+  usedExactPath: boolean,
+): VendorSearchResult[] {
+  if (!usedExactPath) return partial
+  if (exact.length > 0) return exact
+  return partial
+}
+
+export function findVendorSearchMatch(
+  term: string,
+  results: VendorSearchResult[],
+): VendorSearchResult | null {
+  const normalized = term.trim().toLowerCase()
+  if (!normalized) return null
+
+  return (
+    results.find((row) => {
+      if (row.gvid?.toLowerCase() === normalized) return true
+      if (String(row.vendor_id ?? '').toLowerCase() === normalized) return true
+      if (String(row.id ?? '').toLowerCase() === normalized) return true
+      return (row.branches ?? []).some(
+        (branch) =>
+          branch.full_branch_id?.toLowerCase() === normalized ||
+          branch.branch_code?.toLowerCase() === normalized ||
+          branch.id?.toLowerCase() === normalized,
+      )
+    }) ?? null
+  )
 }
 
 export function isRedemptionApiSuccess(

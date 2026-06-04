@@ -37,10 +37,13 @@ vi.mock('@/features/dashboard/hooks', () => ({
     useGetRedemptionsAmountDashPassService: () => ({ data: null, isLoading: false }),
     useGetGuestAssignedCardsService: () => ({ data: null, isLoading: false }),
     useGetGuestRedemptionsService: () => ({ data: null, isLoading: false }),
+    useGetRedeemableCardsService: () => ({ data: null, isLoading: false }),
     useSearchVendorsService: () => ({ data: null, isFetching: false }),
+    useSearchVendorByGvidService: () => ({ data: null, isFetching: false }),
   }),
   useRedemptionMutation: () => ({
     useProcessRedemptionCardsService: () => ({ mutateAsync: vi.fn() }),
+    useProcessUserRedemptionCardsService: () => ({ mutateAsync: vi.fn() }),
     useProcessCardsRedemptionService: () => ({ mutateAsync: vi.fn() }),
     useProcessGuestCardsRedemptionService: () => ({ mutateAsync: vi.fn() }),
     useProcessDashProRedemptionForUserService: () => ({ mutateAsync: vi.fn() }),

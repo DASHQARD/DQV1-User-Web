@@ -47,7 +47,7 @@ export function GiftCardRecipientFields<T extends FieldValues>({
   const emailError = errors[fieldNames.email]?.message as string | undefined
   const messageError = errors[fieldNames.message]?.message as string | undefined
 
-  const showOptionalContact = !assignToSelf || isLocalGuest
+  const phoneRequired = !assignToSelf
   const disabled = usesAccountAssignToSelf || assignToSelf
 
   const firstNamePlaceholder = usesAccountAssignToSelf
@@ -154,8 +154,8 @@ export function GiftCardRecipientFields<T extends FieldValues>({
         ) : null}
         <div>
           <label className="mb-2 block text-sm font-semibold text-gray-700">
-            Phone Number
-            {showOptionalContact ? (
+            Phone Number{phoneRequired ? ' *' : ''}
+            {!phoneRequired && (assignToSelf || isLocalGuest) ? (
               <span className="font-normal text-gray-400"> (optional)</span>
             ) : null}
           </label>
@@ -169,6 +169,7 @@ export function GiftCardRecipientFields<T extends FieldValues>({
                 disabled={disabled}
                 placeholder={phoneFieldPlaceholder}
                 error={phoneError}
+                isRequired={phoneRequired}
               />
             )}
           />
@@ -179,9 +180,7 @@ export function GiftCardRecipientFields<T extends FieldValues>({
         <div>
           <label className="mb-2 block text-sm font-semibold text-gray-700">
             Email Address
-            {showOptionalContact ? (
-              <span className="font-normal text-gray-400"> (optional)</span>
-            ) : null}
+            <span className="font-normal text-gray-400"> (optional)</span>
           </label>
           {variant === 'design-system' ? (
             <Input

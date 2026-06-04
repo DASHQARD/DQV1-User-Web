@@ -6,7 +6,7 @@ import { cn } from '@/libs'
 import { Text, Tooltip, TooltipTrigger, TooltipContent, Avatar, Tag } from '@/components'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
 import { PaymentChangeNotifications } from '../corporate/notifications/PaymentChangeNotifications'
-import { ExperienceApprovalNotifications } from '../corporate/notifications/ExperienceApprovalNotifications'
+import { VendorPendingApprovalsBell } from '../vendors/VendorPendingApprovalsBell'
 import { CreateVendorAccount } from '../corporate/modals'
 import { useCorporateVendorSidebar } from '@/features/dashboard/corporate/hooks'
 import {
@@ -37,6 +37,7 @@ export default function CorporateVendorSidebar() {
     branchesArray,
     discoveryScore,
     canAccessCorporate,
+    pendingRequestsCount,
     isBranchesExpanded,
     setIsBranchesExpanded,
     isActive,
@@ -50,7 +51,6 @@ export default function CorporateVendorSidebar() {
   const accountMenuContent = (
     <>
       <PaymentChangeNotifications />
-      <ExperienceApprovalNotifications />
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -335,9 +335,12 @@ export default function CorporateVendorSidebar() {
                     </Text>
                   </div>
                 </div>
-                {accountMenuContent && !isVendor && (
-                  <div className="flex items-center gap-2">{accountMenuContent}</div>
-                )}
+                <div className="flex items-center gap-1 shrink-0">
+                  <VendorPendingApprovalsBell />
+                  {accountMenuContent && !isVendor && (
+                    <div className="flex items-center gap-2">{accountMenuContent}</div>
+                  )}
+                </div>
               </div>
 
               {/* Divider - Only show if discovery score is not complete */}
@@ -380,8 +383,11 @@ export default function CorporateVendorSidebar() {
             </div>
           </div>
         )}
-        {isCollapsed && accountMenuContent && !isVendor && (
-          <div className="flex items-center justify-center w-full p-4">{accountMenuContent}</div>
+        {isCollapsed && (
+          <div className="flex items-center justify-center w-full p-4 gap-2">
+            <VendorPendingApprovalsBell />
+            {accountMenuContent && !isVendor && accountMenuContent}
+          </div>
         )}
         <ul className="py-2 px-3">
           {VENDOR_NAV_ITEMS.map((section) => {
@@ -582,6 +588,7 @@ export default function CorporateVendorSidebar() {
                       isCollapsed={isCollapsed}
                       isActive={isActive}
                       addAccountParam={addAccountParam}
+                      pendingRequestsCount={pendingRequestsCount}
                     />
                   )
                 })}

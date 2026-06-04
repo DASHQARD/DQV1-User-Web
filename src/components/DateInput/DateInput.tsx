@@ -71,6 +71,7 @@ export function DateInput(props: Props) {
         strictParsing={strictParsing}
         className={cn(
           'w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-600 placeholder:text-gray-300 focus:border-primary-400 focus:outline-none',
+          disabled && 'cursor-not-allowed bg-[#f3f3f4] text-gray-400 placeholder:text-gray-400',
           error && 'border-red-500 ring-1 ring-red-500',
         )}
         peekNextMonth
@@ -79,7 +80,9 @@ export function DateInput(props: Props) {
         dropdownMode="select"
         open={isOpen}
         shouldCloseOnSelect
-        onInputClick={() => setIsOpen(true)}
+        onInputClick={() => {
+          if (!disabled) setIsOpen(true)
+        }}
         onCalendarOpen={() => setIsOpen(true)}
         onCalendarClose={closeCalendar}
         onClickOutside={closeCalendar}

@@ -7,7 +7,7 @@ import {
   Compliance,
   CreateBranch,
   ProfileInformation,
-  Redeem,
+  RedemptionRedirect,
   Settings,
   UploadID,
 } from '../../shared'
@@ -30,7 +30,7 @@ export const corporateRoutes: RouteObject[] = [
   },
   {
     path: 'redeem/dashpro',
-    element: <Redeem />,
+    element: <RedemptionRedirect />,
   },
   {
     path: 'purchase',

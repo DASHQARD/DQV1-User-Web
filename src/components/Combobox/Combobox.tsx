@@ -109,6 +109,8 @@ const selectStyles: StylesConfig<any> = {
     border: 'none',
     minWidth: '0',
     flex: '1',
+    backgroundColor: 'transparent',
+    boxShadow: 'none',
   }),
   valueContainer: (baseStyles) => ({
     ...baseStyles,
@@ -122,8 +124,8 @@ const selectStyles: StylesConfig<any> = {
   }),
   singleValue: (baseStyles) => ({
     ...baseStyles,
-    backgroundColor: 'var(--color-gray-100)',
-    borderRadius: '4px',
+    backgroundColor: 'transparent',
+    color: 'var(--color-gray-600)',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',

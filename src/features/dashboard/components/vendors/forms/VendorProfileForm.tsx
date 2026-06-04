@@ -16,16 +16,29 @@ import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { CORPORATE_ONBOARDING_ID_TYPE_OPTIONS } from '@/utils/constants/idType'
 import { Icon } from '@/libs'
 import type { VendorProfileFormProps } from '@/types'
-import { useVendorProfileForm } from './useVendorProfileForm'
+import { useVendorProfileForm, VENDOR_PROFILE_LOCKED_INNER_CLASS } from './useVendorProfileForm'
 
 export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorProfileFormProps) {
-  const { form, countries, checkboxProfileSameAsCorporate, isSubmitDisabled, isPassport, isNationalId } =
-    useVendorProfileForm(corporateUser)
+  const {
+    form,
+    countries,
+    checkboxProfileSameAsCorporate,
+    isSubmitDisabled,
+    isPassport,
+    isNationalId,
+  } = useVendorProfileForm(corporateUser)
   const dobMaxDate = useMemo(() => {
     const today = new Date()
     const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
     return maxDate.toISOString().split('T')[0]
   }, [])
+
+  const lockedFieldProps = checkboxProfileSameAsCorporate
+    ? {
+        readOnly: true,
+        innerClassName: VENDOR_PROFILE_LOCKED_INNER_CLASS,
+      }
+    : {}
 
   return (
     <AnimatePresence>
@@ -78,7 +91,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
               placeholder="Enter your first name"
               {...form.register('first_name')}
               error={form.formState.errors.first_name?.message}
-              disabled={checkboxProfileSameAsCorporate}
+              {...lockedFieldProps}
             />
             <Input
               label="Last Name"
@@ -86,16 +99,14 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
               placeholder="Enter your last name"
               {...form.register('last_name')}
               error={form.formState.errors.last_name?.message}
-              disabled={checkboxProfileSameAsCorporate}
+              {...lockedFieldProps}
             />
 
             <Controller
               control={form.control}
               name="phone"
               render={({ field: { value, onChange } }) => (
-                <div
-                  className={`col-span-full ${checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}`}
-                >
+                <div className="col-span-full">
                   <BasePhoneInput
                     label="Vendor phone number"
                     isRequired
@@ -103,7 +114,8 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
                     options={countries}
                     selectedVal={value ?? ''}
                     handleChange={onChange}
-                    error={form.formState.errors.phone?.message} hint={<PhoneFormatHint />}
+                    error={form.formState.errors.phone?.message}
+                    hint={<PhoneFormatHint />}
                     disabled={checkboxProfileSameAsCorporate}
                   />
                 </div>
@@ -117,7 +129,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
               className="col-span-full"
               {...form.register('email')}
               error={form.formState.errors.email?.message}
-              disabled={checkboxProfileSameAsCorporate}
+              {...lockedFieldProps}
             />
 
             <Controller
@@ -132,9 +144,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
                   return d
                 })()
                 return (
-                  <div
-                    className={`col-span-full ${checkboxProfileSameAsCorporate ? 'opacity-50 pointer-events-none' : ''}`}
-                  >
+                  <div className="col-span-full">
                     <DateInput
                       label="Date of Birth"
                       id="dob"
@@ -176,7 +186,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
               className="col-span-full"
               {...form.register('street_address')}
               error={form.formState.errors.street_address?.message}
-              disabled={checkboxProfileSameAsCorporate}
+              {...lockedFieldProps}
             />
 
             <Controller
@@ -198,13 +208,11 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
             <Input
               label="ID Number"
               isRequired
-              placeholder={
-                isNationalId ? 'e.g. GHA-123456789-0' : 'Enter your ID number'
-              }
+              placeholder={isNationalId ? 'e.g. GHA-123456789-0' : 'Enter your ID number'}
               className="col-span-full"
               {...form.register('id_number')}
               error={form.formState.errors.id_number?.message}
-              disabled={checkboxProfileSameAsCorporate}
+              {...lockedFieldProps}
             />
           </div>
         </section>

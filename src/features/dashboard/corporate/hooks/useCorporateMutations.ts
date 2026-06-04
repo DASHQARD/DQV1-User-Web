@@ -334,12 +334,11 @@ export function corporateMutations() {
   }
 
   function useAddToCartService() {
-    const { success, error } = useToast()
+    const { error } = useToast()
     const queryClient = useQueryClient()
     return useMutation({
       mutationFn: (data: AddToCartPayload) => addToCart(data),
-      onSuccess: (response: any) => {
-        success(response?.message || 'Item added to cart successfully')
+      onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['corporate-carts'] })
       },
       onError: (err: any) => {

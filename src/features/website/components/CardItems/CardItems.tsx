@@ -34,7 +34,7 @@ export const CardItems = (props: CardItemsProps) => {
   return (
     <article
       className={cn(
-        'flex flex-col bg-white overflow-hidden group transition-shadow',
+        'flex w-full flex-col bg-white overflow-hidden group transition-shadow',
         isExpired ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
         isCompact
           ? 'rounded-lg border border-gray-200/80 shadow-none md:rounded-xl md:border-gray-100 md:shadow-[0_2px_8px_rgba(0,0,0,0.06)] md:hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]'
@@ -67,7 +67,7 @@ export const CardItems = (props: CardItemsProps) => {
       <div
         className={cn(
           'flex flex-col',
-          isCompact ? 'px-2 pt-2 pb-3 md:px-3 md:pt-3 md:pb-4' : 'p-3 pb-3.5',
+          isCompact ? 'px-2 pt-2 pb-3 md:px-3 md:pt-3 md:pb-4' : 'p-3 pb-4',
         )}
       >
         <span
@@ -136,13 +136,13 @@ export const CardItems = (props: CardItemsProps) => {
         ) : null}
         <div
           className={cn(
-            'flex gap-1.5 border-t border-gray-100',
+            'flex w-full gap-2 border-t border-gray-100',
             isCompact
-              ? 'flex-col pt-2 md:flex-row md:items-center md:gap-2 md:pt-2'
-              : 'items-center gap-2 pt-2',
+              ? 'flex-col pt-2 md:flex-row md:items-center md:justify-between md:pt-2.5'
+              : 'items-center justify-between pt-2.5',
           )}
         >
-          <div className="flex min-w-0 items-center gap-1.5 md:gap-2 md:flex-1">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 md:gap-2">
             <div
               className={cn(
                 'flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#402D87]/10',

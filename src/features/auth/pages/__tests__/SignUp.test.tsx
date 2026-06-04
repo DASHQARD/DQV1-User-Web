@@ -39,7 +39,8 @@ describe('SignUp (auth)', () => {
       })
       return <SignUp />
     }
-    const { getByRole } = renderWithProviders(<Wrapper />)
-    expect(getByRole('heading', { name: /create account/i })).toBeInTheDocument()
+    const { getByRole, getByTestId } = renderWithProviders(<Wrapper />)
+    expect(getByRole('button', { name: /personal/i })).toBeInTheDocument()
+    expect(getByTestId('signup-marketing')).toHaveClass('hidden')
   })
 })

@@ -194,7 +194,6 @@ export function useCardDetails(): UseCardDetailsReturn {
           type: pending.type,
         })
         openCart()
-        toast.success('Added to cart')
       } catch (err: unknown) {
         toast.error(getApiErrorMessage(err, 'Failed to add to cart'))
       }

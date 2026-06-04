@@ -68,7 +68,9 @@ export function useDashProPurchase() {
   const recipientName = formatPersonName(recipientFirstName ?? '', recipientLastName ?? '')
   const message = useWatch({ control, name: 'message' })
 
-  const { mutate: createDashProCard, isPending: isCreatingDashProCard } = useCreateCard()
+  const { mutate: createDashProCard, isPending: isCreatingDashProCard } = useCreateCard({
+    showSuccessToast: false,
+  })
   const { addToCartAsync, refetch: refetchCart } = useCart()
   const { refetch: refetchGuestCart } = useGuestCart()
   const { openCart } = useCartStore()
