@@ -1,25 +1,21 @@
 import { useNavigate } from 'react-router-dom'
 import { Button, Text } from '@/components'
 import { Icon } from '@/libs'
-import { useGuestAddToCartModalStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import { setGuestBrowsingAck } from '@/features/website/utils/guestBrowsingSession'
+import { useToast } from '@/hooks'
 
 type CardKind = 'DashPro' | 'DashGo'
 
 export function DashQardsCustomCardGate({ cardKind }: { cardKind: CardKind }) {
   const navigate = useNavigate()
-  const openGuestModal = useGuestAddToCartModalStore((s) => s.open)
+  const toast = useToast()
 
   const handleContinueAsGuest = () => {
     setGuestBrowsingAck()
-    openGuestModal({
-      card_id: 0,
-      product: `Custom ${cardKind}`,
-      price: 0,
-      type: cardKind.toLowerCase(),
-      authOnly: true,
-    })
+    toast.success(
+      `Continue customizing your ${cardKind} card below. We’ll verify your phone at checkout.`,
+    )
   }
 
   return (
@@ -31,8 +27,8 @@ export function DashQardsCustomCardGate({ cardKind }: { cardKind: CardKind }) {
         Sign in to create a custom {cardKind} card
       </Text>
       <p className="text-sm text-grey-500 mb-6 max-w-md mx-auto">
-        Custom {cardKind} gift cards require an account or a verified guest session. Choose an
-        option below to continue.
+        Sign in to your account, or continue as guest to customize and add to your bag. Phone
+        verification happens at checkout, not before you browse.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center max-w-md mx-auto">
         <Button

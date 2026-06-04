@@ -6,6 +6,11 @@ export type GuestAddToCartPendingItem = {
   price?: number
   type?: string
   currency?: string
+  /** DashGo local-cart metadata (vendor profile quick add). */
+  vendor_id?: string
+  vendor_name?: string
+  description?: string
+  redemption_branches?: Array<{ branch_id: string }>
   /** Guest OTP + cart setup only; skip add-to-cart (e.g. custom DashPro/DashGo on DashQards). */
   authOnly?: boolean
   /** Gift card redemption: contact + OTP only; no cart (uses same guest-auth endpoints as checkout). */

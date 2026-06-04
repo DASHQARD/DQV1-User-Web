@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { useMemo, useCallback } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button, EmptyState, Loader, Text } from '@/components'
 import { Icon } from '@/libs'
 import { EmptyStateImage } from '@/assets/images'
@@ -17,6 +17,13 @@ import {
 } from '@/features/website/utils/guestCreatedCards'
 import { isAssignedCardRedeemable, resolveCardDisplayStatus } from '@/utils/cardExpiry'
 import { GuestGiftCardTile } from './GuestGiftCardTile'
+import {
+  buildRedemptionUrlFromGuestAssignedCard,
+  buildRedemptionUrlFromGuestPurchasedCard,
+  isGuestAssignedCardRedeemNavigable,
+  isGuestPurchasedCardRedeemNavigable,
+} from '@/features/website/utils/guestCardRedemptionNavigation'
+import { useToast } from '@/hooks'
 
 function guestStatusBadgeClass(status: string): string {
   const normalized = status.toLowerCase()
@@ -28,8 +35,15 @@ function guestStatusBadgeClass(status: string): string {
   return 'bg-gray-100 text-gray-600'
 }
 
-function PurchasedGuestCardTile({ card }: { card: GuestCreatedCard }) {
+function PurchasedGuestCardTile({
+  card,
+  onRedeem,
+}: {
+  card: GuestCreatedCard
+  onRedeem: (card: GuestCreatedCard) => void
+}) {
   const statusLabel = card.status ? formatGuestCardStatusLabel(card.status) : null
+  const canRedeem = isGuestPurchasedCardRedeemNavigable(card)
 
   return (
     <GuestGiftCardTile
@@ -43,14 +57,24 @@ function PurchasedGuestCardTile({ card }: { card: GuestCreatedCard }) {
       redemptionCode={card.redemption_code}
       statusLabel={statusLabel}
       statusClassName={statusLabel ? guestStatusBadgeClass(card.status) : undefined}
+      onSelect={canRedeem ? () => onRedeem(card) : undefined}
     />
   )
 }
 
-function AssignedGuestCardTile({ card, currency }: { card: GuestAssignedCard; currency: string }) {
+function AssignedGuestCardTile({
+  card,
+  currency,
+  onRedeem,
+}: {
+  card: GuestAssignedCard
+  currency: string
+  onRedeem: (card: GuestAssignedCard) => void
+}) {
   const balance = card.balance ?? card.amount ?? card.price ?? 0
   const displayStatus = resolveCardDisplayStatus(card.status, card.expiry_date)
   const redeemable = isAssignedCardRedeemable(card)
+  const canNavigate = isGuestAssignedCardRedeemNavigable(card)
 
   const statusLabel = card.redeemed
     ? 'Redeemed'
@@ -78,11 +102,14 @@ function AssignedGuestCardTile({ card, currency }: { card: GuestAssignedCard; cu
             ? 'bg-red-50 text-red-800'
             : undefined
       }
+      onSelect={canNavigate ? () => onRedeem(card) : undefined}
     />
   )
 }
 
 export default function GuestCardsPage() {
+  const navigate = useNavigate()
+  const toast = useToast()
   const { useGetGuestCardsService } = useGuestQueries()
   const { useGetGuestAssignedCardsService } = useRedemptionQueries()
   const { data: createdCards = [], isLoading: isLoadingCreated } = useGetGuestCardsService()
@@ -96,6 +123,30 @@ export default function GuestCardsPage() {
   const assignedCurrency = assignedPayload.currency ?? 'GHS'
 
   const isLoading = isLoadingCreated || isLoadingAssigned
+
+  const navigateToRedeemFromPurchased = useCallback(
+    (card: GuestCreatedCard) => {
+      const url = buildRedemptionUrlFromGuestPurchasedCard(card)
+      if (!url) {
+        toast.error('This card cannot be redeemed from here yet.')
+        return
+      }
+      navigate(url)
+    },
+    [navigate, toast],
+  )
+
+  const navigateToRedeemFromAssigned = useCallback(
+    (card: GuestAssignedCard) => {
+      const url = buildRedemptionUrlFromGuestAssignedCard(card)
+      if (!url) {
+        toast.error('This card cannot be redeemed from here yet.')
+        return
+      }
+      navigate(url)
+    },
+    [navigate, toast],
+  )
 
   if (isLoading) {
     return (
@@ -147,6 +198,7 @@ export default function GuestCardsPage() {
                 <PurchasedGuestCardTile
                   key={getGuestCreatedCardRowKey(card, index)}
                   card={card}
+                  onRedeem={navigateToRedeemFromPurchased}
                 />
               ))}
             </div>
@@ -181,7 +233,14 @@ export default function GuestCardsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {assignedCards.map((card: GuestAssignedCard, index) => {
                 const key = String(card.guest_recipient_id ?? card.gift_card_id ?? index)
-                return <AssignedGuestCardTile key={key} card={card} currency={assignedCurrency} />
+                return (
+                  <AssignedGuestCardTile
+                    key={key}
+                    card={card}
+                    currency={assignedCurrency}
+                    onRedeem={navigateToRedeemFromAssigned}
+                  />
+                )
               })}
             </div>
           )}

@@ -16,7 +16,8 @@ import {
 import { useForm } from 'react-hook-form'
 import { useCartStore } from '@/stores/cart'
 import { useAuthStore } from '@/stores'
-import { useGuestAddToCartModalStore } from '@/stores/guestAddToCartModal'
+import { useGuestLocalCartStore } from '@/stores/guestLocalCart'
+import { setGuestBrowsingAck } from '@/features/website/utils/guestBrowsingSession'
 import { useToast } from '@/hooks'
 import { createCustomDashGoAndAddToCart } from '../../services/cards'
 import { getGuestEmailFromAuth, getGuestNameFromAuth } from '../../utils/guestAuth'
@@ -53,7 +54,7 @@ export default function PublicDashGoForm({
   const getGuestCartUuid = useAuthStore((s) => s.getGuestCartUuid)
   const setGuestCartId = useAuthStore((s) => s.setGuestCartId)
   const setGuestCartUuid = useAuthStore((s) => s.setGuestCartUuid)
-  const openGuestModal = useGuestAddToCartModalStore((s) => s.open)
+  const addCustomDashGoLine = useGuestLocalCartStore((s) => s.addCustomDashGoLine)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   const form = useForm<{ amount: string }>({
@@ -86,31 +87,43 @@ export default function PublicDashGoForm({
       return
     }
 
+    const redemptionBranches = availableBranches.map((branch: { branch_id: string }) => ({
+      branch_id: branch.branch_id,
+    }))
+
     if (!isAuthenticated) {
+      if (redemptionBranches.length === 0) {
+        toast.error('Select a vendor with at least one branch to add DashGo to your bag.')
+        return
+      }
       try {
         assertGuestCartAmountWithinLimit(cardAmount)
+        setGuestBrowsingAck()
+        addCustomDashGoLine({
+          vendor_id,
+          product: 'DashGo Gift Card',
+          description: `Custom DashGo card for ${vendorName}`,
+          amount: cardAmount,
+          currency: DEFAULT_CURRENCY,
+          redemption_branches: redemptionBranches,
+          assign_to_self: false,
+          first_name: '',
+          last_name: '',
+          phone: '',
+          email: '',
+          message: '',
+        })
+        toast.success('DashGo gift card saved to your bag')
+        openCart()
       } catch (err: unknown) {
         const message = getApiErrorMessage(err, 'Failed to add DashGo to cart')
         if (err instanceof GuestCartAmountLimitError || isGuestAmountThresholdMessage(message)) {
           form.setError('amount', { type: 'server', message })
         }
         toast.error(message)
-        return
       }
-      openGuestModal({
-        card_id: 0,
-        product: 'DashGo Gift Card',
-        price: cardAmount,
-        type: 'dashgo',
-        authOnly: true,
-      })
-      toast.success('Verify your phone to continue, then add to cart again.')
       return
     }
-
-    const redemptionBranches = availableBranches.map((branch: { branch_id: string }) => ({
-      branch_id: branch.branch_id,
-    }))
 
     setIsSubmitting(true)
     try {
