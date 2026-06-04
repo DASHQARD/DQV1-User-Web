@@ -54,13 +54,15 @@ export function buildRedemptionUrlFromCard(card: {
   gvid?: string
 }): string {
   const cardType = card.card_type?.toLowerCase()
-  const isDashXOrPass = cardType === 'dashx' || cardType === 'dashpass'
+  const includeCardId =
+    card.card_id != null &&
+    (cardType === 'dashx' || cardType === 'dashpass' || cardType === 'dashgo')
   return buildRedemptionUrl({
     method: 'vendor_id',
     card_type: cardType,
     vendor_id: card.vendor_id != null ? String(card.vendor_id) : undefined,
     vendor_gvid: card.gvid,
     branch_id: card.branch_id != null ? String(card.branch_id) : undefined,
-    card_id: isDashXOrPass && card.card_id != null ? String(card.card_id) : undefined,
+    card_id: includeCardId ? String(card.card_id) : undefined,
   })
 }

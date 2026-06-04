@@ -33,7 +33,11 @@ import { useGuestLocalCartStore } from '@/stores/guestLocalCart'
 import { runGuestCheckoutBagSync } from '@/features/website/utils/runGuestCheckoutBagSync'
 import { GuestCartSyncError } from '@/features/website/utils/guestCartSyncError'
 import { setGuestBrowsingAck } from '@/features/website/utils/guestBrowsingSession'
-import { assertGuestCartAmountWithinLimit } from '@/features/website/utils/validateGuestLocalCart'
+import { addGuestPendingItemToLocalCart } from '@/features/website/utils/addGuestPendingItemToLocalCart'
+import {
+  assertGuestCartAmountWithinLimit,
+  GuestCartAmountLimitError,
+} from '@/features/website/utils/validateGuestLocalCart'
 
 const OTPSchema = z.object({
   otp: z.string().min(4, 'OTP must be 4 digits').max(4, 'OTP must be 4 digits'),
@@ -168,8 +172,43 @@ export default function GuestAddToCartModal() {
   }
 
   const handleContinueAsGuest = () => {
+    if (!pendingItem) return
     setGuestBrowsingAck()
-    setStep('contact')
+
+    if (
+      pendingItem.redemptionOnly ||
+      pendingItem.checkoutSync ||
+      pendingItem.guestLoginOnly
+    ) {
+      setStep('contact')
+      return
+    }
+
+    try {
+      const added = addGuestPendingItemToLocalCart(pendingItem)
+      if (added) {
+        openCart()
+        handleClose()
+        toast.success('Added to your bag')
+        return
+      }
+
+      handleClose()
+      toast.success(
+        pendingItem.authOnly
+          ? 'Continue customizing your card. We’ll verify your phone at checkout.'
+          : 'You can keep browsing. We’ll verify your phone at checkout.',
+      )
+    } catch (err: unknown) {
+      toast.error(
+        getApiErrorMessage(
+          err,
+          err instanceof GuestCartAmountLimitError
+            ? err.message
+            : 'Could not add this item to your bag.',
+        ),
+      )
+    }
   }
 
   const onContactSubmit = async (data: ContactFormData) => {
@@ -346,7 +385,7 @@ export default function GuestAddToCartModal() {
               </h3>
               <p className="text-sm text-gray-500">
                 {pendingItem?.authOnly
-                  ? 'Sign in or continue as guest to customize your gift card'
+                  ? 'Sign in to your account, or continue as guest without verifying your phone yet'
                   : 'Choose how you’d like to continue'}
               </p>
             </div>
@@ -362,7 +401,7 @@ export default function GuestAddToCartModal() {
                 <div className="min-w-0">
                   <span className="block font-medium text-gray-900">Continue as guest</span>
                   <span className="block text-xs text-gray-500 mt-0.5">
-                    Quick checkout with phone verification
+                    Browse and add to cart — verify at checkout
                   </span>
                 </div>
                 <Icon icon="bi:chevron-right" className="text-gray-400 shrink-0 ml-auto" />

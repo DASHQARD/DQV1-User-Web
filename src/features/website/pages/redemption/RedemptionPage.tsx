@@ -54,6 +54,7 @@ import {
   parseRedemptionSearchParams,
   vendorIdFlowRequiresBranch,
 } from '@/features/website/utils/redemptionDeepLink'
+import { findRedemptionCardInList } from '@/features/website/utils/guestCardRedemptionNavigation'
 import { isExactGvidPathLookup } from '@/features/website/utils/cardsRedemption'
 
 type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
@@ -133,6 +134,7 @@ export default function RedemptionPage() {
   }
 
   const deepLinkApplied = useRef(false)
+  const pendingDeepLinkCardIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (searchParams.get('redeem') === 'true') {
@@ -163,6 +165,9 @@ export default function RedemptionPage() {
     }
     if (parsed.branch_id) {
       setSelectedBranchId(parsed.branch_id)
+    }
+    if (parsed.card_id?.trim()) {
+      pendingDeepLinkCardIdRef.current = parsed.card_id.trim()
     }
   }, [searchParams])
 
@@ -1084,6 +1089,7 @@ export default function RedemptionPage() {
       displayName: string,
       gvid?: string,
       searchVendor?: VendorSearchResult | null,
+      options?: { preserveCardType?: boolean; preserveBranch?: boolean },
     ) => {
       const vendor = vendors.find((v: { vendor_id?: string | number }) => {
         return String(v.vendor_id ?? '') === String(vendorId)
@@ -1116,8 +1122,12 @@ export default function RedemptionPage() {
       }
 
       setSelectedCard(null)
-      setSelectedBranchId(null)
-      setCardType('')
+      if (!options?.preserveBranch) {
+        setSelectedBranchId(null)
+      }
+      if (!options?.preserveCardType) {
+        setCardType('')
+      }
       setAmount('')
     },
     [vendors, setVendorIdInput],
@@ -1127,11 +1137,16 @@ export default function RedemptionPage() {
     if (redemptionMethod !== 'vendor_id' || !vendorIdExactMatch) return
     if (vendorIdSearchResults.length > 1 && !isExactGvidPathLookup(debouncedVendorId)) return
     if (String(selectedVendorId) === String(vendorIdExactMatch.vendor_id)) return
+    const parsed = parseRedemptionSearchParams(searchParams)
     applyVendorSelection(
       vendorIdExactMatch.vendor_id,
       vendorIdExactMatch.vendor_name || vendorIdExactMatch.business_name || '',
       vendorIdExactMatch.gvid,
       vendorIdExactMatch,
+      {
+        preserveCardType: Boolean(parsed.card_type),
+        preserveBranch: Boolean(parsed.branch_id),
+      },
     )
   }, [
     redemptionMethod,
@@ -1140,7 +1155,46 @@ export default function RedemptionPage() {
     debouncedVendorId,
     selectedVendorId,
     applyVendorSelection,
+    searchParams,
   ])
+
+  useEffect(() => {
+    if (redemptionMethod !== 'vendor_id') return
+    const parsed = parseRedemptionSearchParams(searchParams)
+    const vendorId = parsed.vendor_id?.trim()
+    if (!vendorId || parsed.vendor_gvid) return
+    if (String(selectedVendorId) === vendorId) return
+
+    const vendor = vendors.find(
+      (v: { vendor_id?: string | number }) => String(v.vendor_id ?? '') === vendorId,
+    )
+    if (!vendor) return
+
+    applyVendorSelection(
+      vendorId,
+      vendor.business_name || vendor.vendor_name || '',
+      vendor.gvid,
+      null,
+      {
+        preserveCardType: Boolean(parsed.card_type),
+        preserveBranch: Boolean(parsed.branch_id),
+      },
+    )
+  }, [vendors, searchParams, redemptionMethod, selectedVendorId, applyVendorSelection])
+
+  useEffect(() => {
+    const targetId = pendingDeepLinkCardIdRef.current
+    if (!targetId || step !== 'details') return
+
+    const parsed = parseRedemptionSearchParams(searchParams)
+    const match = findRedemptionCardInList(filteredCards, targetId, {
+      branchId: parsed.branch_id ?? selectedBranchId,
+    })
+    if (!match) return
+
+    setSelectedCard(match)
+    pendingDeepLinkCardIdRef.current = null
+  }, [filteredCards, searchParams, selectedBranchId, step])
 
   const handleMethodSelect = (method: RedemptionMethod) => {
     setRedemptionMethod(method)
