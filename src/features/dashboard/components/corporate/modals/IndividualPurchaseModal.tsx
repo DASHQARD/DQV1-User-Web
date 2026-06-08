@@ -12,6 +12,7 @@ import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import { vendorQueries } from '@/features/dashboard/vendor'
 import { corporateQueries } from '@/features/dashboard/corporate'
 import { formatGiftCardAmountPreview, isGiftCardAmountSubmittable } from '@/utils/giftCardAmount'
+import { resolveFeaturedCardPricingFields } from '@/features/website/pages/cardDetails/cardDetailsUtils'
 
 type TabType = 'purchases' | 'vendors' | 'dashpro'
 type CardType = 'card' | 'dashgo'
@@ -290,16 +291,13 @@ export function IndividualPurchaseModal() {
                         branch_location={card.branch_location}
                         vendor_name={selectedVendorName}
                         rating={card.rating}
-                        price={card.price}
                         currency={card.currency}
                         type={card.type}
                         description={card.description || ''}
                         expiry_date={card.expiry_date || ''}
                         terms_and_conditions={card.terms_and_conditions || []}
                         created_at={card.created_at || ''}
-                        base_price={card.price || ''}
-                        markup_price={null}
-                        service_fee="0"
+                        {...resolveFeaturedCardPricingFields(card)}
                         status={card.status || 'active'}
                         recipient_count="0"
                         images={card.images || []}

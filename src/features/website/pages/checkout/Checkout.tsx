@@ -4,7 +4,7 @@ import { Controller } from 'react-hook-form'
 import { Icon } from '@/libs'
 import { CheckoutSection } from './CheckoutSection'
 import { CheckoutFlowProgress, type CheckoutFlowStep } from './CheckoutFlowProgress'
-import { Button, Loader, Modal, EmptyState, Input, BasePhoneInput } from '@/components'
+import { AccountBenefitsPanel, Button, Loader, Modal, EmptyState, Input, BasePhoneInput } from '@/components'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import FileUploader from '@/components/FileUploader/FileUploader'
 import { useCheckout, type CheckoutFlattenedCartItem } from '@/features/website/hooks/useCheckout'
@@ -283,6 +283,12 @@ export default function Checkout() {
           <CheckoutFlowProgress steps={checkoutFlowSteps} />
           <p className="text-sm text-gray-600">{checkoutFlowHint}</p>
         </div>
+
+        {isGuestCheckoutFlow ? (
+          <div className="mb-6 lg:hidden">
+            <AccountBenefitsPanel variant="banner" showGuestCheckoutNote />
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
@@ -1036,6 +1042,12 @@ export default function Checkout() {
               </Button>
               )}
             </div>
+
+            {isGuestCheckoutFlow ? (
+              <div className="hidden lg:block">
+                <AccountBenefitsPanel variant="sidebar" showGuestCheckoutNote className="mt-4" />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

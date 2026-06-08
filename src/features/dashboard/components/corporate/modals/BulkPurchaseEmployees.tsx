@@ -10,6 +10,7 @@ import {
   GiftCardAmountField,
 } from '@/components'
 import { CardItems } from '@/features/website/components/CardItems/CardItems'
+import { resolveFeaturedCardPricingFields } from '@/features/website/pages/cardDetails/cardDetailsUtils'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
 import DashProBg from '@/assets/svgs/dashpro_bg.svg'
 import RecipientTemplate from '@/assets/recipient_template.xlsx?url'
@@ -965,16 +966,13 @@ export function BulkPurchaseEmployeesModal() {
                                 card.vendor_name || selectedVendorName || 'Unknown Vendor'
                               }
                               rating={card.rating}
-                              price={card.price}
                               currency={card.currency}
                               type={card.type}
                               description={card.description || ''}
                               expiry_date={card.expiry_date || ''}
                               terms_and_conditions={card.terms_and_conditions || []}
                               created_at={card.created_at || ''}
-                              base_price={card.price || ''}
-                              markup_price={null}
-                              service_fee="0"
+                              {...resolveFeaturedCardPricingFields(card)}
                               status={card.status || 'active'}
                               recipient_count="0"
                               images={card.images || []}

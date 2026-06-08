@@ -4,6 +4,31 @@ import type { CardPriceBreakdown } from '@/features/website/types/cardDetails'
 
 export type { CardPriceBreakdown }
 
+export function resolveFeaturedCardPricingFields(card: {
+  price?: unknown
+  base_price?: unknown
+  markup_price?: unknown
+  markup_amount?: unknown
+}): {
+  price: string
+  base_price: string
+  markup_price: number | null
+} {
+  const price = String(card.price ?? '')
+  const baseRaw = card.base_price
+  const base_price =
+    baseRaw != null && String(baseRaw).trim() !== '' && String(baseRaw) !== 'null'
+      ? String(baseRaw)
+      : price
+  const markupRaw = card.markup_price ?? card.markup_amount
+  if (markupRaw == null || markupRaw === '' || markupRaw === 'null') {
+    return { price, base_price, markup_price: null }
+  }
+  const markupNum = parseFloat(String(markupRaw))
+  const markup_price = Number.isFinite(markupNum) && markupNum > 0 ? markupNum : null
+  return { price, base_price, markup_price }
+}
+
 export function parseCardPrice(value: unknown): number | null {
   const parsed = parseFloat(String(value ?? ''))
   if (Number.isNaN(parsed) || parsed < 0) return null
@@ -14,11 +39,12 @@ export function getCardPriceBreakdown(card: {
   price?: unknown
   base_price?: unknown
   markup_price?: unknown
+  markup_amount?: unknown
   currency?: string
 }): CardPriceBreakdown | null {
   const totalPrice = parseCardPrice(card.price)
   const basePrice = parseCardPrice(card.base_price)
-  const markupPrice = parseCardPrice(card.markup_price)
+  const markupPrice = parseCardPrice(card.markup_price ?? card.markup_amount)
   if (totalPrice == null || basePrice == null || markupPrice == null) return null
   if (basePrice <= 0 && markupPrice <= 0) return null
   return {

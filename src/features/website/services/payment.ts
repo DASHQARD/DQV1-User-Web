@@ -1,4 +1,4 @@
-import { getMethod, postMethod } from '@/services/requests'
+import { getMethod, patchMethod, postMethod } from '@/services/requests'
 import type { CheckoutPayload, GuestCheckoutPayload } from '@/types'
 
 export interface PaymentProviderConfig {
@@ -35,6 +35,20 @@ export const getPaymentProviderConfig = async (): Promise<PaymentProviderConfig>
 export const getServiceFees = async (): Promise<ServiceFeeConfig> => {
   const res = await getMethod<ServiceFeeConfigResponse>('/service-fees')
   return res?.data ?? (res as unknown as ServiceFeeConfig)
+}
+
+export type UpdateServiceFeesPayload = {
+  service_fee_rate: number
+  vendor_markup_rate: number
+}
+
+/** PATCH /service-fees — platform admin only */
+export const updateServiceFees = async (
+  data: UpdateServiceFeesPayload,
+): Promise<ServiceFeeConfig> => {
+  const res = await patchMethod('/service-fees', data)
+  const body = res as unknown as ServiceFeeConfigResponse
+  return body?.data ?? (res as unknown as ServiceFeeConfig)
 }
 
 export const checkout = async (data: CheckoutPayload): Promise<unknown> => {
