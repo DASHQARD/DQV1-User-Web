@@ -9,10 +9,12 @@ import {
   getGiftCardMetrics,
   getCardMetricsDetails,
   rateCard,
+  rateGuestCard,
   type RateCardPayload,
 } from '../services/cards'
 import type { CreateCardData, UpdateCardData } from '@/types/responses'
 import type { GetCardMetricsDetailsParams } from '@/types'
+import { useAuthStore } from '@/stores'
 
 export function useCards() {
   return useQuery({
@@ -111,10 +113,18 @@ export function useRateCard() {
   const toast = useToast()
 
   return useMutation({
-    mutationFn: (data: RateCardPayload) => rateCard(data),
+    mutationFn: (data: RateCardPayload) => {
+      const isGuestAuth = useAuthStore.getState().isGuestAuth
+      return isGuestAuth ? rateGuestCard(data) : rateCard(data)
+    },
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ['cards'] })
-      queryClient.invalidateQueries({ queryKey: ['card-metrics-details'] })
+      if (useAuthStore.getState().isGuestAuth) {
+        queryClient.invalidateQueries({ queryKey: ['guest-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['guest-assigned-cards'] })
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['cards'] })
+        queryClient.invalidateQueries({ queryKey: ['card-metrics-details'] })
+      }
       toast.success(response?.message || 'Rating submitted successfully')
     },
     onError: (error: { status: number; message: string }) => {

@@ -75,9 +75,31 @@ export const getCardMetricsDetails = async (
 
 export interface RateCardPayload {
   card_id: string
+  /** Whole number 1–5 */
   rating: number
 }
 
-export const rateCard = async (data: RateCardPayload): Promise<any> => {
-  return await patchMethod('/cards/rate', data)
+export interface RateCardAggregateData {
+  id: string
+  rating: number
+  rating_count: number
+}
+
+export interface RateCardResponse {
+  status: string
+  statusCode: number
+  message: string
+  data?: RateCardAggregateData
+}
+
+/** PATCH /cards/rate — registered users (`user_type: user`) only */
+export const rateCard = async (data: RateCardPayload): Promise<RateCardResponse> => {
+  const res = await patchMethod('/cards/rate', data)
+  return res as unknown as RateCardResponse
+}
+
+/** PATCH /guest-cards/rate — guest OTP token; guest phone from Bearer */
+export const rateGuestCard = async (data: RateCardPayload): Promise<RateCardResponse> => {
+  const res = await patchMethod('/guest-cards/rate', data)
+  return res as unknown as RateCardResponse
 }
