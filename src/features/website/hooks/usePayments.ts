@@ -6,6 +6,8 @@ import {
   guestCheckout,
   getPaymentProviderConfig,
   getServiceFees,
+  updateServiceFees,
+  type UpdateServiceFeesPayload,
 } from '../services/payment'
 import { processCheckoutResponse } from '../utils/checkoutRedirect'
 
@@ -98,10 +100,24 @@ export function usePayments() {
     })
   }
 
+  function useUpdateServiceFeesConfig() {
+    return useMutation({
+      mutationFn: (data: UpdateServiceFeesPayload) => updateServiceFees(data),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['service-fees'] })
+        toast.success('Fee configuration updated')
+      },
+      onError: (error: CheckoutError) => {
+        toast.error(error?.message ?? 'Failed to update fee configuration')
+      },
+    })
+  }
+
   return {
     useCheckoutService,
     useGuestCheckoutService,
     usePaymentProviderConfig,
     useServiceFeesConfig,
+    useUpdateServiceFeesConfig,
   }
 }

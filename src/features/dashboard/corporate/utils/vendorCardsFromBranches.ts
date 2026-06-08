@@ -1,4 +1,5 @@
 import type { FeaturedCardProps } from '@/types'
+import { resolveFeaturedCardPricingFields } from '@/features/website/pages/cardDetails/cardDetailsUtils'
 
 /** Card row shape expected by CardItems / bulk purchase UI */
 export type VendorCatalogCard = {
@@ -9,6 +10,9 @@ export type VendorCatalogCard = {
   branch_location: string
   rating: number
   price: string
+  base_price?: string | null
+  markup_price?: number | null
+  markup_amount?: string | number | null
   currency: string
   type: string
   description: string
@@ -64,6 +68,18 @@ function mapRawToCatalogCard(
     branch_location: String(ctx.branch_location ?? ''),
     rating: Number(card.rating ?? 0),
     price: String(card.card_price ?? card.price ?? 0),
+    base_price:
+      card.base_price != null && String(card.base_price) !== 'null'
+        ? String(card.base_price)
+        : null,
+    markup_price:
+      card.markup_price != null && card.markup_price !== ''
+        ? Number(card.markup_price)
+        : null,
+    markup_amount:
+      card.markup_amount != null && String(card.markup_amount) !== 'null'
+        ? (card.markup_amount as string | number)
+        : null,
     currency: String(card.currency ?? 'GHS'),
     type: String(card.card_type ?? card.type ?? ''),
     description: String(card.card_description ?? card.description ?? ''),
@@ -161,10 +177,7 @@ export function vendorCatalogCardToFeaturedCardProps(
     branch_name: card.branch_name,
     branch_location: card.branch_location,
     description: card.description,
-    price: card.price,
-    base_price: card.price,
-    markup_price: null,
-    service_fee: '0',
+    ...resolveFeaturedCardPricingFields(card),
     currency: card.currency,
     expiry_date: card.expiry_date,
     status: card.status,

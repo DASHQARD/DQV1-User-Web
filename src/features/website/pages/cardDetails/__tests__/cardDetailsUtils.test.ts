@@ -3,9 +3,40 @@ import {
   formatTermDisplayName,
   getCardPriceBreakdown,
   getVendorNameById,
+  resolveFeaturedCardPricingFields,
 } from '../cardDetailsUtils'
 
 describe('cardDetailsUtils', () => {
+  it('builds price breakdown from markup_amount when markup_price is absent', () => {
+    expect(
+      getCardPriceBreakdown({
+        price: '110.00',
+        base_price: '100.00',
+        markup_amount: '10.00',
+        currency: 'GHS',
+      }),
+    ).toEqual({
+      basePrice: 100,
+      markupPrice: 10,
+      totalPrice: 110,
+      currency: 'GHS',
+    })
+  })
+
+  it('maps featured card pricing from API card fields', () => {
+    expect(
+      resolveFeaturedCardPricingFields({
+        price: '110.00',
+        base_price: '100.00',
+        markup_amount: '10.00',
+      }),
+    ).toEqual({
+      price: '110.00',
+      base_price: '100.00',
+      markup_price: 10,
+    })
+  })
+
   it('builds price breakdown from API fields', () => {
     expect(
       getCardPriceBreakdown({

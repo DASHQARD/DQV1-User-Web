@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -423,6 +423,16 @@ export default function GuestAddToCartModal() {
                 <Icon icon="bi:chevron-right" className="text-gray-400 shrink-0 ml-auto" />
               </button>
             </div>
+            <p className="pt-2 text-center text-xs leading-relaxed text-gray-500">
+              New to DashQard?{' '}
+              <Link
+                to={ROUTES.IN_APP.AUTH.REGISTER}
+                className="font-semibold text-[#402D87] no-underline hover:underline"
+              >
+                Create a free account
+              </Link>{' '}
+              for higher limits, bulk gifting, saved recipients, and faster checkout.
+            </p>
           </>
         )}
 

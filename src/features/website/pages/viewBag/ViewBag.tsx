@@ -1,14 +1,18 @@
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/libs'
-import { Button, Loader, Text, Modal } from '@/components'
+import { AccountBenefitsPanel, Button, Loader, Text, Modal } from '@/components'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import { useViewBag } from '@/features/website/hooks/useViewBag'
+import { useAuthStore } from '@/stores'
 import { MemberOnboardingRecipientBlock } from '@/features/website/components/MemberOnboardingRecipientBlock'
 import { formatCurrency } from '@/utils/format'
 import type { FlattenedCartItem } from '@/types'
 
 export default function ViewBag() {
   const navigate = useNavigate()
+  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const showAccountBenefits = !isAuthenticated || isGuestAuth
   const {
     isGuestCart,
     isLoading,
@@ -364,7 +368,7 @@ export default function ViewBag() {
                 <hr className="border-gray-200" />
                 <div className="flex justify-between">
                   <Text variant="h5" weight="semibold">
-                    Subtotal
+                    Total
                   </Text>
                   <Text variant="h5" weight="normal">
                     {formatCurrency(total)}
@@ -389,6 +393,17 @@ export default function ViewBag() {
                 <span className="font-bold">{formatCurrency(total)}</span>
               </button>
             </div>
+
+            {showAccountBenefits && hasItems ? (
+              <>
+                <div className="lg:hidden mt-4">
+                  <AccountBenefitsPanel variant="banner" showGuestCheckoutNote />
+                </div>
+                <div className="hidden lg:block mt-4">
+                  <AccountBenefitsPanel variant="sidebar" showGuestCheckoutNote />
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       </div>

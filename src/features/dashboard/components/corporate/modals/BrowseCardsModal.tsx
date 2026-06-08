@@ -4,6 +4,7 @@ import { DebouncedSearch } from '@/components/SearchBox'
 import { usePersistedModalState } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { CardItems } from '@/features/website/components/CardItems/CardItems'
+import { resolveFeaturedCardPricingFields } from '@/features/website/pages/cardDetails/cardDetailsUtils'
 import { VendorItems } from '@/features/website/components/VendorItems/VendorItems'
 import DashProPurchase from '@/features/website/components/DashProPurchase/DashProPurchase'
 import DashGoBg from '@/assets/svgs/dashgo_bg.svg'
@@ -325,16 +326,13 @@ export function BrowseCardsModal() {
                         product={card.product}
                         vendor_name={card.vendor_name}
                         rating={card.rating}
-                        price={card.price}
                         currency={card.currency}
                         type={card.type}
                         description={card.description || ''}
                         expiry_date={card.expiry_date || ''}
                         terms_and_conditions={card.terms_and_conditions || []}
                         created_at={card.created_at || ''}
-                        base_price={card.price || ''}
-                        markup_price={null}
-                        service_fee="0"
+                        {...resolveFeaturedCardPricingFields(card)}
                         status={card.status || 'active'}
                         recipient_count="0"
                         images={card.images || []}
