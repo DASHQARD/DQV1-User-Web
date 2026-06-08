@@ -146,6 +146,7 @@ export type CardsRedemptionPayload =
       branch_id: string
       vendor_gvid: string
       card_type: 'DashGo'
+      card_id: string
       phone_number?: string
       amount: number
     }

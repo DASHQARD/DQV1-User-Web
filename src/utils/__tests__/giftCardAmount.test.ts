@@ -46,8 +46,8 @@ describe('giftCardAmount', () => {
     expect(toGiftCardPriceInputValue(250)).toBe('250')
   })
 
-  it('fromGiftCardPriceInputChange maps empty string to undefined', () => {
-    expect(fromGiftCardPriceInputChange('')).toBeUndefined()
+  it('fromGiftCardPriceInputChange maps empty string to null', () => {
+    expect(fromGiftCardPriceInputChange('')).toBeNull()
     expect(fromGiftCardPriceInputChange('500')).toBe(500)
   })
 

@@ -44,10 +44,11 @@ export function toGiftCardPriceInputValue(value: unknown): string {
   return ''
 }
 
-export function fromGiftCardPriceInputChange(raw: string): number | undefined {
-  if (raw === '') return undefined
+/** Empty input maps to `null` so react-hook-form does not fall back to `defaultValues`. */
+export function fromGiftCardPriceInputChange(raw: string): number | null {
+  if (raw === '') return null
   const parsed = Number(raw)
-  return Number.isNaN(parsed) ? undefined : parsed
+  return Number.isNaN(parsed) ? null : parsed
 }
 
 /**

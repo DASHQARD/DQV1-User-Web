@@ -73,7 +73,15 @@ type BuildCardsRedemptionInput =
   | {
       branch_id: string
       vendor_gvid: string
-      card_type: 'DashGo' | 'DashPro'
+      card_type: 'DashGo'
+      card_id: string
+      amount: number
+      phone_number?: string
+    }
+  | {
+      branch_id: string
+      vendor_gvid: string
+      card_type: 'DashPro'
       amount: number
       phone_number?: string
     }
@@ -92,16 +100,25 @@ export function buildCardsRedemptionPayload(
   const branch_id = input.branch_id.trim()
   const vendor_gvid = input.vendor_gvid.trim()
 
-  if (input.card_type === 'DashGo' || input.card_type === 'DashPro') {
+  if (input.card_type === 'DashGo') {
     const base = {
       branch_id,
       vendor_gvid,
-      card_type: input.card_type,
+      card_type: 'DashGo' as const,
+      card_id: input.card_id.trim(),
       amount: roundRedemptionAmount(input.amount),
     }
-    return input.phone_number
-      ? { ...base, phone_number: input.phone_number }
-      : base
+    return input.phone_number ? { ...base, phone_number: input.phone_number } : base
+  }
+
+  if (input.card_type === 'DashPro') {
+    const base = {
+      branch_id,
+      vendor_gvid,
+      card_type: 'DashPro' as const,
+      amount: roundRedemptionAmount(input.amount),
+    }
+    return input.phone_number ? { ...base, phone_number: input.phone_number } : base
   }
 
   const cardInput = input as Extract<

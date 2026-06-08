@@ -4,9 +4,9 @@ import { Controller } from 'react-hook-form'
 import { Input } from '@/components'
 import {
   fromGiftCardPriceInputChange,
-  GIFT_CARD_AMOUNT_MAX,
-  GIFT_CARD_AMOUNT_MIN,
   giftCardAmountRangeHint,
+  normalizeGiftCardAmountInput,
+  parseGiftCardAmountInput,
   toGiftCardPriceInputValue,
 } from '@/utils/giftCardAmount'
 
@@ -45,19 +45,25 @@ export function GiftCardPriceFormField<T extends FieldValues>({
         render={({ field }) => (
           <Input
             label={label}
-            type="number"
-            step="0.01"
-            min={GIFT_CARD_AMOUNT_MIN}
-            max={GIFT_CARD_AMOUNT_MAX}
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            maxLength={9}
             placeholder={placeholder}
             disabled={disabled}
             iconBefore={iconBefore}
             innerClassName={innerClassName}
             inputClassName={inputClassName}
             value={toGiftCardPriceInputValue(field.value)}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              field.onChange(fromGiftCardPriceInputChange(e.target.value))
-            }
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              const normalized = normalizeGiftCardAmountInput(e.target.value)
+              if (normalized === '') {
+                field.onChange(null)
+                return
+              }
+              const parsed = parseGiftCardAmountInput(normalized)
+              field.onChange(parsed ?? fromGiftCardPriceInputChange(normalized))
+            }}
             onBlur={field.onBlur}
             name={field.name}
             error={error}
