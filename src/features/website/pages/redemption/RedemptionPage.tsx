@@ -35,13 +35,16 @@ import {
 } from '@/features/website/utils/cardsRedemption'
 import {
   buildGuestCardTypeAvailability,
+  buildGuestCardsRedemptionPayload,
   filterGuestAssignedByType,
   filterGuestAssignedByVendorAndBranch,
   formatBranchLabel,
   isGuestAssignedCardRedeemable,
+  isGuestRedemptionSuccess,
   isValidRedemptionAmountInput,
   mapGuestAssignedCardToVendorCard,
   parseGuestRecipientAmountTotalBalance,
+  pickGuestRedemptionCardId,
   resolveRedemptionCardId,
   roundRedemptionAmount,
 } from '@/features/website/utils/guestRedemption'
@@ -198,6 +201,9 @@ export default function RedemptionPage() {
 
   const invalidateRedemptionGuestQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['guest-assigned-cards'] })
+    queryClient.invalidateQueries({ queryKey: ['redeemable-cards'] })
+    queryClient.invalidateQueries({ queryKey: ['redemptions-amount-dash-pro'] })
+    queryClient.invalidateQueries({ queryKey: ['redemptions-amount-dash-go'] })
   }, [queryClient])
 
   // Get redemption queries hooks
@@ -210,15 +216,22 @@ export default function RedemptionPage() {
     useGetGuestRedemptionsService,
     useGetRedeemableCardsService,
   } = useRedemptionQueries()
-  const { useProcessUserRedemptionCardsService, useProcessDashProRedemptionForUserService } =
-    useRedemptionMutation()
+  const {
+    useProcessUserRedemptionCardsService,
+    useProcessGuestCardsRedemptionService,
+    useProcessDashProRedemptionForUserService,
+    useProcessDashProRedemptionService,
+  } = useRedemptionMutation()
   const processUserRedemptionCardsMutation = useProcessUserRedemptionCardsService()
+  const processGuestCardsRedemptionMutation = useProcessGuestCardsRedemptionService()
   const processDashProForUserMutation = useProcessDashProRedemptionForUserService()
+  const processDashProPublicMutation = useProcessDashProRedemptionService()
   const rateCardMutation = useRateCard()
   const { countries } = useCountriesData()
 
   const vendorMobileMoney = useRedemptionVendorMobileMoney(
     redemptionMethod === 'vendor_mobile_money',
+    isGuestAuth,
   )
   const vendorLookup = useRedemptionVendorLookup(
     redemptionMethod === 'vendor_id' && step === 'details' && isAuthenticated,
@@ -240,6 +253,7 @@ export default function RedemptionPage() {
     vendorPhoneName,
     momoResolveWarning,
     isVendorPhoneVerified,
+    resolvedProvider,
     resetVendorMobileMoney,
   } = vendorMobileMoney
 
@@ -355,6 +369,7 @@ export default function RedemptionPage() {
     useGetRedemptionsAmountDashPassService(dashPassParams)
   const { data: guestAssignedCardsResponse } = useGetGuestAssignedCardsService(
     isGuestAuth && step === 'details',
+    { redemption_status: 'unredeemed' },
   )
   const { data: guestRedemptionsHistory } = useGetGuestRedemptionsService(
     isGuestAuth && step === 'success',
@@ -1352,20 +1367,67 @@ export default function RedemptionPage() {
 
       setIsProcessingRedemption(true)
       try {
-        const response = await processDashProForUserMutation.mutateAsync({
-          vendor_phone_number: convertToInternationalFormat(rawVendorPhone),
-          amount: roundRedemptionAmount(parseFloat(amount)),
-        })
+        const redeemAmount = roundRedemptionAmount(parseFloat(amount))
+        const vendorPhone = convertToInternationalFormat(rawVendorPhone)
 
-        if (isRedemptionApiSuccess(response)) {
-          setVendorName(vendorPhoneName || 'Mobile money')
-          setRedemptionSuccess({
-            amount: roundRedemptionAmount(parseFloat(amount)),
-            transaction_reference: response?.data?.transaction_reference,
-            redemption_code: response?.data?.redemption_code,
-            status: response?.data?.status,
+        if (isGuestAuth) {
+          if (!resolvedProvider) {
+            toast.error('Unable to detect mobile money provider. Please check the number.')
+            return
+          }
+
+          const guestPayload = buildGuestCardsRedemptionPayload({
+            card_type: 'DashPro',
+            amount: redeemAmount,
+            vendor_phone_number: vendorPhone,
+            provider: resolvedProvider,
           })
-          setStep('success')
+          const response = await processGuestCardsRedemptionMutation.mutateAsync(guestPayload)
+
+          if (isGuestRedemptionSuccess(response)) {
+            setVendorName(vendorPhoneName || 'Mobile money')
+            setRedemptionSuccess({
+              amount: response?.data?.amount ?? redeemAmount,
+              transaction_reference: response?.data?.transaction_reference,
+              redemption_code: response?.data?.redemption_code,
+              status: response?.data?.status,
+            })
+            setStep('success')
+            invalidateRedemptionGuestQueries()
+          }
+        } else if (isAuthenticated) {
+          const response = await processDashProForUserMutation.mutateAsync({
+            vendor_phone_number: vendorPhone,
+            amount: redeemAmount,
+          })
+
+          if (isRedemptionApiSuccess(response)) {
+            setVendorName(vendorPhoneName || 'Mobile money')
+            setRedemptionSuccess({
+              amount: redeemAmount,
+              transaction_reference: response?.data?.transaction_reference,
+              redemption_code: response?.data?.redemption_code,
+              status: response?.data?.status,
+            })
+            setStep('success')
+          }
+        } else {
+          const response = await processDashProPublicMutation.mutateAsync({
+            vendor_phone_number: vendorPhone,
+            amount: redeemAmount,
+            user_phone_number: convertToInternationalFormat(userPhoneNumber),
+          })
+
+          if (isRedemptionApiSuccess(response)) {
+            setVendorName(vendorPhoneName || 'Mobile money')
+            setRedemptionSuccess({
+              amount: response?.data?.amount ?? redeemAmount,
+              transaction_reference: response?.data?.transaction_reference,
+              redemption_code: response?.data?.redemption_code,
+              status: response?.data?.status,
+            })
+            setStep('success')
+          }
         }
       } catch (error: unknown) {
         console.error('DashPro mobile money redemption error:', error)
@@ -1456,13 +1518,6 @@ export default function RedemptionPage() {
           return
         }
 
-        const vendorGvid = selectedVendorGvid
-        if (!vendorGvid) {
-          toast.error('Vendor ID (GVID) is required for redemption')
-          setIsProcessingRedemption(false)
-          return
-        }
-
         const branchId = String(selectedBranchId ?? selectedCard?.branch_id ?? '').trim()
         if (!branchId) {
           toast.error('Please select a branch')
@@ -1481,6 +1536,72 @@ export default function RedemptionPage() {
             setIsProcessingRedemption(false)
             return
           }
+        }
+
+        if (isGuestAuth) {
+          if (cardTypeForAPI === 'DashPro') {
+            toast.error('DashPro redemption uses mobile money payout. Please select that method.')
+            setIsProcessingRedemption(false)
+            return
+          }
+
+          let guestPayload
+          if (cardTypeForAPI === 'DashGo') {
+            const dashGoCards =
+              redemptionsAmountDashGo?.data?.cards || redemptionsAmountDashGo?.cards || []
+            const redeemAmount = roundRedemptionAmount(parseFloat(amount))
+            const cardId =
+              String(selectedCard?.card_id ?? '').trim() ||
+              pickGuestRedemptionCardId(dashGoCards, redeemAmount)
+            if (!cardId) {
+              toast.error('Please select a card')
+              setIsProcessingRedemption(false)
+              return
+            }
+            guestPayload = buildGuestCardsRedemptionPayload({
+              card_type: 'DashGo',
+              card_id: cardId,
+              branch_id: branchId,
+              amount: redeemAmount,
+            })
+          } else if (cardTypeForAPI === 'DashX' || cardTypeForAPI === 'DashPass') {
+            const cardId = String(selectedCard?.card_id ?? '').trim()
+            if (!cardId) {
+              toast.error('Please select a card')
+              setIsProcessingRedemption(false)
+              return
+            }
+            guestPayload = buildGuestCardsRedemptionPayload({
+              card_type: cardTypeForAPI,
+              branch_id: branchId,
+              card_id: cardId,
+            })
+          } else {
+            toast.error('Invalid card type')
+            setIsProcessingRedemption(false)
+            return
+          }
+
+          const response = await processGuestCardsRedemptionMutation.mutateAsync(guestPayload)
+
+          if (isGuestRedemptionSuccess(response)) {
+            setRedemptionSuccess(response?.data ?? null)
+            if ('card_id' in guestPayload) {
+              setRedeemedCardId(guestPayload.card_id)
+            } else if (selectedCard?.card_id) {
+              setRedeemedCardId(selectedCard.card_id)
+            }
+            setStep('success')
+            invalidateRedemptionGuestQueries()
+          }
+          return
+        }
+
+        const vendorGvid = selectedVendorGvid
+        if (!vendorGvid) {
+          toast.error('Vendor ID (GVID) is required for redemption')
+          setIsProcessingRedemption(false)
+          return
         }
 
         let payload
@@ -1507,6 +1628,7 @@ export default function RedemptionPage() {
         }
 
         const response = await processUserRedemptionCardsMutation.mutateAsync(payload)
+
         if (isRedemptionApiSuccess(response)) {
           setRedemptionSuccess(response?.data ?? null)
           if ('card_id' in payload) {
@@ -1515,9 +1637,6 @@ export default function RedemptionPage() {
             setRedeemedCardId(selectedCard.card_id)
           }
           setStep('success')
-          if (isGuestAuth) {
-            invalidateRedemptionGuestQueries()
-          }
         }
       } catch (error: any) {
         console.error('Redemption error:', error)

@@ -33,10 +33,13 @@ export function useCard(id: string | number | null) {
 type UseCreateCardOptions = {
   /** When false, skips the API success toast (e.g. website purchase then add-to-cart). */
   showSuccessToast?: boolean
+  /** When false, skips the API error toast (caller shows a combined purchase message). */
+  showErrorToast?: boolean
 }
 
 export function useCreateCard(options?: UseCreateCardOptions) {
   const showSuccessToast = options?.showSuccessToast ?? true
+  const showErrorToast = options?.showErrorToast ?? true
   const queryClient = useQueryClient()
   const toast = useToast()
 
@@ -48,6 +51,7 @@ export function useCreateCard(options?: UseCreateCardOptions) {
       toast.success(response.message || 'Card created successfully')
     },
     onError: (error: { status: number; message: string }) => {
+      if (!showErrorToast) return
       toast.error(error?.message || 'Failed to create card')
     },
   })

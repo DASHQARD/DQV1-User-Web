@@ -44,4 +44,17 @@ describe('AssignRecipientSchema', () => {
 
     expect(result.success).toBe(true)
   })
+
+  it('ignores invalid prefilled phone when assigning to self', () => {
+    const result = AssignRecipientSchema.safeParse({
+      assign_to_self: true,
+      first_name: 'Jane',
+      last_name: 'Doe',
+      phone: '0559617908',
+      email: 'not-an-email',
+      amount: 1000,
+    })
+
+    expect(result.success).toBe(true)
+  })
 })

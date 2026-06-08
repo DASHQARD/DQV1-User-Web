@@ -32,6 +32,8 @@ import type {
   RedeemableCardsResponse,
 } from '@/types'
 import { getQueryString } from '@/utils/helpers'
+import { resolveMobileMoneyAccount } from '@/services/accountLookup'
+import { interpretMobileMoneyLookupResponse, toLookupApiProvider } from '@/utils/accountLookupMappers'
 
 /**
  * Helper function to detect mobile money provider from phone number in Ghana
@@ -145,15 +147,44 @@ const commonUrl = '/redemptions'
 export const validateVendorMobileMoney = async (
   data: ValidateVendorMobileMoneyPayload,
 ): Promise<any> => {
-  return await postMethod('/payments/mobile-money/account-details', data)
+  const provider = toLookupApiProvider(data.provider)
+  if (!provider) {
+    throw { status: 422, message: 'Unsupported mobile money provider for account resolution.' }
+  }
+  return await resolveMobileMoneyAccount({
+    phone_number: data.phone_number,
+    provider,
+  })
 }
 
-/** POST /redemptions/momo/resolve-name — recipient name confirmation (Method B) */
+/** @deprecated Use resolveMobileMoneyAccount from @/services/accountLookup */
 export const resolveMomoAccountName = async (
   data: ResolveMomoNamePayload,
 ): Promise<ResolveMomoNameResponse> => {
-  const response = await axiosClient.post(`${commonUrl}/momo/resolve-name`, data)
-  return response as unknown as ResolveMomoNameResponse
+  const provider = detectMobileMoneyProvider(data.phone_number)
+  const apiProvider = provider ? toLookupApiProvider(provider) : null
+  if (!apiProvider) {
+    throw {
+      status: 422,
+      message: 'Unable to detect mobile money provider. Please enter a valid Ghana phone number.',
+    }
+  }
+  const response = await resolveMobileMoneyAccount({
+    phone_number: convertToInternationalFormat(data.phone_number),
+    provider: apiProvider,
+  })
+  const { accountName, error } = interpretMobileMoneyLookupResponse(response)
+  return {
+    status: response?.status ?? 'success',
+    statusCode: response?.statusCode ?? 200,
+    message: response?.message ?? error ?? '',
+    data: {
+      account_name: accountName ?? undefined,
+      provider: apiProvider,
+      is_resolved: !!accountName,
+      is_platform_vendor: false,
+    },
+  }
 }
 
 // Search vendors
@@ -227,6 +258,16 @@ export const processGuestCardsRedemption = async (
   return response as unknown as GuestCardsRedemptionResponse
 }
 
+/** POST /guest-redemptions/momo/resolve-name — guest DashPro payout confirmation */
+export const resolveGuestMomoName = async (
+  data: ResolveMomoNamePayload,
+): Promise<ResolveMomoNameResponse> => {
+  const response = await axiosClient.post(`/guest-redemptions/momo/resolve-name`, {
+    phone_number: convertToInternationalFormat(data.phone_number),
+  })
+  return response as unknown as ResolveMomoNameResponse
+}
+
 // Get redemptions list
 export const getRedemptions = async (
   params?: GetRedemptionsParams,
@@ -291,8 +332,10 @@ export const getRedemptionsAmountDashPro = async (): Promise<any> => {
   return await getList(`${commonUrl}/recipient-amounts/dash-pro`)
 }
 
-export const getGuestAssignedCards = async (): Promise<any> => {
-  return await getList(`/guest-redemptions/assigned-cards`)
+export const getGuestAssignedCards = async (params?: {
+  redemption_status?: 'all' | 'redeemed' | 'unredeemed'
+}): Promise<any> => {
+  return await getList(`/guest-redemptions/assigned-cards`, params)
 }
 
 export const getGuestRedemptionsAmountDashGo = async (

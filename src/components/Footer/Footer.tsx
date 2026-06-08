@@ -15,14 +15,17 @@ export default function Footer() {
     {
       icon: 'hugeicons:linkedin-02',
       url: 'https://www.linkedin.com/company/dashqard',
+      label: 'LinkedIn',
     },
     {
       icon: 'hugeicons:instagram',
       url: 'https://www.instagram.com/dashqard',
+      label: 'Instagram',
     },
     {
-      icon: 'hugeicons:twitter',
-      url: 'https://www.twitter.com/dashqard',
+      icon: 'bi:twitter-x',
+      url: 'https://x.com/dashqard',
+      label: 'X',
     },
   ]
 
@@ -60,7 +63,7 @@ export default function Footer() {
     },
   ]
   return (
-    <footer className="bg-primary-700 text-white">
+    <footer className="relative z-10 bg-primary-700 text-white">
       <section className="wrapper px-4 md:px-0 flex flex-col lg:flex-row justify-between gap-8 lg:gap-10 py-8 md:py-12">
         {/* Brand Section */}
         <section className="flex flex-col gap-4 md:gap-5 max-w-[416px] w-full">
@@ -92,7 +95,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 rounded-full bg-[#ffffff1a] border border-white/20 h-10 w-10 flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors"
-                  aria-label={`Visit our ${link.icon.split(':')[1]} page`}
+                  aria-label={`Visit our ${link.label} page`}
                 >
                   <Icon icon={link.icon} className="size-5 text-white" />
                 </a>

@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRedemptionMutation } from './redemption/useRedemptionMutation'
 import { useRedemptionQueries } from './redemption/useRedemptionQueries'
 import { useAuthStore } from '@/stores'
-import { detectMobileMoneyProvider, convertToInternationalFormat } from '../services/redemptions'
+import { convertToInternationalFormat } from '../services/redemptions'
 import type { VendorSearchResult } from '../services/redemptions'
 import { buildCardsRedemptionPayload } from '@/features/website/utils/cardsRedemption'
+import { useMobileMoneyAccountLookup } from '@/hooks/useMobileMoneyAccountLookup'
 
 export type CardType = 'DashPro' | 'DashGo' | 'DashX' | 'DashPass'
 
@@ -13,7 +14,6 @@ export function useRedemptionForm() {
   const userPhone = (user as any)?.phonenumber || (user as any)?.phone || ''
 
   const {
-    useValidateVendorMobileMoneyService,
     useProcessDashProRedemptionForUserService,
     useProcessUserRedemptionCardsService,
   } = useRedemptionMutation()
@@ -26,12 +26,8 @@ export function useRedemptionForm() {
     useGetRedemptionsAmountDashPassService,
   } = useRedemptionQueries()
 
-  const validateVendorMutation = useValidateVendorMobileMoneyService()
   const dashProMutation = useProcessDashProRedemptionForUserService()
   const cardsMutation = useProcessUserRedemptionCardsService()
-
-  // Stable mutate reference for use in effects
-  const { mutate: validateMutate } = validateVendorMutation
 
   // Form state
   const [cardType, setCardType] = useState<CardType>('DashPro')
@@ -39,10 +35,17 @@ export function useRedemptionForm() {
 
   // DashPro: vendor identified by mobile money phone number
   const [rawVendorPhone, setRawVendorPhone] = useState('')
-  const [debouncedVendorPhone, setDebouncedVendorPhone] = useState('')
-  const [validatingVendor, setValidatingVendor] = useState(false)
-  const [vendorPhoneError, setVendorPhoneError] = useState<string | null>(null)
-  const [vendorPhoneName, setVendorPhoneName] = useState<string | null>(null)
+
+  const {
+    accountName: vendorPhoneName,
+    error: vendorPhoneError,
+    isResolving: validatingVendor,
+    isVerified: isVendorPhoneVerified,
+    reset: resetMomoLookup,
+  } = useMobileMoneyAccountLookup({
+    enabled: cardType === 'DashPro',
+    rawPhone: rawVendorPhone,
+  })
 
   // Vendor-scoped cards: vendor identified via search
   const [vendorSearch, setVendorSearch] = useState('')
@@ -90,76 +93,15 @@ export function useRedemptionForm() {
     ? ((activeBalanceQuery.error as any)?.message ?? 'Failed to fetch balance')
     : null
 
-  // Reset vendor/amount state when card type changes — handled in setCardType wrapper
-  // so we don't need a useEffect that lists cardType as a trigger-only dependency.
   const handleCardTypeChange = useCallback((newType: CardType) => {
     setCardType(newType)
     setRawVendorPhone('')
-    setDebouncedVendorPhone('')
-    setVendorPhoneName(null)
-    setVendorPhoneError(null)
+    resetMomoLookup()
     setVendorSearch('')
     setDebouncedVendorSearch('')
     setSelectedVendor(null)
     setRedemptionAmount(null)
-  }, [])
-
-  // Debounce vendor phone (DashPro)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedVendorPhone(rawVendorPhone), 800)
-    return () => clearTimeout(timer)
-  }, [rawVendorPhone])
-
-  // Validate vendor mobile money (DashPro only)
-  useEffect(() => {
-    if (cardType !== 'DashPro') return
-
-    if (!debouncedVendorPhone || debouncedVendorPhone.length < 10) {
-      setVendorPhoneName(null)
-      setVendorPhoneError(null)
-      setValidatingVendor(false)
-      return
-    }
-
-    const provider = detectMobileMoneyProvider(debouncedVendorPhone)
-    if (!provider) {
-      setVendorPhoneError(
-        'Unable to detect mobile money provider. Please enter a valid Ghana phone number.',
-      )
-      setVendorPhoneName(null)
-      setValidatingVendor(false)
-      return
-    }
-
-    setValidatingVendor(true)
-    setVendorPhoneError(null)
-    setVendorPhoneName(null)
-
-    validateMutate(
-      { phone_number: convertToInternationalFormat(debouncedVendorPhone), provider },
-      {
-        onSuccess: (response: any) => {
-          const data = response?.data
-          const name = data?.vendor_name || data?.account_name
-          if (name) {
-            setVendorPhoneName(name)
-            setVendorPhoneError(null)
-          } else {
-            setVendorPhoneError(
-              response?.message || 'Vendor not found. Please check the phone number.',
-            )
-            setVendorPhoneName(null)
-          }
-          setValidatingVendor(false)
-        },
-        onError: (err: any) => {
-          setVendorPhoneError(err?.message || 'Vendor not found. Please check the phone number.')
-          setVendorPhoneName(null)
-          setValidatingVendor(false)
-        },
-      },
-    )
-  }, [debouncedVendorPhone, cardType, validateMutate])
+  }, [resetMomoLookup])
 
   // Debounce vendor search (vendor-scoped cards)
   useEffect(() => {
@@ -178,22 +120,20 @@ export function useRedemptionForm() {
     if (!userPhone) return false
 
     if (cardType === 'DashPro') {
-      return !!(vendorPhoneName && !vendorPhoneError)
+      return isVendorPhoneVerified
     }
     return !!selectedVendor
-  }, [cardType, redemptionAmount, availableBalance, vendorPhoneName, vendorPhoneError, selectedVendor, userPhone])
+  }, [cardType, redemptionAmount, availableBalance, isVendorPhoneVerified, selectedVendor, userPhone])
 
   const clearForm = useCallback(() => {
     setRedemptionAmount(null)
     setRawVendorPhone('')
-    setDebouncedVendorPhone('')
-    setVendorPhoneName(null)
-    setVendorPhoneError(null)
+    resetMomoLookup()
     setVendorSearch('')
     setDebouncedVendorSearch('')
     setSelectedVendor(null)
     setRedemptionReferenceId(null)
-  }, [])
+  }, [resetMomoLookup])
 
   const submitRedemption = useCallback(async () => {
     if (!isFormValid || !redemptionAmount) return
@@ -237,7 +177,7 @@ export function useRedemptionForm() {
     // DashPro vendor
     rawVendorPhone,
     setRawVendorPhone,
-    validatingVendor: validatingVendor || validateVendorMutation.isPending,
+    validatingVendor,
     vendorPhoneError,
     vendorPhoneName,
     // Vendor-scoped

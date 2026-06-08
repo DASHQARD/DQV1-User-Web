@@ -34,7 +34,7 @@ export const CardItems = (props: CardItemsProps) => {
   return (
     <article
       className={cn(
-        'flex w-full flex-col bg-white overflow-hidden group transition-shadow',
+        'flex h-fit w-full self-start flex-col bg-white overflow-hidden group transition-shadow',
         isExpired ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
         isCompact
           ? 'rounded-lg border border-gray-200/80 shadow-none md:rounded-xl md:border-gray-100 md:shadow-[0_2px_8px_rgba(0,0,0,0.06)] md:hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]'
@@ -50,7 +50,7 @@ export const CardItems = (props: CardItemsProps) => {
         }
       }}
     >
-      <div className="relative aspect-video bg-gray-100 overflow-hidden">
+      <div className="relative aspect-video shrink-0 bg-gray-100 overflow-hidden">
         {isExpired ? (
           <span className="absolute left-2 top-2 z-10 rounded-full bg-gray-900/80 px-2 py-0.5 text-[10px] font-semibold text-white">
             Expired

@@ -12,6 +12,7 @@ import {
 import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { Icon } from '@/libs'
 import { usePaymentDetailsSettings } from './usePaymentDetailsSettings'
+import { AccountLookupStatus } from '@/components/AccountLookupStatus'
 
 export function PaymentDetailsSettings() {
   const {
@@ -27,6 +28,10 @@ export function PaymentDetailsSettings() {
     countries,
     isDeleteModalOpen,
     setIsDeleteModalOpen,
+    momoLookup,
+    bankLookup,
+    handleBankSelect,
+    selectedBankCode,
   } = usePaymentDetailsSettings()
 
   return (
@@ -122,30 +127,32 @@ export function PaymentDetailsSettings() {
                   )}
                 />
               </div>
+              <div className="md:col-span-2">
+                <AccountLookupStatus
+                  isResolving={momoLookup.isResolving}
+                  accountName={momoLookup.accountName}
+                  error={momoLookup.error}
+                  resolvingLabel="Verifying mobile money account…"
+                />
+              </div>
             </div>
           )}
 
           {paymentMethod === 'bank' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Controller
-                  control={form.control}
-                  name="bank_name"
-                  render={({ field, fieldState: { error } }) => (
-                    <Combobox
-                      label="Bank Name"
-                      options={bankOptions}
-                      value={field.value}
-                      onChange={(e: unknown) => {
-                        const ev = e as { target?: { value?: string }; value?: string }
-                        const value = ev?.target?.value ?? ev?.value ?? ''
-                        field.onChange(value)
-                      }}
-                      error={error?.message}
-                      placeholder="Select bank"
-                      isSearchable={true}
-                    />
-                  )}
+                <Combobox
+                  label="Bank Name"
+                  options={bankOptions}
+                  value={selectedBankCode}
+                  onChange={(e: unknown) => {
+                    const ev = e as { target?: { value?: string }; value?: string }
+                    const code = ev?.target?.value ?? ev?.value ?? ''
+                    handleBankSelect(code)
+                  }}
+                  error={form.formState.errors.bank_name?.message}
+                  placeholder="Select bank"
+                  isSearchable={true}
                 />
               </div>
 
@@ -160,15 +167,6 @@ export function PaymentDetailsSettings() {
 
               <div>
                 <Input
-                  label="Account Name"
-                  placeholder="Enter account holder name"
-                  {...form.register('account_name')}
-                  error={form.formState.errors.account_name?.message}
-                />
-              </div>
-
-              <div>
-                <Input
                   label="Account Number"
                   placeholder="Enter account number"
                   {...form.register('account_number')}
@@ -178,8 +176,28 @@ export function PaymentDetailsSettings() {
 
               <div>
                 <Input
-                  label="Sort Code"
-                  placeholder="Enter sort code"
+                  label="Account Name"
+                  placeholder="Resolved after account verification"
+                  readOnly={!!bankLookup.accountName}
+                  {...form.register('account_name')}
+                  error={form.formState.errors.account_name?.message}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <AccountLookupStatus
+                  isResolving={bankLookup.isResolving}
+                  accountName={bankLookup.accountName}
+                  error={bankLookup.error}
+                  resolvingLabel="Verifying bank account…"
+                />
+              </div>
+
+              <div>
+                <Input
+                  label="GhIPSS Sort Code"
+                  placeholder="Set automatically when you select a bank"
+                  readOnly
                   {...form.register('sort_code')}
                   error={form.formState.errors.sort_code?.message}
                 />

@@ -14,6 +14,7 @@ import {
   usePaymentDetailsSettingsForm,
   type PaymentDetailsFormData,
 } from '@/features/dashboard/vendor/hooks'
+import { AccountLookupStatus } from '@/components/AccountLookupStatus'
 
 export function PaymentDetailsSettings() {
   const {
@@ -24,6 +25,10 @@ export function PaymentDetailsSettings() {
     phoneCountries,
     onSubmit,
     isPending,
+    momoLookup,
+    bankLookup,
+    handleBankSelect,
+    selectedBankCode,
   } = usePaymentDetailsSettingsForm()
 
   const handleSubmit = form.handleSubmit((data: PaymentDetailsFormData) => onSubmit(data))
@@ -95,6 +100,12 @@ export function PaymentDetailsSettings() {
                 />
               )}
             />
+            <AccountLookupStatus
+              isResolving={momoLookup.isResolving}
+              accountName={momoLookup.accountName}
+              error={momoLookup.error}
+              resolvingLabel="Verifying mobile money account…"
+            />
           </div>
         </div>
       )}
@@ -102,24 +113,18 @@ export function PaymentDetailsSettings() {
       {paymentMethod === 'bank' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <Controller
-              control={form.control}
-              name="bank_name"
-              render={({ field, fieldState: { error } }) => (
-                <Combobox
-                  label="Bank Name"
-                  options={bankOptions}
-                  value={field.value}
-                  onChange={(e: unknown) => {
-                    const ev = e as { target?: { value?: string }; value?: string }
-                    const value = ev?.target?.value ?? ev?.value ?? ''
-                    field.onChange(value)
-                  }}
-                  error={error?.message}
-                  placeholder="Select bank"
-                  isSearchable={true}
-                />
-              )}
+            <Combobox
+              label="Bank Name"
+              options={bankOptions}
+              value={selectedBankCode}
+              onChange={(e: unknown) => {
+                const ev = e as { target?: { value?: string }; value?: string }
+                const code = ev?.target?.value ?? ev?.value ?? ''
+                handleBankSelect(code)
+              }}
+              error={form.formState.errors.bank_name?.message}
+              placeholder="Select bank"
+              isSearchable={true}
             />
           </div>
 
@@ -132,14 +137,6 @@ export function PaymentDetailsSettings() {
           />
 
           <Input
-            label="Account Name"
-            isRequired
-            placeholder="Enter account holder name"
-            {...form.register('account_name')}
-            error={form.formState.errors.account_name?.message}
-          />
-
-          <Input
             label="Account Number"
             isRequired
             placeholder="Enter account number"
@@ -148,9 +145,28 @@ export function PaymentDetailsSettings() {
           />
 
           <Input
-            label="Sort Code"
+            label="Account Name"
             isRequired
-            placeholder="Enter sort code"
+            placeholder="Resolved after account verification"
+            readOnly={!!bankLookup.accountName}
+            {...form.register('account_name')}
+            error={form.formState.errors.account_name?.message}
+          />
+
+          <div className="md:col-span-2">
+            <AccountLookupStatus
+              isResolving={bankLookup.isResolving}
+              accountName={bankLookup.accountName}
+              error={bankLookup.error}
+              resolvingLabel="Verifying bank account…"
+            />
+          </div>
+
+          <Input
+            label="GhIPSS Sort Code"
+            isRequired
+            placeholder="Set automatically when you select a bank"
+            readOnly
             {...form.register('sort_code')}
             error={form.formState.errors.sort_code?.message}
           />

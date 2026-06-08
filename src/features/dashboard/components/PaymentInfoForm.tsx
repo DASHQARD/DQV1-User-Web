@@ -15,11 +15,10 @@ import {
 import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { PaymentInfoSchema } from '@/utils/schemas/payment'
 import { usePaymentInfoService } from '../hooks/usePayment'
-import { useCountriesData } from '@/hooks'
-import { GHANA_BANKS } from '@/assets/data/banks'
+import { useCountriesData, usePaymentDetailsFormLookups, useUserProfile } from '@/hooks'
 import React from 'react'
-import { useUserProfile } from '@/hooks'
 import { Icon } from '@/libs'
+import { AccountLookupStatus } from '@/components/AccountLookupStatus'
 
 export default function PaymentInfoForm() {
   const { useGetUserProfileService } = useUserProfile()
@@ -93,16 +92,17 @@ export default function PaymentInfoForm() {
     }
   }, [userProfileData, form])
 
-  const paymentMethod = useWatch({
-    control: form.control,
-    name: 'payment_method',
-  })
+  const watched = useWatch({ control: form.control })
+  const paymentMethod = watched.payment_method
 
-  const mobileMoneyProviders = [
-    { label: 'MTN Mobile Money', value: 'mtn' },
-    { label: 'Vodafone Cash', value: 'vodafone' },
-    { label: 'AirtelTigo Money', value: 'airteltigo' },
-  ]
+  const {
+    bankOptions,
+    providerOptions,
+    momoLookup,
+    bankLookup,
+    handleBankSelect,
+    selectedBankCode,
+  } = usePaymentDetailsFormLookups(form, watched)
 
   const onSubmit = (data: z.infer<typeof PaymentInfoSchema>) => {
     // Prepare the data based on payment method
@@ -181,7 +181,7 @@ export default function PaymentInfoForm() {
               render={({ field, fieldState: { error } }) => (
                 <Combobox
                   label="Mobile Money Provider"
-                  options={mobileMoneyProviders}
+                  options={providerOptions}
                   {...field}
                   error={error?.message}
                   placeholder="Select provider"
@@ -206,7 +206,13 @@ export default function PaymentInfoForm() {
                   )
                 }}
               />
-                      <PhoneFormatHint variant="hint" />
+              <PhoneFormatHint variant="hint" />
+              <AccountLookupStatus
+                isResolving={momoLookup.isResolving}
+                accountName={momoLookup.accountName}
+                error={momoLookup.error}
+                resolvingLabel="Verifying mobile money account…"
+              />
             </div>
           </div>
         )}
@@ -216,18 +222,18 @@ export default function PaymentInfoForm() {
           <div className="space-y-4 border-t border-gray-200 pt-4">
             <h3 className="text-lg font-semibold text-gray-900">Bank Account Details</h3>
 
-            <Controller
-              control={form.control}
-              name="bank_name"
-              render={({ field, fieldState: { error } }) => (
-                <Combobox
-                  label="Bank Name"
-                  options={GHANA_BANKS.map((bank) => ({ label: bank.name, value: bank.name }))}
-                  {...field}
-                  error={error?.message}
-                  placeholder="Select bank"
-                />
-              )}
+            <Combobox
+              label="Bank Name"
+              options={bankOptions.map((bank) => ({ label: bank.label, value: bank.value }))}
+              value={selectedBankCode}
+              onChange={(e: unknown) => {
+                const ev = e as { target?: { value?: string }; value?: string }
+                const code = ev?.target?.value ?? ev?.value ?? ''
+                handleBankSelect(code)
+              }}
+              error={form.formState.errors.bank_name?.message}
+              placeholder="Select bank"
+              isSearchable
             />
 
             <div className="grid grid-cols-2 gap-4">
@@ -248,14 +254,23 @@ export default function PaymentInfoForm() {
 
             <Input
               label="Account Name"
-              placeholder="Enter account name"
+              placeholder="Resolved after account verification"
+              readOnly={!!bankLookup.accountName}
               {...form.register('account_name')}
               error={form.formState.errors.account_name?.message}
             />
 
+            <AccountLookupStatus
+              isResolving={bankLookup.isResolving}
+              accountName={bankLookup.accountName}
+              error={bankLookup.error}
+              resolvingLabel="Verifying bank account…"
+            />
+
             <Input
-              label="Sort/Swift Code"
-              placeholder="Enter sort/swift code"
+              label="GhIPSS Sort Code"
+              placeholder="Set automatically when you select a bank"
+              readOnly
               {...form.register('sort_swift_code')}
               error={form.formState.errors.sort_swift_code?.message}
             />
