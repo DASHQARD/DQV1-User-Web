@@ -39,6 +39,7 @@ import {
   useAssignToSelfToggle,
   useCardFlipPreview,
 } from '@/components/GiftCardRecipientForm'
+import type { AssignRecipientPayload, GuestAssignRecipientPayload } from '@/types/responses'
 
 const SILENT_MUTATION_TOASTS = { showSuccessToast: false, showErrorToast: false } as const
 
@@ -268,46 +269,50 @@ export function useDashProPurchase() {
         return
       }
 
-      const assignPayload: Record<string, unknown> = {
-        cart_item_id: cartItemId,
-        assign_to_self: data.assign_to_self,
-        quantity: 1,
-        amount: amount,
-        message: data.message || '',
-      }
-
-      if (!data.assign_to_self) {
-        if (isGuestAuth) {
-          if (recipientFullName) {
-            assignPayload.recipient_name = recipientFullName
-          }
-          const recipientEmail = data.email?.trim()
-          if (recipientEmail) {
-            assignPayload.recipient_email = recipientEmail
-          }
-          const recipientPhone = data.phone?.trim()
-          if (recipientPhone) {
-            assignPayload.recipient_phone = recipientPhone
-          }
-        } else {
-          if (recipientFullName) {
-            assignPayload.name = recipientFullName
-          }
-          const recipientEmail = data.email?.trim()
-          if (recipientEmail) {
-            assignPayload.email = recipientEmail
-          }
-          const recipientPhone = data.phone?.trim()
-          if (recipientPhone) {
-            assignPayload.phone = recipientPhone
-          }
-        }
-      }
-
       try {
         if (isGuestAuth) {
-          await assignGuestRecipientMutation.mutateAsync(assignPayload)
+          const guestPayload: GuestAssignRecipientPayload = {
+            cart_item_id: cartItemId,
+            assign_to_self: data.assign_to_self,
+            amount,
+            message: data.message || '',
+            quantity: 1,
+          }
+          if (!data.assign_to_self) {
+            if (recipientFullName) {
+              guestPayload.recipient_name = recipientFullName
+            }
+            const recipientEmail = data.email?.trim()
+            if (recipientEmail) {
+              guestPayload.recipient_email = recipientEmail
+            }
+            const recipientPhone = data.phone?.trim()
+            if (recipientPhone) {
+              guestPayload.recipient_phone = recipientPhone
+            }
+          }
+          await assignGuestRecipientMutation.mutateAsync(guestPayload)
         } else {
+          const assignPayload: AssignRecipientPayload = {
+            cart_item_id: cartItemId,
+            assign_to_self: data.assign_to_self,
+            quantity: 1,
+            amount,
+            message: data.message || '',
+          }
+          if (!data.assign_to_self) {
+            if (recipientFullName) {
+              assignPayload.name = recipientFullName
+            }
+            const recipientEmail = data.email?.trim()
+            if (recipientEmail) {
+              assignPayload.email = recipientEmail
+            }
+            const recipientPhone = data.phone?.trim()
+            if (recipientPhone) {
+              assignPayload.phone = recipientPhone
+            }
+          }
           await assignRecipientMutation.mutateAsync(assignPayload)
         }
       } catch (assignError) {
