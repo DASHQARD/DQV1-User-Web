@@ -1,7 +1,9 @@
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useMemo } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Controller } from 'react-hook-form'
 import { Icon } from '@/libs'
+import { CheckoutSection } from './CheckoutSection'
+import { CheckoutFlowProgress, type CheckoutFlowStep } from './CheckoutFlowProgress'
 import { Button, Loader, Modal, EmptyState, Input, BasePhoneInput } from '@/components'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import FileUploader from '@/components/FileUploader/FileUploader'
@@ -11,6 +13,7 @@ import { formatCurrency } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
 import { CHECKOUT_GATEWAY } from '@/features/website/utils/paymentConstants'
 import { EXAMPLE_PHONE_LOCAL } from '@/utils/constants'
+import { GuestCartDebugPanel } from './GuestCartDebugPanel'
 
 const EGNANOW_NETWORK_OPTIONS = [
   { value: 'MTNGH', label: 'MTN' },
@@ -57,6 +60,8 @@ function detectNetworkFromPhone(phone: string): 'mtn' | 'airteltigo' | 'telecel'
 
 export default function Checkout() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const showGuestCartDebug = import.meta.env.DEV && searchParams.has('debugGuestCart')
   const {
     isLoadingCart,
     pendingCartItems,
@@ -68,7 +73,6 @@ export default function Checkout() {
     paymentForm,
     paymentMethod,
     checkoutGateway,
-    isPersonalDetailsCompleted,
     isGuestAuth,
     isLocalGuestCart,
     isGuestCheckoutReady,
@@ -144,6 +148,98 @@ export default function Checkout() {
 
   const isGuestCheckoutFlow = isLocalGuestCart || isGuestAuth || guestBagNotReady
 
+  const senderStepComplete =
+    !isUserInfoIncomplete && !needsPhoneVerification && !guestSyncFailed && !guestBagNotReady
+  const recipientsStepComplete = allRecipientsAssigned && senderStepComplete
+  const canProceedToPayment = recipientsStepComplete && !recipientActionsBlocked
+
+  const checkoutFlowSteps = useMemo((): CheckoutFlowStep[] => {
+    if (isGuestCheckoutFlow) {
+      const senderStatus: CheckoutFlowStep['status'] = needsPhoneVerification
+        ? 'current'
+        : guestSyncFailed
+          ? 'current'
+          : 'complete'
+      const recipientsStatus: CheckoutFlowStep['status'] =
+        senderStatus === 'complete'
+          ? allRecipientsAssigned
+            ? 'complete'
+            : 'current'
+          : 'upcoming'
+      const reviewStatus: CheckoutFlowStep['status'] = canProceedToPayment
+        ? 'current'
+        : recipientsStatus === 'complete'
+          ? 'current'
+          : 'upcoming'
+      const paymentStatus: CheckoutFlowStep['status'] = canProceedToPayment ? 'current' : 'upcoming'
+
+      return [
+        { id: 'sender', label: 'Sender details', status: senderStatus },
+        { id: 'recipients', label: 'Recipient details', status: recipientsStatus },
+        { id: 'review', label: 'Review order', status: reviewStatus },
+        { id: 'payment', label: 'Payment', status: paymentStatus },
+      ]
+    }
+
+    const senderStatus: CheckoutFlowStep['status'] = isUserInfoIncomplete ? 'current' : 'complete'
+    const recipientsStatus: CheckoutFlowStep['status'] = senderStepComplete
+      ? allRecipientsAssigned
+        ? 'complete'
+        : 'current'
+      : 'upcoming'
+    const reviewStatus: CheckoutFlowStep['status'] = canProceedToPayment
+      ? 'current'
+      : recipientsStepComplete
+        ? 'current'
+        : 'upcoming'
+
+    return [
+      { id: 'sender', label: 'Sender details', status: senderStatus },
+      { id: 'recipients', label: 'Recipient details', status: recipientsStatus },
+      { id: 'review', label: 'Review order', status: reviewStatus },
+      { id: 'payment', label: 'Payment', status: canProceedToPayment ? 'current' : 'upcoming' },
+    ]
+  }, [
+    isGuestCheckoutFlow,
+    needsPhoneVerification,
+    guestSyncFailed,
+    guestBagNotReady,
+    allRecipientsAssigned,
+    isUserInfoIncomplete,
+    senderStepComplete,
+    recipientsStepComplete,
+    canProceedToPayment,
+  ])
+
+  const checkoutFlowHint = useMemo(() => {
+    if (recipientActionsBlocked) {
+      return 'Complete onboarding in your dashboard before you can assign recipients or pay.'
+    }
+    if (needsPhoneVerification) {
+      return 'Step 1: Enter your sender details and verify your phone. Recipient assignment comes next.'
+    }
+    if (guestSyncFailed) {
+      return 'Your phone is verified. Sync your bag, then assign recipients and review your order.'
+    }
+    if (guestBagNotReady) {
+      return 'Confirm sender details and verify your phone to continue.'
+    }
+    if (!allRecipientsAssigned) {
+      return 'Step 2: Assign a recipient to each gift card. Use Assign to Self when the gift is for you.'
+    }
+    if (!canProceedToPayment) {
+      return 'Complete sender and recipient details, then review your order and pay.'
+    }
+    return 'Review your order summary, then complete payment.'
+  }, [
+    recipientActionsBlocked,
+    needsPhoneVerification,
+    guestSyncFailed,
+    guestBagNotReady,
+    allRecipientsAssigned,
+    canProceedToPayment,
+  ])
+
   if (isLoadingCart) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -179,75 +275,29 @@ export default function Checkout() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="wrapper py-8">
-        <div className="mb-6">
+        <div className="mb-6 space-y-3">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
-          <p className="text-gray-600">Review your order and complete your purchase</p>
-          {isGuestCheckoutFlow ? (
-            <div className="mt-4 space-y-3">
-              <ol className="flex items-center gap-2 text-sm font-medium">
-                <li
-                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 ${
-                    needsPhoneVerification
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'bg-green-50 text-green-700'
-                  }`}
-                >
-                  <span
-                    className={`flex size-5 items-center justify-center rounded-full text-xs ${
-                      needsPhoneVerification
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-green-600 text-white'
-                    }`}
-                  >
-                    {needsPhoneVerification ? '1' : '✓'}
-                  </span>
-                  Contact
-                </li>
-                <Icon icon="bi:chevron-right" className="size-4 text-gray-400 shrink-0" />
-                <li
-                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 ${
-                    isGuestCheckoutReady
-                      ? 'bg-green-50 text-green-700'
-                      : !needsPhoneVerification
-                        ? 'bg-primary-100 text-primary-700'
-                        : 'bg-gray-100 text-gray-500'
-                  }`}
-                >
-                  <span
-                    className={`flex size-5 items-center justify-center rounded-full text-xs ${
-                      isGuestCheckoutReady
-                        ? 'bg-green-600 text-white'
-                        : !needsPhoneVerification
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {isGuestCheckoutReady ? '✓' : '2'}
-                  </span>
-                  Recipients & pay
-                </li>
-              </ol>
-              <p className="text-sm text-gray-600">
-                {needsPhoneVerification
-                  ? 'Step 1 of 2: Confirm your contact details. You can assign recipients after verification.'
-                  : guestSyncFailed
-                    ? 'Your phone is verified. Finish syncing your bag to continue.'
-                    : 'Step 2 of 2: Assign recipients to your gift cards, then complete your purchase.'}
-              </p>
-            </div>
-          ) : null}
+          <p className="text-gray-600">
+            Sender details, recipient assignment, order review, then payment — in that order.
+          </p>
+          <CheckoutFlowProgress steps={checkoutFlowSteps} />
+          <p className="text-sm text-gray-600">{checkoutFlowHint}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            {!recipientActionsBlocked && needsPhoneVerification && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
+            {!recipientActionsBlocked && (
+              <CheckoutSection
+                step={1}
+                title="Sender details"
+                subtitle="Your name, phone, and email for receipts and gift delivery updates — separate from who receives each card."
+              >
                 {showPaymentMethodSection && (
                   <p className="text-sm text-gray-500 mb-4">
-                    Your phone number is used for mobile money payments when you select that option.
+                    Your phone number is also used for mobile money when you choose that payment option.
                   </p>
                 )}
+                {needsPhoneVerification && (
                 <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -327,16 +377,14 @@ export default function Checkout() {
                     </Button>
                   </div>
                 </form>
-              </div>
-            )}
+                )}
 
-            {!recipientActionsBlocked && guestSyncFailed && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
+                {guestSyncFailed && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-end gap-3">
                   <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 border border-green-200">
                     <Icon icon="bi:check-circle" className="size-3.5" />
-                    Verified
+                    Phone verified
                   </span>
                 </div>
                 <div className="rounded-xl border border-red-200 bg-red-50 p-4">
@@ -369,12 +417,11 @@ export default function Checkout() {
                   </Button>
                 </div>
               </div>
-            )}
+                )}
 
-            {!recipientActionsBlocked && isGuestCheckoutReady && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
+                {isGuestCheckoutReady && (
+                <div className="space-y-4">
+                <div className="flex items-center justify-end gap-3">
                   <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 border border-green-200">
                     <Icon icon="bi:check-circle" className="size-3.5" />
                     Phone verified
@@ -439,20 +486,14 @@ export default function Checkout() {
                     />
                   </div>
                 </form>
-              </div>
-            )}
-
-            {!recipientActionsBlocked &&
-              !isPersonalDetailsCompleted &&
-              !isGuestAuth &&
-              !isLocalGuestCart && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
-                {showPaymentMethodSection && (
-                  <p className="text-sm text-gray-500 mb-4">
-                    Your phone number is used for mobile money payments when you select that option.
-                  </p>
+                </div>
                 )}
+
+                {!isGuestAuth &&
+              !isLocalGuestCart &&
+              !needsPhoneVerification &&
+              !guestSyncFailed &&
+              !isGuestCheckoutReady && (
                 <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -502,16 +543,42 @@ export default function Checkout() {
                     />
                   </div>
                 </form>
-              </div>
+                )}
+              </CheckoutSection>
             )}
 
             {!guestBagNotReady && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200 space-y-4">
-                <h2 className="text-lg font-semibold text-gray-900">Order Items</h2>
-                {recipientActionsBlocked ? <MemberOnboardingRecipientBlock /> : null}
+            <CheckoutSection
+              step={2}
+              title="Recipient details"
+              subtitle="Who receives each gift card. Use Assign to Self when you are the recipient."
+            >
+              {recipientActionsBlocked ? (
+                <MemberOnboardingRecipientBlock />
+              ) : needsPhoneVerification || guestSyncFailed ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                  <p className="font-medium">Complete sender details first</p>
+                  <p className="mt-1 text-amber-800">
+                    {needsPhoneVerification
+                      ? 'Verify your phone in step 1 before assigning recipients.'
+                      : 'Finish syncing your bag in step 1, then assign recipients here.'}
+                  </p>
+                </div>
+              ) : (
+                <>
+              <div className="mb-4 flex gap-3 rounded-lg border border-primary-100 bg-primary-50/60 p-4">
+                <Icon icon="bi:person-check" className="mt-0.5 size-5 shrink-0 text-primary-600" />
+                <div className="text-sm text-primary-900">
+                  <p className="font-medium">Assign to Self</p>
+                  <p className="mt-1 text-primary-800">
+                    When you tap Assign Recipient, turn on <strong>Assign to Self</strong> if the
+                    gift is for you — your account details are used and you do not need to fill in
+                    recipient fields. Otherwise enter recipient name, phone, email, and an optional
+                    message.
+                  </p>
+                </div>
               </div>
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-200 rounded-lg border border-gray-200">
                 {displayCartItems
                   ?.filter((item: CheckoutFlattenedCartItem) => item.cart_item_id)
                   .map((item: CheckoutFlattenedCartItem) => {
@@ -621,14 +688,23 @@ export default function Checkout() {
                     )
                   })}
               </div>
-            </div>
+                </>
+              )}
+            </CheckoutSection>
             )}
 
             {!recipientActionsBlocked &&
               !guestBagNotReady &&
               showPaymentMethodSection && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Payment method</h3>
+              <CheckoutSection
+                step={3}
+                title="Payment"
+                subtitle={
+                  canProceedToPayment
+                    ? 'Choose how you want to pay for this order.'
+                    : 'Available after sender and recipient details are complete.'
+                }
+              >
                 <div className="flex gap-2 p-1 bg-gray-100 rounded-lg mb-4">
                   <button
                     type="button"
@@ -868,13 +944,26 @@ export default function Checkout() {
                     </div>
                   </div>
                 )}
-              </div>
+              </CheckoutSection>
             )}
           </div>
 
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
+              <div className="mb-4 flex items-start gap-3">
+                <span
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white"
+                  aria-hidden
+                >
+                  4
+                </span>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Review order</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Confirm items and totals before you pay.
+                  </p>
+                </div>
+              </div>
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal ({displayCartItems.length} items)</span>
@@ -901,7 +990,7 @@ export default function Checkout() {
                 </p>
               ) : needsPhoneVerification ? (
                 <p className="text-sm text-gray-600 mb-3">
-                  Verify your contact details to continue to recipient assignment and payment.
+                  Complete sender details (step 1) to assign recipients and pay.
                 </p>
               ) : guestSyncFailed ? (
                 <p className="text-sm text-amber-700 mb-3">
@@ -1155,6 +1244,7 @@ export default function Checkout() {
           </div>
         </div>
       </Modal>
+      {showGuestCartDebug ? <GuestCartDebugPanel /> : null}
     </div>
   )
 }

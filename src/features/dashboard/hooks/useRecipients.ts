@@ -8,6 +8,11 @@ import {
   deleteGuestRecipient,
 } from '../../website/services/cards'
 
+type RecipientMutationToastOptions = {
+  showSuccessToast?: boolean
+  showErrorToast?: boolean
+}
+
 export function useRecipients() {
   const toast = useToast()
   const queryClient = useQueryClient()
@@ -31,30 +36,40 @@ export function useRecipients() {
     })
   }
 
-  function useAssignRecipientService() {
+  function useAssignRecipientService(options?: RecipientMutationToastOptions) {
+    const showSuccessToast = options?.showSuccessToast ?? true
+    const showErrorToast = options?.showErrorToast ?? true
+
     return useMutation({
       mutationFn: assignRecipient,
       onSuccess: (response: { status: string; message: string }) => {
-        toast.success(response.message || 'Recipient assigned successfully')
         queryClient.invalidateQueries({ queryKey: ['user-recipients'] })
         queryClient.invalidateQueries({ queryKey: ['cart-items'] })
         queryClient.invalidateQueries({ queryKey: ['cart-recipients'] })
+        if (!showSuccessToast) return
+        toast.success(response.message || 'Recipient assigned successfully')
       },
       onError: (error: { status: number; message: string }) => {
+        if (!showErrorToast) return
         toast.error(error?.message || 'Failed to assign recipient. Please try again.')
       },
     })
   }
 
-  function useAssignGuestRecipientService() {
+  function useAssignGuestRecipientService(options?: RecipientMutationToastOptions) {
+    const showSuccessToast = options?.showSuccessToast ?? true
+    const showErrorToast = options?.showErrorToast ?? true
+
     return useMutation({
       mutationFn: assignGuestRecipient,
       onSuccess: (response: { status: string; message: string }) => {
-        toast.success(response.message || 'Recipient assigned successfully')
         queryClient.invalidateQueries({ queryKey: ['cart-items', 'guest'] })
         queryClient.invalidateQueries({ queryKey: ['guest-cart-recipients'] })
+        if (!showSuccessToast) return
+        toast.success(response.message || 'Recipient assigned successfully')
       },
       onError: (error: { status: number; message: string }) => {
+        if (!showErrorToast) return
         toast.error(error?.message || 'Failed to assign recipient. Please try again.')
       },
     })

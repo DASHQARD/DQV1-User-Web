@@ -88,8 +88,8 @@ export default function DashQards() {
       <section id="cards-section" className="py-12 bg-white">
         <div className="wrapper">
           {/* E-commerce Layout */}
-          <div className="flex gap-8 items-start max-xl:flex-col max-xl:gap-6">
-            <div className="shrink-0 max-xl:hidden">
+          <div className="flex w-full gap-8 items-start max-xl:flex-col max-xl:gap-6">
+            <div className="shrink-0 self-start max-xl:hidden">
               <DashQardsFilters
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -107,7 +107,7 @@ export default function DashQards() {
             </div>
 
             {/* Products Main */}
-            <main className="flex w-full min-w-0 flex-1 flex-col gap-4">
+            <main className="relative z-0 flex w-full min-w-0 flex-1 flex-col gap-4">
               <section className="flex w-full flex-col gap-4 border-b border-[#e6e6e6] pb-4">
                 <Text variant="h2" weight="medium" className="text-[#212529] pt-2">
                   Results for &quot;{cardTabs.find((t) => t.id === activeTab)?.label ?? 'Gift Cards'}&quot;{' '}
@@ -262,7 +262,7 @@ export default function DashQards() {
                 </div>
               ) : (
                 <>
-                  <div className="grid w-full gap-4 sm:gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))]">
+                  <div className="grid w-full grid-cols-1 items-start gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3">
                     {sortedQards
                       .filter((card) => card.type?.toLowerCase() !== 'dashpro')
                       .map((card) => {

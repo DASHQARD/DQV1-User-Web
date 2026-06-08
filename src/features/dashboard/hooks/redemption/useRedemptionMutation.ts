@@ -68,6 +68,7 @@ export function useRedemptionMutation() {
       onSuccess: (response: any) => {
         success(response?.message || 'Redemption processed successfully')
         queryClient.invalidateQueries({ queryKey: ['redemptions'] })
+        queryClient.invalidateQueries({ queryKey: ['redeemable-cards'] })
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to process redemption. Please try again.')

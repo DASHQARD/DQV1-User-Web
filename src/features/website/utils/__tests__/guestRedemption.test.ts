@@ -48,31 +48,35 @@ describe('guestRedemption', () => {
     })
   })
 
-  it('buildGuestCardsRedemptionPayload omits card_id for DashGo (amount-only)', () => {
+  it('buildGuestCardsRedemptionPayload includes card_id for DashGo', () => {
     expect(
       buildGuestCardsRedemptionPayload({
         card_type: 'DashGo',
+        card_id: 'gift-card-1',
         branch_id: 'branch-1',
         amount: 25.5,
       }),
     ).toEqual({
       card_type: 'DashGo',
+      card_id: 'gift-card-1',
       branch_id: 'branch-1',
       amount: 25.5,
     })
   })
 
-  it('buildGuestCardsRedemptionPayload omits card_id for DashPro', () => {
+  it('buildGuestCardsRedemptionPayload uses momo fields for DashPro', () => {
     expect(
       buildGuestCardsRedemptionPayload({
         card_type: 'DashPro',
-        branch_id: 'branch-1',
         amount: 100,
+        vendor_phone_number: '233241112222',
+        provider: 'mtn',
       }),
     ).toEqual({
       card_type: 'DashPro',
-      branch_id: 'branch-1',
       amount: 100,
+      vendor_phone_number: '233241112222',
+      provider: 'mtn',
     })
   })
 

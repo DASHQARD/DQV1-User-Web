@@ -17,6 +17,7 @@ export interface ValidateVendorMobileMoneyResponse {
     account_name?: string
     phone_number?: string
     provider?: string
+    bank_code?: string
   }
 }
 
@@ -81,7 +82,6 @@ export interface DashProRedemptionPayload {
   vendor_phone_number: string
   amount: number
   user_phone_number: string
-  token: string
 }
 
 export interface DashProRedemptionForUserPayload {
@@ -171,22 +171,26 @@ export type CardsRedemptionPayload =
       card_id: string
     }
 
+export type GuestMomoProvider = 'mtn' | 'vodafone' | 'airtel-tigo'
+
 /** POST /guest-redemptions/cards — guest identity comes from Bearer token, not body */
 export type GuestCardsRedemptionPayload =
   | {
       card_type: 'DashPro'
-      branch_id: string
       amount: number
+      vendor_phone_number: string
+      provider: GuestMomoProvider
     }
   | {
       card_type: 'DashGo'
+      card_id: string
       branch_id: string
       amount: number
     }
   | {
       card_type: 'DashX' | 'DashPass'
-      branch_id: string
       card_id: string
+      branch_id: string
     }
 
 export interface GuestCardsRedemptionData {

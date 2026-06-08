@@ -7,6 +7,7 @@ import type {
   GuestCardsRedemptionData,
   GuestCardsRedemptionPayload,
   GuestCardsRedemptionResponse,
+  GuestMomoProvider,
 } from '@/types/redemptions'
 
 export type GuestVendorCard = {
@@ -219,21 +220,28 @@ export function isValidRedemptionAmountInput(value: string): boolean {
 /** Build type-discriminated POST /guest-redemptions/cards body */
 export function buildGuestCardsRedemptionPayload(
   input:
-    | { card_type: 'DashPro'; branch_id: string; amount: number }
-    | { card_type: 'DashGo'; branch_id: string; amount: number }
+    | {
+        card_type: 'DashPro'
+        amount: number
+        vendor_phone_number: string
+        provider: GuestMomoProvider
+      }
+    | { card_type: 'DashGo'; card_id: string; branch_id: string; amount: number }
     | { card_type: 'DashX' | 'DashPass'; branch_id: string; card_id: string },
 ): GuestCardsRedemptionPayload {
-  const branch_id = input.branch_id.trim()
   if (input.card_type === 'DashPro') {
     return {
       card_type: 'DashPro',
-      branch_id,
       amount: roundRedemptionAmount(input.amount),
+      vendor_phone_number: input.vendor_phone_number.trim(),
+      provider: input.provider,
     }
   }
+  const branch_id = input.branch_id.trim()
   if (input.card_type === 'DashGo') {
     return {
       card_type: 'DashGo',
+      card_id: input.card_id.trim(),
       branch_id,
       amount: roundRedemptionAmount(input.amount),
     }

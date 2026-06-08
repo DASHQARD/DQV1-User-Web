@@ -1,80 +1,124 @@
 import { useEffect, useState } from 'react'
-import { useDebouncedValue } from '@/hooks'
+import { useDebouncedValue } from '@/hooks/useDebouncedState'
+import { useMobileMoneyAccountLookup } from '@/hooks/useMobileMoneyAccountLookup'
 import {
   convertToInternationalFormat,
-  resolveMomoAccountName,
+  resolveGuestMomoName,
 } from '@/features/dashboard/services/redemptions'
 import { interpretMomoResolveResponse } from '@/features/website/utils/momoResolve'
+import { toLookupApiProvider } from '@/utils/accountLookupMappers'
+import type { GuestMomoProvider } from '@/types/redemptions'
 
-export function useRedemptionVendorMobileMoney(enabled: boolean) {
+export function useRedemptionVendorMobileMoney(enabled: boolean, isGuestAuth = false) {
   const [rawVendorPhone, setRawVendorPhone] = useState('')
-  const debouncedVendorPhone = useDebouncedValue(enabled ? rawVendorPhone : '', 800)
-  const [validatingVendor, setValidatingVendor] = useState(false)
-  const [vendorPhoneError, setVendorPhoneError] = useState<string | null>(null)
-  const [vendorPhoneName, setVendorPhoneName] = useState<string | null>(null)
-  const [momoResolveWarning, setMomoResolveWarning] = useState<string | null>(null)
+
+  const memberLookup = useMobileMoneyAccountLookup({
+    enabled: enabled && !isGuestAuth,
+    rawPhone: rawVendorPhone,
+  })
+
+  const debouncedGuestPhone = useDebouncedValue(enabled && isGuestAuth ? rawVendorPhone : '', 800)
+  const [guestResolving, setGuestResolving] = useState(false)
+  const [guestPhoneName, setGuestPhoneName] = useState<string | null>(null)
+  const [guestPhoneError, setGuestPhoneError] = useState<string | null>(null)
+  const [guestMomoWarning, setGuestMomoWarning] = useState<string | null>(null)
+  const [guestProvider, setGuestProvider] = useState<GuestMomoProvider | null>(null)
 
   useEffect(() => {
-    if (!enabled) return
+    if (!enabled || !isGuestAuth) {
+      setGuestResolving(false)
+      setGuestPhoneName(null)
+      setGuestPhoneError(null)
+      setGuestMomoWarning(null)
+      setGuestProvider(null)
+      return
+    }
 
-    const digits = debouncedVendorPhone.replace(/[^0-9]/g, '')
-    if (!debouncedVendorPhone || digits.length < 10) {
-      setVendorPhoneName(null)
-      setVendorPhoneError(null)
-      setMomoResolveWarning(null)
-      setValidatingVendor(false)
+    const digits = debouncedGuestPhone.replace(/[^0-9]/g, '')
+    if (!debouncedGuestPhone || digits.length < 10) {
+      setGuestResolving(false)
+      setGuestPhoneName(null)
+      setGuestPhoneError(null)
+      setGuestMomoWarning(null)
+      setGuestProvider(null)
       return
     }
 
     let cancelled = false
-    setValidatingVendor(true)
-    setVendorPhoneError(null)
-    setVendorPhoneName(null)
-    setMomoResolveWarning(null)
+    setGuestResolving(true)
+    setGuestPhoneError(null)
+    setGuestPhoneName(null)
+    setGuestMomoWarning(null)
+    setGuestProvider(null)
 
-    const phone_number = convertToInternationalFormat(debouncedVendorPhone)
-
-    resolveMomoAccountName({ phone_number })
+    resolveGuestMomoName({ phone_number: convertToInternationalFormat(debouncedGuestPhone) })
       .then((response) => {
         if (cancelled) return
-        const { vendorPhoneName, vendorPhoneError, momoResolveWarning } =
-          interpretMomoResolveResponse(response)
-        setVendorPhoneName(vendorPhoneName)
-        setVendorPhoneError(vendorPhoneError)
-        setMomoResolveWarning(momoResolveWarning)
+        const ui = interpretMomoResolveResponse(response)
+        setGuestPhoneName(ui.vendorPhoneName)
+        setGuestPhoneError(ui.vendorPhoneError)
+        setGuestMomoWarning(ui.momoResolveWarning)
+
+        const apiProvider = toLookupApiProvider(response?.data?.provider)
+        setGuestProvider(apiProvider)
       })
       .catch((err: { message?: string }) => {
         if (cancelled) return
-        setVendorPhoneError(err?.message || 'Could not verify this mobile money number.')
-        setVendorPhoneName(null)
+        setGuestPhoneName(null)
+        setGuestMomoWarning(null)
+        setGuestProvider(null)
+        setGuestPhoneError(
+          err?.message ||
+            'Could not verify this mobile money number. Please check and try again.',
+        )
       })
       .finally(() => {
-        if (!cancelled) setValidatingVendor(false)
+        if (!cancelled) setGuestResolving(false)
       })
 
     return () => {
       cancelled = true
     }
-  }, [debouncedVendorPhone, enabled])
+  }, [debouncedGuestPhone, enabled, isGuestAuth])
+
+  const resetGuestState = () => {
+    setGuestResolving(false)
+    setGuestPhoneName(null)
+    setGuestPhoneError(null)
+    setGuestMomoWarning(null)
+    setGuestProvider(null)
+  }
 
   const resetVendorMobileMoney = () => {
     setRawVendorPhone('')
-    setVendorPhoneName(null)
-    setVendorPhoneError(null)
-    setMomoResolveWarning(null)
-    setValidatingVendor(false)
+    memberLookup.reset()
+    resetGuestState()
   }
 
-  const isVendorPhoneVerified = !!(vendorPhoneName && !vendorPhoneError)
+  if (isGuestAuth) {
+    const isVendorPhoneVerified = !!(guestPhoneName && !guestPhoneError && guestProvider)
+    return {
+      rawVendorPhone,
+      setRawVendorPhone,
+      validatingVendor: guestResolving,
+      vendorPhoneError: guestPhoneError,
+      vendorPhoneName: guestPhoneName,
+      momoResolveWarning: guestMomoWarning,
+      isVendorPhoneVerified,
+      resolvedProvider: guestProvider,
+      resetVendorMobileMoney,
+    }
+  }
 
   return {
     rawVendorPhone,
     setRawVendorPhone,
-    validatingVendor,
-    vendorPhoneError,
-    vendorPhoneName,
-    momoResolveWarning,
-    isVendorPhoneVerified,
+    validatingVendor: memberLookup.isResolving,
+    vendorPhoneError: memberLookup.error,
+    vendorPhoneName: memberLookup.accountName,
+    momoResolveWarning: null,
+    isVendorPhoneVerified: memberLookup.isVerified,
+    resolvedProvider: null as GuestMomoProvider | null,
     resetVendorMobileMoney,
   }
 }

@@ -22,6 +22,7 @@ import {
 import { getAssignToSelfContactPrefill } from '../../utils/assignToSelfContactPrefill'
 import { formatPersonName } from '@/utils/personName'
 import { pickGuestCartIdentityFields } from '@/utils/guestContact'
+import { findCartItemIdByCardId } from '@/features/website/utils/customGiftCardCartHelpers'
 import {
   addGuestCard,
   createGuestDashGo,
@@ -48,6 +49,8 @@ import {
   useAssignToSelfToggle,
   useCardFlipPreview,
 } from '@/components/GiftCardRecipientForm'
+
+const SILENT_MUTATION_TOASTS = { showSuccessToast: false, showErrorToast: false } as const
 
 const QRPlaceholder = () => {
   const pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
@@ -103,8 +106,8 @@ export default function DashGoPurchase() {
 
   const { useCreateDashGoAndAssignService } = usePublicCatalogMutations()
   const createDashGoMutationAsync = useCreateDashGoAndAssignService()
-  const { addToCartAsync } = useCart()
-  const { refetch: refetchGuestCart } = useGuestCart()
+  const { addToCartAsync, deleteCartItemAsync, refetch: refetchCart } = useCart()
+  const { deleteCartItemAsync: deleteGuestCartItemAsync, refetch: refetchGuestCart } = useGuestCart()
   const { openCart } = useCartStore()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
@@ -118,9 +121,24 @@ export default function DashGoPurchase() {
   const getGuestCartUuid = useAuthStore((state) => state.getGuestCartUuid)
   const setGuestCartUuid = useAuthStore((state) => state.setGuestCartUuid)
   const { useAssignRecipientService, useAssignGuestRecipientService } = useRecipients()
-  const assignRecipientMutation = useAssignRecipientService()
-  const assignGuestRecipientMutation = useAssignGuestRecipientService()
+  const assignRecipientMutation = useAssignRecipientService(SILENT_MUTATION_TOASTS)
+  const assignGuestRecipientMutation = useAssignGuestRecipientService(SILENT_MUTATION_TOASTS)
   const toast = useToast()
+
+  const removeCartLine = React.useCallback(
+    async (cartItemId: string | number) => {
+      try {
+        if (isGuestAuth) {
+          await deleteGuestCartItemAsync(cartItemId)
+        } else {
+          await deleteCartItemAsync(cartItemId)
+        }
+      } catch (rollbackError) {
+        console.error('Failed to roll back cart item after assign failure:', rollbackError)
+      }
+    },
+    [deleteCartItemAsync, deleteGuestCartItemAsync, isGuestAuth],
+  )
 
   const {
     assignToSelf,
@@ -323,31 +341,22 @@ export default function DashGoPurchase() {
         }
 
         const cartItemsResponse = await refetchGuestCart()
-        const cartItems = cartItemsResponse?.data || []
-        if (Array.isArray(cartItems)) {
-          for (const cart of cartItems) {
-            if (cart.items) {
-              const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
-              const matchingItem = itemsArray.find(
-                (item: any) => String(item.card_id) === String(cardId),
-              )
-              if (matchingItem?.cart_item_id) {
-                cartItemId = matchingItem.cart_item_id
-                break
-              }
-            }
-          }
-        }
+        cartItemId = findCartItemIdByCardId(cartItemsResponse?.data, cardId)
       } else {
         const addToCartResponse = await addToCartAsync({
           card_id: cardId,
           quantity: 1,
         })
         cartItemId = addToCartResponse?.data?.cart_item_id ?? null
+        if (!cartItemId) {
+          const cartItemsResponse = await refetchCart()
+          cartItemId = findCartItemIdByCardId(cartItemsResponse?.data, cardId)
+        }
       }
 
       if (!cartItemId) {
         console.error('Failed to get cart_item_id after adding to cart')
+        toast.error('Could not add DashGo to your bag. Please try again.')
         return
       }
 
@@ -373,16 +382,22 @@ export default function DashGoPurchase() {
         }
       }
 
-      if (isGuestAuth) {
-        await assignGuestRecipientMutation.mutateAsync(assignPayload)
-      } else {
-        await assignRecipientMutation.mutateAsync(assignPayload)
+      try {
+        if (isGuestAuth) {
+          await assignGuestRecipientMutation.mutateAsync(assignPayload)
+        } else {
+          await assignRecipientMutation.mutateAsync(assignPayload)
+        }
+      } catch (assignError) {
+        await removeCartLine(cartItemId)
+        throw assignError
       }
 
+      toast.success('DashGo gift card added to your bag')
       openCart()
     } catch (error: unknown) {
       console.error('Failed to create DashGo card:', error)
-      const message = getApiErrorMessage(error, 'Failed to add DashGo to cart')
+      const message = getApiErrorMessage(error, 'Could not add DashGo to your bag. Please try again.')
       if (
         error instanceof GuestCartAmountLimitError ||
         isGuestAmountThresholdMessage(message)

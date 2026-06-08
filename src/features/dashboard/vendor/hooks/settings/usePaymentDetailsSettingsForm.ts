@@ -2,11 +2,9 @@ import React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useCountriesData } from '@/hooks'
+import { useCountriesData, usePaymentDetailsFormLookups } from '@/hooks'
 import { useVendorMutations } from '../useVendorMutations'
-import { GHANA_BANKS } from '@/assets/data/banks'
 import { PaymentDetailsSchema } from '@/utils/schemas/payment'
-import { MOBILE_MONEY_PROVIDERS } from '@/utils/constants'
 
 export type PaymentDetailsFormData = z.infer<typeof PaymentDetailsSchema>
 
@@ -32,15 +30,10 @@ export function usePaymentDetailsSettingsForm() {
     defaultValues,
   })
 
-  const paymentMethod = useWatch({
-    control: form.control,
-    name: 'payment_method',
-  })
+  const watched = useWatch({ control: form.control })
+  const paymentMethod = watched.payment_method
 
-  const bankOptions = React.useMemo(
-    () => GHANA_BANKS.map((bank) => ({ label: bank.name, value: bank.name })),
-    [],
-  )
+  const lookups = usePaymentDetailsFormLookups(form, watched)
 
   const onSubmit = React.useCallback(
     async (data: PaymentDetailsFormData) => {
@@ -73,10 +66,17 @@ export function usePaymentDetailsSettingsForm() {
   return {
     form,
     paymentMethod,
-    mobileMoneyProviders: [...MOBILE_MONEY_PROVIDERS],
-    bankOptions,
+    mobileMoneyProviders: lookups.providerOptions,
+    bankOptions: lookups.bankOptions.map((bank) => ({
+      label: bank.label,
+      value: bank.value,
+    })),
     phoneCountries,
     onSubmit,
     isPending,
+    momoLookup: lookups.momoLookup,
+    bankLookup: lookups.bankLookup,
+    handleBankSelect: lookups.handleBankSelect,
+    selectedBankCode: lookups.selectedBankCode,
   }
 }

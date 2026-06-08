@@ -4,10 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
-import { useCountriesData } from '@/hooks'
-import { GHANA_BANKS } from '@/assets/data/banks'
+import { useCountriesData, usePaymentDetailsFormLookups } from '@/hooks'
 import { PaymentDetailsSchema } from '@/utils/schemas/payment'
-import { MOBILE_MONEY_PROVIDERS } from '@/utils/constants'
 
 export type PaymentDetailsFormData = z.infer<typeof PaymentDetailsSchema>
 
@@ -157,19 +155,9 @@ export function usePaymentDetailsSettings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentDetailsKey])
 
-  const paymentMethod = useWatch({
-    control: form.control,
-    name: 'payment_method',
-  })
-
-  const bankOptions = useMemo(
-    () =>
-      GHANA_BANKS.map((bank) => ({
-        label: bank.name,
-        value: bank.name,
-      })),
-    [],
-  )
+  const watched = useWatch({ control: form.control })
+  const paymentMethod = watched.payment_method
+  const lookups = usePaymentDetailsFormLookups(form, watched)
 
   const onSubmit = async (data: PaymentDetailsFormData) => {
     try {
@@ -218,9 +206,16 @@ export function usePaymentDetailsSettings() {
     isDeleting,
     hasPaymentDetails,
     paymentMethod,
-    mobileMoneyProviders: MOBILE_MONEY_PROVIDERS,
-    bankOptions,
+    mobileMoneyProviders: lookups.providerOptions,
+    bankOptions: lookups.bankOptions.map((bank) => ({
+      label: bank.label,
+      value: bank.value,
+    })),
     countries,
+    momoLookup: lookups.momoLookup,
+    bankLookup: lookups.bankLookup,
+    handleBankSelect: lookups.handleBankSelect,
+    selectedBankCode: lookups.selectedBankCode,
     isDeleteModalOpen,
     setIsDeleteModalOpen,
   }

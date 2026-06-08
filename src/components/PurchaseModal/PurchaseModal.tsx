@@ -312,8 +312,8 @@ export default function PurchaseModal() {
       panelClass="!max-w-[900px] md:!w-full"
     >
       <GiftCardRecipientFormHeader
-        title="Add New Recipient"
-        subtitle={`Create and customize a personalized ${cardProduct || cardTypeName} gift card recipient`}
+        title="Recipient details"
+        subtitle={`Who receives this ${cardProduct || cardTypeName} gift card. Turn on Assign to Self if it is for you — otherwise enter their name, phone, email, and an optional message.`}
       />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col">

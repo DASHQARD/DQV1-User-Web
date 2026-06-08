@@ -177,11 +177,14 @@ export function useRedemptionQueries() {
     })
   }
 
-  function useGetGuestAssignedCardsService(enabled: boolean = true) {
+  function useGetGuestAssignedCardsService(
+    enabled: boolean = true,
+    params?: { redemption_status?: 'all' | 'redeemed' | 'unredeemed' },
+  ) {
     const { isGuestAuth } = useAuthStore()
     return useQuery({
-      queryKey: ['guest-assigned-cards'],
-      queryFn: () => getGuestAssignedCards(),
+      queryKey: ['guest-assigned-cards', params],
+      queryFn: () => getGuestAssignedCards(params),
       enabled: isGuestAuth && enabled,
     })
   }

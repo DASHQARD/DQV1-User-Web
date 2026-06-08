@@ -47,6 +47,7 @@ vi.mock('@/features/dashboard/hooks', () => ({
     useProcessCardsRedemptionService: () => ({ mutateAsync: vi.fn() }),
     useProcessGuestCardsRedemptionService: () => ({ mutateAsync: vi.fn() }),
     useProcessDashProRedemptionForUserService: () => ({ mutateAsync: vi.fn() }),
+    useProcessDashProRedemptionService: () => ({ mutateAsync: vi.fn() }),
     useInitiateRedemptionService: () => ({ mutateAsync: vi.fn() }),
     useValidateVendorMobileMoneyService: () => ({ mutate: vi.fn(), isPending: false }),
   }),

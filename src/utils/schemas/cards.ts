@@ -155,24 +155,8 @@ export const AssignRecipientSchema = z
           path: ['email'],
         })
       }
-    } else {
-      const email = data.email?.trim()
-      if (email && !isValidEmailAddress(email)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please provide a valid email address',
-          path: ['email'],
-        })
-      }
-      const phone = data.phone?.trim()
-      if (phone && !isValidInternationalPhoneDigits(phone)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: INVALID_PHONE_MESSAGE,
-          path: ['phone'],
-        })
-      }
     }
+    // assign_to_self: recipient contact comes from the account — do not validate prefilled UI fields
   })
 
 export const DashGoAssignRecipientSchema = z
@@ -235,22 +219,6 @@ export const DashGoAssignRecipientSchema = z
           path: ['recipient_email'],
         })
       }
-    } else {
-      const email = data.recipient_email?.trim()
-      if (email && !isValidEmailAddress(email)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please provide a valid email address',
-          path: ['recipient_email'],
-        })
-      }
-      const phone = data.recipient_phone?.trim()
-      if (phone && !isValidInternationalPhoneDigits(phone)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: INVALID_PHONE_MESSAGE,
-          path: ['recipient_phone'],
-        })
-      }
     }
+    // assign_to_self: recipient contact comes from the account — do not validate prefilled UI fields
   })
