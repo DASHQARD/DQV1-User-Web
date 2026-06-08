@@ -206,6 +206,27 @@ export function pickGuestRedemptionCardId(
 }
 
 /** Round to 2 decimal places (major currency units) */
+/** Coerce API/UI redemption amounts (number or decimal string) to a finite number. */
+export function parseRedemptionAmount(value: unknown, fallback = 0): number {
+  if (value == null || value === '') return fallback
+  const num = typeof value === 'number' ? value : Number.parseFloat(String(value))
+  return Number.isFinite(num) ? num : fallback
+}
+
+export function formatRedemptionAmount(value: unknown, fallback = 0): string {
+  return parseRedemptionAmount(value, fallback).toFixed(2)
+}
+
+export function normalizeRedemptionSuccessData(
+  data: GuestCardsRedemptionData | null | undefined,
+): GuestCardsRedemptionData | null {
+  if (!data) return null
+  return {
+    ...data,
+    amount: data.amount != null ? parseRedemptionAmount(data.amount) : undefined,
+  }
+}
+
 export function roundRedemptionAmount(amount: number): number {
   return Math.round(amount * 100) / 100
 }
@@ -268,5 +289,5 @@ export function isGuestRedemptionSuccess(
 export function extractGuestRedemptionSuccess(
   response: GuestCardsRedemptionResponse,
 ): GuestCardsRedemptionData {
-  return response.data ?? {}
+  return normalizeRedemptionSuccessData(response.data ?? {}) ?? {}
 }

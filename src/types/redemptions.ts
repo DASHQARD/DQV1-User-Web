@@ -197,7 +197,7 @@ export interface GuestCardsRedemptionData {
   redemption_id?: string
   transaction_reference?: string
   redemption_code?: string
-  amount?: number
+  amount?: number | string
   status?: string
   redemption_date?: string
   guest_phone?: string

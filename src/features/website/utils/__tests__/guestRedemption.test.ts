@@ -7,6 +7,9 @@ import {
   isGuestAssignedCardRedeemable,
   isGuestRedemptionSuccess,
   isValidRedemptionAmountInput,
+  formatRedemptionAmount,
+  normalizeRedemptionSuccessData,
+  parseRedemptionAmount,
   parseGuestRecipientAmountTotalBalance,
   pickGuestRedemptionCardId,
   resolveRedemptionCardId,
@@ -14,6 +17,27 @@ import {
 } from '../guestRedemption'
 
 describe('guestRedemption', () => {
+  it('parseRedemptionAmount coerces API decimal strings', () => {
+    expect(parseRedemptionAmount('115.50')).toBe(115.5)
+    expect(parseRedemptionAmount('not-a-number', 0)).toBe(0)
+  })
+
+  it('formatRedemptionAmount never throws on string amounts', () => {
+    expect(formatRedemptionAmount('50')).toBe('50.00')
+  })
+
+  it('normalizeRedemptionSuccessData normalizes amount field', () => {
+    expect(
+      normalizeRedemptionSuccessData({
+        amount: '100.25',
+        transaction_reference: 'RCPT-1',
+      }),
+    ).toEqual({
+      amount: 100.25,
+      transaction_reference: 'RCPT-1',
+    })
+  })
+
   it('resolveRedemptionCardId prefers gift_card_id from guest amount APIs', () => {
     expect(
       resolveRedemptionCardId({

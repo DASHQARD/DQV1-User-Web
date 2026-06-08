@@ -47,6 +47,8 @@ import {
   pickGuestRedemptionCardId,
   resolveRedemptionCardId,
   roundRedemptionAmount,
+  formatRedemptionAmount,
+  normalizeRedemptionSuccessData,
 } from '@/features/website/utils/guestRedemption'
 import { parseGuestAssignedCardsResponse } from '@/features/website/utils/guestAssignedCards'
 import { parseGuestRedemptionsResponse } from '@/features/website/utils/guestRedemptionsHistory'
@@ -1386,12 +1388,14 @@ export default function RedemptionPage() {
 
           if (isGuestRedemptionSuccess(response)) {
             setVendorName(vendorPhoneName || 'Mobile money')
-            setRedemptionSuccess({
-              amount: response?.data?.amount ?? redeemAmount,
-              transaction_reference: response?.data?.transaction_reference,
-              redemption_code: response?.data?.redemption_code,
-              status: response?.data?.status,
-            })
+            setRedemptionSuccess(
+              normalizeRedemptionSuccessData({
+                amount: response?.data?.amount ?? redeemAmount,
+                transaction_reference: response?.data?.transaction_reference,
+                redemption_code: response?.data?.redemption_code,
+                status: response?.data?.status,
+              }),
+            )
             setStep('success')
             invalidateRedemptionGuestQueries()
           }
@@ -1403,12 +1407,14 @@ export default function RedemptionPage() {
 
           if (isRedemptionApiSuccess(response)) {
             setVendorName(vendorPhoneName || 'Mobile money')
-            setRedemptionSuccess({
-              amount: redeemAmount,
-              transaction_reference: response?.data?.transaction_reference,
-              redemption_code: response?.data?.redemption_code,
-              status: response?.data?.status,
-            })
+            setRedemptionSuccess(
+              normalizeRedemptionSuccessData({
+                amount: redeemAmount,
+                transaction_reference: response?.data?.transaction_reference,
+                redemption_code: response?.data?.redemption_code,
+                status: response?.data?.status,
+              }),
+            )
             setStep('success')
           }
         } else {
@@ -1420,12 +1426,14 @@ export default function RedemptionPage() {
 
           if (isRedemptionApiSuccess(response)) {
             setVendorName(vendorPhoneName || 'Mobile money')
-            setRedemptionSuccess({
-              amount: response?.data?.amount ?? redeemAmount,
-              transaction_reference: response?.data?.transaction_reference,
-              redemption_code: response?.data?.redemption_code,
-              status: response?.data?.status,
-            })
+            setRedemptionSuccess(
+              normalizeRedemptionSuccessData({
+                amount: response?.data?.amount ?? redeemAmount,
+                transaction_reference: response?.data?.transaction_reference,
+                redemption_code: response?.data?.redemption_code,
+                status: response?.data?.status,
+              }),
+            )
             setStep('success')
           }
         }
@@ -1585,7 +1593,7 @@ export default function RedemptionPage() {
           const response = await processGuestCardsRedemptionMutation.mutateAsync(guestPayload)
 
           if (isGuestRedemptionSuccess(response)) {
-            setRedemptionSuccess(response?.data ?? null)
+            setRedemptionSuccess(normalizeRedemptionSuccessData(response?.data ?? null))
             if ('card_id' in guestPayload) {
               setRedeemedCardId(guestPayload.card_id)
             } else if (selectedCard?.card_id) {
@@ -1630,7 +1638,7 @@ export default function RedemptionPage() {
         const response = await processUserRedemptionCardsMutation.mutateAsync(payload)
 
         if (isRedemptionApiSuccess(response)) {
-          setRedemptionSuccess(response?.data ?? null)
+          setRedemptionSuccess(normalizeRedemptionSuccessData(response?.data ?? null))
           if ('card_id' in payload) {
             setRedeemedCardId(payload.card_id)
           } else if (selectedCard?.card_id) {
@@ -2406,7 +2414,9 @@ export default function RedemptionPage() {
                   <Text variant="p" className="text-gray-600">
                     {selectedCard
                       ? `${selectedCard.card_name} successfully redeemed`
-                      : `GHS ${(redemptionSuccess?.amount ?? parseFloat(amount || '0')).toFixed(2)} successfully redeemed`}{' '}
+                      : `GHS ${formatRedemptionAmount(
+                          redemptionSuccess?.amount ?? amount,
+                        )} successfully redeemed`}{' '}
                     at {vendorName}
                   </Text>
                   {(redemptionSuccess?.transaction_reference ||
@@ -2416,7 +2426,7 @@ export default function RedemptionPage() {
                       {redemptionSuccess.amount != null && (
                         <p className="text-sm text-gray-700">
                           <span className="font-semibold">Amount:</span> GHS{' '}
-                          {Number(redemptionSuccess.amount).toFixed(2)}
+                          {formatRedemptionAmount(redemptionSuccess.amount)}
                         </p>
                       )}
                       {redemptionSuccess.transaction_reference && (
@@ -2439,10 +2449,10 @@ export default function RedemptionPage() {
                       <div className="bg-gray-50 rounded-lg p-4">
                         <Text variant="span" className="text-gray-600">
                           Remaining Balance: GHS{' '}
-                          {(
+                          {formatRedemptionAmount(
                             (cardType === 'dashgo' ? (dashGoBalance ?? balance) : balance)! -
-                            parseFloat(amount)
-                          ).toFixed(2)}
+                              parseFloat(amount || '0'),
+                          )}
                         </Text>
                       </div>
                     )}
