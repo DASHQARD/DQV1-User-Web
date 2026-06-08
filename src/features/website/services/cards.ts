@@ -492,3 +492,5 @@ export const assignGuestRecipient = async (
   const res = await postMethod('/guest-carts/recipients', data)
   return res as unknown as { status: string; message: string }
 }
+
+export { rateGuestCard, type RateCardPayload, type RateCardResponse } from '@/features/dashboard/services/cards'

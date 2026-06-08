@@ -2477,10 +2477,14 @@ export default function RedemptionPage() {
                     )}
                     <Button
                       variant="outline"
-                      onClick={() => navigate('/dashboard')}
+                      onClick={() =>
+                        navigate(
+                          isGuestAuth ? ROUTES.IN_APP.GUEST.CARDS : ROUTES.IN_APP.DASHBOARD.HOME,
+                        )
+                      }
                       className="w-full"
                     >
-                      Go to Dashboard
+                      {isGuestAuth ? 'View my cards' : 'Go to Dashboard'}
                     </Button>
                   </div>
                 </div>
