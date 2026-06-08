@@ -540,7 +540,7 @@ export default function ContactPage() {
                   Call for Quote
                 </a>
                 <a
-                  href="mailto:corporate@dashqard.com"
+                  href="mailto:support@dashqard.com"
                   className="bg-white/10 border-2 border-white text-white hover:bg-white/20 font-semibold py-2 px-6 rounded-full transition-all inline-flex items-center"
                 >
                   <Icon icon="bi:envelope" className="size-4 mr-2" />
