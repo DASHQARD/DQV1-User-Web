@@ -144,40 +144,49 @@ export default function PurchaseModal() {
     form.watch('message') || 'Your personalized message will appear here...'
 
   const quickAmounts = [100, 500, 1000, 5000]
+  const amountSessionKeyRef = React.useRef<string | null>(null)
 
   React.useEffect(() => {
-    if (modalData) {
-      const editing = Boolean(modalData.recipient_id || modalData.local_draft_id)
-      const selfAssign = editing ? Boolean(modalData.assign_to_self) : !isLocalGuestAssign
-      syncAssignToSelf(selfAssign)
-      if (selfAssign) {
-        applyContactPrefill()
-        form.setValue('message', modalData.message ?? '')
-        const amount = resolveModalAmount(modalData.amount ?? initialAmount)
-        if (amount !== undefined) form.setValue('amount', amount)
-        else form.resetField('amount')
-      } else if (editing) {
-        const { first_name, last_name } = splitPersonName(modalData.recipient_name ?? '')
-        form.setValue('first_name', first_name)
-        form.setValue('last_name', last_name)
-        form.setValue('phone', modalData.recipient_phone ?? '')
-        form.setValue('email', modalData.recipient_email ?? '')
-        form.setValue('message', modalData.message ?? '')
-        const amount = resolveModalAmount(modalData.amount ?? initialAmount)
-        if (amount !== undefined) form.setValue('amount', amount)
-        else form.resetField('amount')
-      } else {
-        form.setValue('first_name', '')
-        form.setValue('last_name', '')
-        form.setValue('phone', '')
-        form.setValue('email', '')
-        form.setValue('message', '')
-      }
-      if (!selfAssign && !editing) {
-        const amount = resolveModalAmount(modalData.amount)
-        if (amount !== undefined) form.setValue('amount', amount)
-        else form.resetField('amount')
-      }
+    if (!modalData) {
+      amountSessionKeyRef.current = null
+      return
+    }
+
+    const editing = Boolean(modalData.recipient_id || modalData.local_draft_id)
+    const selfAssign = editing ? Boolean(modalData.assign_to_self) : !isLocalGuestAssign
+    syncAssignToSelf(selfAssign)
+    if (selfAssign) {
+      applyContactPrefill()
+      form.setValue('message', modalData.message ?? '')
+    } else if (editing) {
+      const { first_name, last_name } = splitPersonName(modalData.recipient_name ?? '')
+      form.setValue('first_name', first_name)
+      form.setValue('last_name', last_name)
+      form.setValue('phone', modalData.recipient_phone ?? '')
+      form.setValue('email', modalData.recipient_email ?? '')
+      form.setValue('message', modalData.message ?? '')
+    } else {
+      form.setValue('first_name', '')
+      form.setValue('last_name', '')
+      form.setValue('phone', '')
+      form.setValue('email', '')
+      form.setValue('message', '')
+    }
+
+    const sessionKey = [
+      modalData.cart_item_id,
+      modalData.quantity_index ?? '',
+      modalData.recipient_id ?? '',
+      modalData.local_draft_id ?? '',
+    ].join(':')
+
+    if (amountSessionKeyRef.current !== sessionKey) {
+      amountSessionKeyRef.current = sessionKey
+      const amount = resolveModalAmount(
+        selfAssign || editing ? (modalData.amount ?? initialAmount) : modalData.amount,
+      )
+      if (amount !== undefined) form.setValue('amount', amount)
+      else form.resetField('amount')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- form intentionally omitted; do not depend on assignToSelf (would reset toggle)
   }, [

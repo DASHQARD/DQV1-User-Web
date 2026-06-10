@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores'
 import { convertToInternationalFormat } from '../services/redemptions'
 import type { VendorSearchResult } from '../services/redemptions'
 import { buildCardsRedemptionPayload } from '@/features/website/utils/cardsRedemption'
+import { pickGuestRedemptionCardId } from '@/features/website/utils/guestRedemption'
 import { useMobileMoneyAccountLookup } from '@/hooks/useMobileMoneyAccountLookup'
 
 export type CardType = 'DashPro' | 'DashGo' | 'DashX' | 'DashPass'
@@ -152,12 +153,29 @@ export function useRedemptionForm() {
         const branchId = selectedVendor.branches?.[0]?.id
         if (!branchId) return
         if (cardType === 'DashX' || cardType === 'DashPass') return
-        const payload = buildCardsRedemptionPayload({
-          branch_id: String(branchId),
-          vendor_gvid: selectedVendor.gvid,
-          card_type: cardType,
-          amount: redemptionAmount,
-        })
+        const dashGoCards =
+          (dashGoQuery.data as { data?: { cards?: unknown[] }; cards?: unknown[] })?.data?.cards ??
+          (dashGoQuery.data as { cards?: unknown[] })?.cards ??
+          []
+        const cardId =
+          cardType === 'DashGo' ? pickGuestRedemptionCardId(dashGoCards, redemptionAmount) : ''
+        if (cardType === 'DashGo' && !cardId) return
+        const payload = buildCardsRedemptionPayload(
+          cardType === 'DashGo'
+            ? {
+                branch_id: String(branchId),
+                vendor_gvid: selectedVendor.gvid,
+                card_type: 'DashGo',
+                card_id: cardId,
+                amount: redemptionAmount,
+              }
+            : {
+                branch_id: String(branchId),
+                vendor_gvid: selectedVendor.gvid,
+                card_type: cardType,
+                amount: redemptionAmount,
+              },
+        )
         const result = await cardsMutation.mutateAsync(payload)
         if (result?.data?.reference_id) setRedemptionReferenceId(result.data.reference_id)
         setShowSummaryModal(true)
@@ -165,7 +183,17 @@ export function useRedemptionForm() {
     } catch {
       // Errors are surfaced by the mutation's onError toast
     }
-  }, [isFormValid, cardType, redemptionAmount, rawVendorPhone, userPhone, selectedVendor, dashProMutation, cardsMutation])
+  }, [
+    isFormValid,
+    cardType,
+    redemptionAmount,
+    rawVendorPhone,
+    userPhone,
+    selectedVendor,
+    dashProMutation,
+    cardsMutation,
+    dashGoQuery.data,
+  ])
 
   return {
     // Card type

@@ -326,11 +326,26 @@ export function useCardDetailsPage() {
     if (!branchId) return
 
     let payload
-    if (cardTypeForAPI === 'DashGo' || cardTypeForAPI === 'DashPro') {
+    if (cardTypeForAPI === 'DashGo') {
+      const cardId = String(
+        (selectedCard as { id?: string; card_id?: string; gift_card_id?: string }).gift_card_id ??
+          (selectedCard as { id?: string; card_id?: string }).id ??
+          (selectedCard as { card_id?: string }).card_id ??
+          '',
+      ).trim()
+      if (!cardId) return
       payload = buildCardsRedemptionPayload({
         branch_id: branchId,
         vendor_gvid: vendorGvid,
-        card_type: cardTypeForAPI,
+        card_type: 'DashGo',
+        card_id: cardId,
+        amount: parseFloat(String(selectedCard.balance || selectedCard.amount || 0)),
+      })
+    } else if (cardTypeForAPI === 'DashPro') {
+      payload = buildCardsRedemptionPayload({
+        branch_id: branchId,
+        vendor_gvid: vendorGvid,
+        card_type: 'DashPro',
         amount: parseFloat(String(selectedCard.balance || selectedCard.amount || 0)),
       })
     } else {

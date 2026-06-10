@@ -1613,11 +1613,30 @@ export default function RedemptionPage() {
         }
 
         let payload
-        if (cardTypeForAPI === 'DashGo' || cardTypeForAPI === 'DashPro') {
+        if (cardTypeForAPI === 'DashGo') {
+          const dashGoCards =
+            redemptionsAmountDashGo?.data?.cards || redemptionsAmountDashGo?.cards || []
+          const redeemAmount = roundRedemptionAmount(parseFloat(amount))
+          const cardId =
+            String(selectedCard?.card_id ?? '').trim() ||
+            pickGuestRedemptionCardId(dashGoCards, redeemAmount)
+          if (!cardId) {
+            toast.error('Please select a card')
+            setIsProcessingRedemption(false)
+            return
+          }
           payload = buildCardsRedemptionPayload({
             branch_id: branchId,
             vendor_gvid: vendorGvid,
-            card_type: cardTypeForAPI,
+            card_type: 'DashGo',
+            card_id: cardId,
+            amount: redeemAmount,
+          })
+        } else if (cardTypeForAPI === 'DashPro') {
+          payload = buildCardsRedemptionPayload({
+            branch_id: branchId,
+            vendor_gvid: vendorGvid,
+            card_type: 'DashPro',
             amount: roundRedemptionAmount(parseFloat(amount)),
           })
         } else {

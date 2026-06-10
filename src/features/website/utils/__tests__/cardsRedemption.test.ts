@@ -59,6 +59,23 @@ describe('cardsRedemption', () => {
     })
   })
 
+  it('buildCardsRedemptionPayload includes card_id for DashGo', () => {
+    const payload = buildCardsRedemptionPayload({
+      branch_id: 'branch-1',
+      vendor_gvid: 'GH-0001',
+      card_type: 'DashGo',
+      card_id: 'gift-card-uuid',
+      amount: 99.83,
+    })
+    expect(payload).toEqual({
+      branch_id: 'branch-1',
+      vendor_gvid: 'GH-0001',
+      card_type: 'DashGo',
+      card_id: 'gift-card-uuid',
+      amount: 99.83,
+    })
+  })
+
   it('buildCardsRedemptionPayload includes card_id for DashX', () => {
     const payload = buildCardsRedemptionPayload({
       branch_id: 'branch-1',
