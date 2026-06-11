@@ -89,7 +89,7 @@ export default function DashQards() {
         <div className="wrapper">
           {/* E-commerce Layout */}
           <div className="flex w-full gap-8 items-start max-xl:flex-col max-xl:gap-6">
-            <div className="shrink-0 self-start max-xl:hidden">
+            <div className="shrink-0 self-start max-lg:hidden">
               <DashQardsFilters
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -115,7 +115,7 @@ export default function DashQards() {
                 </Text>
 
                 <div className="flex w-full flex-wrap items-center justify-between gap-3">
-                  <div className="hidden items-center max-xl:flex">
+                  <div className="hidden items-center max-lg:flex">
                     <Button
                       variant="outline"
                       size="medium"
@@ -313,10 +313,12 @@ export default function DashQards() {
       <Modal
         isOpen={isMobileFiltersOpen}
         setIsOpen={setIsMobileFiltersOpen}
-        panelClass="max-w-[95vw] w-full"
+        showClose
+        panelClass="!w-full max-w-2xl"
       >
-        <div className="p-3">
+        <div className="p-4 sm:p-5">
           <DashQardsFilters
+            layout="modal"
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             query={query}

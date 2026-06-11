@@ -28,14 +28,6 @@ export const recipientsColumns = [
     },
   },
   {
-    header: 'Message',
-    accessorKey: 'message',
-    cell: ({ getValue }: any) => {
-      const value = getValue()
-      return value != null && value !== '' ? value : 'N/A'
-    },
-  },
-  {
     header: 'Quantity',
     accessorKey: 'quantity',
     cell: ({ getValue }: any) => {

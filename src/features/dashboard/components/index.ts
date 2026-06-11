@@ -1,4 +1,5 @@
 export { default as Sidebar } from './Sidebar'
+export { MobileSwitchWorkspace } from './MobileSwitchWorkspace'
 export { default as RedemptionSummary } from './RedemptionSummary'
 export { default as PaymentInfoForm } from './PaymentInfoForm'
 export { default as UserUploadIDForm } from './UserUploadIDForm'

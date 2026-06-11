@@ -2,13 +2,11 @@ import React, { useMemo, useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthStore, useGuestAddToCartModalStore } from '@/stores'
+import { useAuthStore } from '@/stores'
 import { useGuestLocalCartStore } from '@/stores/guestLocalCart'
-import {
-  flattenLocalGuestCartLines,
-  localRecipientToDisplayRow,
-} from '@/features/website/utils/guestLocalCartDisplay'
-import { formatPersonName, splitPersonName } from '@/utils/personName'
+import { flattenServerCartItems } from '@/features/website/utils/guestLocalCartDisplay'
+import { isLocalGuestCartLineId } from '@/stores/guestLocalCart'
+import { filterShoppingCarts } from '@/features/website/utils/cartFilters'
 import { useCart } from './useCart'
 import { useGuestCart } from './useGuestCart'
 import { usePayments } from './usePayments'
@@ -16,7 +14,7 @@ import { usePersistedModalState, useToast } from '@/hooks'
 import { useUserProfile } from '@/hooks'
 import { MODAL_NAMES } from '@/utils/constants'
 import { bulkAssignRecipients } from '@/features/dashboard/services'
-import { isValidEmailAddress } from '@/utils/schemas/shared'
+import { isValidEmailAddress, isValidInternationalPhoneDigits } from '@/utils/schemas/shared'
 import {
   UserInfoSchema,
   GuestUserInfoSchema,
@@ -41,14 +39,10 @@ import type {
   PaymentPromptData,
 } from '@/features/website/utils/checkoutRedirect'
 import { getGuestCart, resolveGuestCartUuid } from '@/features/website/services/cards'
-import { guestAuthOtpRequest } from '@/features/auth/services'
-import { getApiErrorMessage } from '@/utils/apiError'
 import {
-  validateGuestLocalCartForCheckout,
-  formatGuestLocalCartValidationMessage,
-} from '@/features/website/utils/validateGuestLocalCart'
-import { runGuestCheckoutBagSync } from '@/features/website/utils/runGuestCheckoutBagSync'
-import { GuestCartSyncError } from '@/features/website/utils/guestCartSyncError'
+  normalizeCartStatus,
+  persistCheckoutCartId,
+} from '@/features/website/utils/cartLifecycle'
 import {
   GUEST_EMAIL_STORAGE_KEY,
   GUEST_NAME_STORAGE_KEY,
@@ -69,6 +63,7 @@ import {
   computeServiceFee,
   resolveServiceFeeRate,
 } from '@/utils/pricingFees'
+import { formatPersonName, splitPersonName } from '@/utils/personName'
 
 /** Checkout-specific flattened cart item (one row per quantity unit, with quantity_index) */
 export type CheckoutFlattenedCartItem = FlattenedCartItem & {
@@ -78,24 +73,17 @@ export type CheckoutFlattenedCartItem = FlattenedCartItem & {
 export function useCheckout() {
   const queryClient = useQueryClient()
   const toast = useToast()
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const isSessionReady = useAuthStore((state) => state.isSessionReady)
   const { recipientActionsBlocked } = useMemberMustCompleteOnboardingForCustomCards()
-  const localLines = useGuestLocalCartStore((s) => s.lines)
   const localContact = useGuestLocalCartStore((s) => s.contact)
-  const lastSyncError = useGuestLocalCartStore((s) => s.lastSyncError)
   const setLocalContact = useGuestLocalCartStore((s) => s.setContact)
-  const getLocalSubtotal = useGuestLocalCartStore((s) => s.getSubtotal)
-  const guestBagNotReady = localLines.length > 0
-  const isLocalGuestCart = !isAuthenticated && !isGuestAuth && guestBagNotReady
-  const isGuestCheckoutReady = isGuestAuth && !guestBagNotReady
-  const guestSyncFailed = isGuestAuth && guestBagNotReady
+  const isGuestCheckoutFlow = isGuestAuth
   const userCart = useCart()
   const guestCart = useGuestCart()
 
   const cartItems = isGuestAuth ? guestCart.cartItems : userCart.cartItems
-  const isLoadingCart = isLocalGuestCart ? false : isGuestAuth ? guestCart.isLoading : userCart.isLoading
+  const isLoadingCart = isGuestAuth ? guestCart.isLoading : userCart.isLoading
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
@@ -103,16 +91,18 @@ export function useCheckout() {
   const { useCheckoutService, useGuestCheckoutService, usePaymentProviderConfig, useServiceFeesConfig } =
     usePayments()
   const { mutateAsync: checkoutMutation, isPending: isMemberCheckingOut } = useCheckoutService()
+  const [guestRequiresAccountMessage, setGuestRequiresAccountMessage] = useState<string | null>(
+    null,
+  )
   const { mutateAsync: guestCheckoutMutation, isPending: isGuestCheckingOut } = useGuestCheckoutService(
     {
       onCartRefetch: () => {
         void guestCartRefetch()
       },
+      onRequiresAccount: (message) => setGuestRequiresAccountMessage(message),
     },
   )
   const isCheckingOut = isGuestAuth ? isGuestCheckingOut : isMemberCheckingOut
-  const getGuestCartId = useAuthStore((s) => s.getGuestCartId)
-  const setGuestCartId = useAuthStore((s) => s.setGuestCartId)
   const setGuestCartUuid = useAuthStore((s) => s.setGuestCartUuid)
   const getGuestCartUuid = useAuthStore((s) => s.getGuestCartUuid)
   const { data: paymentProviderConfig } = usePaymentProviderConfig()
@@ -124,14 +114,15 @@ export function useCheckout() {
     (userProfileData as any)?.onboarding_progress?.personal_details_completed === true
 
   const checkoutUserInfoSchema = useMemo(
-    () => (isGuestAuth || isLocalGuestCart ? GuestUserInfoSchema : UserInfoSchema),
-    [isGuestAuth, isLocalGuestCart],
+    () => (isGuestAuth ? GuestUserInfoSchema : UserInfoSchema),
+    [isGuestAuth],
   )
 
   const userInfoForm = useForm<UserInfoFormData | GuestUserInfoFormData>({
     resolver: zodResolver(checkoutUserInfoSchema),
-    mode: 'onChange',
-    defaultValues: isGuestAuth || isLocalGuestCart
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
+    defaultValues: isGuestAuth
       ? {
           first_name: '',
           last_name: '',
@@ -139,7 +130,7 @@ export function useCheckout() {
           phone_number: '',
         }
       : {
-          full_name: (userProfileData as any)?.fullname ?? '',
+          ...splitPersonName((userProfileData as any)?.fullname ?? ''),
           email: (userProfileData as any)?.email ?? '',
           phone_number: (userProfileData as any)?.phonenumber ?? '',
         },
@@ -148,36 +139,34 @@ export function useCheckout() {
   const user = useAuthStore((state) => state.user)
 
   React.useEffect(() => {
-    if (guestBagNotReady) {
+    if (isGuestAuth) {
       const savedName =
         formatPersonName(localContact.first_name ?? '', localContact.last_name ?? '') ||
+        localContact.full_name?.trim() ||
+        getGuestNameFromAuth(user) ||
         getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
         ''
-      const { first_name, last_name } = splitPersonName(savedName)
       userInfoForm.reset({
-        first_name: localContact.first_name || first_name,
-        last_name: localContact.last_name || last_name,
-        email: localContact.email || getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) || '',
-        phone_number: localContact.phone || getGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY) || '',
-      })
-    } else if (isGuestAuth) {
-      const savedName =
-        getGuestNameFromAuth(user) || getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) || ''
-      const { first_name, last_name } = splitPersonName(savedName)
-      userInfoForm.reset({
-        first_name,
-        last_name,
-        email: getGuestEmailFromAuth(user) || getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY),
-        phone_number: getGuestPhoneFromAuth(user),
+        ...splitPersonName(savedName),
+        email:
+          localContact.email ||
+          getGuestEmailFromAuth(user) ||
+          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
+          '',
+        phone_number:
+          localContact.phone ||
+          getGuestPhoneFromAuth(user) ||
+          getGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY) ||
+          '',
       })
     } else if (userProfileData) {
       userInfoForm.reset({
-        full_name: userProfileData?.fullname ?? '',
+        ...splitPersonName(userProfileData?.fullname ?? ''),
         email: userProfileData?.email ?? '',
         phone_number: userProfileData?.phonenumber ?? '',
       })
     }
-  }, [isGuestAuth, isLocalGuestCart, localContact, user, userProfileData, userInfoForm])
+  }, [isGuestAuth, localContact, user, userProfileData, userInfoForm])
 
   type PaymentMethodFormValues = Omit<PaymentMethodFormData, 'expiry_month' | 'expiry_year'> & {
     expiry_month?: unknown
@@ -196,52 +185,28 @@ export function useCheckout() {
   const [bulkFile, setBulkFile] = useState<File | null>(null)
   const [paymentPromptData, setPaymentPromptData] = useState<PaymentPromptData | null>(null)
   const [isPaymentPromptModalOpen, setIsPaymentPromptModalOpen] = useState(false)
-
   const modal = usePersistedModalState({
     paramName: MODAL_NAMES.RECIPIENT.ASSIGN,
   })
 
   const activeCartItems = useMemo(() => {
-    if (guestBagNotReady) return []
     if (!Array.isArray(cartItems)) return []
-    return cartItems.filter((cart: CartListResponse) => cart.cart_status?.toLowerCase() !== 'paid')
-  }, [cartItems, guestBagNotReady])
+    return filterShoppingCarts(cartItems)
+  }, [cartItems])
 
   const pendingCartItems = activeCartItems
 
-  const displayCartItems = useMemo(() => {
-    if (guestBagNotReady) {
-      return flattenLocalGuestCartLines(localLines) as CheckoutFlattenedCartItem[]
-    }
-    const flattened: CheckoutFlattenedCartItem[] = []
-    activeCartItems.forEach((cart: CartListResponse) => {
-      if (!cart.items) return
-      const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
-      itemsArray.forEach((item: any) => {
-        const qty = item.total_quantity || 1
-        const totalItemAmount = parseFloat(item.total_amount || '0')
-        const unitAmount = qty > 0 ? totalItemAmount / qty : totalItemAmount
-        for (let i = 0; i < qty; i++) {
-          flattened.push({
-            cart_id: cart.cart_id,
-            card_id: item.card_id,
-            product: item.product,
-            vendor_name: undefined,
-            type: item.type || 'dashx',
-            currency: 'GHS',
-            price: unitAmount.toString(),
-            amount: unitAmount.toString(),
-            images: item.images || [],
-            cart_item_id: item.cart_item_id,
-            total_quantity: qty,
-            recipients: item.recipients || [],
-            quantity_index: i,
-          })
-        }
-      })
-    })
-    return flattened
-  }, [activeCartItems, guestBagNotReady, localLines])
+  const hasFailedCheckoutCart = useMemo(() => {
+    const status = activeCartItems[0]?.cart_status
+    return normalizeCartStatus(status) === 'failed'
+  }, [activeCartItems])
+
+  const serverDisplayCartItems = useMemo(
+    () => flattenServerCartItems(activeCartItems) as CheckoutFlattenedCartItem[],
+    [activeCartItems],
+  )
+
+  const displayCartItems = serverDisplayCartItems
 
   const guestCheckoutCartItemIds = useMemo(
     () =>
@@ -258,28 +223,16 @@ export function useCheckout() {
   )
 
   const { recipientsByCartItem: guestRecipientsByCartItem } = useGuestRecipientsByCartItems(
-    guestCheckoutCartItemIds,
-    isGuestAuth && !guestBagNotReady && isSessionReady,
+    guestCheckoutCartItemIds.filter((id) => !isLocalGuestCartLineId(id)),
+    isGuestAuth && isSessionReady,
   )
 
   const recipientsByCartItem = useMemo(() => {
     const map: Record<string, any[]> = {}
-    if (guestBagNotReady) {
-      displayCartItems.forEach((item) => {
-        const cid = item.cart_item_id
-        if (cid == null || cid === '') return
-        const key = `${cid}-${item.quantity_index ?? 0}`
-        const draft = localLines
-          .find((l) => l.lineId === cid)
-          ?.recipientDrafts.find((d) => d.quantity_index === (item.quantity_index ?? 0))
-        map[key] = draft ? [localRecipientToDisplayRow(draft)] : []
-      })
-      return map
-    }
     if (isGuestAuth) {
       displayCartItems.forEach((item) => {
         const cid = item.cart_item_id
-        if (cid == null || cid === '') return
+        if (cid == null || cid === '' || isLocalGuestCartLineId(cid)) return
         const key = `${cid}-${item.quantity_index ?? 0}`
         const all = (guestRecipientsByCartItem[String(cid)] ?? []) as CartRecipient[]
         const unitAmount = parseFloat(item.amount || '0')
@@ -302,15 +255,15 @@ export function useCheckout() {
       })
     })
     return map
-  }, [activeCartItems, displayCartItems, isGuestAuth, guestBagNotReady, localLines, guestRecipientsByCartItem])
+  }, [activeCartItems, displayCartItems, isGuestAuth, guestRecipientsByCartItem])
 
-  const totalAmount = useMemo(
+  const serverCartSubtotal = useMemo(
     () =>
-      guestBagNotReady
-        ? getLocalSubtotal()
-        : activeCartItems.reduce((sum, cart) => sum + parseFloat(cart.total_amount || '0'), 0),
-    [activeCartItems, guestBagNotReady, getLocalSubtotal],
+      activeCartItems.reduce((sum, cart) => sum + parseFloat(cart.total_amount || '0'), 0),
+    [activeCartItems],
   )
+
+  const totalAmount = serverCartSubtotal
   const serviceFeeRate = resolveServiceFeeRate(serviceFeesConfig?.serviceFeeRate)
   const serviceFee = computeServiceFee(totalAmount, serviceFeeRate)
   const amountDue = computeAmountCharged(totalAmount, serviceFeeRate)
@@ -320,18 +273,21 @@ export function useCheckout() {
   const contactEmail = userInfoForm.watch('email')
   const contactFirstName = userInfoForm.watch('first_name')
   const contactLastName = userInfoForm.watch('last_name')
-  const contactFullName = userInfoForm.watch('full_name')
 
-  const isUserInfoIncomplete =
-    isGuestAuth || isLocalGuestCart
-      ? !contactPhone?.trim() ||
-        !contactFirstName?.trim() ||
-        !contactLastName?.trim() ||
-        !isValidEmailAddress(contactEmail ?? '')
-      : !contactFullName?.trim() || !isValidEmailAddress(contactEmail ?? '')
+  const isUserInfoIncomplete = isGuestAuth
+    ? !contactFirstName?.trim() ||
+      !contactLastName?.trim() ||
+      !isValidInternationalPhoneDigits(contactPhone ?? '') ||
+      (Boolean(contactEmail?.trim()) && !isValidEmailAddress(contactEmail ?? ''))
+    : !contactFirstName?.trim() ||
+      !contactLastName?.trim() ||
+      !isValidEmailAddress(contactEmail ?? '') ||
+      !isValidInternationalPhoneDigits(contactPhone ?? '')
 
-  const needsPhoneVerification = guestBagNotReady && !isGuestAuth
-
+  const guestBagReady = isGuestAuth
+  const senderStepComplete = !isUserInfoIncomplete
+  const guestCanAssignRecipients =
+    isGuestCheckoutFlow && guestBagReady && !recipientActionsBlocked
 
   const itemsMissingRecipients = useMemo(() => {
     return displayCartItems.filter((item) => {
@@ -368,11 +324,14 @@ export function useCheckout() {
 
   const persistGuestContactFromForm = useCallback(() => {
     const userValues = userInfoForm.getValues() as GuestUserInfoFormData
-    const guestFullName = formatPersonName(userValues.first_name ?? '', userValues.last_name ?? '')
+    const firstName = userValues.first_name?.trim() ?? ''
+    const lastName = userValues.last_name?.trim() ?? ''
+    const guestFullName = formatPersonName(firstName, lastName)
     setLocalContact({
       phone: userValues.phone_number,
-      first_name: userValues.first_name,
-      last_name: userValues.last_name,
+      first_name: firstName || undefined,
+      last_name: lastName || undefined,
+      full_name: guestFullName || undefined,
       email: userValues.email,
     })
     if (userValues.phone_number) {
@@ -386,96 +345,6 @@ export function useCheckout() {
     }
   }, [setLocalContact, userInfoForm])
 
-  const handleVerifyGuestDetails = useCallback(async () => {
-    if (recipientActionsBlocked) {
-      toast.error('Complete onboarding in your dashboard before checkout.')
-      return
-    }
-
-    const cartValidation = validateGuestLocalCartForCheckout(localLines)
-    if (!cartValidation.valid) {
-      toast.error(formatGuestLocalCartValidationMessage(cartValidation.issues))
-      return
-    }
-
-    const contactValid = await userInfoForm.trigger()
-    if (!contactValid) return
-
-    const userValues = userInfoForm.getValues() as GuestUserInfoFormData
-    persistGuestContactFromForm()
-
-    try {
-      await guestAuthOtpRequest({ guest_phone: userValues.phone_number })
-      toast.success('Verification code sent to your phone')
-      useGuestAddToCartModalStore.getState().open(
-        { checkoutSync: true },
-        () => {
-          void guestCartRefetch()
-        },
-        {
-          first_name: userValues.first_name,
-          last_name: userValues.last_name,
-          email: userValues.email,
-          phone: userValues.phone_number,
-        },
-      )
-    } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to send code. Please try again.'))
-    }
-  }, [
-    recipientActionsBlocked,
-    localLines,
-    userInfoForm,
-    persistGuestContactFromForm,
-    guestCartRefetch,
-    toast,
-  ])
-
-  const handleRetryGuestCartSync = useCallback(async () => {
-    if (!isGuestAuth || !guestBagNotReady) return
-
-    const userValues = userInfoForm.getValues() as GuestUserInfoFormData
-    const contact = {
-      phone: userValues.phone_number || localContact.phone,
-      first_name: userValues.first_name || localContact.first_name,
-      last_name: userValues.last_name || localContact.last_name,
-      email: userValues.email || localContact.email,
-    }
-
-    try {
-      await runGuestCheckoutBagSync({
-        contact,
-        setters: {
-          getGuestCartId,
-          getGuestCartUuid,
-          setGuestCartId,
-          setGuestCartUuid,
-        },
-      })
-      await guestCartRefetch()
-      toast.success('Your cart is ready. Assign recipients and complete your purchase.')
-    } catch (error) {
-      const message =
-        error instanceof GuestCartSyncError
-          ? error.failedLine
-            ? `${error.failedLine.product}: ${error.message}`
-            : error.message
-          : getApiErrorMessage(error, 'Could not add your gift cards to checkout.')
-      toast.error(message)
-    }
-  }, [
-    isGuestAuth,
-    guestBagNotReady,
-    userInfoForm,
-    localContact,
-    getGuestCartId,
-    getGuestCartUuid,
-    setGuestCartId,
-    setGuestCartUuid,
-    guestCartRefetch,
-    toast,
-  ])
-
   const handleCheckout = useCallback(async () => {
     if (recipientActionsBlocked) {
       toast.error('Complete onboarding in your dashboard before checkout.')
@@ -485,21 +354,25 @@ export function useCheckout() {
       setIsMissingRecipientsModalOpen(true)
       return
     }
-    if (needsPhoneVerification || guestSyncFailed) {
-      toast.error('Verify your contact details and sync your bag before completing payment.')
-      return
-    }
     const contactValid = await userInfoForm.trigger()
     if (!contactValid) return
+
+    if (isGuestAuth) {
+      persistGuestContactFromForm()
+    }
 
     const firstCart = activeCartItems[0]
     if (!firstCart) return
 
+    if (!isGuestAuth) {
+      persistCheckoutCartId(firstCart.cart_id)
+    }
+
     const userValues = userInfoForm.getValues() as UserInfoFormData | GuestUserInfoFormData
-    const guestFullName =
-      'first_name' in userValues
-        ? formatPersonName(userValues.first_name ?? '', userValues.last_name ?? '')
-        : userValues.full_name ?? ''
+    const guestFullName = formatPersonName(
+      userValues.first_name?.trim() ?? '',
+      userValues.last_name?.trim() ?? '',
+    )
     const gateway = checkoutGateway
     const paymentValues = paymentForm.getValues()
     const paymentMethod = paymentValues.payment_method_type ?? 'mobile_money'
@@ -522,12 +395,14 @@ export function useCheckout() {
         return
       }
 
+      const guestEmail =
+        'email' in userValues && userValues.email?.trim() ? userValues.email.trim() : undefined
       const guestBase: GuestCheckoutPayloadBase = {
         guest_cart_id: guestCartUuid,
         phone_number: userValues.phone_number,
         full_name: guestFullName.trim(),
-        email: userValues.email.trim(),
         amount_due: amountDue,
+        ...(guestEmail ? { email: guestEmail } : {}),
       }
 
       if (isHostedRedirectGateway(gateway)) {
@@ -575,7 +450,7 @@ export function useCheckout() {
 
     const memberBase: CheckoutPayloadBase = {
       cart_id: firstCart.cart_id,
-      full_name: 'full_name' in userValues ? (userValues.full_name ?? '') : guestFullName,
+      full_name: guestFullName,
       email: userValues.email ?? '',
       phone_number: userValues.phone_number,
       amount_due: amountDue,
@@ -623,11 +498,10 @@ export function useCheckout() {
     await runMutation(memberBase)
   }, [
     isGuestAuth,
-    needsPhoneVerification,
-    guestSyncFailed,
     activeCartItems,
     checkoutAmountDue,
     userInfoForm,
+    persistGuestContactFromForm,
     paymentForm,
     checkoutGateway,
     checkoutMutation,
@@ -696,20 +570,18 @@ export function useCheckout() {
     checkoutGateway,
     isPersonalDetailsCompleted,
     isUserInfoIncomplete,
+    senderStepComplete,
+    guestCanAssignRecipients,
     isGuestAuth,
-    isLocalGuestCart,
-    isGuestCheckoutReady,
-    guestSyncFailed,
-    guestBagNotReady,
-    lastSyncError,
-    needsPhoneVerification,
+    isGuestCheckoutFlow,
+    guestBagReady,
+    guestRequiresAccountMessage,
+    setGuestRequiresAccountMessage,
     recipientsByCartItem,
     itemsMissingRecipients,
     allRecipientsAssigned: itemsMissingRecipients.length === 0,
     recipientActionsBlocked,
     handleCheckout,
-    handleVerifyGuestDetails,
-    handleRetryGuestCartSync,
     bulkAssignMutation,
     handleBulkUpload,
     getCardBackground,
@@ -718,6 +590,7 @@ export function useCheckout() {
     openAssignModal,
     openAssignModalFromMissing,
     isCheckingOut,
+    hasFailedCheckoutCart,
     isBulkModalOpen,
     setIsBulkModalOpen,
     isMissingRecipientsModalOpen,

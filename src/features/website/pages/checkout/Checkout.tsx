@@ -1,10 +1,18 @@
 import React, { useMemo } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Controller } from 'react-hook-form'
 import { Icon } from '@/libs'
 import { CheckoutSection } from './CheckoutSection'
 import { CheckoutFlowProgress, type CheckoutFlowStep } from './CheckoutFlowProgress'
-import { AccountBenefitsPanel, Button, Loader, Modal, EmptyState, Input, BasePhoneInput } from '@/components'
+import {
+  AccountBenefitsPanel,
+  Button,
+  Loader,
+  Modal,
+  EmptyState,
+  Input,
+  BasePhoneInput,
+} from '@/components'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import FileUploader from '@/components/FileUploader/FileUploader'
 import { useCheckout, type CheckoutFlattenedCartItem } from '@/features/website/hooks/useCheckout'
@@ -12,7 +20,7 @@ import { MemberOnboardingRecipientBlock } from '@/features/website/components/Me
 import { formatCurrency } from '@/utils/format'
 import { EmptyStateImage } from '@/assets/images'
 import { CHECKOUT_GATEWAY } from '@/features/website/utils/paymentConstants'
-import { EXAMPLE_PHONE_LOCAL } from '@/utils/constants'
+import { EXAMPLE_PHONE_LOCAL, ROUTES } from '@/utils/constants'
 import { GuestCartDebugPanel } from './GuestCartDebugPanel'
 
 const EGNANOW_NETWORK_OPTIONS = [
@@ -73,18 +81,12 @@ export default function Checkout() {
     paymentForm,
     paymentMethod,
     checkoutGateway,
-    isGuestAuth,
-    isLocalGuestCart,
-    isGuestCheckoutReady,
-    guestSyncFailed,
-    guestBagNotReady,
-    lastSyncError,
-    needsPhoneVerification,
+    isGuestCheckoutFlow,
+    guestBagReady,
+    guestRequiresAccountMessage,
     recipientsByCartItem,
     itemsMissingRecipients,
     handleCheckout,
-    handleVerifyGuestDetails,
-    handleRetryGuestCartSync,
     bulkAssignMutation,
     handleBulkUpload,
     getCardBackground,
@@ -101,10 +103,13 @@ export default function Checkout() {
     setBulkFile,
     allRecipientsAssigned,
     isUserInfoIncomplete,
+    senderStepComplete,
+    guestCanAssignRecipients,
     recipientActionsBlocked,
     paymentPromptData,
     isPaymentPromptModalOpen,
     setIsPaymentPromptModalOpen,
+    hasFailedCheckoutCart,
   } = useCheckout()
 
   const showPaymentMethodSection =
@@ -146,37 +151,22 @@ export default function Checkout() {
     }
   }, [isEgnanow, isKowri, isMobileMoney, paymentForm, phoneNumber, showPaymentMethodSection])
 
-  const isGuestCheckoutFlow = isLocalGuestCart || isGuestAuth || guestBagNotReady
-
-  const senderStepComplete =
-    !isUserInfoIncomplete && !needsPhoneVerification && !guestSyncFailed && !guestBagNotReady
-  const recipientsStepComplete = allRecipientsAssigned && senderStepComplete
-  const canProceedToPayment = recipientsStepComplete && !recipientActionsBlocked
+  const recipientsStepComplete = isGuestCheckoutFlow
+    ? allRecipientsAssigned && guestBagReady
+    : allRecipientsAssigned && senderStepComplete
+  const canProceedToPayment = isGuestCheckoutFlow
+    ? guestBagReady && allRecipientsAssigned && !recipientActionsBlocked
+    : recipientsStepComplete && senderStepComplete && !recipientActionsBlocked
 
   const checkoutFlowSteps = useMemo((): CheckoutFlowStep[] => {
     if (isGuestCheckoutFlow) {
-      const senderStatus: CheckoutFlowStep['status'] = needsPhoneVerification
-        ? 'current'
-        : guestSyncFailed
-          ? 'current'
-          : 'complete'
-      const recipientsStatus: CheckoutFlowStep['status'] =
-        senderStatus === 'complete'
-          ? allRecipientsAssigned
-            ? 'complete'
-            : 'current'
-          : 'upcoming'
-      const reviewStatus: CheckoutFlowStep['status'] = canProceedToPayment
-        ? 'current'
-        : recipientsStatus === 'complete'
-          ? 'current'
-          : 'upcoming'
+      const recipientsStatus: CheckoutFlowStep['status'] = allRecipientsAssigned
+        ? 'complete'
+        : 'current'
       const paymentStatus: CheckoutFlowStep['status'] = canProceedToPayment ? 'current' : 'upcoming'
 
       return [
-        { id: 'sender', label: 'Sender details', status: senderStatus },
         { id: 'recipients', label: 'Recipient details', status: recipientsStatus },
-        { id: 'review', label: 'Review order', status: reviewStatus },
         { id: 'payment', label: 'Payment', status: paymentStatus },
       ]
     }
@@ -201,9 +191,6 @@ export default function Checkout() {
     ]
   }, [
     isGuestCheckoutFlow,
-    needsPhoneVerification,
-    guestSyncFailed,
-    guestBagNotReady,
     allRecipientsAssigned,
     isUserInfoIncomplete,
     senderStepComplete,
@@ -215,27 +202,23 @@ export default function Checkout() {
     if (recipientActionsBlocked) {
       return 'Complete onboarding in your dashboard before you can assign recipients or pay.'
     }
-    if (needsPhoneVerification) {
-      return 'Step 1: Enter your sender details and verify your phone. Recipient assignment comes next.'
+    if (isGuestCheckoutFlow && !allRecipientsAssigned) {
+      return 'Assign a recipient to each gift card. Use Assign to Self when the gift is for you.'
     }
-    if (guestSyncFailed) {
-      return 'Your phone is verified. Sync your bag, then assign recipients and review your order.'
-    }
-    if (guestBagNotReady) {
-      return 'Confirm sender details and verify your phone to continue.'
+    if (isGuestCheckoutFlow && isUserInfoIncomplete) {
+      return 'Enter your name and phone in the payment step, then complete your purchase.'
     }
     if (!allRecipientsAssigned) {
-      return 'Step 2: Assign a recipient to each gift card. Use Assign to Self when the gift is for you.'
+      return 'Assign a recipient to each gift card. Use Assign to Self when the gift is for you.'
     }
     if (!canProceedToPayment) {
-      return 'Complete sender and recipient details, then review your order and pay.'
+      return 'Complete recipient and sender details, then review your order and pay.'
     }
     return 'Review your order summary, then complete payment.'
   }, [
     recipientActionsBlocked,
-    needsPhoneVerification,
-    guestSyncFailed,
-    guestBagNotReady,
+    isUserInfoIncomplete,
+    isGuestCheckoutFlow,
     allRecipientsAssigned,
     canProceedToPayment,
   ])
@@ -249,7 +232,7 @@ export default function Checkout() {
   }
 
   const hasCheckoutItems =
-    guestBagNotReady || (Array.isArray(pendingCartItems) && pendingCartItems.length > 0)
+    Array.isArray(pendingCartItems) && pendingCartItems.length > 0
 
   if (!hasCheckoutItems || displayCartItems.length === 0) {
     return (
@@ -278,10 +261,18 @@ export default function Checkout() {
         <div className="mb-6 space-y-3">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
           <p className="text-gray-600">
-            Sender details, recipient assignment, order review, then payment — in that order.
+            {isGuestCheckoutFlow
+              ? 'Enter your details, assign recipients, then pay — no account required.'
+              : 'Sender details, recipient assignment, order review, then payment — in that order.'}
           </p>
           <CheckoutFlowProgress steps={checkoutFlowSteps} />
           <p className="text-sm text-gray-600">{checkoutFlowHint}</p>
+          {hasFailedCheckoutCart ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              Your previous payment did not go through. Complete the steps below and try again —
+              your cart is still saved.
+            </div>
+          ) : null}
         </div>
 
         {isGuestCheckoutFlow ? (
@@ -292,7 +283,7 @@ export default function Checkout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            {!recipientActionsBlocked && (
+            {!recipientActionsBlocked && !isGuestCheckoutFlow && (
               <CheckoutSection
                 step={1}
                 title="Sender details"
@@ -303,7 +294,6 @@ export default function Checkout() {
                     Your phone number is also used for mobile money when you choose that payment option.
                   </p>
                 )}
-                {needsPhoneVerification && (
                 <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -313,11 +303,7 @@ export default function Checkout() {
                       <Input
                         type="text"
                         {...userInfoForm.register('first_name')}
-                        error={
-                          'first_name' in userInfoForm.formState.errors
-                            ? userInfoForm.formState.errors.first_name?.message
-                            : undefined
-                        }
+                        error={userInfoForm.formState.errors.first_name?.message}
                         placeholder="John"
                         className="w-full"
                       />
@@ -329,192 +315,8 @@ export default function Checkout() {
                       <Input
                         type="text"
                         {...userInfoForm.register('last_name')}
-                        error={
-                          'last_name' in userInfoForm.formState.errors
-                            ? userInfoForm.formState.errors.last_name?.message
-                            : undefined
-                        }
+                        error={userInfoForm.formState.errors.last_name?.message}
                         placeholder="Doe"
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                        Phone Number <span className="text-red-500">*</span>
-                      </label>
-                      <Controller
-                        name="phone_number"
-                        control={userInfoForm.control}
-                        render={({ field }) => (
-                          <BasePhoneInput
-                            selectedVal={field.value || ''}
-                            handleChange={field.onChange}
-                            error={userInfoForm.formState.errors.phone_number?.message}
-                            placeholder={EXAMPLE_PHONE_LOCAL}
-                          />
-                        )}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                      Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="email"
-                      {...userInfoForm.register('email')}
-                      error={userInfoForm.formState.errors.email?.message}
-                      placeholder="john@example.com"
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2 border-t border-gray-100 pt-4">
-                    <p className="text-sm text-gray-600">
-                      We will send a code to your phone to confirm your details and sync your bag.
-                    </p>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="w-full sm:w-auto"
-                      onClick={handleVerifyGuestDetails}
-                      disabled={recipientActionsBlocked || isUserInfoIncomplete}
-                    >
-                      Verify your details
-                    </Button>
-                  </div>
-                </form>
-                )}
-
-                {guestSyncFailed && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-end gap-3">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 border border-green-200">
-                    <Icon icon="bi:check-circle" className="size-3.5" />
-                    Phone verified
-                  </span>
-                </div>
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-                  <div className="flex items-start gap-3">
-                    <Icon icon="bi:exclamation-triangle" className="mt-0.5 size-5 shrink-0 text-red-600" />
-                    <div>
-                      <p className="text-sm font-semibold text-red-900">Couldn&apos;t sync your bag</p>
-                      <p className="mt-1 text-sm text-red-800">
-                        {lastSyncError || 'One or more gift cards could not be added. Edit your bag or try again.'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full sm:w-auto"
-                    onClick={() => navigate('/view-bag')}
-                  >
-                    Edit bag
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full sm:w-auto"
-                    onClick={handleRetryGuestCartSync}
-                  >
-                    Try again
-                  </Button>
-                </div>
-              </div>
-                )}
-
-                {isGuestCheckoutReady && (
-                <div className="space-y-4">
-                <div className="flex items-center justify-end gap-3">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 border border-green-200">
-                    <Icon icon="bi:check-circle" className="size-3.5" />
-                    Phone verified
-                  </span>
-                </div>
-                <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                        First name <span className="text-red-500">*</span>
-                      </label>
-                      <Input
-                        type="text"
-                        {...userInfoForm.register('first_name')}
-                        error={
-                          'first_name' in userInfoForm.formState.errors
-                            ? userInfoForm.formState.errors.first_name?.message
-                            : undefined
-                        }
-                        placeholder="John"
-                        className="w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                        Last name <span className="text-red-500">*</span>
-                      </label>
-                      <Input
-                        type="text"
-                        {...userInfoForm.register('last_name')}
-                        error={
-                          'last_name' in userInfoForm.formState.errors
-                            ? userInfoForm.formState.errors.last_name?.message
-                            : undefined
-                        }
-                        placeholder="Doe"
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                        Phone Number
-                      </label>
-                      <Input
-                        type="text"
-                        value={userInfoForm.watch('phone_number') || ''}
-                        disabled
-                        className="w-full bg-gray-50"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                      Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="email"
-                      {...userInfoForm.register('email')}
-                      error={userInfoForm.formState.errors.email?.message}
-                      placeholder="john@example.com"
-                      className="w-full"
-                    />
-                  </div>
-                </form>
-                </div>
-                )}
-
-                {!isGuestAuth &&
-              !isLocalGuestCart &&
-              !needsPhoneVerification &&
-              !guestSyncFailed &&
-              !isGuestCheckoutReady && (
-                <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                        Full Name <span className="text-red-500">*</span>
-                      </label>
-                      <Input
-                        type="text"
-                        {...userInfoForm.register('full_name')}
-                        error={
-                          'full_name' in userInfoForm.formState.errors
-                            ? userInfoForm.formState.errors.full_name?.message
-                            : undefined
-                        }
-                        placeholder="John Doe"
                         className="w-full"
                       />
                     </div>
@@ -525,11 +327,17 @@ export default function Checkout() {
                       <Controller
                         name="phone_number"
                         control={userInfoForm.control}
-                        render={({ field }) => (
+                        render={({ field: { value, onChange, onBlur, ref } }) => (
                           <BasePhoneInput
-                            selectedVal={field.value || ''}
-                            handleChange={field.onChange}
-                            error={userInfoForm.formState.errors.phone_number?.message}
+                            ref={ref}
+                            selectedVal={value || ''}
+                            handleChange={onChange}
+                            onBlur={onBlur}
+                            error={
+                              userInfoForm.formState.touchedFields.phone_number
+                                ? userInfoForm.formState.errors.phone_number?.message
+                                : undefined
+                            }
                             placeholder={EXAMPLE_PHONE_LOCAL}
                           />
                         )}
@@ -549,27 +357,16 @@ export default function Checkout() {
                     />
                   </div>
                 </form>
-                )}
               </CheckoutSection>
             )}
 
-            {!guestBagNotReady && (
             <CheckoutSection
-              step={2}
+              step={isGuestCheckoutFlow ? 1 : 2}
               title="Recipient details"
               subtitle="Who receives each gift card. Use Assign to Self when you are the recipient."
             >
               {recipientActionsBlocked ? (
                 <MemberOnboardingRecipientBlock />
-              ) : needsPhoneVerification || guestSyncFailed ? (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                  <p className="font-medium">Complete sender details first</p>
-                  <p className="mt-1 text-amber-800">
-                    {needsPhoneVerification
-                      ? 'Verify your phone in step 1 before assigning recipients.'
-                      : 'Finish syncing your bag in step 1, then assign recipients here.'}
-                  </p>
-                </div>
               ) : (
                 <>
               <div className="mb-4 flex gap-3 rounded-lg border border-primary-100 bg-primary-50/60 p-4">
@@ -578,9 +375,12 @@ export default function Checkout() {
                   <p className="font-medium">Assign to Self</p>
                   <p className="mt-1 text-primary-800">
                     When you tap Assign Recipient, turn on <strong>Assign to Self</strong> if the
-                    gift is for you — your account details are used and you do not need to fill in
-                    recipient fields. Otherwise enter recipient name, phone, email, and an optional
-                    message.
+                    gift is for you
+                    {isGuestCheckoutFlow
+                      ? ' — your name and phone are filled in automatically when you pay'
+                      : ' — your account details are used and you do not need to fill in recipient fields'}
+                    .
+                    Otherwise enter recipient name, phone, email, and an optional message.
                   </p>
                 </div>
               </div>
@@ -676,11 +476,16 @@ export default function Checkout() {
                                   variant="outline"
                                   size="small"
                                   className="w-full sm:w-auto"
-                                  disabled={recipientActionsBlocked}
+                                  disabled={
+                                    recipientActionsBlocked ||
+                                    (isGuestCheckoutFlow && !guestCanAssignRecipients)
+                                  }
                                   title={
                                     recipientActionsBlocked
                                       ? 'Complete onboarding in your dashboard first'
-                                      : undefined
+                                      : isGuestCheckoutFlow && !guestCanAssignRecipients
+                                        ? 'Sync your bag in step 1 first'
+                                        : undefined
                                   }
                                 >
                                   <Icon icon="bi:person-plus" className="mr-1.5" />
@@ -697,20 +502,93 @@ export default function Checkout() {
                 </>
               )}
             </CheckoutSection>
-            )}
 
             {!recipientActionsBlocked &&
-              !guestBagNotReady &&
-              showPaymentMethodSection && (
+              ((isGuestCheckoutFlow && guestBagReady) ||
+                (!isGuestCheckoutFlow && showPaymentMethodSection)) && (
               <CheckoutSection
-                step={3}
+                step={isGuestCheckoutFlow ? 2 : 3}
                 title="Payment"
                 subtitle={
                   canProceedToPayment
-                    ? 'Choose how you want to pay for this order.'
-                    : 'Available after sender and recipient details are complete.'
+                    ? isGuestCheckoutFlow
+                      ? 'Enter your details and choose how to pay.'
+                      : 'Choose how you want to pay for this order.'
+                    : 'Available after recipient details are complete.'
                 }
               >
+                {isGuestCheckoutFlow ? (
+                  <div className="mb-6 space-y-4 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+                    <p className="text-sm text-gray-600">
+                      Your details for payment and receipts. Assign-to-self recipients are updated
+                      automatically from these details.
+                    </p>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                          First name <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="text"
+                          {...userInfoForm.register('first_name')}
+                          error={userInfoForm.formState.errors.first_name?.message}
+                          placeholder="Kojo"
+                          className="w-full bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                          Last name <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="text"
+                          {...userInfoForm.register('last_name')}
+                          error={userInfoForm.formState.errors.last_name?.message}
+                          placeholder="Sender"
+                          className="w-full bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                          Phone number <span className="text-red-500">*</span>
+                        </label>
+                        <Controller
+                          name="phone_number"
+                          control={userInfoForm.control}
+                          render={({ field: { value, onChange, onBlur, ref } }) => (
+                            <BasePhoneInput
+                              ref={ref}
+                              selectedVal={value || ''}
+                              handleChange={onChange}
+                              onBlur={onBlur}
+                              error={
+                                userInfoForm.formState.touchedFields.phone_number
+                                  ? userInfoForm.formState.errors.phone_number?.message
+                                  : undefined
+                              }
+                              placeholder={EXAMPLE_PHONE_LOCAL}
+                            />
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                          Email <span className="font-normal text-gray-400">(optional)</span>
+                        </label>
+                        <Input
+                          type="email"
+                          {...userInfoForm.register('email')}
+                          error={userInfoForm.formState.errors.email?.message}
+                          placeholder="john@example.com"
+                          className="w-full bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {showPaymentMethodSection ? (
+                <>
                 <div className="flex gap-2 p-1 bg-gray-100 rounded-lg mb-4">
                   <button
                     type="button"
@@ -777,83 +655,62 @@ export default function Checkout() {
                         </p>
                       )}
                     </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Phone number (for payment) <span className="text-red-500">*</span>
-                      </label>
-                      <Controller
-                        name="phone_number"
-                        control={userInfoForm.control}
-                        render={({ field }) => (
-                          <BasePhoneInput
-                            selectedVal={field.value || ''}
-                            handleChange={field.onChange}
-                            error={userInfoForm.formState.errors.phone_number?.message}
-                            placeholder={EXAMPLE_PHONE_LOCAL}
-                          />
-                        )}
-                      />
-                    </div>
+                    {!isGuestCheckoutFlow ? (
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                          Phone number (for payment) <span className="text-red-500">*</span>
+                        </label>
+                        <Controller
+                          name="phone_number"
+                          control={userInfoForm.control}
+                          render={({ field: { value, onChange, onBlur, ref } }) => (
+                            <BasePhoneInput
+                              ref={ref}
+                              selectedVal={value || ''}
+                              handleChange={onChange}
+                              onBlur={onBlur}
+                              error={
+                                userInfoForm.formState.touchedFields.phone_number
+                                  ? userInfoForm.formState.errors.phone_number?.message
+                                  : undefined
+                              }
+                              placeholder={EXAMPLE_PHONE_LOCAL}
+                            />
+                          )}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 )}
 
-                {isCard && isKowri && (
+                {isCard && isKowri && !isGuestCheckoutFlow && (
                   <div className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      {isGuestAuth || isLocalGuestCart ? (
-                        <>
-                          <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">
-                              First name <span className="text-red-500">*</span>
-                            </label>
-                            <Input
-                              type="text"
-                              {...userInfoForm.register('first_name')}
-                              error={
-                                'first_name' in userInfoForm.formState.errors
-                                  ? userInfoForm.formState.errors.first_name?.message
-                                  : undefined
-                              }
-                              placeholder="John"
-                              className="w-full bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">
-                              Last name <span className="text-red-500">*</span>
-                            </label>
-                            <Input
-                              type="text"
-                              {...userInfoForm.register('last_name')}
-                              error={
-                                'last_name' in userInfoForm.formState.errors
-                                  ? userInfoForm.formState.errors.last_name?.message
-                                  : undefined
-                              }
-                              placeholder="Doe"
-                              className="w-full bg-white"
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <div>
-                          <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Full name <span className="text-red-500">*</span>
-                          </label>
-                          <Input
-                            type="text"
-                            {...userInfoForm.register('full_name')}
-                            error={
-                              'full_name' in userInfoForm.formState.errors
-                                ? userInfoForm.formState.errors.full_name?.message
-                                : undefined
-                            }
-                            placeholder="John Doe"
-                            className="w-full bg-white"
-                          />
-                        </div>
-                      )}
                       <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                          First name <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="text"
+                          {...userInfoForm.register('first_name')}
+                          error={userInfoForm.formState.errors.first_name?.message}
+                          placeholder="John"
+                          className="w-full bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                          Last name <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="text"
+                          {...userInfoForm.register('last_name')}
+                          error={userInfoForm.formState.errors.last_name?.message}
+                          placeholder="Doe"
+                          className="w-full bg-white"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
                         <label className="mb-1 block text-sm font-medium text-gray-700">
                           Email <span className="text-red-500">*</span>
                         </label>
@@ -879,6 +736,18 @@ export default function Checkout() {
                           and complete the transaction.
                         </p>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {isCard && isKowri && isGuestCheckoutFlow && (
+                  <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <Icon icon="bi:credit-card" className="mt-0.5 size-5 shrink-0 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">Secure card payment</p>
+                      <p className="mt-1 text-sm text-blue-700">
+                        You will be redirected to a secure payment page to complete your purchase.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -950,6 +819,13 @@ export default function Checkout() {
                     </div>
                   </div>
                 )}
+                </>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    Click Complete Purchase to pay securely — you will be redirected to the payment
+                    page.
+                  </p>
+                )}
               </CheckoutSection>
             )}
           </div>
@@ -961,7 +837,7 @@ export default function Checkout() {
                   className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white"
                   aria-hidden
                 >
-                  4
+                  {isGuestCheckoutFlow ? 3 : 4}
                 </span>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Review order</h2>
@@ -989,25 +865,30 @@ export default function Checkout() {
                 </div>
               </div>
 
+              {guestRequiresAccountMessage ? (
+                <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+                  <p className="font-medium">Guest purchase limit reached</p>
+                  <p className="mt-1">{guestRequiresAccountMessage}</p>
+                  <Link
+                    to={ROUTES.IN_APP.AUTH.REGISTER}
+                    className="mt-3 inline-flex items-center gap-1.5 font-semibold text-primary-700 no-underline hover:text-primary-800"
+                  >
+                    Create a free account
+                    <Icon icon="bi:arrow-right" className="text-sm" />
+                  </Link>
+                </div>
+              ) : null}
               {recipientActionsBlocked ? (
                 <p className="text-sm text-amber-700 mb-3">
                   Complete onboarding in your dashboard before you can assign recipients or complete
                   this purchase.
-                </p>
-              ) : needsPhoneVerification ? (
-                <p className="text-sm text-gray-600 mb-3">
-                  Complete sender details (step 1) to assign recipients and pay.
-                </p>
-              ) : guestSyncFailed ? (
-                <p className="text-sm text-amber-700 mb-3">
-                  Sync your bag to continue. Edit invalid items or try again above.
                 </p>
               ) : !allRecipientsAssigned ? (
                 <p className="text-sm text-amber-600 mb-3">
                   Assign recipients to all gift cards before completing your purchase.
                 </p>
               ) : null}
-              {isGuestCheckoutReady || !isGuestCheckoutFlow ? (
+              {guestBagReady || !isGuestCheckoutFlow ? (
               <Button
                 variant="secondary"
                 className="w-full"
@@ -1015,32 +896,18 @@ export default function Checkout() {
                 loading={isCheckingOut}
                 disabled={
                   isCheckingOut ||
-                  guestSyncFailed ||
                   !allRecipientsAssigned ||
                   recipientActionsBlocked ||
                   isUserInfoIncomplete
                 }
               >
-                {isCheckingOut ? 'Processing...' : 'Complete Purchase'}
+                {isCheckingOut
+                  ? 'Processing...'
+                  : hasFailedCheckoutCart
+                    ? 'Retry payment'
+                    : 'Complete Purchase'}
               </Button>
-              ) : guestSyncFailed ? (
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={handleRetryGuestCartSync}
-              >
-                Try syncing bag again
-              </Button>
-              ) : (
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={handleVerifyGuestDetails}
-                disabled={recipientActionsBlocked || isUserInfoIncomplete}
-              >
-                Verify your details
-              </Button>
-              )}
+              ) : null}
             </div>
 
             {isGuestCheckoutFlow ? (

@@ -2,7 +2,8 @@ import React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useCountriesData, usePaymentDetailsFormLookups } from '@/hooks'
+import { useCountriesData, usePaymentDetailsFormLookups, useToast, useUserProfile } from '@/hooks'
+import { canManageVendorPaymentDetails } from '@/features/dashboard/utils/vendorAccountStatus'
 import { useVendorMutations } from '../useVendorMutations'
 import { PaymentDetailsSchema } from '@/utils/schemas/payment'
 
@@ -21,6 +22,10 @@ const defaultValues: PaymentDetailsFormData = {
 }
 
 export function usePaymentDetailsSettingsForm() {
+  const toast = useToast()
+  const { useGetUserProfileService } = useUserProfile()
+  const { data: userProfile } = useGetUserProfileService()
+  const canManagePayment = canManageVendorPaymentDetails(userProfile)
   const { useAddPaymentDetailsService } = useVendorMutations()
   const { mutateAsync: addPaymentDetails, isPending } = useAddPaymentDetailsService()
   const { countries: phoneCountries } = useCountriesData()
@@ -37,6 +42,11 @@ export function usePaymentDetailsSettingsForm() {
 
   const onSubmit = React.useCallback(
     async (data: PaymentDetailsFormData) => {
+      if (!canManagePayment) {
+        toast.error('Payment details can be added after your vendor account is verified.')
+        return
+      }
+
       try {
         const payload: Record<string, string | undefined> = {
           payment_method: data.payment_method,
@@ -60,10 +70,11 @@ export function usePaymentDetailsSettingsForm() {
         console.error('Failed to add payment details:', error)
       }
     },
-    [addPaymentDetails, form],
+    [addPaymentDetails, canManagePayment, form, toast],
   )
 
   return {
+    canManagePayment,
     form,
     paymentMethod,
     mobileMoneyProviders: lookups.providerOptions,

@@ -1,6 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { Button, Text, Loader, Modal, Combobox } from '@/components'
+import { Button, Text, Loader, Modal, Combobox, Tabs } from '@/components'
 import { Icon } from '@/libs'
+import { ROUTES } from '@/utils/constants'
+import { MyGiftCardTile } from '@/features/dashboard/components/MyGiftCardTile'
+import { resolveCardDisplayStatus } from '@/utils/cardExpiry'
+import { MyCardsEmptyState } from './MyCardsEmptyState'
 import { useCardDetailsPage } from './useCardDetailsPage'
 
 export default function CardDetailsPage() {
@@ -10,6 +14,11 @@ export default function CardDetailsPage() {
     validCardType,
     isLoading,
     filteredCards,
+    displayedCards,
+    activeCards,
+    inactiveCards,
+    statusTab,
+    setStatusTab,
     cardImageUrls,
     pagination,
     paginationLimit,
@@ -29,7 +38,6 @@ export default function CardDetailsPage() {
     isLoadingVendors,
     user,
     CARD_DISPLAY_NAMES,
-    getCardBackground,
     handleNextPage,
     handlePreviousPage,
     handlePageSizeChange,
@@ -90,159 +98,64 @@ export default function CardDetailsPage() {
         </Text>
       </div>
 
-      {filteredCards.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <Icon icon="bi:credit-card-2-front" className="text-6xl text-gray-300 mb-4 mx-auto" />
-          <Text variant="h3" weight="semibold" className="text-gray-900 mb-2">
-            No {CARD_DISPLAY_NAMES[validCardType]} Cards
-          </Text>
-          <Text variant="p" className="text-gray-600">
-            You don't have any {CARD_DISPLAY_NAMES[validCardType]} gift cards yet.
-          </Text>
+      {filteredCards.length > 0 && (
+        <div className="mb-6 max-w-md">
+          <Tabs
+            tabs={[
+              { label: `Active (${activeCards.length})`, value: 'active' },
+              { label: `Inactive (${inactiveCards.length})`, value: 'inactive' },
+            ]}
+            active={statusTab}
+            setActive={(value) => setStatusTab(value as 'active' | 'inactive')}
+          />
         </div>
+      )}
+
+      {filteredCards.length === 0 || displayedCards.length === 0 ? (
+        <MyCardsEmptyState
+          cardTypeName={CARD_DISPLAY_NAMES[validCardType]}
+          statusTab={statusTab}
+          activeCount={activeCards.length}
+          inactiveCount={inactiveCards.length}
+          onSwitchTab={setStatusTab}
+          onBrowseCards={() => navigate(ROUTES.IN_APP.DASHQARDS)}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCards.map((card, index) => {
-            const cardBackground = getCardBackground(validCardType)
-            const displayAmount = card.balance || card.amount || 0
-            const canRedeem = card.status === 'active' && displayAmount > 0
-            const cardId = card.id ?? card.card_id ?? index
-            const cardImageUrl = validCardType === 'dashx' ? cardImageUrls[String(cardId)] : null
+          {displayedCards.map((card, index) => {
+            const showBalance = card.showBalance ?? true
+            const displayAmount = showBalance ? card.balance || card.amount || 0 : 0
+            const displayStatus = resolveCardDisplayStatus(card.status, card.expiry_date)
+            const canRedeem =
+              displayStatus === 'active' && (showBalance ? displayAmount > 0 : true)
+            const cardKey = String(card.recipient_id ?? `${card.id}-${index}`)
+            const cardImageUrl = cardImageUrls[String(card.id ?? card.card_id)] ?? null
 
             return (
-              <div
-                key={cardId}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col"
-              >
-                <div
-                  className="relative overflow-hidden bg-gray-200"
-                  style={{ paddingTop: '62.5%' }}
-                >
-                  <img
-                    src={cardBackground}
-                    alt={`${CARD_DISPLAY_NAMES[validCardType]} card background`}
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                  {cardImageUrl && validCardType === 'dashx' && (
-                    <img
-                      src={cardImageUrl}
-                      alt={`${card.card_name || CARD_DISPLAY_NAMES[validCardType]} card image`}
-                      className="absolute inset-0 h-full w-full object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.style.display = 'none'
-                      }}
-                    />
-                  )}
-                  <div className="absolute inset-0 p-4 flex flex-col justify-between text-white">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        <Icon icon="bi:gift" className="size-5" />
-                        <span className="font-extrabold text-lg tracking-wide">
-                          {CARD_DISPLAY_NAMES[validCardType]}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-2xl font-extrabold">{displayAmount.toFixed(2)}</span>
-                        <span className="text-sm ml-1">GHS</span>
-                      </div>
-                    </div>
-                    <div className="flex items-end justify-between">
-                      {(card.vendor_name || card.branch_name) && (
-                        <div>
-                          <span className="font-bold text-sm tracking-wide uppercase">
-                            {card.vendor_name || card.branch_name}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 flex flex-col flex-1">
-                  <div className="flex-1">
-                    <Text variant="h4" weight="semibold" className="text-gray-900 mb-3">
-                      {card.card_name || card.name || `${CARD_DISPLAY_NAMES[validCardType]} Card`}
-                    </Text>
-                    <div className="flex flex-col gap-2 mb-4">
-                      {card.balance !== undefined && (
-                        <div className="flex items-center gap-2">
-                          <Icon icon="bi:wallet2" className="text-primary-600" />
-                          <Text variant="span" className="text-gray-600">
-                            Balance:{' '}
-                            <span className="font-semibold text-gray-900">
-                              GHS {card.balance?.toFixed(2) || '0.00'}
-                            </span>
-                          </Text>
-                        </div>
-                      )}
-                      {card.status && (
-                        <div className="flex items-center gap-2">
-                          <Icon
-                            icon={
-                              card.status === 'active'
-                                ? 'bi:check-circle-fill'
-                                : card.status === 'used'
-                                  ? 'bi:x-circle-fill'
-                                  : 'bi:clock-fill'
-                            }
-                            className={
-                              card.status === 'active'
-                                ? 'text-green-500'
-                                : card.status === 'used'
-                                  ? 'text-red-500'
-                                  : 'text-yellow-500'
-                            }
-                          />
-                          <Text variant="span" className="text-gray-600 capitalize">
-                            {card.status}
-                          </Text>
-                        </div>
-                      )}
-                      {card.expiry_date && (
-                        <div className="flex items-center gap-2">
-                          <Icon icon="bi:calendar-event" className="text-primary-600" />
-                          <Text variant="span" className="text-gray-600">
-                            Expires: {new Date(card.expiry_date).toLocaleDateString()}
-                          </Text>
-                        </div>
-                      )}
-                      {card.branch_name && (
-                        <div className="flex items-center gap-2">
-                          <Icon icon="bi:shop" className="text-primary-600" />
-                          <Text variant="span" className="text-gray-600">
-                            {card.branch_name}
-                          </Text>
-                        </div>
-                      )}
-                      {card.vendor_name && (
-                        <div className="flex items-center gap-2">
-                          <Icon icon="bi:building" className="text-primary-600" />
-                          <Text variant="span" className="text-gray-600">
-                            {card.vendor_name}
-                          </Text>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <Button
-                      variant="secondary"
-                      disabled={!canRedeem}
-                      onClick={() => handleRedeemClick(card)}
-                      className="w-full flex items-center justify-center gap-2"
-                    >
-                      <Icon icon="bi:arrow-repeat" />
-                      <span>Redeem Card</span>
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <MyGiftCardTile
+                key={cardKey}
+                cardTypeLabel={CARD_DISPLAY_NAMES[validCardType]}
+                cardType={validCardType}
+                cardName={
+                  card.card_name || card.name || `${CARD_DISPLAY_NAMES[validCardType]} Card`
+                }
+                imageUrl={cardImageUrl}
+                balance={displayAmount}
+                currency={card.currency}
+                expiryDate={card.expiry_date}
+                displayStatus={displayStatus}
+                vendorName={card.vendor_name}
+                branchName={card.branch_name}
+                canRedeem={canRedeem}
+                showBalance={showBalance}
+                onRedeem={() => handleRedeemClick(card)}
+              />
             )
           })}
         </div>
       )}
 
-      {filteredCards.length > 0 && (
+      {displayedCards.length > 0 && (
         <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <div className="flex items-center gap-3">
             <Text variant="span" className="text-gray-600 text-sm">
@@ -270,7 +183,7 @@ export default function CardDetailsPage() {
               <span>Previous</span>
             </Button>
             <Text variant="span" className="text-gray-600 text-sm">
-              Showing {filteredCards.length} card{filteredCards.length !== 1 ? 's' : ''}
+              Showing {displayedCards.length} card{displayedCards.length !== 1 ? 's' : ''}
             </Text>
             <Button
               variant="outline"

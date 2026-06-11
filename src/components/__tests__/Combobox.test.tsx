@@ -80,4 +80,22 @@ describe('Combobox', () => {
     await user.click(option)
     expect(onChange).toHaveBeenCalled()
   })
+
+  it('applies disabled styling when isDisabled is true', () => {
+    const onChange = vi.fn()
+    renderWithProviders(
+      <Combobox
+        options={defaultOptions}
+        onChange={onChange}
+        label="Country"
+        value="a"
+        isDisabled
+      />,
+    )
+    const combobox = screen.getByRole('combobox')
+    expect(combobox).toBeDisabled()
+    const wrapper = combobox.closest('.border')
+    expect(wrapper).toHaveClass('bg-[#f3f3f4]')
+    expect(wrapper).toHaveClass('cursor-not-allowed')
+  })
 })

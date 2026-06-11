@@ -16,6 +16,7 @@ export function useCreateVendorAccount({
   corporateUser: UserProfileResponse | null
 }) {
   const [step, setStep] = React.useState<1 | 2 | 3>(1)
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   const methods = useForm<CreateVendorFormData>({
     resolver: zodResolver(CreateVendorFormSchema),
@@ -45,7 +46,7 @@ export function useCreateVendorAccount({
   const { countries } = useCountriesData()
   const toast = useToast()
   const { useCreateVendorService } = corporateMutations()
-  const { mutateAsync: createVendor } = useCreateVendorService()
+  const { mutateAsync: createVendor, isPending: isCreatingVendor } = useCreateVendorService()
 
   const handleCloseModal = React.useCallback(() => {
     methods.reset()
@@ -126,6 +127,7 @@ export function useCreateVendorAccount({
 
   const handleVendorDetailsSubmit = React.useCallback(
     async (data: CreateVendorFormData) => {
+      setIsSubmitting(true)
       try {
         const vendorNameSameAsCorporate = methods.getValues('use_corporate_info') || false
         const profileSameAsCorporate =
@@ -320,6 +322,8 @@ export function useCreateVendorAccount({
             err?.message ||
             'Failed to create vendor account. Please try again.',
         )
+      } finally {
+        setIsSubmitting(false)
       }
     },
     [corporateUser, createVendor, uploadFiles, countries, toast, handleCloseModal, methods],
@@ -328,6 +332,7 @@ export function useCreateVendorAccount({
   return {
     step,
     methods,
+    isSubmitting: isSubmitting || isCreatingVendor,
     handleCloseModal,
     goToNextStep,
     goToPreviousStep,

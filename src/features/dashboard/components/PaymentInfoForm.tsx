@@ -19,6 +19,7 @@ import { useCountriesData, usePaymentDetailsFormLookups, useUserProfile } from '
 import React from 'react'
 import { Icon } from '@/libs'
 import { AccountLookupStatus } from '@/components/AccountLookupStatus'
+import { canManageVendorPaymentDetails } from '@/features/dashboard/utils/vendorAccountStatus'
 
 export default function PaymentInfoForm() {
   const { useGetUserProfileService } = useUserProfile()
@@ -45,6 +46,8 @@ export default function PaymentInfoForm() {
   const userType = userProfileData?.user_type
   const isCorporate = userType === 'corporate'
   const isCorporateVendor = userType === 'corporate_vendor'
+  const isVendorUser = userType === 'vendor' || userType === 'corporate_vendor'
+  const canManagePayment = canManageVendorPaymentDetails(userProfileData)
 
   React.useEffect(() => {
     if (!userProfileData) return
@@ -137,6 +140,14 @@ export default function PaymentInfoForm() {
     }
 
     mutate(basePayload)
+  }
+
+  if (isVendorUser && !canManagePayment) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        Payment details can be added after DashQard verifies your vendor account.
+      </div>
+    )
   }
 
   return (

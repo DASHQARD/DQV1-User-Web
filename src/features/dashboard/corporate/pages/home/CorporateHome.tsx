@@ -37,9 +37,11 @@ export default function CorporateHome() {
     accountStatusBanner,
   } = useCorporateHome()
 
+  const nextStepName = getNextStepName()
+
   return (
-    <div className="bg-[#f8f9fa] rounded-xl overflow-hidden min-h-[600px]">
-      <section className="py-8 px-6 flex flex-col gap-6">
+    <div className="bg-[#f8f9fa] rounded-xl overflow-x-hidden min-h-[600px]">
+      <section className="py-6 sm:py-8 flex flex-col gap-6 min-w-0">
         <Text variant="h2" weight="bold" className="text-gray-900 text-3xl">
           Dashboard
         </Text>
@@ -59,17 +61,17 @@ export default function CorporateHome() {
 
         {/* Onboarding Steps Section - Only show if not complete */}
         {!isOnboardingStatusLoading && !isComplete && (
-          <div className="bg-linear-to-br from-[#f9f5ff] via-white to-[#fdf9ff] border border-gray-100 rounded-2xl shadow-lg p-6 sm:p-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-6">
-              <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-[#402D87] text-white flex items-center justify-center shadow-lg shadow-[#402D87]/30 shrink-0">
-                  <Icon icon="bi:shield-check" className="text-3xl" />
+          <div className="bg-linear-to-br from-[#f9f5ff] via-white to-[#fdf9ff] border border-gray-100 rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 min-w-0">
+            <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between mb-6">
+              <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-[#402D87] text-white flex items-center justify-center shadow-lg shadow-[#402D87]/30 shrink-0">
+                  <Icon icon="bi:shield-check" className="text-2xl sm:text-3xl" />
                 </div>
-                <div>
-                  <p className="uppercase text-xs tracking-[0.3em] text-[#402D87]/70 font-semibold mb-2">
+                <div className="min-w-0">
+                  <p className="uppercase text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] text-[#402D87]/70 font-semibold mb-2">
                     Corporate Onboarding
                   </p>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-[#111827] mb-2">
+                  <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#111827] mb-2">
                     Complete your onboarding
                   </h3>
                   <p className="text-sm sm:text-base text-gray-600 max-w-2xl">
@@ -78,9 +80,13 @@ export default function CorporateHome() {
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-3 shrink-0">
-                <Button variant="secondary" onClick={handleContinue} className="rounded-full">
-                  {getNextStepName() ? `Continue with ${getNextStepName()}` : 'Continue'}
+              <div className="hidden lg:flex shrink-0">
+                <Button
+                  variant="secondary"
+                  onClick={handleContinue}
+                  className="rounded-full whitespace-normal text-center h-auto min-h-12 py-3 px-5 leading-snug"
+                >
+                  {nextStepName ? `Continue with ${nextStepName}` : 'Continue'}
                 </Button>
               </div>
             </div>
@@ -106,20 +112,33 @@ export default function CorporateHome() {
               </p>
             </div>
 
+            <div className="mb-6 lg:hidden">
+              <Button
+                variant="secondary"
+                onClick={handleContinue}
+                className="rounded-full w-full whitespace-normal text-center h-auto min-h-12 py-3 px-4 leading-snug"
+              >
+                {nextStepName ? 'Continue onboarding' : 'Continue'}
+              </Button>
+              {nextStepName ? (
+                <p className="mt-2 text-xs text-center text-gray-500">Next: {nextStepName}</p>
+              ) : null}
+            </div>
+
             {/* Steps Checklist */}
             <div className={cn('grid gap-4', isCorporateAdmin ? 'grid-cols-1' : 'md:grid-cols-2')}>
               <div
                 className={cn(
-                  'relative rounded-xl border p-5 transition-all',
+                  'relative rounded-xl border p-4 sm:p-5 transition-all min-w-0',
                   hasProfileAndID
                     ? 'bg-gray-50 border-gray-200 opacity-75'
                     : 'bg-white border-[#402D87]/20 shadow-md hover:shadow-lg',
                 )}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
                   <div
                     className={cn(
-                      'w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0',
+                      'w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl shrink-0',
                       hasProfileAndID
                         ? 'bg-[#ecfdf5] text-[#059669]'
                         : 'bg-[#fff7ed] text-[#c2410c]',
@@ -129,19 +148,19 @@ export default function CorporateHome() {
                       icon={hasProfileAndID ? 'bi:check-circle-fill' : 'bi:exclamation-circle'}
                     />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-4 mb-2">
-                      <div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-2">
+                      <div className="min-w-0">
                         <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">
                           {isCorporateAdmin ? 'Required Step' : 'Step 1'}
                         </p>
-                        <h4 className="text-lg font-semibold text-[#111827]">
+                        <h4 className="text-base sm:text-lg font-semibold text-[#111827]">
                           Profile Information & ID Upload
                         </h4>
                       </div>
                       <span
                         className={cn(
-                          'text-xs font-semibold px-3 py-1 rounded-full shrink-0',
+                          'text-xs font-semibold px-3 py-1 rounded-full shrink-0 self-start',
                           hasProfileAndID
                             ? 'bg-[#ecfdf5] text-[#059669]'
                             : 'bg-[#fef2f2] text-[#dc2626]',
@@ -154,14 +173,16 @@ export default function CorporateHome() {
                       Complete your profile information and upload a government-issued photo ID for
                       verification.
                     </p>
-                    <Button
-                      variant={hasProfileAndID ? 'outline' : 'secondary'}
-                      size="small"
-                      className="rounded-full"
-                      onClick={navigateToProfileStep}
-                    >
-                      {hasProfileAndID ? 'Review details' : 'Complete step'}
-                    </Button>
+                    {!hasProfileAndID && (
+                      <Button
+                        variant="secondary"
+                        size="small"
+                        className="rounded-full"
+                        onClick={navigateToProfileStep}
+                      >
+                        Complete step
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -170,16 +191,16 @@ export default function CorporateHome() {
               {!isCorporateAdmin && (
                 <div
                   className={cn(
-                    'relative rounded-xl border p-5 transition-all',
+                    'relative rounded-xl border p-4 sm:p-5 transition-all min-w-0',
                     hasBusinessDetailsAndDocs
                       ? 'bg-gray-50 border-gray-200 opacity-75'
                       : 'bg-white border-[#402D87]/20 shadow-md hover:shadow-lg',
                   )}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3 sm:gap-4 min-w-0">
                     <div
                       className={cn(
-                        'w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0',
+                        'w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl shrink-0',
                         hasBusinessDetailsAndDocs
                           ? 'bg-[#ecfdf5] text-[#059669]'
                           : 'bg-[#fff7ed] text-[#c2410c]',
@@ -193,19 +214,19 @@ export default function CorporateHome() {
                         }
                       />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between gap-4 mb-2">
-                        <div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-2">
+                        <div className="min-w-0">
                           <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">
                             Step 2
                           </p>
-                          <h4 className="text-lg font-semibold text-[#111827]">
+                          <h4 className="text-base sm:text-lg font-semibold text-[#111827]">
                             Business Details & Documents
                           </h4>
                         </div>
                         <span
                           className={cn(
-                            'text-xs font-semibold px-3 py-1 rounded-full shrink-0',
+                            'text-xs font-semibold px-3 py-1 rounded-full shrink-0 self-start',
                             hasBusinessDetailsAndDocs
                               ? 'bg-[#ecfdf5] text-[#059669]'
                               : 'bg-[#fef2f2] text-[#dc2626]',
@@ -218,14 +239,16 @@ export default function CorporateHome() {
                         Complete your business information and provide proof of incorporation and
                         supporting files.
                       </p>
-                      <Button
-                        variant={hasBusinessDetailsAndDocs ? 'outline' : 'secondary'}
-                        size="small"
-                        className="rounded-full"
-                        onClick={navigateToBusinessStep}
-                      >
-                        {hasBusinessDetailsAndDocs ? 'Review details' : 'Complete step'}
-                      </Button>
+                      {!hasBusinessDetailsAndDocs && (
+                        <Button
+                          variant="secondary"
+                          size="small"
+                          className="rounded-full"
+                          onClick={navigateToBusinessStep}
+                        >
+                          Complete step
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -372,7 +395,7 @@ export default function CorporateHome() {
         </div>
 
         {!isOnboardingStatusLoading && !isComplete && (
-          <div className="fixed bottom-6 right-6 z-50 w-[598px] max-w-[calc(100vw-3rem)]">
+          <div className="hidden lg:block fixed bottom-6 right-6 z-50 w-[598px] max-w-[calc(100vw-3rem)]">
             <CompleteCorporateWidget />
           </div>
         )}

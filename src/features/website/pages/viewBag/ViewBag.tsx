@@ -7,6 +7,27 @@ import { useAuthStore } from '@/stores'
 import { MemberOnboardingRecipientBlock } from '@/features/website/components/MemberOnboardingRecipientBlock'
 import { formatCurrency } from '@/utils/format'
 import type { FlattenedCartItem } from '@/types'
+import { getCartRecipientDisplayLines } from '@/features/website/utils/cartRecipientUnits'
+
+const BAG_CARD_CLASS = 'flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-5 sm:p-8'
+const BAG_CARD_SHADOW = { boxShadow: '0px 4px 40px 0px rgba(0, 0, 0, 0.04)' }
+
+function groupViewBagLines(items: FlattenedCartItem[]): FlattenedCartItem[][] {
+  const groups: FlattenedCartItem[][] = []
+  const indexByKey = new Map<string, number>()
+
+  for (const item of items) {
+    const key = String(item.cart_item_id ?? `${item.cart_id}-${item.card_id}`)
+    const existing = indexByKey.get(key)
+    if (existing === undefined) {
+      indexByKey.set(key, groups.length)
+      groups.push([item])
+    } else {
+      groups[existing].push(item)
+    }
+  }
+  return groups
+}
 
 export default function ViewBag() {
   const navigate = useNavigate()
@@ -34,9 +55,14 @@ export default function ViewBag() {
     serviceFee,
     total,
     getCardBackground,
+    getCardTypeName,
     getImageUrl,
     deleteRecipientMutation,
     recipientActionsBlocked,
+    canUpdateCartItemQuantity,
+    canRemoveCartItem,
+    hasFailedCheckoutCart,
+    checkoutCtaLabel,
   } = useViewBag()
 
   if (isLoading) {
@@ -50,14 +76,14 @@ export default function ViewBag() {
   const hasItems = displayCartItems.length > 0
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-6 pb-24 sm:py-8 sm:pb-8">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-2">
           <Icon icon="bi:arrow-left" className="text-2xl" />
           <span className="text-sm font-medium">Back</span>
         </button>
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             MY BAG ({totalItems} {totalItems === 1 ? 'item' : 'items'})
           </h1>
         </div>
@@ -75,270 +101,288 @@ export default function ViewBag() {
                 </Button>
               </div>
             ) : (
-              /* Cart list (member, API guest, or local guest) */
-              <div
-                className="bg-white rounded-2xl p-6"
-                style={{ boxShadow: '0px 4px 40px 0px rgba(0, 0, 0, 0.04)' }}
-              >
-                <div className="mb-4 space-y-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Items Name</h2>
-                  {isGuestCart ? (
-                    <p className="text-sm text-gray-500">
-                      Your bag is saved on this device. Verify your phone at checkout to complete
-                      your purchase.
-                    </p>
-                  ) : null}
-                  {recipientActionsBlocked ? <MemberOnboardingRecipientBlock /> : null}
-                </div>
-                <div className="space-y-0">
-                  {displayCartItems.map((item: FlattenedCartItem, index: number) => {
-                    const cardBackground = getCardBackground(item.type || '')
-                    const cardImageUrl = item.images?.[0]?.file_url
-                      ? getImageUrl(item.images[0].file_url)
-                      : null
-                    const recipientKey =
-                      item.cart_item_id != null
-                        ? `${item.cart_item_id}-${item.quantity_index ?? 0}`
-                        : ''
-                    const itemRecipients = recipientKey ? (recipientsByCartItem[recipientKey] ?? []) : []
-                    const unitAmount = parseFloat(item.amount || '0')
-                    const lineTotal = isGuestCart
-                      ? unitAmount
-                      : parseFloat(item.amount || '0')
-                    const hasRecipients = itemRecipients.length > 0
-                    const quantity = item.total_quantity || 1
-                    const showLineControls = !isGuestCart || (item.quantity_index ?? 0) === 0
-                    const assignedOnLine = isGuestCart
-                      ? Object.keys(recipientsByCartItem).filter((k) =>
-                          k.startsWith(`${item.cart_item_id}-`),
-                        ).length
-                      : itemRecipients.reduce(
-                          (sum: number, recipient: any) =>
-                            sum + (recipient.quantity ?? recipient.recipient_quantity ?? 1),
-                          0,
-                        )
-                    const totalAssignedQuantity = assignedOnLine
+              <div className="space-y-4">
+                {isGuestCart || recipientActionsBlocked || hasFailedCheckoutCart ? (
+                  <div className={BAG_CARD_CLASS} style={BAG_CARD_SHADOW}>
+                    {isGuestCart ? (
+                      <p className="text-sm text-gray-600">
+                        Your bag is saved on this device. Custom cards are created when you sync at
+                        checkout — verify your phone then to complete your purchase.
+                      </p>
+                    ) : null}
+                    {recipientActionsBlocked ? <MemberOnboardingRecipientBlock /> : null}
+                    {hasFailedCheckoutCart ? (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        Your last payment attempt did not complete. You can retry checkout without
+                        rebuilding your bag.
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                {groupViewBagLines(displayCartItems).map((group) => {
+                  const item = group[0]
+                  const cardBackground = getCardBackground(item.type || '')
+                  const cardImageUrl = item.images?.[0]?.file_url
+                    ? getImageUrl(item.images[0].file_url)
+                    : null
+                  const quantity = item.total_quantity || group.length || 1
+                  const lineTotal = parseFloat(item.amount || '0')
+                  const unitAmount = quantity > 0 ? lineTotal / quantity : lineTotal
+                  const cartStatus = item.cart_status
+                  const quantityEditable = isGuestCart || canUpdateCartItemQuantity(cartStatus)
+                  const itemRemovable = isGuestCart || canRemoveCartItem(cartStatus)
 
-                    return (
-                      <div
-                        key={`${item.cart_id}-${item.cart_item_id || item.card_id}-${item.quantity_index ?? 0}`}
-                      >
-                        {index > 0 && <hr className="border-gray-200 my-4" />}
-                        <div className={`flex items-center gap-4 py-4 ${showLineControls ? '' : 'pt-0'}`}>
-                          {showLineControls ? (
-                          <div className="w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-gray-200 relative">
+                  let assignedCount = 0
+                  for (let unitIndex = 0; unitIndex < quantity; unitIndex++) {
+                    const unitKey =
+                      item.cart_item_id != null ? `${item.cart_item_id}-${unitIndex}` : ''
+                    if (unitKey && (recipientsByCartItem[unitKey] ?? []).length > 0) {
+                      assignedCount++
+                    }
+                  }
+
+                  const handleDecreaseQuantity = () => {
+                    if (quantity === 1) {
+                      handleRemoveItem(item.cart_item_id || item.cart_id, cartStatus)
+                      return
+                    }
+                    if (item.cart_item_id) {
+                      handleQuantityChange(item.cart_item_id, quantity - 1, cartStatus)
+                    }
+                  }
+
+                  return (
+                    <div
+                      key={`${item.cart_id}-${item.cart_item_id || item.card_id}`}
+                      className={BAG_CARD_CLASS}
+                      style={BAG_CARD_SHADOW}
+                    >
+                      <div className="flex gap-4">
+                        <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-200 sm:h-16 sm:w-24 sm:rounded-md">
+                          <img
+                            src={cardBackground}
+                            alt={`${item.type} card background`}
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                          {cardImageUrl ? (
                             <img
-                              src={cardBackground}
-                              alt={`${item.type} card background`}
-                              className="absolute inset-0 w-full h-full object-cover"
+                              src={cardImageUrl}
+                              alt={item.product || 'Cart item'}
+                              className="absolute inset-0 h-full w-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                              }}
                             />
-                            {cardImageUrl && (
-                              <img
-                                src={cardImageUrl}
-                                alt={`${item.product} card image`}
-                                className="absolute inset-0 w-full h-full object-cover"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement
-                                  target.style.display = 'none'
-                                }}
-                              />
-                            )}
-                          </div>
-                          ) : (
-                            <div className="w-20 shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-normal text-gray-900 text-base">
-                              {showLineControls
-                                ? item.product || `Card #${item.card_id}`
-                                : `Recipient ${(item.quantity_index ?? 0) + 1}`}
-                            </h3>
-                          </div>
-                          {showLineControls ? (
-                          <div className="flex items-center gap-3">
-                            {quantity === 1 ? (
-                              <>
-                                <button
-                                  onClick={() =>
-                                    handleRemoveItem(item.cart_item_id || item.cart_id)
-                                  }
-                                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  aria-label="Remove item"
-                                  disabled={isUpdating}
-                                >
-                                  <Icon icon="bi:trash" className="text-sm" />
-                                </button>
-                                <span className="text-gray-900 font-medium min-w-[24px] text-center">
-                                  {quantity}
-                                </span>
-                                <button
-                                  onClick={() =>
-                                    item.cart_item_id &&
-                                    handleQuantityChange(item.cart_item_id, quantity + 1)
-                                  }
-                                  className="w-8 h-8 rounded-full bg-[#402D87] flex items-center justify-center text-white hover:bg-[#402D87]/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  aria-label="Increase quantity"
-                                  disabled={isUpdating || !item.cart_item_id}
-                                >
-                                  {isUpdating ? (
-                                    <Icon icon="mdi:loading" className="text-sm animate-spin" />
-                                  ) : (
-                                    <Icon icon="bi:plus" className="text-sm" />
-                                  )}
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() =>
-                                    item.cart_item_id &&
-                                    handleQuantityChange(item.cart_item_id, quantity - 1)
-                                  }
-                                  className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  aria-label="Decrease quantity"
-                                  disabled={isUpdating || !item.cart_item_id}
-                                >
-                                  {isUpdating ? (
-                                    <Icon icon="mdi:loading" className="text-sm animate-spin" />
-                                  ) : (
-                                    <Icon icon="bi:dash" className="text-sm" />
-                                  )}
-                                </button>
-                                <span className="text-gray-900 font-medium min-w-[40px] text-center">
-                                  {quantity}
-                                </span>
-                                <button
-                                  onClick={() =>
-                                    item.cart_item_id &&
-                                    handleQuantityChange(item.cart_item_id, quantity + 1)
-                                  }
-                                  className="w-8 h-8 rounded-full bg-[#402D87] flex items-center justify-center text-white hover:bg-[#402D87]/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  aria-label="Increase quantity"
-                                  disabled={isUpdating || !item.cart_item_id}
-                                >
-                                  {isUpdating ? (
-                                    <Icon icon="mdi:loading" className="text-sm animate-spin" />
-                                  ) : (
-                                    <Icon icon="bi:plus" className="text-sm" />
-                                  )}
-                                </button>
-                              </>
-                            )}
-                            <button
-                              onClick={() => handleRemoveItem(item.cart_item_id || item.cart_id)}
-                              className="text-[#402D87] hover:underline text-sm font-medium ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                              aria-label="Remove item"
-                              disabled={isUpdating}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                          ) : null}
-                          {showLineControls ? (
-                          <div className="text-right">
-                            <span className="font-bold text-gray-900 text-base">
-                              {formatCurrency(lineTotal * (isGuestCart ? quantity : 1))}
-                            </span>
-                          </div>
                           ) : null}
                         </div>
 
-                        {hasRecipients && (
-                          <div className="mt-4 ml-24 space-y-2">
-                            {itemRecipients.map((recipient: any) => (
-                              <div
-                                key={
-                                  recipient.id ??
-                                  recipient.recipient_id ??
-                                  recipient.recipientId ??
-                                  `${item.cart_item_id}-${recipient.email ?? recipient.recipient_email ?? ''}`
-                                }
-                                className="flex items-center justify-between bg-gray-50 rounded-xl p-3"
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-gray-900 text-sm truncate">
-                                    {recipient.name ?? recipient.recipient_name ?? 'Recipient'}
-                                  </p>
-                                  <p className="text-gray-500 text-sm truncate">
-                                    {recipient.email ?? recipient.recipient_email ?? ''}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2 ml-4 shrink-0">
-                                  <span className="text-gray-900 font-medium text-sm">
-                                    {formatCurrency(
-                                      recipient.amount ?? recipient.recipient_amount ?? 0,
-                                    )}
-                                    {(recipient.quantity ?? recipient.recipient_quantity ?? 1) >
-                                      1 && (
-                                      <span className="text-gray-500 text-xs ml-1">
-                                        (qty:{' '}
-                                        {recipient.quantity ?? recipient.recipient_quantity ?? 1})
-                                      </span>
-                                    )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="text-base font-semibold leading-snug text-gray-900">
+                              {item.product || `Card #${item.card_id}`}
+                            </h3>
+                            <div className="shrink-0 text-right">
+                              <p className="text-base font-semibold text-[#402D87]">
+                                {formatCurrency(lineTotal)}
+                              </p>
+                              {quantity > 1 ? (
+                                <p className="text-xs text-gray-500">
+                                  {formatCurrency(unitAmount)} each
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                              {getCardTypeName(item.type || '')}
+                            </span>
+                            {assignedCount > 0 ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                                <Icon icon="bi:check-circle" className="size-3" />
+                                {assignedCount} of {quantity} Recipient
+                                {quantity !== 1 ? 's' : ''}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleDecreaseQuantity}
+                            className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label={quantity === 1 ? 'Remove item' : 'Decrease quantity'}
+                            disabled={
+                              isUpdating ||
+                              (quantity > 1 && (!item.cart_item_id || !quantityEditable)) ||
+                              (quantity === 1 && !itemRemovable)
+                            }
+                          >
+                            {isUpdating ? (
+                              <Icon icon="mdi:loading" className="animate-spin text-sm" />
+                            ) : (
+                              <Icon icon="bi:dash" className="text-sm" />
+                            )}
+                          </button>
+                          <span className="min-w-[28px] text-center text-sm font-semibold text-gray-900">
+                            {quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              item.cart_item_id &&
+                              handleQuantityChange(item.cart_item_id, quantity + 1, cartStatus)
+                            }
+                            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#402D87] text-white hover:bg-[#402D87]/90 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label="Increase quantity"
+                            disabled={isUpdating || !item.cart_item_id || !quantityEditable}
+                          >
+                            {isUpdating ? (
+                              <Icon icon="mdi:loading" className="animate-spin text-sm" />
+                            ) : (
+                              <Icon icon="bi:plus" className="text-sm" />
+                            )}
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleRemoveItem(item.cart_item_id || item.cart_id, cartStatus)
+                          }
+                          className="text-sm font-medium text-[#402D87] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label="Remove item"
+                          disabled={isUpdating || !itemRemovable}
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      <hr className="border-gray-200" />
+
+                      <div className="flex flex-col gap-3">
+                        <Text variant="h3" weight="semibold" className="text-gray-900">
+                          Recipients
+                        </Text>
+                        {Array.from({ length: quantity }, (_, unitIndex) => {
+                          const unitKey =
+                            item.cart_item_id != null ? `${item.cart_item_id}-${unitIndex}` : ''
+                          const unitRecipients = unitKey
+                            ? (recipientsByCartItem[unitKey] ?? [])
+                            : []
+                          const unitItem: FlattenedCartItem = {
+                            ...item,
+                            quantity_index: unitIndex,
+                            amount: String(unitAmount),
+                          }
+
+                          if (unitRecipients.length === 0) {
+                            return (
+                              <div key={`unit-${unitIndex}-empty`} className="flex flex-col gap-3">
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">
+                                    {quantity > 1 ? `Gift ${unitIndex + 1}` : 'Recipient'}
                                   </span>
+                                  <span className="text-gray-400">Not assigned</span>
+                                </div>
+                                <Button
+                                  onClick={() => handleAddRecipient(unitItem)}
+                                  variant="outline"
+                                  size="small"
+                                  className="w-full"
+                                  disabled={recipientActionsBlocked}
+                                  title={
+                                    recipientActionsBlocked
+                                      ? 'Complete onboarding in your dashboard first'
+                                      : undefined
+                                  }
+                                >
+                                  <Icon icon="bi:person-plus" className="mr-1.5" />
+                                  Assign Recipient
+                                </Button>
+                                {unitIndex < quantity - 1 ? (
+                                  <hr className="border-gray-200" />
+                                ) : null}
+                              </div>
+                            )
+                          }
+
+                          return unitRecipients.map((recipient: Record<string, unknown>) => {
+                            const display = getCartRecipientDisplayLines(recipient)
+                            const recipientAmount = Number(
+                              recipient.amount ?? recipient.recipient_amount ?? 0,
+                            )
+
+                            return (
+                              <div
+                                key={String(
+                                  recipient.id ??
+                                    recipient.recipient_id ??
+                                    recipient.recipientId ??
+                                    `${item.cart_item_id}-${unitIndex}-${display.primary}`,
+                                )}
+                                className="flex flex-col gap-2"
+                              >
+                                {quantity > 1 ? (
+                                  <span className="text-sm text-gray-600">
+                                    Gift {unitIndex + 1}
+                                  </span>
+                                ) : null}
+                                <div className="flex items-start justify-between gap-3 text-sm">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-semibold text-gray-900">{display.primary}</p>
+                                    {display.secondary ? (
+                                      <p className="mt-0.5 text-gray-500 [overflow-wrap:anywhere]">
+                                        {display.secondary}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                  <span className="shrink-0 font-medium text-gray-900">
+                                    {formatCurrency(recipientAmount)}
+                                  </span>
+                                </div>
+                                <div className="flex justify-end gap-3">
                                   <button
                                     type="button"
-                                    onClick={() => handleEditRecipient(item, recipient)}
-                                    className="text-[#402D87] hover:text-[#402D87]/80 p-1"
+                                    onClick={() => handleEditRecipient(unitItem, recipient)}
+                                    className="inline-flex items-center gap-1 text-sm font-medium text-[#402D87] hover:underline"
                                     aria-label="Edit recipient"
                                   >
                                     <Icon icon="bi:pencil" className="text-sm" />
+                                    Edit
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() =>
                                       handleDeleteRecipient(recipient, String(item.cart_item_id))
                                     }
-                                    className="text-red-600 hover:text-red-700 p-1"
+                                    className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:underline"
                                     aria-label="Delete recipient"
                                   >
                                     <Icon icon="bi:trash" className="text-sm" />
+                                    Remove
                                   </button>
                                 </div>
+                                {unitIndex < quantity - 1 ? (
+                                  <hr className="border-gray-200" />
+                                ) : null}
                               </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {totalAssignedQuantity < quantity && (
-                          <div className="mt-3 ml-24">
-                            <button
-                              type="button"
-                              onClick={() => handleAddRecipient(item)}
-                              disabled={recipientActionsBlocked}
-                              title={
-                                recipientActionsBlocked
-                                  ? 'Complete onboarding in your dashboard first'
-                                  : undefined
-                              }
-                              className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                            >
-                              <Icon icon="bi:person-plus" className="text-base" />
-                              {itemRecipients.length > 0
-                                ? 'Add Another Recipient'
-                                : 'Assign Recipient'}
-                            </button>
-                          </div>
-                        )}
-                        {totalAssignedQuantity >= quantity && (
-                          <div className="mt-3 ml-24 text-sm text-gray-500 italic">
-                            Maximum recipients reached (quantity: {quantity})
-                          </div>
-                        )}
+                            )
+                          })
+                        })}
                       </div>
-                    )
-                  })}
-                </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
 
           {/* Right Section - Order Summary */}
           <div className="lg:col-span-1">
-            <div
-              className="bg-white rounded-3xl border border-gray-200 sticky top-8 p-8 flex flex-col gap-4"
-              style={{ boxShadow: '0px 4px 40px 0px rgba(0, 0, 0, 0.04)' }}
-            >
+            <div className={`${BAG_CARD_CLASS} lg:sticky lg:top-8`} style={BAG_CARD_SHADOW}>
               <div className="mb-6">
                 <div className="h-2 bg-gray-200 rounded-full mb-3 overflow-hidden">
                   <div
@@ -388,7 +432,7 @@ export default function ViewBag() {
               >
                 <div className="flex items-center gap-2">
                   <Icon icon="hugeicons:credit-card" className="size-5 text-white" />
-                  <span>Checkout</span>
+                  <span>{checkoutCtaLabel}</span>
                 </div>
                 <span className="font-bold">{formatCurrency(total)}</span>
               </button>
@@ -409,69 +453,69 @@ export default function ViewBag() {
       </div>
 
       <>
-          <PurchaseModal />
-          <Modal isOpen={isDeleteModalOpen} setIsOpen={setIsDeleteModalOpen} panelClass="!max-w-md">
-            <div className="p-6">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                  <Icon icon="bi:exclamation-triangle-fill" className="text-2xl text-red-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Delete Recipient</h3>
-                  <p className="text-sm text-gray-500">This action cannot be undone</p>
-                </div>
+        <PurchaseModal />
+        <Modal isOpen={isDeleteModalOpen} setIsOpen={setIsDeleteModalOpen} panelClass="!max-w-md">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <Icon icon="bi:exclamation-triangle-fill" className="text-2xl text-red-600" />
               </div>
-              {recipientToDelete && (
-                <div className="mb-6">
-                  <p className="text-sm text-gray-700 mb-2">
-                    Are you sure you want to remove this recipient?
-                  </p>
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <p className="font-semibold text-gray-900">
-                      {recipientToDelete.name || recipientToDelete.recipient_name || 'Self'}
-                    </p>
-                    {(recipientToDelete.email || recipientToDelete.recipient_email) && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        {recipientToDelete.email || recipientToDelete.recipient_email}
-                      </p>
-                    )}
-                    {(recipientToDelete.phone || recipientToDelete.recipient_phone) && (
-                      <p className="text-sm text-gray-600">
-                        {recipientToDelete.phone || recipientToDelete.recipient_phone}
-                      </p>
-                    )}
-                    <p className="text-sm font-semibold text-primary-500 mt-2">
-                      {formatCurrency(
-                        recipientToDelete.amount ?? recipientToDelete.recipient_amount ?? 0,
-                      )}
-                    </p>
-                  </div>
-                </div>
-              )}
-              <div className="flex gap-3 justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsDeleteModalOpen(false)
-                    setRecipientToDelete(null)
-                  }}
-                  disabled={deleteRecipientMutation.isPending}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="danger"
-                  onClick={confirmDeleteRecipient}
-                  disabled={deleteRecipientMutation.isPending}
-                  loading={deleteRecipientMutation.isPending}
-                >
-                  {deleteRecipientMutation.isPending ? 'Deleting...' : 'Delete Recipient'}
-                </Button>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Delete Recipient</h3>
+                <p className="text-sm text-gray-500">This action cannot be undone</p>
               </div>
             </div>
-          </Modal>
+            {recipientToDelete && (
+              <div className="mb-6">
+                <p className="text-sm text-gray-700 mb-2">
+                  Are you sure you want to remove this recipient?
+                </p>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <p className="font-semibold text-gray-900">
+                    {recipientToDelete.name || recipientToDelete.recipient_name || 'Self'}
+                  </p>
+                  {(recipientToDelete.email || recipientToDelete.recipient_email) && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      {recipientToDelete.email || recipientToDelete.recipient_email}
+                    </p>
+                  )}
+                  {(recipientToDelete.phone || recipientToDelete.recipient_phone) && (
+                    <p className="text-sm text-gray-600">
+                      {recipientToDelete.phone || recipientToDelete.recipient_phone}
+                    </p>
+                  )}
+                  <p className="text-sm font-semibold text-primary-500 mt-2">
+                    {formatCurrency(
+                      recipientToDelete.amount ?? recipientToDelete.recipient_amount ?? 0,
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+            <div className="flex gap-3 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsDeleteModalOpen(false)
+                  setRecipientToDelete(null)
+                }}
+                disabled={deleteRecipientMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={confirmDeleteRecipient}
+                disabled={deleteRecipientMutation.isPending}
+                loading={deleteRecipientMutation.isPending}
+              >
+                {deleteRecipientMutation.isPending ? 'Deleting...' : 'Delete Recipient'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </>
     </div>
   )

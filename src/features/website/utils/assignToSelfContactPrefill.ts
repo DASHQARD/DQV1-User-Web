@@ -30,6 +30,7 @@ type UserProfileShape = {
 function getLocalGuestContactPrefill(): AssignToSelfContact {
   const contact = useGuestLocalCartStore.getState().contact
   const name =
+    contact.full_name?.trim() ||
     formatPersonName(contact.first_name ?? '', contact.last_name ?? '') ||
     getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY)
   return {
@@ -53,10 +54,16 @@ export function getAssignToSelfContactPrefill(params: {
   }
 
   if (isGuestAuth) {
-    return {
+    const fromJwt = {
       name: getGuestNameFromAuth(user),
       email: getGuestEmailFromAuth(user),
       phone: getGuestPhoneFromAuth(user),
+    }
+    const fromCheckout = getLocalGuestContactPrefill()
+    return {
+      name: fromJwt.name || fromCheckout.name,
+      email: fromJwt.email || fromCheckout.email,
+      phone: fromJwt.phone || fromCheckout.phone,
     }
   }
 

@@ -49,8 +49,8 @@ export function VendorAccountStatusBanner({
         </Text>
         <Text variant="span" className="text-sm block mt-2 opacity-90">
           {hasRemainingSetupSteps
-            ? 'Finish payment and branch setup below while you wait. We will notify you when your account is activated.'
-            : 'You can still update compliance and payment setup while you wait. We will notify you when your account is activated.'}
+            ? 'You can finish branch setup while you wait. Payment details will unlock after your account is verified. We will notify you when your account is activated.'
+            : 'We will notify you when your account is activated and payout setup is available.'}
         </Text>
       </div>
     </div>

@@ -7,15 +7,16 @@ import {
   extractGuestCreateCartMeta,
   getGuestCartItems,
 } from '@/features/website/services/cards'
-import {
-  type LocalGuestCartLine,
-  type GuestContactDraft,
-  type LocalRecipientDraft,
-  isCatalogLocalLine,
-} from '@/stores/guestLocalCart'
+import type { GuestContactDraft } from '@/stores/guestLocalCart'
+import type { LocalGuestCartLine, LocalRecipientDraft } from '@/features/website/utils/guestLocalCartTypes'
+
+function isCatalogLocalLine(line: LocalGuestCartLine): boolean {
+  return !line.lineKind || line.lineKind === 'catalog'
+}
 import { formatPersonName } from '@/utils/personName'
 import { pickGuestCartIdentityFields } from '@/utils/guestContact'
 import { toGuestCartSyncError } from '@/features/website/utils/guestCartSyncError'
+import { ensureGuestSession } from '@/features/website/services/guestSession'
 import { assertGuestCartAmountWithinLimit } from '@/features/website/utils/validateGuestLocalCart'
 
 function lineProductLabel(line: LocalGuestCartLine): string {
@@ -168,7 +169,9 @@ export async function syncGuestLocalCartToServer(args: {
   setGuestCartId: (id: number | null) => void
   setGuestCartUuid: (uuid: string | null) => void
 }): Promise<void> {
-  const guestName = formatPersonName(args.contact.first_name ?? '', args.contact.last_name ?? '')
+  const guestName =
+    args.contact.full_name?.trim() ||
+    formatPersonName(args.contact.first_name ?? '', args.contact.last_name ?? '')
   const identity = pickGuestCartIdentityFields(guestName, args.contact.email)
   const setters: SyncSetters = {
     getGuestCartId: args.getGuestCartId,
@@ -179,6 +182,8 @@ export async function syncGuestLocalCartToServer(args: {
 
   const catalogLines = args.lines.filter(isCatalogLocalLine)
   const customLines = args.lines.filter((l) => l.lineKind === 'dashpro' || l.lineKind === 'dashgo')
+
+  await ensureGuestSession()
 
   for (const line of catalogLines) {
     try {

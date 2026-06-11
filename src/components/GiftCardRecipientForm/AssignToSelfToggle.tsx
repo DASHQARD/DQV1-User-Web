@@ -8,8 +8,8 @@ type AssignToSelfToggleProps = {
 
 export function AssignToSelfToggle({ checked, onChange, description }: AssignToSelfToggleProps) {
   return (
-    <section className="border-b border-gray-100 px-10 py-8">
-      <div className="rounded-2xl bg-[#f8f9fa] p-6 text-center">
+    <section className="border-b border-gray-100 px-4 py-6 sm:px-6 sm:py-8 md:px-10">
+      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-[#f8f9fa] p-4 text-center sm:p-6">
         <div className="flex flex-col items-center gap-4">
           <label className="inline-flex cursor-pointer items-center gap-3">
             <div className="relative h-6 w-11">
@@ -37,13 +37,20 @@ export function AssignToSelfToggle({ checked, onChange, description }: AssignToS
 export function getAssignToSelfDescription(options: {
   assignToSelf: boolean
   isLocalGuest?: boolean
+  isGuestAuth?: boolean
   accountName?: string
 }): string {
-  const { assignToSelf, isLocalGuest, accountName } = options
+  const { assignToSelf, isLocalGuest, isGuestAuth, accountName } = options
 
   if (isLocalGuest) {
     return assignToSelf
-      ? 'This card is for you. Enter your details below — phone verification happens at checkout.'
+      ? 'This card is for you. Enter your details below, or complete sender details at checkout.'
+      : 'Enter who should receive this gift card.'
+  }
+
+  if (isGuestAuth) {
+    return assignToSelf
+      ? 'This card is for you. We will use the sender details you entered at checkout.'
       : 'Enter who should receive this gift card.'
   }
 

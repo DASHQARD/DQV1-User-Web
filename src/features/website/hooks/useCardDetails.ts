@@ -26,11 +26,12 @@ import {
   type RedemptionBranch,
   type UseCardDetailsReturn,
 } from '../types/cardDetails'
-import { useAuthStore, useGuestLocalCartStore } from '@/stores'
+import { useAuthStore } from '@/stores'
 import { useCart } from './useCart'
 import { useCartStore } from '@/stores/cart'
 import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
 import { ensureGuestCartAndAddCard } from '@/features/website/services/cards'
+import { ensureGuestSession } from '@/features/website/services/guestSession'
 import { assertGuestCartAmountWithinLimit } from '@/features/website/utils/validateGuestLocalCart'
 import {
   GUEST_EMAIL_STORAGE_KEY,
@@ -71,7 +72,6 @@ export function useCardDetails(): UseCardDetailsReturn {
   const getGuestCartId = useAuthStore((s) => s.getGuestCartId)
   const getGuestCartUuid = useAuthStore((s) => s.getGuestCartUuid)
   const setGuestCartId = useAuthStore((s) => s.setGuestCartId)
-  const addLocalGuestCard = useGuestLocalCartStore((s) => s.addCatalogCard)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
   const queryClient = useQueryClient()
@@ -148,51 +148,31 @@ export function useCardDetails(): UseCardDetailsReturn {
     }
     const cardIdRaw = (card as { card_id?: unknown }).card_id ?? (card as { id?: unknown }).id
     const price = parseFloat(String((card as { price?: unknown }).price)) || 0
-    const pending = {
-      card_id: String(cardIdRaw),
-      product: (card as { product?: string }).product ?? '',
-      price,
-      type: (card as { type?: string }).type,
-      currency: (card as { currency?: string }).currency,
-    }
 
-    if (!isAuthenticated || isGuestAuth) {
+    const isMember = isAuthenticated && !isGuestAuth
+    if (!isMember) {
       if (cardIdRaw == null || String(cardIdRaw).trim() === '') return
-      if (isGuestAuth) {
-        const guestName =
-          getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
-          (user as { guest_name?: string } | null)?.guest_name ||
-          ''
-        const guestEmail =
-          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
-          (user as { guest_email?: string } | null)?.guest_email ||
-          ''
-        try {
-          assertGuestCartAmountWithinLimit(price)
-          await ensureGuestCartAndAddCard({
-            card_id: String(cardIdRaw),
-            amount: price,
-            ...pickGuestCartIdentityFields(guestName, guestEmail),
-            getGuestCartId,
-            getGuestCartUuid,
-            setGuestCartId,
-            setGuestCartUuid: useAuthStore.getState().setGuestCartUuid,
-          })
-          queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-          openCart()
-        } catch (err: unknown) {
-          toast.error(getApiErrorMessage(err, 'Failed to add to cart'))
-        }
-        return
-      }
+      const guestName =
+        getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
+        (user as { guest_name?: string } | null)?.guest_name ||
+        ''
+      const guestEmail =
+        getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
+        (user as { guest_email?: string } | null)?.guest_email ||
+        ''
       try {
-        addLocalGuestCard({
+        assertGuestCartAmountWithinLimit(price)
+        await ensureGuestSession()
+        await ensureGuestCartAndAddCard({
           card_id: String(cardIdRaw),
-          product: pending.product,
-          price: pending.price,
-          currency: typeof pending.currency === 'string' ? pending.currency : 'GHS',
-          type: pending.type,
+          amount: price,
+          ...pickGuestCartIdentityFields(guestName, guestEmail),
+          getGuestCartId,
+          getGuestCartUuid,
+          setGuestCartId,
+          setGuestCartUuid: useAuthStore.getState().setGuestCartUuid,
         })
+        queryClient.invalidateQueries({ queryKey: ['cart-items'] })
         openCart()
       } catch (err: unknown) {
         toast.error(getApiErrorMessage(err, 'Failed to add to cart'))
@@ -213,7 +193,6 @@ export function useCardDetails(): UseCardDetailsReturn {
     user,
     getGuestCartId,
     setGuestCartId,
-    addLocalGuestCard,
     addToCartAsync,
     openCart,
     queryClient,

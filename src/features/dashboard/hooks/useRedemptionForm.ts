@@ -6,6 +6,7 @@ import { convertToInternationalFormat } from '../services/redemptions'
 import type { VendorSearchResult } from '../services/redemptions'
 import { buildCardsRedemptionPayload } from '@/features/website/utils/cardsRedemption'
 import { pickGuestRedemptionCardId } from '@/features/website/utils/guestRedemption'
+import { resolveRecipientAmountPreviewImageUrl } from '@/features/website/utils/recipientAmountCardImages'
 import { useMobileMoneyAccountLookup } from '@/hooks/useMobileMoneyAccountLookup'
 
 export type CardType = 'DashPro' | 'DashGo' | 'DashX' | 'DashPass'
@@ -42,6 +43,7 @@ export function useRedemptionForm() {
     error: vendorPhoneError,
     isResolving: validatingVendor,
     isVerified: isVendorPhoneVerified,
+    resolvedProvider,
     reset: resetMomoLookup,
   } = useMobileMoneyAccountLookup({
     enabled: cardType === 'DashPro',
@@ -94,6 +96,11 @@ export function useRedemptionForm() {
     ? ((activeBalanceQuery.error as any)?.message ?? 'Failed to fetch balance')
     : null
 
+  const cardPreviewImageUrl = useMemo(
+    () => resolveRecipientAmountPreviewImageUrl(activeBalanceQuery.data),
+    [activeBalanceQuery.data],
+  )
+
   const handleCardTypeChange = useCallback((newType: CardType) => {
     setCardType(newType)
     setRawVendorPhone('')
@@ -141,10 +148,12 @@ export function useRedemptionForm() {
 
     try {
       if (cardType === 'DashPro') {
+        if (!resolvedProvider) return
         const result = await dashProMutation.mutateAsync({
           vendor_phone_number: convertToInternationalFormat(rawVendorPhone),
           amount: redemptionAmount,
           user_phone_number: convertToInternationalFormat(userPhone),
+          provider: resolvedProvider,
         })
         if (result?.data?.reference_id) setRedemptionReferenceId(result.data.reference_id)
         setShowSummaryModal(true)
@@ -189,6 +198,7 @@ export function useRedemptionForm() {
     redemptionAmount,
     rawVendorPhone,
     userPhone,
+    resolvedProvider,
     selectedVendor,
     dashProMutation,
     cardsMutation,
@@ -219,6 +229,7 @@ export function useRedemptionForm() {
     availableBalance,
     balanceLoading,
     balanceError,
+    cardPreviewImageUrl,
     // Submission
     isFormValid,
     isSubmitting: dashProMutation.isPending || cardsMutation.isPending,

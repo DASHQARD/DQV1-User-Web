@@ -24,6 +24,9 @@ const defaultCartModalReturn = {
   getCardBackground: () => '/bg.png',
   getImageUrl: (url: string) => url || '',
   getCardTypeName: () => 'DashX',
+  canUpdateCartItemQuantity: () => true,
+  canRemoveCartItem: () => true,
+  isLocalGuestCartLineId: () => false,
 }
 
 const mockCartItem = {

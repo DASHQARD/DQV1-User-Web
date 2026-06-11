@@ -10,6 +10,7 @@ import type { PaymentInfoData } from '@/types/user'
 
 type Transaction = {
   id: string
+  receiptNumber: string
   type: 'purchase' | 'redemption'
   amount: number
   date: string
@@ -26,8 +27,8 @@ const addAccountParam = (path: string): string => {
 
 const recentTransactionsColumns: ColumnDef<Transaction>[] = [
   {
-    header: 'Transaction ID',
-    accessorKey: 'id',
+    header: 'Receipt Number',
+    accessorKey: 'receiptNumber',
   },
   {
     header: 'Type',
@@ -80,7 +81,8 @@ export default function RecentTransactions() {
     return paymentsData
       .slice(0, 5) // Get first 5 transactions (most recent)
       .map((payment: PaymentInfoData) => ({
-        id: payment.trans_id || String(payment.id),
+        id: String(payment.id),
+        receiptNumber: payment.receipt_number || payment.trans_id || String(payment.id),
         type: (payment.type?.toLowerCase() === 'redemption' ? 'redemption' : 'purchase') as
           | 'purchase'
           | 'redemption',

@@ -26,7 +26,7 @@ import {
   useRateCard,
 } from '@/features/dashboard/hooks'
 import { ROUTES } from '@/utils/constants'
-import { getImageUrl } from '@/utils/cardDisplay'
+import { resolveRecipientAmountCardImageUrl } from '@/features/website/utils/recipientAmountCardImages'
 import { getGuestPhoneFromAuth } from '@/features/website/utils/guestAuth'
 import {
   buildCardsRedemptionPayload,
@@ -78,6 +78,7 @@ interface VendorCard {
   vendor_id?: string
   vendor_name?: string
   recipient_id?: string
+  gvid?: string
   /** Unique per assignment; use for selection when multiple cards share card_id+branch_id+recipient_id */
   cart_item_id?: string
   image_url?: string
@@ -247,6 +248,12 @@ export default function RedemptionPage() {
     isSearchingById,
     resetVendorLookup,
   } = vendorLookup
+
+  const { data: vendorsResponse } = usePublicVendorsService(
+    redemptionMethod === 'vendor_id' ? { limit: 100 } : undefined,
+    redemptionMethod === 'vendor_id' && isAuthenticated,
+  )
+
   const {
     rawVendorPhone,
     setRawVendorPhone,
@@ -260,9 +267,35 @@ export default function RedemptionPage() {
   } = vendorMobileMoney
 
   const selectedVendorGvid = useMemo(() => {
-    const gvid = selectedVendor?.gvid || vendorIdExactMatch?.gvid
-    return gvid ? String(gvid).trim() : ''
-  }, [selectedVendor, vendorIdExactMatch])
+    const vendorRows = (() => {
+      if (!vendorsResponse) return []
+      const raw = Array.isArray(vendorsResponse)
+        ? vendorsResponse
+        : (vendorsResponse as { data?: Array<{ vendor_id?: string | number; gvid?: string }> })
+            ?.data || []
+      return Array.isArray(raw) ? raw : []
+    })()
+    const candidates = [
+      selectedVendor?.gvid,
+      vendorIdExactMatch?.gvid,
+      vendorRows.find((v) => String(v.vendor_id ?? '') === String(selectedVendorId))?.gvid,
+      selectedCard?.gvid,
+      isExactGvidPathLookup(vendorIdInput) ? vendorIdInput.trim() : '',
+    ]
+    for (const candidate of candidates) {
+      if (candidate != null && String(candidate).trim()) {
+        return String(candidate).trim()
+      }
+    }
+    return ''
+  }, [
+    selectedVendor,
+    vendorIdExactMatch,
+    vendorsResponse,
+    selectedVendorId,
+    selectedCard,
+    vendorIdInput,
+  ])
 
   const redeemableCardsParams = useMemo(() => {
     if (!isAuthenticated || isGuestAuth || redemptionMethod === '') return undefined
@@ -382,12 +415,6 @@ export default function RedemptionPage() {
     return parseGuestRedemptionsResponse(guestRedemptionsHistory).items.slice(0, 5)
   }, [guestRedemptionsHistory])
 
-  // Fetch vendors same as Vendors/DashQards: limit 100 when on vendor_id flow
-  const { data: vendorsResponse } = usePublicVendorsService(
-    redemptionMethod === 'vendor_id' ? { limit: 100 } : undefined,
-    redemptionMethod === 'vendor_id' && isAuthenticated,
-  )
-
   const guestAssignedPayload = useMemo(
     () => parseGuestAssignedCardsResponse(guestAssignedCardsResponse),
     [guestAssignedCardsResponse],
@@ -500,7 +527,7 @@ export default function RedemptionPage() {
           vendor_id: card.vendor_id ? String(card.vendor_id) : undefined,
           vendor_name: card.vendor_name,
           recipient_id: card.guest_recipient_id ? String(card.guest_recipient_id) : undefined,
-          image_url: card.images?.[0]?.file_url ? getImageUrl(card.images[0].file_url) : undefined,
+          image_url: resolveRecipientAmountCardImageUrl(card),
           expiry_date: card.expiry_date,
           description: card.description,
         })) as VendorCard[]
@@ -648,9 +675,10 @@ export default function RedemptionPage() {
         branch_location: card.branch_location,
         vendor_id: card.vendor_id,
         vendor_name: card.vendor_name,
+        gvid: card.gvid,
         recipient_id: card.recipient_id,
         cart_item_id: card.cart_item_id,
-        image_url: card.images?.[0]?.file_url ? getImageUrl(card.images[0].file_url) : undefined,
+        image_url: resolveRecipientAmountCardImageUrl(card),
         expiry_date: card.expiry_date,
         description: card.description,
       }))
@@ -693,9 +721,10 @@ export default function RedemptionPage() {
         branch_location: card.branch_location,
         vendor_id: card.vendor_id,
         vendor_name: card.vendor_name,
+        gvid: card.gvid,
         recipient_id: card.recipient_id,
         cart_item_id: card.cart_item_id,
-        image_url: card.images?.[0]?.file_url ? getImageUrl(card.images[0].file_url) : undefined,
+        image_url: resolveRecipientAmountCardImageUrl(card),
         expiry_date: card.expiry_date,
         description: card.description,
       }))
@@ -1372,12 +1401,12 @@ export default function RedemptionPage() {
         const redeemAmount = roundRedemptionAmount(parseFloat(amount))
         const vendorPhone = convertToInternationalFormat(rawVendorPhone)
 
-        if (isGuestAuth) {
-          if (!resolvedProvider) {
-            toast.error('Unable to detect mobile money provider. Please check the number.')
-            return
-          }
+        if (!resolvedProvider) {
+          toast.error('Unable to detect mobile money provider. Please check the number.')
+          return
+        }
 
+        if (isGuestAuth) {
           const guestPayload = buildGuestCardsRedemptionPayload({
             card_type: 'DashPro',
             amount: redeemAmount,
@@ -1403,6 +1432,7 @@ export default function RedemptionPage() {
           const response = await processDashProForUserMutation.mutateAsync({
             vendor_phone_number: vendorPhone,
             amount: redeemAmount,
+            provider: resolvedProvider,
           })
 
           if (isRedemptionApiSuccess(response)) {
@@ -1422,6 +1452,7 @@ export default function RedemptionPage() {
             vendor_phone_number: vendorPhone,
             amount: redeemAmount,
             user_phone_number: convertToInternationalFormat(userPhoneNumber),
+            provider: resolvedProvider,
           })
 
           if (isRedemptionApiSuccess(response)) {
@@ -2255,7 +2286,9 @@ export default function RedemptionPage() {
                                               selected={isSelected}
                                               onSelect={() => {
                                                 setSelectedCard(card)
-                                                setSelectedBranchId(card.branch_id || null)
+                                                if (card.branch_id) {
+                                                  setSelectedBranchId(String(card.branch_id))
+                                                }
                                               }}
                                             />
                                           )

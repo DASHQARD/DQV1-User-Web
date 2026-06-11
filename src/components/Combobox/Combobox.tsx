@@ -33,6 +33,7 @@ export function Combobox(props: Props) {
     isDropdown,
     iconBefore,
     isRequired,
+    isDisabled = false,
     ...rest
   } = props
 
@@ -49,9 +50,12 @@ export function Combobox(props: Props) {
       )}
       <div
         className={cn(
-          'border focus-within:border-primary-400 hover:border-primary-400 border-gray-300 rounded-lg flex justify-between flex-1 items-center overflow-hidden',
+          'border border-gray-300 rounded-lg flex justify-between flex-1 items-center overflow-hidden',
+          !isDisabled && 'focus-within:border-primary-400 hover:border-primary-400',
           {
             'hover:border-gray-300 border-gray-300 rounded-xl': isDropdown,
+            'text-gray-400 bg-[#f3f3f4] cursor-not-allowed hover:border-gray-300 focus-within:border-gray-300':
+              isDisabled,
           },
         )}
       >
@@ -71,10 +75,11 @@ export function Combobox(props: Props) {
           value={
             props.isMulti ? value : (options?.find((option) => option.value === value) ?? null)
           }
-          isClearable
-          isSearchable
           components={{ ...props.components, ...selectComponents }}
           {...rest}
+          isDisabled={isDisabled}
+          isClearable={isDisabled ? false : (rest.isClearable ?? true)}
+          isSearchable={isDisabled ? false : (rest.isSearchable ?? true)}
           styles={deepMergeStyles(selectStyles, props.styles)}
         />
       </div>
@@ -99,7 +104,7 @@ const selectStyles: StylesConfig<any> = {
     ...baseStyles,
     flexGrow: 1,
   }),
-  control: (baseStyles) => ({
+  control: (baseStyles, state) => ({
     ...baseStyles,
     borderWidth: '1px',
     paddingBlock: '2px',
@@ -109,26 +114,31 @@ const selectStyles: StylesConfig<any> = {
     border: 'none',
     minWidth: '0',
     flex: '1',
-    backgroundColor: 'transparent',
+    backgroundColor: state.isDisabled ? '#f3f3f4' : 'transparent',
     boxShadow: 'none',
+    cursor: state.isDisabled ? 'not-allowed' : 'default',
   }),
   valueContainer: (baseStyles) => ({
     ...baseStyles,
     padding: '2px 8px',
     flexWrap: 'wrap',
   }),
-  placeholder: (baseStyles) => ({
+  placeholder: (baseStyles, state) => ({
     ...baseStyles,
-    color: 'var(--color-gray-300)',
+    color: state.isDisabled ? '#9ca3af' : 'var(--color-gray-300)',
     fontSize: '16px',
   }),
-  singleValue: (baseStyles) => ({
+  singleValue: (baseStyles, state) => ({
     ...baseStyles,
     backgroundColor: 'transparent',
-    color: 'var(--color-gray-600)',
+    color: state.isDisabled ? '#9ca3af' : 'var(--color-gray-600)',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
+  }),
+  dropdownIndicator: (baseStyles, state) => ({
+    ...baseStyles,
+    color: state.isDisabled ? '#9ca3af' : baseStyles.color,
   }),
   multiValue: (baseStyles) => ({
     ...baseStyles,

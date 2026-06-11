@@ -8,11 +8,19 @@ import { formatFullDate } from '@/utils/format'
 import { vendorQueries } from '@/features/dashboard/vendor/hooks'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 
+export interface RequestEntityImage {
+  id?: string
+  file_url?: string
+  file_name?: string
+  file_key?: string
+}
+
 export interface RequestInfoRow {
   label: string
   value: React.ReactNode
   isSection?: boolean
   spanFull?: boolean
+  images?: RequestEntityImage[]
 }
 
 export interface UseVendorRequestDetailsReturn {
@@ -192,6 +200,18 @@ export function useVendorRequestDetails(): UseVendorRequestDetailsReturn {
         label: 'Updated At',
         value: formatFullDate(entityDetails.updated_at as string),
       })
+
+      const images = Array.isArray(entityDetails.images)
+        ? (entityDetails.images as RequestEntityImage[])
+        : []
+      if (images.length > 0) {
+        rows.push({
+          label: 'Images',
+          value: null,
+          spanFull: true,
+          images,
+        })
+      }
     }
 
     return rows

@@ -33,6 +33,36 @@ describe('isCorporateManagementApiEnabled', () => {
     ).toBe(true)
   })
 
+  it('returns false for branch users', () => {
+    expect(
+      isCorporateManagementApiEnabled({
+        user_type: 'branch',
+        status: 'verified',
+        onboarding_progress: {
+          personal_details_completed: true,
+          upload_id_completed: true,
+          business_details_completed: true,
+          business_documents_completed: true,
+        },
+      }),
+    ).toBe(false)
+  })
+
+  it('returns false for vendor users', () => {
+    expect(
+      isCorporateManagementApiEnabled({
+        user_type: 'vendor',
+        status: 'verified',
+        onboarding_progress: {
+          personal_details_completed: true,
+          upload_id_completed: true,
+          business_details_completed: true,
+          business_documents_completed: true,
+        },
+      }),
+    ).toBe(false)
+  })
+
   it('returns true for onboarded corporate admin with profile and id only', () => {
     expect(
       isCorporateManagementApiEnabled({

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Icon } from '@/libs'
+import { cn, Icon } from '@/libs'
 
 import type { DashQardsTabId, DashQardsVendor } from '../../hooks/useDashQards'
 import {
@@ -39,9 +39,11 @@ export interface DashQardsFiltersProps {
   setPriceRange: (min: number | null | undefined, max: number | null | undefined) => void
   isPriceRangeActive: (min: number | null, max: number | null) => boolean
   clearAllFilters: () => void
+  /** Sidebar on desktop; full-width when opened in the filters modal. */
+  layout?: 'sidebar' | 'modal'
 }
 
-const SECTION_KEYS = ['cardSelection', 'search', 'vendors', 'priceRange'] as const
+const SECTION_KEYS = ['cardSelection', 'vendors', 'priceRange'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 
 export function DashQardsFilters({
@@ -57,6 +59,7 @@ export function DashQardsFilters({
   setPriceRange,
   isPriceRangeActive,
   clearAllFilters,
+  layout = 'sidebar',
 }: DashQardsFiltersProps) {
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>(
     () => Object.fromEntries(SECTION_KEYS.map((k) => [k, true])) as Record<SectionKey, boolean>,
@@ -81,7 +84,14 @@ export function DashQardsFilters({
   }
 
   return (
-    <aside className="bg-white border border-[#e6e6e6] rounded-xl sticky top-[120px] w-[280px] max-h-[calc(100vh-140px)] overflow-y-auto shrink-0 max-lg:w-[260px] max-md:static max-md:w-full max-md:max-h-none max-md:overflow-y-visible">
+    <aside
+      className={cn(
+        'bg-white border border-[#e6e6e6] rounded-xl shrink-0',
+        layout === 'modal'
+          ? 'w-full max-h-[min(70vh,640px)] overflow-y-auto'
+          : 'sticky top-[120px] w-[300px] max-h-[calc(100vh-140px)] overflow-y-auto max-md:static max-md:w-full max-md:max-h-none max-md:overflow-y-visible',
+      )}
+    >
       <div className="flex justify-between items-start p-6 pb-4 border-b border-[#e6e6e6]">
         <div className="flex-1">
           <h3 className="text-xl font-extrabold text-[#212529] mb-1">Filter Results</h3>
@@ -164,61 +174,8 @@ export function DashQardsFilters({
       {/* Filter Options */}
       <div className="border-b border-[#f0f0f0] last:border-b-0">
         <div>
-          {/* Search Filter */}
-          <div className={openSections.search ? 'p-5 pt-0' : ''}>
-            <button
-              type="button"
-              onClick={() => toggleSection('search')}
-              className={`flex justify-between items-center w-full py-4 px-5 cursor-pointer transition-colors text-left -mx-0.5 rounded-md ${
-                openSections.search
-                  ? 'mb-3 hover:bg-primary-500/5'
-                  : 'bg-[#f8f9fa] hover:bg-[#f0f1f3]'
-              }`}
-            >
-              <h5 className="text-[15px] font-semibold text-[#212529]">Search</h5>
-              <div className="flex items-center gap-2">
-                {query.search && (
-                  <span className="text-xs text-[#28a745] font-semibold bg-[#d4edda] px-2 py-0.5 rounded-xl">
-                    Active
-                  </span>
-                )}
-                <span className="w-6 h-6 flex items-center justify-center text-grey-500 rounded-full transition-all duration-300 ease-in-out hover:bg-primary-500/10 hover:text-primary-500">
-                  <Icon
-                    icon="bi:chevron-down"
-                    className={`size-3 transition-transform duration-300 ease-in-out ${openSections.search ? '' : '-rotate-180'}`}
-                  />
-                </span>
-              </div>
-            </button>
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${openSections.search ? 'max-h-[100px] opacity-100' : 'max-h-0 opacity-0'}`}
-            >
-              <div className="relative">
-                <Icon
-                  icon="bi:search"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-grey-500 pointer-events-none"
-                />
-                <input
-                  type="text"
-                  value={query.search || ''}
-                  onChange={(e) => setQuery({ ...query, search: e.target.value || undefined })}
-                  placeholder="Search cards, vendors..."
-                  className="w-full pl-10 pr-3 py-2.5 border-2 border-[#e6e6e6] rounded-md text-sm font-medium bg-white transition-colors focus:outline-none focus:border-primary-500 placeholder:text-[#aaa]"
-                />
-                {query.search && (
-                  <button
-                    onClick={() => setQuery({ ...query, search: undefined })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-grey-500 hover:text-primary-500 transition-colors"
-                  >
-                    <Icon icon="bi:x" className="size-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
           {/* Vendors Filter */}
-          <div className={`border-t border-[#e8e8e8] ${openSections.vendors ? 'px-6 pb-5' : ''}`}>
+          <div className={`${openSections.vendors ? 'px-6 pb-5' : ''}`}>
             <button
               type="button"
               onClick={() => toggleSection('vendors')}

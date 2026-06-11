@@ -171,6 +171,8 @@ export type FeaturedCardProps = {
 
 export type FlattenedCartItem = {
   cart_id: string | number
+  /** Parent cart status — controls whether qty/remove are allowed (member API carts). */
+  cart_status?: string
   card_id: string | number
   product: string
   vendor_name?: string
@@ -215,6 +217,7 @@ export interface CardMetricsDetail {
   description?: string
   price: string
   base_price?: string
+  unredeemed_amount?: string | null
   markup_amount?: string
   service_fee?: string
   currency: string
@@ -223,6 +226,7 @@ export interface CardMetricsDetail {
   expiry_date?: string
   issue_date?: string
   vendor_id: number
+  gvid?: string
   created_at?: string
   updated_at?: string
   created_by?: number
@@ -235,7 +239,15 @@ export interface CardMetricsDetail {
   branch_name?: string
   branch_location?: string
   vendor_name?: string
-  images?: Array<{ file_url: string }>
+  images?: CardMetricsImage[]
+}
+
+export interface CardMetricsImage {
+  id?: string
+  file_url: string
+  file_name?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface CardMetricsDetailsResponse {

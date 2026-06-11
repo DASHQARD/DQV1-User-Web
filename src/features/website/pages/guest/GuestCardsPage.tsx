@@ -7,6 +7,10 @@ import { ROUTES } from '@/utils/constants'
 import { useGuestQueries } from '@/features/website/hooks/useGuestQueries'
 import { useRedemptionQueries } from '@/features/dashboard/hooks/redemption/useRedemptionQueries'
 import {
+  getAssignedCardDisplayAmount,
+  isGiftAssignedCard,
+  isSelfPurchasedAssignedCard,
+  mapAssignedCardToPurchasedCard,
   parseGuestAssignedCardsResponse,
   type GuestAssignedCard,
 } from '@/features/website/utils/guestAssignedCards'
@@ -71,7 +75,7 @@ function AssignedGuestCardTile({
   currency: string
   onRedeem: (card: GuestAssignedCard) => void
 }) {
-  const balance = card.balance ?? card.amount ?? card.price ?? 0
+  const balance = getAssignedCardDisplayAmount(card)
   const displayStatus = resolveCardDisplayStatus(card.status, card.expiry_date)
   const redeemable = isAssignedCardRedeemable(card)
   const canNavigate = isGuestAssignedCardRedeemNavigable(card)
@@ -113,7 +117,10 @@ export default function GuestCardsPage() {
   const { useGetGuestCardsService } = useGuestQueries()
   const { useGetGuestAssignedCardsService } = useRedemptionQueries()
   const { data: createdCards = [], isLoading: isLoadingCreated } = useGetGuestCardsService()
-  const { data: assignedResponse, isLoading: isLoadingAssigned } = useGetGuestAssignedCardsService()
+  const { data: assignedResponse, isLoading: isLoadingAssigned } = useGetGuestAssignedCardsService(
+    true,
+    { redemption_status: 'unredeemed' },
+  )
 
   const assignedPayload = useMemo(
     () => parseGuestAssignedCardsResponse(assignedResponse),
@@ -121,6 +128,38 @@ export default function GuestCardsPage() {
   )
   const assignedCards = assignedPayload.cards
   const assignedCurrency = assignedPayload.currency ?? 'GHS'
+
+  const purchasedFromAssigned = useMemo(
+    () =>
+      assignedCards
+        .filter(isSelfPurchasedAssignedCard)
+        .map(mapAssignedCardToPurchasedCard)
+        .filter((card): card is GuestCreatedCard => card != null),
+    [assignedCards],
+  )
+
+  const purchasedCards = useMemo(() => {
+    const seen = new Set<string>()
+    const merged: GuestCreatedCard[] = []
+
+    for (const card of [...createdCards, ...purchasedFromAssigned]) {
+      const key = getGuestCreatedCardRowKey(card)
+      if (seen.has(key)) continue
+      seen.add(key)
+      merged.push(card)
+    }
+
+    return merged.sort((a, b) => {
+      const aTime = Date.parse(a.purchased_at ?? a.created_at ?? '') || 0
+      const bTime = Date.parse(b.purchased_at ?? b.created_at ?? '') || 0
+      return bTime - aTime
+    })
+  }, [createdCards, purchasedFromAssigned])
+
+  const giftAssignedCards = useMemo(
+    () => assignedCards.filter(isGiftAssignedCard),
+    [assignedCards],
+  )
 
   const isLoading = isLoadingCreated || isLoadingAssigned
 
@@ -177,7 +216,7 @@ export default function GuestCardsPage() {
           <Text variant="p" className="text-gray-600 mb-6 text-sm">
             Gift cards from your guest checkout, including DashX, DashPass, DashGo, and DashPro.
           </Text>
-          {createdCards.length === 0 ? (
+          {purchasedCards.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-200 p-8">
               <EmptyState
                 image={EmptyStateImage}
@@ -194,7 +233,7 @@ export default function GuestCardsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {createdCards.map((card, index) => (
+              {purchasedCards.map((card, index) => (
                 <PurchasedGuestCardTile
                   key={getGuestCreatedCardRowKey(card, index)}
                   card={card}
@@ -222,7 +261,7 @@ export default function GuestCardsPage() {
               </Button>
             </Link>
           </div>
-          {assignedCards.length === 0 ? (
+          {giftAssignedCards.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
               <Text variant="p" className="text-gray-600">
                 No cards are assigned to your phone yet. When someone sends you a gift card, it will
@@ -231,7 +270,7 @@ export default function GuestCardsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {assignedCards.map((card: GuestAssignedCard, index) => {
+              {giftAssignedCards.map((card: GuestAssignedCard, index) => {
                 const key = String(card.guest_recipient_id ?? card.gift_card_id ?? index)
                 return (
                   <AssignedGuestCardTile

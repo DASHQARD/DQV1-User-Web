@@ -26,8 +26,18 @@ describe('auth logout services', () => {
     getState.mockReset()
   })
 
-  it('calls guest-auth/logout for guest sessions', async () => {
-    getState.mockReturnValue({ isGuestAuth: true })
+  it('calls guest-auth/session/logout for anonymous guest sessions', async () => {
+    getState.mockReturnValue({ isGuestAuth: true, getRefreshToken: () => null })
+    const { logout } = await import('../index')
+    const { axiosClient } = await import('@/libs')
+
+    await logout()
+    expect(axiosClient.post).toHaveBeenCalledWith('/guest-auth/session/logout', {})
+    expect(postMethod).not.toHaveBeenCalled()
+  })
+
+  it('calls guest-auth/logout for OTP-verified guest sessions', async () => {
+    getState.mockReturnValue({ isGuestAuth: true, getRefreshToken: () => 'refresh-token' })
     const { logout, guestAuthLogout } = await import('../index')
 
     await logout()

@@ -40,6 +40,7 @@ export const Input = React.forwardRef(
       innerClassName,
       prefix,
       suffix,
+      iconBefore,
       id,
       isRequired,
       ...otherProps
@@ -125,7 +126,7 @@ export const Input = React.forwardRef(
         >
           {prefix}
 
-          {props.iconBefore && <InputPrefixIconWrapper>{props.iconBefore}</InputPrefixIconWrapper>}
+          {iconBefore && <InputPrefixIconWrapper>{iconBefore}</InputPrefixIconWrapper>}
 
           {/* TEXT FIELD */}
           {!isTextarea ? (

@@ -118,7 +118,7 @@ export function useRedemptionVendorMobileMoney(enabled: boolean, isGuestAuth = f
     vendorPhoneName: memberLookup.accountName,
     momoResolveWarning: null,
     isVendorPhoneVerified: memberLookup.isVerified,
-    resolvedProvider: null as GuestMomoProvider | null,
+    resolvedProvider: memberLookup.resolvedProvider,
     resetVendorMobileMoney,
   }
 }

@@ -1,6 +1,7 @@
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores'
 import { isLocalGuestCartLineId } from '@/stores/guestLocalCart'
+import { useGuestOtpVerified } from '@/features/website/services/guestSession'
 import {
   getGuestCards,
   getGuestCardSingle,
@@ -8,18 +9,21 @@ import {
 } from '../services/cards'
 import type { GuestGetCardsParams } from '@/types/responses'
 import { parseGuestCreatedCardsResponse } from '../utils/guestCreatedCards'
-import { useGuestBagNotReady } from './useGuestBagNotReady'
-
-function useGuestApiQueriesEnabled(enabled = true) {
+function useGuestCartQueriesEnabled(enabled = true) {
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const isSessionReady = useAuthStore((state) => state.isSessionReady)
-  const guestBagNotReady = useGuestBagNotReady()
-  return enabled && isGuestAuth && isSessionReady && !guestBagNotReady
+  return enabled && isGuestAuth && isSessionReady
+}
+
+/** Post-purchase guest views (cards list) still require OTP-verified guest auth. */
+function useGuestPostPurchaseQueriesEnabled(enabled = true) {
+  const guestOtpVerified = useGuestOtpVerified()
+  return useGuestCartQueriesEnabled(enabled) && guestOtpVerified
 }
 
 export function useGuestQueries() {
   function useGetGuestCardsService(params?: GuestGetCardsParams, enabled = true) {
-    const guestQueriesEnabled = useGuestApiQueriesEnabled(enabled)
+    const guestQueriesEnabled = useGuestPostPurchaseQueriesEnabled(enabled)
     return useQuery({
       queryKey: ['guest-cards', params],
       queryFn: async () => parseGuestCreatedCardsResponse(await getGuestCards(params)),
@@ -31,7 +35,7 @@ export function useGuestQueries() {
     guestCardId: number | string | null | undefined,
     enabled = true,
   ) {
-    const guestQueriesEnabled = useGuestApiQueriesEnabled(enabled)
+    const guestQueriesEnabled = useGuestPostPurchaseQueriesEnabled(enabled)
     return useQuery({
       queryKey: ['guest-cards', 'single', guestCardId],
       queryFn: () => getGuestCardSingle({ guest_card_id: guestCardId! }),
@@ -44,7 +48,7 @@ export function useGuestQueries() {
     cartItemId: string | number | null | undefined,
     enabled = true,
   ) {
-    const guestQueriesEnabled = useGuestApiQueriesEnabled(enabled)
+    const guestQueriesEnabled = useGuestCartQueriesEnabled(enabled)
     return useQuery({
       queryKey: ['guest-cart-recipients', cartItemId],
       queryFn: () => getGuestCartRecipients({ cart_item_id: cartItemId! }),
@@ -68,10 +72,7 @@ export function useGuestRecipientsByCartItems(
   cartItemIds: Array<string | number>,
   enabled: boolean,
 ) {
-  const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
-  const isSessionReady = useAuthStore((state) => state.isSessionReady)
-  const guestBagNotReady = useGuestBagNotReady()
-  const guestQueriesEnabled = enabled && isGuestAuth && isSessionReady && !guestBagNotReady
+  const guestQueriesEnabled = useGuestCartQueriesEnabled(enabled)
 
   const queries = useQueries({
     queries: cartItemIds.map((cartItemId) => ({

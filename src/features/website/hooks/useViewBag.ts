@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useAuthStore } from '@/stores'
-import { useGuestLocalCartStore } from '@/stores/guestLocalCart'
 import { useCart } from './useCart'
 import { useGuestCart } from './useGuestCart'
 import { useViewBagMutations } from './useViewBagMutations'
@@ -10,14 +9,17 @@ import { usePersistedModalState, useToast } from '@/hooks'
 import { useMemberMustCompleteOnboardingForCustomCards } from './useMemberMustCompleteOnboardingForCustomCards'
 import { useGuestRecipientsByCartItems } from './useGuestQueries'
 import { MODAL_NAMES } from '@/utils/constants'
-import { getCardBackground, getImageUrl } from '@/utils/cardDisplay'
-import type { CartListResponse } from '@/types/responses'
+import { getCardBackground, getCardTypeName, resolveMediaUrl } from '@/utils/cardDisplay'
+import { filterShoppingCarts } from '@/features/website/utils/cartFilters'
 import type { FlattenedCartItem } from '@/types'
-import {
-  flattenLocalGuestCartLines,
-  localRecipientToDisplayRow,
-} from '@/features/website/utils/guestLocalCartDisplay'
+import { flattenServerCartItems } from '@/features/website/utils/guestLocalCartDisplay'
+import { isLocalGuestCartLineId } from '@/stores/guestLocalCart'
 import { getRecipientsForCartUnit, type CartRecipient } from '@/features/website/utils/cartRecipientUnits'
+import {
+  canRemoveCartItem,
+  canUpdateCartItemQuantity,
+  normalizeCartStatus,
+} from '@/features/website/utils/cartLifecycle'
 import {
   computeAmountCharged,
   computeServiceFee,
@@ -45,17 +47,8 @@ function resolveRecipientDeleteId(recipient: unknown): string | null {
 }
 
 export function useViewBag() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const { recipientActionsBlocked } = useMemberMustCompleteOnboardingForCustomCards()
-  const isLocalGuestCart = !isAuthenticated && !isGuestAuth
-
-  const localLines = useGuestLocalCartStore((s) => s.lines)
-  const removeLocalLine = useGuestLocalCartStore((s) => s.removeLine)
-  const updateLocalLineQuantity = useGuestLocalCartStore((s) => s.updateLineQuantity)
-  const removeLocalRecipientDraft = useGuestLocalCartStore((s) => s.removeRecipientDraft)
-  const getLocalSubtotal = useGuestLocalCartStore((s) => s.getSubtotal)
-  const getLocalTotalItems = useGuestLocalCartStore((s) => s.getTotalItems)
 
   const userCart = useCart()
   const guestCart = useGuestCart()
@@ -72,7 +65,7 @@ export function useViewBag() {
   const { useGetCartAllRecipientsService } = usePublicCatalogQueries()
   const { useServiceFeesConfig } = usePayments()
   const { data: serviceFeesConfig } = useServiceFeesConfig()
-  useGetCartAllRecipientsService(!isGuestAuth && !isLocalGuestCart)
+  useGetCartAllRecipientsService(!isGuestAuth)
 
   const modal = usePersistedModalState<{
     cart_item_id: string | number
@@ -106,45 +99,20 @@ export function useViewBag() {
   } | null>(null)
 
   const activeCartItems = useMemo(() => {
-    if (isLocalGuestCart) return []
     if (!Array.isArray(cartItems)) return []
-    return cartItems.filter((cart: CartListResponse) => cart.cart_status?.toLowerCase() !== 'paid')
-  }, [cartItems, isLocalGuestCart])
+    return filterShoppingCarts(cartItems)
+  }, [cartItems])
 
-  const apiDisplayCartItems = useMemo(() => {
-    if (isLocalGuestCart) return []
-    if (!Array.isArray(activeCartItems)) return []
-    const flattened: FlattenedCartItem[] = []
-    activeCartItems.forEach((cart: CartListResponse) => {
-      if (cart.items) {
-        const itemsArray = Array.isArray(cart.items) ? cart.items : [cart.items]
-        itemsArray.forEach((item: any) => {
-          flattened.push({
-            cart_id: cart.cart_id,
-            card_id: item.card_id,
-            product: item.product,
-            vendor_name: undefined,
-            type: item.type || 'dashx',
-            currency: 'GHS',
-            price: item.total_amount?.toString() || '0',
-            amount: item.total_amount?.toString() || '0',
-            images: item.images || [],
-            cart_item_id: item.cart_item_id,
-            total_quantity: item.total_quantity || 1,
-            recipients: item.recipients || [],
-          })
-        })
-      }
-    })
-    return flattened
-  }, [activeCartItems, isLocalGuestCart])
-
-  const localDisplayCartItems = useMemo(
-    () => (isLocalGuestCart ? flattenLocalGuestCartLines(localLines) : []),
-    [isLocalGuestCart, localLines],
+  const apiDisplayCartItems = useMemo(
+    () => flattenServerCartItems(activeCartItems),
+    [activeCartItems],
   )
 
-  const displayCartItems = isLocalGuestCart ? localDisplayCartItems : apiDisplayCartItems
+  const displayCartItems = apiDisplayCartItems
+
+  const checkoutCartStatus = activeCartItems[0]?.cart_status ?? 'active'
+
+  const hasFailedCheckoutCart = normalizeCartStatus(checkoutCartStatus) === 'failed'
 
   const guestCartItemIds = useMemo(
     () =>
@@ -163,18 +131,6 @@ export function useViewBag() {
 
   const recipientsByCartItem = useMemo(() => {
     const map: Record<string, any[]> = {}
-    if (isLocalGuestCart) {
-      displayCartItems.forEach((item) => {
-        const cid = item.cart_item_id
-        if (cid == null || cid === '') return
-        const key = `${cid}-${item.quantity_index ?? 0}`
-        const draft = localLines
-          .find((l) => l.lineId === cid)
-          ?.recipientDrafts.find((d) => d.quantity_index === (item.quantity_index ?? 0))
-        map[key] = draft ? [localRecipientToDisplayRow(draft)] : []
-      })
-      return map
-    }
     if (isGuestAuth) {
       displayCartItems.forEach((item) => {
         const cid = item.cart_item_id
@@ -189,10 +145,17 @@ export function useViewBag() {
     displayCartItems.forEach((item) => {
       const cid = item.cart_item_id
       if (cid == null || cid === '') return
-      map[String(cid)] = item.recipients ?? []
+      const recipients = (item.recipients ?? []) as CartRecipient[]
+      const qty = item.total_quantity || 1
+      const lineTotal = parseFloat(item.amount || '0')
+      const unitAmount = qty > 0 ? lineTotal / qty : lineTotal
+      for (let i = 0; i < qty; i++) {
+        const key = `${cid}-${i}`
+        map[key] = getRecipientsForCartUnit(recipients, i, unitAmount)
+      }
     })
     return map
-  }, [displayCartItems, isGuestAuth, isLocalGuestCart, localLines, guestRecipientsByCartItem])
+  }, [displayCartItems, isGuestAuth, guestRecipientsByCartItem])
 
   const subtotalFromApi = useMemo(
     () => activeCartItems.reduce((sum, cart) => sum + parseFloat(cart.total_amount || '0'), 0),
@@ -203,41 +166,46 @@ export function useViewBag() {
       activeCartItems.reduce((total, cart) => {
         if (!cart.items) return total
         const arr = Array.isArray(cart.items) ? cart.items : [cart.items]
-        return total + arr.length
+        return (
+          total +
+          arr.reduce((sum, item) => sum + (item.total_quantity || 1), 0)
+        )
       }, 0),
     [activeCartItems],
   )
 
-  const subtotal = isLocalGuestCart ? getLocalSubtotal() : subtotalFromApi
-  const totalItems = isLocalGuestCart ? getLocalTotalItems() : totalItemsFromApi
+  const subtotal = subtotalFromApi
+  const totalItems = totalItemsFromApi
   const serviceFeeRate = resolveServiceFeeRate(serviceFeesConfig?.serviceFeeRate)
   const serviceFee = computeServiceFee(subtotal, serviceFeeRate)
   const total = computeAmountCharged(subtotal, serviceFeeRate)
 
   const handleRemoveItem = useCallback(
-    async (cartItemId: string | number) => {
-      if (isLocalGuestCart) {
-        removeLocalLine(String(cartItemId))
+    async (cartItemId: string | number, cartStatus?: string) => {
+      if (isLocalGuestCartLineId(cartItemId)) return
+      if (!canRemoveCartItem(cartStatus)) {
+        toast.error('This cart can no longer be modified.')
         return
       }
       await deleteCartItemAsync(cartItemId)
     },
-    [deleteCartItemAsync, isLocalGuestCart, removeLocalLine],
+    [deleteCartItemAsync, toast],
   )
 
   const handleQuantityChange = useCallback(
-    (cartItemId: string | number, quantity: number) => {
-      if (isLocalGuestCart) {
-        updateLocalLineQuantity(String(cartItemId), quantity)
+    (cartItemId: string | number, quantity: number, cartStatus?: string) => {
+      if (isLocalGuestCartLineId(cartItemId)) return
+      if (quantity < 1) {
+        handleRemoveItem(cartItemId, cartStatus)
         return
       }
-      if (quantity < 1) {
-        handleRemoveItem(cartItemId)
+      if (!canUpdateCartItemQuantity(cartStatus)) {
+        toast.error('This cart can no longer be changed. Remove the item or start a new order.')
         return
       }
       updateCartItem({ cart_item_id: cartItemId, quantity })
     },
-    [updateCartItem, handleRemoveItem, isLocalGuestCart, updateLocalLineQuantity],
+    [updateCartItem, handleRemoveItem, toast],
   )
 
   const handleAddRecipient = useCallback(
@@ -270,8 +238,8 @@ export function useViewBag() {
         cardCurrency: item.currency || 'GHS',
         amount,
         quantity_index: item.quantity_index ?? 0,
-        recipient_id: isLocalGuestCart ? undefined : recipientId ?? undefined,
-        local_draft_id: isLocalGuestCart ? recipientId ?? undefined : undefined,
+        recipient_id: isLocalGuestCartLineId(item.cart_item_id) ? undefined : recipientId ?? undefined,
+        local_draft_id: isLocalGuestCartLineId(item.cart_item_id) ? recipientId ?? undefined : undefined,
         recipient_name: String(recipient.name ?? recipient.recipient_name ?? ''),
         recipient_phone: String(recipient.phone ?? recipient.recipient_phone ?? ''),
         recipient_email: String(recipient.email ?? recipient.recipient_email ?? ''),
@@ -279,7 +247,7 @@ export function useViewBag() {
         assign_to_self: Boolean(recipient.assign_to_self),
       })
     },
-    [modal, recipientActionsBlocked, isLocalGuestCart],
+    [modal, recipientActionsBlocked],
   )
 
   const handleDeleteRecipient = useCallback((recipient: any, lineId?: string) => {
@@ -299,12 +267,6 @@ export function useViewBag() {
   }, [])
 
   const confirmDeleteRecipient = useCallback(() => {
-    if (isLocalGuestCart && recipientToDelete?.lineId && recipientToDelete.draftId) {
-      removeLocalRecipientDraft(recipientToDelete.lineId, recipientToDelete.draftId)
-      setIsDeleteModalOpen(false)
-      setRecipientToDelete(null)
-      return
-    }
     const recipientId = resolveRecipientDeleteId(recipientToDelete)
     if (recipientId) {
       deleteRecipientMutation.mutate(recipientId, {
@@ -320,19 +282,19 @@ export function useViewBag() {
       setIsDeleteModalOpen(false)
       setRecipientToDelete(null)
     }
-  }, [recipientToDelete, deleteRecipientMutation, toast, isLocalGuestCart, removeLocalRecipientDraft])
+  }, [recipientToDelete, deleteRecipientMutation, toast])
 
   return {
-    isGuestCart: isLocalGuestCart,
-    isLoading: isLocalGuestCart ? false : isLoadingCart,
-    localLines,
-    removeGuestItem: removeLocalLine,
-    updateGuestQuantity: updateLocalLineQuantity,
+    isGuestCart: isGuestAuth,
+    isLoading: isLoadingCart,
+    localLines: [] as const,
+    removeGuestItem: async () => {},
+    updateGuestQuantity: () => {},
     displayCartItems,
     recipientsByCartItem,
     handleRemoveItem,
     handleQuantityChange,
-    isUpdating: isLocalGuestCart ? false : isUpdating,
+    isUpdating,
     handleAddRecipient,
     handleEditRecipient,
     handleDeleteRecipient,
@@ -346,8 +308,13 @@ export function useViewBag() {
     serviceFee,
     total,
     getCardBackground,
-    getImageUrl,
+    getCardTypeName,
+    getImageUrl: resolveMediaUrl,
     deleteRecipientMutation,
     recipientActionsBlocked,
+    canUpdateCartItemQuantity,
+    canRemoveCartItem,
+    hasFailedCheckoutCart,
+    checkoutCtaLabel: hasFailedCheckoutCart ? 'Retry payment' : 'Checkout',
   }
 }

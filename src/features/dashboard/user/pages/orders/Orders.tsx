@@ -80,7 +80,7 @@ export default function Orders() {
         total={estimatedTotal}
         query={query}
         setQuery={setQuery}
-        searchPlaceholder="Search by receipt"
+        searchPlaceholder="Search by receipt number eg. #DQI73628"
         printTitle="Orders"
         csvHeaders={paymentListCsvHeaders}
         filterBy={{

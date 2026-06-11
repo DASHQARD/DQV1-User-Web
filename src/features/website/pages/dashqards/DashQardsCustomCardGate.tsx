@@ -13,9 +13,7 @@ export function DashQardsCustomCardGate({ cardKind }: { cardKind: CardKind }) {
 
   const handleContinueAsGuest = () => {
     setGuestBrowsingAck()
-    toast.success(
-      `Continue customizing your ${cardKind} card below. We’ll verify your phone at checkout.`,
-    )
+    toast.success(`Continue customizing your ${cardKind} card below.`)
   }
 
   return (
@@ -27,8 +25,7 @@ export function DashQardsCustomCardGate({ cardKind }: { cardKind: CardKind }) {
         Sign in to create a custom {cardKind} card
       </Text>
       <p className="text-sm text-grey-500 mb-6 max-w-md mx-auto">
-        Sign in to your account, or continue as guest to customize and add to your bag. Phone
-        verification happens at checkout, not before you browse.
+        Sign in to your account, or continue as guest to customize and add to your bag.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center max-w-md mx-auto">
         <Button

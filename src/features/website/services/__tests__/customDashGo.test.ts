@@ -12,97 +12,90 @@ vi.mock('@/services/requests', () => ({
   deleteMethod: vi.fn(),
 }))
 
+vi.mock('@/features/website/services/guestSession', () => ({
+  ensureGuestSession: vi.fn().mockResolvedValue('guest-token'),
+}))
+
 import { createCustomDashGoAndAddToCart } from '../cards'
 
 describe('createCustomDashGoAndAddToCart', () => {
-  const setGuestCartId = vi.fn()
   const setGuestCartUuid = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('skips add-card when dash-go response already includes cart', async () => {
+  it('uses cart refs from POST /guest-cards/dash-go response (single call)', async () => {
+    const { ensureGuestSession } = await import('@/features/website/services/guestSession')
     postMethodMock.mockResolvedValueOnce({
       data: {
         status: 'success',
+        statusCode: 201,
         data: {
-          guest_card: { gift_card_id: 'card-uuid-1' },
-          gift_card: { id: 'card-uuid-1' },
-          cart: { cart_id: 'cart-uuid-1', cart_item_id: 'item-1' },
+          guest_card: { id: 'guest-card-1', gift_card_id: 'card-uuid-1', guest_phone: null },
+          gift_card: { id: 'card-uuid-1', card_id: 'G-GH-0001-01-000001' },
+          cart: { cart_id: 'cart-uuid-1', cart_item_id: 'item-1', total_amount: '100.00' },
         },
       },
     })
 
-    await createCustomDashGoAndAddToCart({
+    const result = await createCustomDashGoAndAddToCart({
       vendor_id: 'v1',
       vendorName: 'Serge',
       price: 100,
       redemption_branches: [{ branch_id: 'b1' }],
       isGuestAuth: true,
-      guestContact: {
-        guest_name: 'Jane',
-        guest_email: 'jane@example.com',
-      },
-      getGuestCartId: () => null,
-      getGuestCartUuid: () => null,
-      setGuestCartId,
       setGuestCartUuid,
     })
 
+    expect(ensureGuestSession).toHaveBeenCalled()
     expect(postMethodMock).toHaveBeenCalledTimes(1)
     expect(postMethodMock).toHaveBeenCalledWith(
       '/guest-cards/dash-go',
-      expect.objectContaining({ vendor_id: 'v1', guest_name: 'Jane' }),
+      expect.objectContaining({ vendor_id: 'v1', price: 100 }),
     )
+    const dashGoBody = postMethodMock.mock.calls[0]?.[1]
+    expect(dashGoBody).not.toHaveProperty('guest_phone')
     expect(setGuestCartUuid).toHaveBeenCalledWith('cart-uuid-1')
+    expect(result).toMatchObject({
+      cardId: 'card-uuid-1',
+      cartId: 'cart-uuid-1',
+      cartItemId: 'item-1',
+      cardDisplayRef: 'G-GH-0001-01-000001',
+    })
     expect(postMethodMock).not.toHaveBeenCalledWith('/guest-carts/add-card', expect.anything())
   })
 
-  it('uses guest-carts/add-card when dash-go response has no cart', async () => {
-    postMethodMock
-      .mockResolvedValueOnce({
+  it('throws when dash-go response is missing cart refs', async () => {
+    postMethodMock.mockResolvedValueOnce({
+      data: {
         data: {
-          data: {
-            gift_card: { id: 'card-uuid-1' },
-          },
+          gift_card: { id: 'card-uuid-1' },
         },
-      })
-      .mockResolvedValueOnce({
-        data: { cart_id: 'cart-uuid-1' },
-      })
-
-    await createCustomDashGoAndAddToCart({
-      vendor_id: 'v1',
-      vendorName: 'Serge',
-      price: 100,
-      redemption_branches: [{ branch_id: 'b1' }],
-      isGuestAuth: true,
-      guestContact: {
-        guest_name: 'Jane',
-        guest_email: 'jane@example.com',
       },
-      getGuestCartId: () => null,
-      getGuestCartUuid: () => null,
-      setGuestCartId,
-      setGuestCartUuid,
     })
 
-    expect(postMethodMock).toHaveBeenCalledWith(
-      '/guest-cards/dash-go',
-      expect.objectContaining({ vendor_id: 'v1', guest_name: 'Jane', guest_email: 'jane@example.com' }),
-    )
-    const dashGoBody = postMethodMock.mock.calls.find((c) => c[0] === '/guest-cards/dash-go')?.[1]
-    expect(dashGoBody).not.toHaveProperty('guest_phone')
-    expect(postMethodMock).toHaveBeenCalledWith(
-      '/guest-carts/add-card',
-      expect.objectContaining({ card_id: 'card-uuid-1' }),
-    )
-    expect(postMethodMock).not.toHaveBeenCalledWith('/carts/create-dashgo', expect.anything())
+    await expect(
+      createCustomDashGoAndAddToCart({
+        vendor_id: 'v1',
+        vendorName: 'Serge',
+        price: 100,
+        redemption_branches: [{ branch_id: 'b1' }],
+        isGuestAuth: true,
+        setGuestCartUuid,
+      }),
+    ).rejects.toThrow(/cart references are missing/)
   })
 
-  it('uses carts/create-dashgo for members', async () => {
-    postMethodMock.mockResolvedValueOnce({ data: { id: 99 } })
+  it('uses carts/create-dashgo for members without a second add-to-cart call', async () => {
+    postMethodMock.mockResolvedValueOnce({
+      data: {
+        data: {
+          card: { id: 'card-uuid-1' },
+          cart_id: 'cart-1',
+        },
+      },
+    })
 
     await createCustomDashGoAndAddToCart({
       vendor_id: 'v1',
@@ -110,15 +103,15 @@ describe('createCustomDashGoAndAddToCart', () => {
       price: 50,
       redemption_branches: [],
       isGuestAuth: false,
-      getGuestCartId: () => null,
-      setGuestCartId,
       setGuestCartUuid,
     })
 
+    expect(postMethodMock).toHaveBeenCalledTimes(1)
     expect(postMethodMock).toHaveBeenCalledWith(
       '/carts/create-dashgo',
       expect.objectContaining({ vendor_id: 'v1', price: 50 }),
     )
     expect(postMethodMock).not.toHaveBeenCalledWith('/guest-cards/dash-go', expect.anything())
+    expect(postMethodMock).not.toHaveBeenCalledWith('/carts', expect.anything())
   })
 })

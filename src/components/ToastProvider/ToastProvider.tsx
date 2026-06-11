@@ -50,7 +50,7 @@ export function ToastProvider({ children }: Readonly<{ children: React.ReactNode
   )
 
   const variantStyles: Record<ToastNotificationType, string> = {
-    success: 'bg-success border border-success text-[#27303a]',
+    success: 'bg-success border border-success text-white',
     error: 'bg-error-500 text-white',
     info: 'bg-neutral-grey-500 text-white',
   }
@@ -62,21 +62,27 @@ export function ToastProvider({ children }: Readonly<{ children: React.ReactNode
   }
 
   const variantIconStyles: Record<ToastNotificationType, string> = {
-    success: 'text-[#039855]',
+    success: 'text-white',
     error: 'text-white',
     info: 'text-white',
   }
 
   const variantTextStyles: Record<ToastNotificationType, string> = {
-    success: 'text-[#27303a]',
+    success: 'text-white',
     error: 'text-white',
     info: 'text-white',
   }
 
   const variantMessageStyles: Record<ToastNotificationType, string> = {
-    success: 'text-[#2f3f53]',
+    success: 'text-white',
     error: 'text-white',
     info: 'text-white',
+  }
+
+  const variantCloseStyles: Record<ToastNotificationType, string> = {
+    success: 'text-white/80 hover:text-white',
+    error: 'text-white/80 hover:text-white',
+    info: 'text-white/80 hover:text-white',
   }
   return (
     <>
@@ -139,7 +145,10 @@ export function ToastProvider({ children }: Readonly<{ children: React.ReactNode
                         data-testid="close-toast"
                         type="button"
                       >
-                        <Icon icon="hugeicons:cancel-01" className="text-lg text-gray-400" />
+                        <Icon
+                          icon="hugeicons:cancel-01"
+                          className={cn('text-lg', variantCloseStyles[type])}
+                        />
                       </button>
                     </motion.li>
                   )

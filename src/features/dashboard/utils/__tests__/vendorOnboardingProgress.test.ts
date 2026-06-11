@@ -39,9 +39,19 @@ describe('hasVendorPaymentDetails', () => {
 })
 
 describe('getVendorOnboardingProgress', () => {
-  it('uses 4 steps for regular vendors including payment details', () => {
+  it('locks payment until the vendor account is verified', () => {
     const result = getVendorOnboardingProgress({
-      userProfile: baseProfile as any,
+      userProfile: { ...baseProfile, status: 'inactive' } as any,
+      branchesCount: 0,
+      isCorporateSwitchedToVendor: false,
+    })
+    expect(result.nextStep).toBeNull()
+    expect(result.steps.find((step) => step.id === 'payment')?.locked).toBe(true)
+  })
+
+  it('uses 4 steps for regular vendors including payment details when verified', () => {
+    const result = getVendorOnboardingProgress({
+      userProfile: { ...baseProfile, status: 'verified' } as any,
       branchesCount: 0,
       isCorporateSwitchedToVendor: false,
     })
@@ -53,9 +63,9 @@ describe('getVendorOnboardingProgress', () => {
     expect(pending).toEqual(['payment', 'branch'])
   })
 
-  it('uses 4 steps for corporate super admin switched to vendor', () => {
+  it('uses 4 steps for corporate super admin switched to vendor when verified', () => {
     const result = getVendorOnboardingProgress({
-      userProfile: baseProfile as any,
+      userProfile: { ...baseProfile, status: 'verified' } as any,
       branchesCount: 0,
       isCorporateSwitchedToVendor: true,
     })

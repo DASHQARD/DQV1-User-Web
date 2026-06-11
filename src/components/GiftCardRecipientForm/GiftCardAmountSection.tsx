@@ -22,14 +22,15 @@ export function GiftCardAmountSection<T extends FieldValues>({
   className,
 }: GiftCardAmountSectionProps<T>) {
   return (
-    <section className={`border-b border-gray-100 px-10 py-8 ${className ?? ''}`}>
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold text-[#212529]">Gift Card Amount</h3>
-        <p className="text-sm text-gray-500">
-          Set an amount up to {currency} 10,000 per recipient
-        </p>
-      </div>
-      <div className="max-w-md space-y-4">
+    <section className={`border-b border-gray-100 px-4 py-6 sm:px-6 sm:py-8 md:px-10 ${className ?? ''}`}>
+      <div className="mx-auto w-full max-w-2xl">
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold text-[#212529]">Gift Card Amount</h3>
+          <p className="text-sm text-gray-500">
+            Set an amount up to {currency} 10,000 per recipient
+          </p>
+        </div>
+        <div className="max-w-md space-y-4">
         <GiftCardPriceFormField
           control={control}
           name={name}
@@ -58,6 +59,7 @@ export function GiftCardAmountSection<T extends FieldValues>({
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <Icon icon="bi:info-circle" className="size-4" />
           Amount limit: {currency} 10,000 per recipient
+        </div>
         </div>
       </div>
     </section>

@@ -28,6 +28,7 @@ vi.mock('@/features/dashboard/vendor/hooks', async () => {
         },
       })
       return {
+        canManagePayment: true,
         form,
         paymentMethod: 'mobile_money' as const,
         mobileMoneyProviders: [{ label: 'MTN', value: 'mtn' }],
@@ -35,6 +36,10 @@ vi.mock('@/features/dashboard/vendor/hooks', async () => {
         phoneCountries: [],
         onSubmit: vi.fn(),
         isPending: false,
+        momoLookup: { isResolving: false, accountName: null, error: null },
+        bankLookup: { isResolving: false, accountName: null, error: null },
+        handleBankSelect: vi.fn(),
+        selectedBankCode: '',
       }
     },
   }

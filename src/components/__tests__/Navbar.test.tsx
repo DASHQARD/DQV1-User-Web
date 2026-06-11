@@ -129,12 +129,12 @@ describe('Navbar', () => {
   it('renders cart and menu buttons', () => {
     renderWithProviders(<Navbar />)
     expect(screen.getByRole('button', { name: 'Search' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Cart' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Cart' })).toHaveLength(2)
     expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument()
   })
 
   describe('mobile menu', () => {
-    it('opens mobile menu and shows nav items and Login/Register when not authenticated', async () => {
+    it('opens mobile menu and shows nav items and guest checkout CTAs when not authenticated', async () => {
       const user = userEvent.setup()
       const { container } = renderWithProviders(<Navbar />)
       await user.click(screen.getByRole('button', { name: 'Menu' }))
@@ -147,7 +147,13 @@ describe('Navbar', () => {
       expect(mobileMenu!.querySelector('a[href="/vendors"]')).toHaveTextContent('Vendors')
       expect(mobileMenu!.querySelector('a[href="/redeem"]')).toHaveTextContent('Redeem')
       expect(mobileMenu!.querySelector('a[href="/contact"]')).toHaveTextContent('Contact')
+      expect(mobileMenu!.querySelector('a[href="/faq"]')).toHaveTextContent('FAQ')
 
+      expect(screen.getByText('Shop and checkout as a guest — no account required.')).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /Browse gift cards/i })).toHaveAttribute(
+        'href',
+        '/dashqards',
+      )
       expect(mobileMenu!.querySelector('a[href="/auth/login"]')).toHaveTextContent('Login')
       expect(mobileMenu!.querySelector('a[href="/auth/register"]')).toHaveTextContent('Sign up')
     })
@@ -155,6 +161,7 @@ describe('Navbar', () => {
     it('shows Account section and Sign Out when authenticated', async () => {
       vi.mocked(useAuthStore).mockReturnValue({
         isAuthenticated: true,
+        isGuestAuth: false,
         user: { fullname: 'Jane Doe', email: 'jane@example.com' },
         logout: mockLogout,
       } as any)
@@ -165,6 +172,37 @@ describe('Navbar', () => {
       expect(screen.getByText('Jane Doe')).toBeInTheDocument()
       expect(screen.getByText('Account')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Sign Out' })).toBeInTheDocument()
+    })
+
+    it('shows login and register for guest users in mobile menu', async () => {
+      vi.mocked(useAuthStore).mockReturnValue({
+        isAuthenticated: true,
+        isGuestAuth: true,
+        user: { fullname: 'Abeeku Djokoto', email: 'guest@example.com' },
+        logout: mockLogout,
+      } as any)
+      const user = userEvent.setup()
+      renderWithProviders(<Navbar />)
+      await user.click(screen.getByRole('button', { name: 'Menu' }))
+
+      expect(screen.queryByText('Abeeku Djokoto')).not.toBeInTheDocument()
+      expect(screen.queryByText('Account')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Sign Out' })).not.toBeInTheDocument()
+      expect(screen.getAllByRole('link', { name: 'Login' }).length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByRole('link', { name: 'Sign up' })).toBeInTheDocument()
+    })
+
+    it('shows login and register for guest users on desktop', () => {
+      vi.mocked(useAuthStore).mockReturnValue({
+        isAuthenticated: true,
+        isGuestAuth: true,
+        user: { fullname: 'Abeeku Djokoto', email: 'guest@example.com' },
+        logout: mockLogout,
+      } as any)
+      renderWithProviders(<Navbar />)
+
+      expect(screen.getByRole('link', { name: 'Login' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Register' })).toBeInTheDocument()
     })
 
     it('mobile Search button in navbar navigates to DASHQARDS', async () => {
@@ -186,7 +224,8 @@ describe('Navbar', () => {
     it('Cart button calls openCart', async () => {
       const user = userEvent.setup()
       renderWithProviders(<Navbar />)
-      await user.click(screen.getByRole('button', { name: 'Cart' }))
+      const [desktopCartButton] = screen.getAllByRole('button', { name: 'Cart' })
+      await user.click(desktopCartButton)
       expect(mockOpenCart).toHaveBeenCalled()
     })
   })

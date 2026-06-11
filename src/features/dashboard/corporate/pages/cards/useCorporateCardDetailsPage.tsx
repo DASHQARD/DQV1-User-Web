@@ -18,6 +18,12 @@ import DashxBg from '@/assets/svgs/Dashx_bg.svg'
 import DashproBg from '@/assets/svgs/dashpro_bg.svg'
 import DashpassBg from '@/assets/images/dashpass_bg.png'
 import DashgoBg from '@/assets/svgs/dashgo_bg.svg'
+import { resolveMediaUrl } from '@/utils/cardDisplay'
+import {
+  getCardMetricsDisplayBalance,
+  parseCardMetricsUnredeemedBalance,
+  shouldShowCardMetricsBalance,
+} from '@/utils/cardMetricsDisplay'
 
 function getCardBackground(type: CardType): string {
   switch (type) {
@@ -51,9 +57,11 @@ export interface CardDisplayItem {
   branch_location?: string
   vendor_id?: string
   vendor_name?: string
+  gvid?: string
   currency: string
   images?: Array<{ file_url: string }>
   isAggregated?: boolean
+  showBalance?: boolean
 }
 
 export function useCorporateCardDetailsPage() {
@@ -209,7 +217,7 @@ export function useCorporateCardDetailsPage() {
     if (!Array.isArray(cards) || cards.length === 0) return []
     if (validCardType === 'dashpro') {
       const totalAmount = (cards as Array<{ unredeemed_amount?: string }>).reduce(
-        (sum, c) => sum + parseFloat(c.unredeemed_amount || '0'),
+        (sum, c) => sum + parseCardMetricsUnredeemedBalance(c),
         0,
       )
       return [
@@ -223,11 +231,20 @@ export function useCorporateCardDetailsPage() {
           currency: 'GHS',
           card_type: 'dashpro',
           isAggregated: true,
+          showBalance: true,
         },
       ]
     }
+    const showBalance = shouldShowCardMetricsBalance(validCardType)
     return (cards as unknown as Array<Record<string, unknown>>).map((card) => {
-      const price = parseFloat(String(card.price || card.base_price || '0'))
+      const displayBalance = getCardMetricsDisplayBalance(
+        {
+          type: String(card.type ?? ''),
+          unredeemed_amount: card.unredeemed_amount as string | null | undefined,
+        },
+        validCardType,
+      )
+      const balance = displayBalance ?? 0
       return {
         id: card.id,
         card_id: (card.card_id as string | number) || card.id,
@@ -238,9 +255,9 @@ export function useCorporateCardDetailsPage() {
           (card.name as string) ||
           `${CARD_DISPLAY_NAMES[validCardType]} Card`,
         card_type: validCardType,
-        balance: price,
-        amount: price,
-        card_price: price,
+        balance,
+        amount: balance,
+        card_price: balance,
         status: (card.status as string) || 'active',
         expiry_date: card.expiry_date as string | undefined,
         branch_id: card.branch_id as number | undefined,
@@ -248,8 +265,10 @@ export function useCorporateCardDetailsPage() {
         branch_location: card.branch_location as string | undefined,
         vendor_id: card.vendor_id as number | undefined,
         vendor_name: card.vendor_name as string | undefined,
+        gvid: card.gvid as string | undefined,
         currency: (card.currency as string) || 'GHS',
         images: (card.images as Array<{ file_url: string }>) || [],
+        showBalance,
       } as CardDisplayItem
     })
   }, [validCardType, cardMetricsResponse, isLoadingCards])
@@ -257,8 +276,9 @@ export function useCorporateCardDetailsPage() {
   const cardImageUrls = useMemo(() => {
     const map: Record<string, string> = {}
     filteredCards.forEach((card) => {
-      if (card.images && card.images.length > 0 && card.images[0].file_url) {
-        map[String(card.id ?? card.card_id)] = card.images[0].file_url
+      const fileUrl = card.images?.[0]?.file_url
+      if (fileUrl) {
+        map[String(card.id ?? card.card_id)] = resolveMediaUrl(fileUrl) ?? fileUrl
       }
     })
     return map
@@ -285,6 +305,7 @@ export function useCorporateCardDetailsPage() {
           vendor_id: card.vendor_id,
           branch_id: card.branch_id,
           card_id: card.card_id ?? card.id,
+          gvid: card.gvid,
         }),
       )
     },

@@ -16,7 +16,12 @@ import type { VendorDetailsFormProps } from '@/types'
 import { BUSINESS_INDUSTRY_OPTIONS, BUSINESS_TYPE_OPTIONS } from '@/utils/constants'
 import { useVendorDetailsForm } from './useVendorDetailsForm'
 
-export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorDetailsFormProps) {
+export function VendorDetailsForm({
+  onSubmit,
+  onCancel,
+  corporateUser,
+  isSubmitting = false,
+}: VendorDetailsFormProps) {
   const { form, checkboxVendorDetailsSameAsCorporate, isSubmitDisabled } =
     useVendorDetailsForm(corporateUser)
 
@@ -270,7 +275,8 @@ export function VendorDetailsForm({ onSubmit, onCancel, corporateUser }: VendorD
             <Icon icon="hugeicons:arrow-left-01" className="text-gray-600" />
           </button>
           <Button
-            disabled={isSubmitDisabled}
+            disabled={isSubmitDisabled || isSubmitting}
+            loading={isSubmitting}
             type="button"
             onClick={form.handleSubmit(onSubmit)}
             size="medium"

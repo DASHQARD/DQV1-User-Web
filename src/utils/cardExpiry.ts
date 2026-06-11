@@ -57,6 +57,26 @@ export function isCatalogCardPurchasable(card: CardExpiryFields): boolean {
   return true
 }
 
+export type MyGiftCardTabFields = CardExpiryFields & {
+  is_activated?: boolean
+  balance?: number
+  amount?: number
+  redeemed?: boolean
+  /** Count cards (DashX / DashPass) have no monetary balance on metrics/details. */
+  showBalance?: boolean
+}
+
+/** User My Cards tabs: active = redeemable now; inactive = expired, used, or deactivated. */
+export function isMyGiftCardActive(card: MyGiftCardTabFields): boolean {
+  if (card.is_activated === false) return false
+  if (card.redeemed === true) return false
+  if (!isAssignedCardRedeemable(card)) return false
+  if (card.showBalance === false) return true
+  const balance = card.balance ?? card.amount
+  if (balance != null && Number(balance) <= 0) return false
+  return true
+}
+
 /** Recipient / assigned cards eligible for redemption selection. */
 export function isAssignedCardRedeemable(
   card: CardExpiryFields & { redeemed?: boolean },

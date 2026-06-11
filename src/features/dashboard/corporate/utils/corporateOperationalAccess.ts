@@ -16,6 +16,9 @@ export function isCorporateManagementApiEnabled(
   if (!userProfile) return false
 
   const userType = userProfile.user_type
+  if (userType === 'branch' || userType === 'vendor' || userType === 'corporate_vendor') {
+    return false
+  }
   if (userType !== 'corporate super admin' && userType !== 'corporate admin') {
     return false
   }

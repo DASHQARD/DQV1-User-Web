@@ -101,19 +101,27 @@ export const Select = React.memo(
         ) : null}
 
         {/* INNER */}
-        <Root value={value ?? ''} onValueChange={handleValueChange} name={name} disabled={disabled}>
+        <Root
+          value={value ? value : undefined}
+          onValueChange={handleValueChange}
+          name={name}
+          disabled={disabled}
+        >
           <Trigger
             data-testid={`select-${label ?? ''}`}
             data-value={value}
             className={cn(
-              'flex h-12 min-h-12 w-full items-center justify-between rounded-lg border border-gray-300 bg-transparent px-3 text-sm outline-none disabled:cursor-not-allowed',
+              'flex h-12 min-h-12 w-full items-center justify-between rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-grey-600 outline-none disabled:cursor-not-allowed',
               'focus:border-primary-400 data-[state=open]:border-primary-400',
               { 'border-red-500': !!error },
               innerClassName,
             )}
             onBlur={onElementBlur}
           >
-            <Value placeholder={placeholder}>
+            <Value
+              placeholder={placeholder}
+              className="truncate text-grey-600 data-[placeholder]:text-gray-300"
+            >
               {renderValue({ value, currentOption, placeholder })}
             </Value>
             <div>
@@ -176,7 +184,7 @@ export const Select = React.memo(
 
 function DefaultValue({ value, currentOption, placeholder }: DefaultValueProps) {
   if (!value) {
-    return <span className="text-gray-300">{placeholder}</span>
+    return null
   }
-  return <span className="text-grey-600">{currentOption?.label}</span>
+  return <span>{currentOption?.label ?? placeholder}</span>
 }

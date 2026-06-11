@@ -5,6 +5,7 @@ import { assignCardToRecipients } from '@/features/dashboard/corporate/services'
 import { usePersistedModalState, useToast } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { corporateMutations, corporateQueries } from '@/features/dashboard/corporate/hooks'
+import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
 import type { RecipientRow } from '@/types'
 import type { CardRecipientAssignment } from '@/types/corporate/recipients'
 import type { DropdownOption } from '@/types'
@@ -64,11 +65,8 @@ export function useBulkPurchaseEmployeesModal() {
   const [dashGoAmount, setDashGoAmount] = useState('')
   const [activeTab, setActiveTab] = useState<'vendors' | 'dashpro'>('vendors')
 
-  const {
-    useGetAllRecipientsService,
-    useGetAllVendorsManagementService,
-    useGetCartsService,
-  } = corporateQueries()
+  const { useGetAllRecipientsService, useGetCartsService } = corporateQueries()
+  const { usePublicVendorsService } = usePublicCatalogQueries()
 
   const {
     useUploadBulkRecipientsService,
@@ -86,12 +84,16 @@ export function useBulkPurchaseEmployeesModal() {
   }, [existingRecipientsResponse])
   const hasExistingRecipients = isOpen && existingRecipientsList.length > 0
 
-  const { data: vendorsResponse, isLoading: isLoadingVendors } = useGetAllVendorsManagementService({
-    limit: 100,
-  })
-  const vendorList = useMemo(() => {
+  const { data: vendorsResponse, isLoading: isLoadingVendors } = usePublicVendorsService(
+    { limit: 100 },
+    isOpen,
+  )
+  const vendorList = useMemo((): any[] => {
     if (!vendorsResponse) return []
-    return Array.isArray(vendorsResponse?.data) ? vendorsResponse.data : []
+    if (Array.isArray(vendorsResponse)) return vendorsResponse
+    const wrapped = vendorsResponse as { data?: any[] }
+    if (Array.isArray(wrapped.data)) return wrapped.data
+    return []
   }, [vendorsResponse])
   const vendorOptions: DropdownOption[] = useMemo(
     () =>

@@ -47,6 +47,7 @@ function CreateVendorAccountContent({
   const {
     step,
     methods,
+    isSubmitting,
     goToPreviousStep,
     handleStep1Complete,
     handleProfileSubmit,
@@ -83,6 +84,7 @@ function CreateVendorAccountContent({
               onSubmit={handleVendorDetailsSubmit}
               onCancel={goToPreviousStep}
               corporateUser={corporateUser}
+              isSubmitting={isSubmitting}
             />
           )}
         </section>

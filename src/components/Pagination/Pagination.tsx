@@ -48,6 +48,10 @@ export function Pagination({
   const hasNextPage = externalHasNextPage !== undefined ? externalHasNextPage : page < totalPages
   const hasPreviousPage = externalHasPreviousPage !== undefined ? externalHasPreviousPage : page > 1
 
+  if (!hasNextPage && !hasPreviousPage) {
+    return null
+  }
+
   // Check if using cursor-based pagination (when callbacks are provided)
   const isCursorBasedPagination =
     onNextPage !== undefined || onPreviousPage !== undefined || onSetAfter !== undefined

@@ -52,7 +52,7 @@ export function InviteAdmin() {
 
   return (
     <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#f1f3f4] p-6">
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-[600px]">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto flex w-full max-w-[600px] flex-col gap-6">
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="First Name"

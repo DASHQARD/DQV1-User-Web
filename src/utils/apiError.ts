@@ -41,5 +41,14 @@ export function getApiErrorMessage(error: unknown, fallback = 'Something went wr
 
 /** True when the API rejected a guest cart amount above the guest threshold (e.g. GHS 1,000). */
 export function isGuestAmountThresholdMessage(message: string): boolean {
-  return /guest transaction threshold|maximum allowed/i.test(message)
+  return (
+    /guest transaction threshold|maximum allowed|exceeds guest transaction threshold|pending cards amount/i.test(
+      message,
+    )
+  )
+}
+
+/** True when the API rejected a card price below the platform minimum. */
+export function isGuestCardMinimumPriceMessage(message: string): boolean {
+  return /card price must be at least/i.test(message)
 }

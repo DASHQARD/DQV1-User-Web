@@ -75,14 +75,6 @@ export const deleteVendorManagement = async (id: number | string): Promise<any> 
   return await deleteMethod(`${VENDOR_MANAGEMENT_BASE}/vendor/${id}`)
 }
 
-/** PATCH /vendor-management/status */
-export const updateVendorStatusManagement = async (data: {
-  vendor_account_id: number
-  status: string
-}): Promise<any> => {
-  return await patchMethod(`${VENDOR_MANAGEMENT_BASE}/status`, data)
-}
-
 /** PATCH /vendor-management/remove-vendor-admin */
 export const removeVendorAdminManagement = async (data: {
   vendor_user_id: number

@@ -1,21 +1,23 @@
 import { z } from 'zod'
 import {
+  getOptionalEmailSchema,
   getRequiredEmailSchema,
   getRequiredInternationalPhoneSchema,
   getRequiredStringSchema,
 } from './shared'
 
 export const UserInfoSchema = z.object({
-  full_name: getRequiredStringSchema('Full name'),
+  first_name: getRequiredStringSchema('First name'),
+  last_name: getRequiredStringSchema('Last name'),
   email: getRequiredEmailSchema('Email'),
   phone_number: getRequiredInternationalPhoneSchema('Phone number'),
 })
 
-/** Guest checkout — first/last name, email, and phone required. */
+/** Guest checkout sender details — collected at payment (POST /payments/guest/checkout). */
 export const GuestUserInfoSchema = z.object({
   first_name: getRequiredStringSchema('First name'),
   last_name: getRequiredStringSchema('Last name'),
-  email: getRequiredEmailSchema('Email'),
+  email: getOptionalEmailSchema(),
   phone_number: getRequiredInternationalPhoneSchema('Phone number'),
 })
 

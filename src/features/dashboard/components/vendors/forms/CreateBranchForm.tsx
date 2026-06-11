@@ -27,6 +27,7 @@ export default function CreateBranchForm() {
     isFormDisabled,
     missingVendorId,
     onSubmit,
+    isSubmitting,
   } = useCreateBranchForm()
 
   if (missingVendorId) {
@@ -283,7 +284,8 @@ export default function CreateBranchForm() {
         <Button
           type="submit"
           variant="secondary"
-          disabled={isFormDisabled}
+          disabled={isFormDisabled || isSubmitting}
+          loading={isSubmitting}
           className="w-full"
         >
           Create Branch

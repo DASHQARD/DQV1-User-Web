@@ -39,6 +39,14 @@ describe('Pagination', () => {
     expect(onNextPage).toHaveBeenCalled()
   })
 
+  it('renders nothing when there is no next or previous page', () => {
+    renderWithProviders(
+      <Pagination limit={10} total={9} hasNextPage={false} hasPreviousPage={false} />,
+    )
+    expect(screen.queryByRole('button', { name: /prev/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /next/i })).not.toBeInTheDocument()
+  })
+
   it('calls onPreviousPage when Prev is clicked and onPreviousPage provided', async () => {
     const user = userEvent.setup()
     const onPreviousPage = vi.fn()

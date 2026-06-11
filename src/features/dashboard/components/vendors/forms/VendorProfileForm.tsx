@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { Controller } from 'react-hook-form'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
@@ -13,6 +13,8 @@ import {
   PhoneFormatHint,
 } from '@/components'
 import { EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
+import { isDialCodeOnlyPhone } from '@/utils/schemas/shared'
+import { getVisibleFieldError } from '@/utils/showFieldError'
 import { CORPORATE_ONBOARDING_ID_TYPE_OPTIONS } from '@/utils/constants/idType'
 import { Icon } from '@/libs'
 import type { VendorProfileFormProps } from '@/types'
@@ -27,6 +29,8 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
     isPassport,
     isNationalId,
   } = useVendorProfileForm(corporateUser)
+  const phoneDialCodeSynced = useRef(false)
+  const phoneError = getVisibleFieldError(form, 'phone')
   const dobMaxDate = useMemo(() => {
     const today = new Date()
     const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
@@ -105,16 +109,26 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
             <Controller
               control={form.control}
               name="phone"
-              render={({ field: { value, onChange } }) => (
+              render={({ field: { value, onChange, onBlur, ref } }) => (
                 <div className="col-span-full">
                   <BasePhoneInput
+                    ref={ref}
                     label="Vendor phone number"
                     isRequired
                     placeholder={EXAMPLE_PHONE_PLACEHOLDER}
                     options={countries}
                     selectedVal={value ?? ''}
-                    handleChange={onChange}
-                    error={form.formState.errors.phone?.message}
+                    handleChange={(phone) => {
+                      const normalized = phone?.trim() ?? ''
+                      if (!phoneDialCodeSynced.current && isDialCodeOnlyPhone(normalized)) {
+                        phoneDialCodeSynced.current = true
+                        return
+                      }
+                      phoneDialCodeSynced.current = true
+                      onChange(phone)
+                    }}
+                    onBlur={onBlur}
+                    error={phoneError}
                     hint={<PhoneFormatHint />}
                     disabled={checkboxProfileSameAsCorporate}
                   />

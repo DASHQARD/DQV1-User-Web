@@ -86,3 +86,11 @@ export async function refreshStoredAccessToken(): Promise<string> {
 
   return accessToken
 }
+
+export function isGuestSessionExpiredMessage(message: unknown): boolean {
+  const normalized = String(message ?? '').toLowerCase()
+  return (
+    normalized.includes('session expired') ||
+    normalized.includes('please start a new session')
+  )
+}

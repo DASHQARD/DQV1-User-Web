@@ -12,14 +12,11 @@ import {
 } from '../services/cards'
 import { useToast } from '@/hooks'
 import { useGuestQueries } from './useGuestQueries'
-import { useGuestBagNotReady } from './useGuestBagNotReady'
-
 export function useGuestCart(query?: Record<string, any>) {
   const queryClient = useQueryClient()
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const isSessionReady = useAuthStore((state) => state.isSessionReady)
-  const guestBagNotReady = useGuestBagNotReady()
-  const guestCartQueryEnabled = isGuestAuth && isSessionReady && !guestBagNotReady
+  const guestCartQueryEnabled = isGuestAuth && isSessionReady
   const getGuestCartId = useAuthStore((state) => state.getGuestCartId)
   const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
   const setGuestCartUuid = useAuthStore((state) => state.setGuestCartUuid)

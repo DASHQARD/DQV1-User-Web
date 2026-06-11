@@ -9,6 +9,7 @@ import {
   type UseVendorRequestDetailsReturn,
 } from '@/features/dashboard/vendor/hooks'
 import { isRequestAwaitingApproval } from '@/utils/requestStatus'
+import { RequestDetailsImageGallery } from './RequestDetailsImageGallery'
 
 export function VendorRequestDetails() {
   const { modal, isPending, requestInfo, data, openApproveModal, openRejectModal } =
@@ -41,6 +42,24 @@ export function VendorRequestDetails() {
                     </div>
                   )
                 }
+                if (item.images?.length) {
+                  const entityDetails = (data?.entity_details ?? data?.card_details) as
+                    | { product?: string }
+                    | undefined
+                  return (
+                    <div
+                      key={`${item.label}-${index}`}
+                      className="col-span-2 flex flex-col gap-2 py-2 min-w-0"
+                    >
+                      <p className="text-xs text-gray-500 font-medium">{item.label}</p>
+                      <RequestDetailsImageGallery
+                        images={item.images}
+                        productName={entityDetails?.product}
+                      />
+                    </div>
+                  )
+                }
+
                 return (
                   <div
                     key={`${item.label}-${index}`}
