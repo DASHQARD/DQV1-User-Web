@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { useUserProfile } from '@/hooks'
 import { ROUTES } from '@/utils/constants'
+import { finishClientLogout } from '@/utils/finishClientLogout'
 import { cn } from '@/libs/clsx'
 import { BusinessDetailsSettings } from './BusinessDetailsSettings'
 import { CorporateAccountSettings } from './CorporateAccountSettings'
@@ -26,8 +27,7 @@ export default function Settings() {
   const logout = () => {
     logoutMutation(undefined, {
       onSettled: () => {
-        clearAuthState()
-        navigate(ROUTES.IN_APP.HOME, { replace: true })
+        finishClientLogout(navigate, clearAuthState)
       },
     })
   }

@@ -5,6 +5,7 @@ import { useBusinessLogoUrl, usePersistedModalState, useUserProfile } from '@/ho
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { MODALS, ROUTES } from '@/utils/constants'
+import { finishClientLogout } from '@/utils/finishClientLogout'
 import {
   countPendingRequestsForContext,
   parseRequestsListResponse,
@@ -163,8 +164,7 @@ export function useCorporateSidebar() {
   const logout = () => {
     logoutMutation(undefined, {
       onSettled: () => {
-        clearAuthState()
-        navigate(ROUTES.IN_APP.HOME, { replace: true })
+        finishClientLogout(navigate, clearAuthState)
       },
     })
   }

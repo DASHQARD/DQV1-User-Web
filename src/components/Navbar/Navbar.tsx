@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { cn } from '@/libs/clsx'
 import Logo from '../../assets/images/logo-placeholder.png'
 import { ROUTES } from '../../utils/constants'
+import { finishClientLogout } from '@/utils/finishClientLogout'
 import { Icon } from '@/libs'
 
 // import { useCart } from '@/features/website/hooks/useCart'
@@ -315,8 +316,7 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
   const handleLogout = () => {
     logoutMutation(undefined, {
       onSettled: () => {
-        clearAuthState()
-        navigate(ROUTES.IN_APP.HOME, { replace: true })
+        finishClientLogout(navigate, clearAuthState)
       },
     })
   }
@@ -471,9 +471,8 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
                         <button
                           type="button"
                           onClick={() => {
-                            handleLogout()
                             setAccountPopoverOpen(false)
-                            navigate(ROUTES.IN_APP.HOME)
+                            handleLogout()
                           }}
                           className="flex items-center gap-3 px-3 py-2.5 text-red-600 font-semibold hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors w-full"
                         >
@@ -624,9 +623,8 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
                         <button
                           type="button"
                           onClick={() => {
-                            handleLogout()
                             setMobileMenuOpen(false)
-                            navigate(ROUTES.IN_APP.HOME)
+                            handleLogout()
                           }}
                           className="flex items-center gap-3 px-4 py-3 text-red-600 font-semibold hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors w-full mt-2"
                         >

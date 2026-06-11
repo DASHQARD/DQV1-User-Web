@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { logout as logoutRequest } from '@/features/auth/services'
 import { useAuthStore } from '@/stores'
 import { ROUTES, isTesting } from '@/utils/constants'
+import { finishClientLogout } from '@/utils/finishClientLogout'
 
 import { useToast } from './useToast'
 
@@ -30,7 +31,7 @@ type Options = {
  * - Listens for mouse / keyboard / touch / scroll activity and resets a timer.
  * - On expiry, calls `/auth/logout`, `/guest-auth/session/logout`, or `/guest-auth/logout`
  *   based on session type,
- *   clears local auth state and the react-query cache, then redirects to login.
+ *   clears local auth state and the react-query cache, then redirects home.
  * - No-ops when unauthenticated or in the test environment.
  */
 export function useInactivityLogout({
@@ -54,9 +55,8 @@ export function useInactivityLogout({
       console.error('Failed to call logout endpoint on inactivity:', err)
     } finally {
       queryClient.clear()
-      clearAuthState()
       error?.('You have been logged out due to inactivity.')
-      navigate(redirectTo, { replace: true })
+      finishClientLogout(navigate, clearAuthState, redirectTo)
     }
   }, [clearAuthState, error, navigate, queryClient, redirectTo])
 

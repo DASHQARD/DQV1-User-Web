@@ -4,6 +4,7 @@ import { Text, TabbedView } from '@/components'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
+import { finishClientLogout } from '@/utils/finishClientLogout'
 import { cn } from '@/libs/clsx'
 import { ChangePasswordSettings } from './ChangePasswordSettings'
 import { PersonalInformationSettings } from './PersonalInformationSettings'
@@ -20,8 +21,7 @@ export default function UserSettings() {
   const logout = () => {
     logoutMutation(undefined, {
       onSettled: () => {
-        clearAuthState()
-        navigate(ROUTES.IN_APP.HOME, { replace: true })
+        finishClientLogout(navigate, clearAuthState)
       },
     })
   }

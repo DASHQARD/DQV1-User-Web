@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useUserProfile, useUploadFiles, usePresignedMediaUrl } from '@/hooks'
 import { useAuthStore } from '@/stores'
-import { ROUTES } from '@/utils/constants'
+import { finishClientLogout } from '@/utils/finishClientLogout'
 import { useAuth } from '@/features/auth'
 
 export function useUserSidebar() {
@@ -48,8 +48,7 @@ export function useUserSidebar() {
   const handleLogout = () => {
     logoutMutation(undefined, {
       onSettled: () => {
-        clearAuthState()
-        navigate(ROUTES.IN_APP.HOME, { replace: true })
+        finishClientLogout(navigate, clearAuthState)
       },
     })
   }

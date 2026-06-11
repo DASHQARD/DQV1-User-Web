@@ -5,6 +5,7 @@ import { getBusinessLogoFileKey } from '@/utils/businessLogo'
 import { useAuth } from '@/features/auth'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
+import { finishClientLogout } from '@/utils/finishClientLogout'
 import { corporateQueries } from './useCorporateQueries'
 import {
   getVendorOnboardingProgress,
@@ -206,8 +207,7 @@ export function useCorporateVendorSidebar() {
   const logout = () => {
     logoutMutation(undefined, {
       onSettled: () => {
-        clearAuthState()
-        navigate(ROUTES.IN_APP.HOME, { replace: true })
+        finishClientLogout(navigate, clearAuthState)
       },
     })
   }

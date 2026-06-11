@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { useAuth } from '@/features/auth/hooks/auth'
 import { useToast } from '@/hooks'
 import { useAuthStore } from '@/stores'
-import { ROUTES } from '@/utils/constants'
+import { finishClientLogout } from '@/utils/finishClientLogout'
 import { ChangePasswordSchema } from '@/utils/schemas/auth/changePassword'
 
 export type ChangePasswordFormData = z.infer<typeof ChangePasswordSchema>
@@ -53,9 +53,8 @@ export function useChangePasswordSettings() {
             console.error('Failed to call logout after password change:', err)
           } finally {
             queryClient.clear()
-            clearAuthState()
             info?.('For your security, please sign in with your new password.')
-            navigate(ROUTES.IN_APP.HOME, { replace: true })
+            finishClientLogout(navigate, clearAuthState)
           }
         },
       },
