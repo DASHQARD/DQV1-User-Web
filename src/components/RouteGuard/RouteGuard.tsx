@@ -12,7 +12,7 @@ export function RouteGuard({ children }: Props) {
 
   if (!isAuthenticated) {
     if (!isTesting) reset()
-    return <Navigate to={ROUTES.IN_APP.AUTH.LOGIN} />
+    return <Navigate to={ROUTES.IN_APP.HOME} replace />
   }
 
   if (isGuestAuth) {

@@ -90,7 +90,7 @@ function clearAuthAndMaybeRedirect() {
   }
   useAuthStore.getState().reset()
   if (shouldRedirectToLogin()) {
-    window.location.pathname = ROUTES.IN_APP.AUTH.LOGIN
+    window.location.pathname = ROUTES.IN_APP.HOME
   }
 }
 
