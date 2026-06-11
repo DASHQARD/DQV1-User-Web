@@ -1,6 +1,7 @@
 import { axiosClient } from '@/libs'
 import { useAuthStore } from '@/stores'
 import { getList, postMethod } from '@/services/requests'
+import { isGuestSessionAuth } from '@/features/website/services/guestSession'
 import type {
   BusinessDetailsData,
   ChangePasswordData,
@@ -49,6 +50,7 @@ const changePassword = async (data: ChangePasswordData) => {
   return await postMethod(`${commonUrl}/change-password`, data)
 }
 
+/** OTP-verified guest logout (access/refresh tokens from phone OTP). */
 const guestAuthLogout = async () => {
   return await postMethod('/guest-auth/logout')
 }
@@ -56,6 +58,10 @@ const guestAuthLogout = async () => {
 const logout = async () => {
   const { isGuestAuth } = useAuthStore.getState()
   if (isGuestAuth) {
+    if (isGuestSessionAuth()) {
+      const { guestSessionLogout } = await import('@/features/website/services/guestSession')
+      return guestSessionLogout()
+    }
     return guestAuthLogout()
   }
   return await postMethod(`${commonUrl}/logout`)

@@ -38,9 +38,9 @@ export function BusinessDetailsSettings() {
   return (
     <div className="space-y-0 mt-6">
       {/* Info callout */}
-      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3">
+      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3 min-w-0">
         <Icon icon="bi:info-circle" className="text-amber-600 text-xl shrink-0 mt-0.5" />
-        <div>
+        <div className="min-w-0">
           <Text variant="span" weight="semibold" className="text-amber-900 block mb-1">
             Request to update business information
           </Text>

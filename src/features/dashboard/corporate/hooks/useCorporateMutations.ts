@@ -43,7 +43,6 @@ import {
   deleteCorporateSuperAdminVendorRequest,
   cancelVendorInvitation,
   deleteVendorManagement,
-  updateVendorStatusManagement,
   removeVendorAdminManagement,
 } from '../services'
 import { useToast } from '@/hooks'
@@ -106,7 +105,9 @@ export function corporateMutations() {
       onSuccess: (response: any) => {
         success(response?.message || 'Vendor created successfully')
         queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+        queryClient.invalidateQueries({ queryKey: ['all-vendors-management'] })
         queryClient.invalidateQueries({ queryKey: ['all-vendors-details'] })
+        queryClient.invalidateQueries({ queryKey: ['all-vendors-details-for-vendor'] })
       },
 
       onError: (err: any) => {
@@ -171,22 +172,6 @@ export function corporateMutations() {
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to remove vendor. Please try again.')
-      },
-    })
-  }
-
-  function useUpdateVendorStatusManagementService() {
-    const { success, error } = useToast()
-    const queryClient = useQueryClient()
-    return useMutation({
-      mutationFn: (data: { vendor_account_id: number; status: string }) =>
-        updateVendorStatusManagement(data),
-      onSuccess: () => {
-        success('Vendor status updated')
-        queryClient.invalidateQueries({ queryKey: ['all-vendors-management'] })
-      },
-      onError: (err: any) => {
-        error(err?.message || 'Failed to update vendor status. Please try again.')
       },
     })
   }
@@ -848,6 +833,8 @@ export function corporateMutations() {
       onSuccess: (response: any, { id }) => {
         success(response?.message || 'Card deleted successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-vendor-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-vendor-cards-summary'] })
         queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-card', id] })
         queryClient.invalidateQueries({ queryKey: ['cards-by-vendor-id'] })
       },
@@ -876,6 +863,8 @@ export function corporateMutations() {
       onSuccess: (response: any, { id }) => {
         success(response?.message || 'Card updated successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-vendor-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-vendor-cards-summary'] })
         queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-card', id] })
         queryClient.invalidateQueries({ queryKey: ['cards-by-vendor-id'] })
       },
@@ -894,6 +883,8 @@ export function corporateMutations() {
       onSuccess: (response: any) => {
         success(response?.message || 'Card created successfully')
         queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-vendor-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['corporate-super-admin-vendor-cards-summary'] })
         queryClient.invalidateQueries({ queryKey: ['cards-by-vendor-id'] })
       },
       onError: (err: any) => {
@@ -943,7 +934,6 @@ export function corporateMutations() {
     useCreateCorporateSuperAdminCardForVendorService,
     useCancelVendorInvitationService,
     useDeleteVendorManagementService,
-    useUpdateVendorStatusManagementService,
     useRemoveVendorAdminManagementService,
   }
 }

@@ -7,6 +7,8 @@ import {
 } from './shared'
 import {
   personalInformationFieldsSchema,
+  personalInformationFirstNameSchema,
+  personalInformationLastNameSchema,
   personalInformationFullNameSchema,
   personalInformationStreetAddressSchema,
   personalInformationDobSchema,
@@ -44,8 +46,19 @@ export const SettingsSchema = z.object({
 export const PersonalInformationSchema = personalInformationFieldsSchema
 
 /** User dashboard profile completion — personal fields plus Ghana Card front/back uploads */
+const userDashboardPersonalFieldsSchema = z
+  .object({
+    first_name: personalInformationFirstNameSchema,
+    last_name: personalInformationLastNameSchema,
+    street_address: personalInformationStreetAddressSchema,
+    dob: personalInformationDobSchema,
+    id_type: personalInformationIdTypeSchema,
+    id_number: personalInformationIdNumberSchema,
+  })
+  .superRefine(validatePersonalInformationIdNumber)
+
 export const UserDashboardOnboardingSchema =
-  personalInformationFieldsSchema.merge(UploadUserIDSchema)
+  userDashboardPersonalFieldsSchema.merge(UploadUserIDSchema)
 
 /** Settings form for PUT /users/edit-profile */
 export const EditUserProfileSchema = z

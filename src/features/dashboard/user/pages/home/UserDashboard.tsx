@@ -15,6 +15,7 @@ import { UserGiftCardMetricsGrid } from '@/features/dashboard/user/components/Us
 import { UserRecentTransactions } from '@/features/dashboard/user/components/UserRecentTransactions'
 import { UserQuickActions } from '@/features/dashboard/user/components/UserQuickActions'
 import { BackgroundCardImage } from '@/assets/images'
+import { formatPersonName, splitPersonName } from '@/utils/personName'
 import type { PersonalDetailsWithIDData } from '@/types/auth/auth'
 
 type UserDashboardOnboardingFormData = z.infer<typeof UserDashboardOnboardingSchema>
@@ -47,7 +48,7 @@ export default function UserDashboard() {
     resolver: zodResolver(UserDashboardOnboardingSchema),
     mode: 'onChange',
     defaultValues: {
-      full_name: user?.fullname || '',
+      ...splitPersonName(user?.fullname || ''),
       street_address: user?.street_address || '',
       dob: user?.dob || '',
       id_type: user?.id_type || 'ghana_card',
@@ -59,7 +60,7 @@ export default function UserDashboard() {
   useEffect(() => {
     if (user) {
       onboardingForm.reset({
-        full_name: user?.fullname || '',
+        ...splitPersonName(user?.fullname || ''),
         street_address: user?.street_address || '',
         dob: user?.dob || '',
         id_type: user?.id_type || '',
@@ -87,7 +88,7 @@ export default function UserDashboard() {
       )
 
       const payload: PersonalDetailsWithIDData = {
-        full_name: data.full_name,
+        full_name: formatPersonName(data.first_name, data.last_name),
         street_address: data.street_address,
         dob: data.dob,
         id_type: data.id_type,
@@ -176,13 +177,26 @@ export default function UserDashboard() {
                 <div>
                   <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                     <Icon icon="bi:person-fill" className="size-4 mr-2 text-primary-600" />
-                    Full Name <span className="text-red-500">*</span>
+                    First Name <span className="text-red-500">*</span>
                   </label>
                   <Input
                     type="text"
-                    placeholder="Enter your full name"
-                    {...onboardingForm.register('full_name')}
-                    error={onboardingForm.formState.errors.full_name?.message}
+                    placeholder="Enter your first name"
+                    {...onboardingForm.register('first_name')}
+                    error={onboardingForm.formState.errors.first_name?.message}
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                    <Icon icon="bi:person-fill" className="size-4 mr-2 text-primary-600" />
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Enter your last name"
+                    {...onboardingForm.register('last_name')}
+                    error={onboardingForm.formState.errors.last_name?.message}
                   />
                 </div>
 

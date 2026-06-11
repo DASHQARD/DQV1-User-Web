@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAuthStore, useGuestLocalCartStore } from '@/stores'
+import { useAuthStore } from '@/stores'
 import { useCart } from './useCart'
 import { useCartStore } from '@/stores/cart'
 import { getApiErrorMessage } from '@/utils/apiError'
 import { formatCurrency } from '@/utils/format'
 import { getCardBackground, getCardTypeName, getCardDisplayName } from '@/utils/cardDisplay'
 import { ensureGuestCartAndAddCard } from '@/features/website/services/cards'
+import { ensureGuestSession } from '@/features/website/services/guestSession'
 import {
   GUEST_EMAIL_STORAGE_KEY,
   GUEST_NAME_STORAGE_KEY,
@@ -62,7 +63,6 @@ export function useCardItem(props: CardItemHookProps) {
   const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
   const { addToCartAsync, isAdding } = useCart()
   const { openCart } = useCartStore()
-  const addLocalGuestCard = useGuestLocalCartStore((s) => s.addCatalogCard)
   const queryClient = useQueryClient()
   const toast = useToast()
   const navigate = useNavigate()
@@ -92,50 +92,30 @@ export function useCardItem(props: CardItemHookProps) {
       return
     }
     const priceNum = typeof price === 'string' ? parseFloat(price) : Number(price)
-    const pending = {
-      card_id: String(card_id),
-      product,
-      price: Number.isFinite(priceNum) ? priceNum : 0,
-      type,
-      currency,
-    }
 
-    if (!isAuthenticated || isGuestAuth) {
-      if (isGuestAuth) {
-        const guestName =
-          getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
-          (user as { guest_name?: string } | null)?.guest_name ||
-          ''
-        const guestEmail =
-          getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
-          (user as { guest_email?: string } | null)?.guest_email ||
-          ''
-        try {
-          assertGuestCartAmountWithinLimit(priceNum)
-          await ensureGuestCartAndAddCard({
-            card_id: String(card_id),
-            amount: priceNum,
-            ...pickGuestCartIdentityFields(guestName, guestEmail),
-            getGuestCartId,
-            getGuestCartUuid,
-            setGuestCartId,
-            setGuestCartUuid: useAuthStore.getState().setGuestCartUuid,
-          })
-          queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-          openCart()
-        } catch (err: unknown) {
-          toast.error(getApiErrorMessage(err, 'Failed to add item to cart'))
-        }
-        return
-      }
+    const isMember = isAuthenticated && !isGuestAuth
+    if (!isMember) {
+      const guestName =
+        getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
+        (user as { guest_name?: string } | null)?.guest_name ||
+        ''
+      const guestEmail =
+        getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
+        (user as { guest_email?: string } | null)?.guest_email ||
+        ''
       try {
-        addLocalGuestCard({
+        assertGuestCartAmountWithinLimit(priceNum)
+        await ensureGuestSession()
+        await ensureGuestCartAndAddCard({
           card_id: String(card_id),
-          product,
-          price: pending.price,
-          currency,
-          type,
+          amount: priceNum,
+          ...pickGuestCartIdentityFields(guestName, guestEmail),
+          getGuestCartId,
+          getGuestCartUuid,
+          setGuestCartId,
+          setGuestCartUuid: useAuthStore.getState().setGuestCartUuid,
         })
+        queryClient.invalidateQueries({ queryKey: ['cart-items'] })
         openCart()
       } catch (err: unknown) {
         toast.error(getApiErrorMessage(err, 'Failed to add item to cart'))

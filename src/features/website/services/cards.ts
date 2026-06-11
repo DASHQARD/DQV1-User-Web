@@ -1,5 +1,11 @@
 import { axiosClient } from '@/libs'
-import { deleteMethod, getList, getMethod, postMethod, patchMethod } from '@/services/requests'
+import {
+  deleteMethod,
+  getList,
+  getMethod,
+  patchMethod,
+  postMethod,
+} from '@/services/requests'
 import type {
   AddToCartPayload,
   CartItemResponse,
@@ -17,6 +23,7 @@ import type {
   GuestGetCardSingleParams,
 } from '@/types/responses'
 import { assertGuestCartAmountWithinLimit } from '@/features/website/utils/validateGuestLocalCart'
+import { ensureGuestSession } from '@/features/website/services/guestSession'
 
 export const addToCart = async (data: AddToCartPayload): Promise<any> => {
   return await postMethod('/carts', data)
@@ -229,26 +236,81 @@ export function extractGiftCardIdFromGuestCreate(response: unknown): string | nu
   return String(raw)
 }
 
-/** Cart refs when create endpoint already adds the card (guest-cards/dash-go). */
-export function extractGuestCreateCartMeta(response: unknown): {
+/** Human-readable card reference from POST /guest-cards/* (e.g. DP-01-0000000003). */
+export function extractGuestCardDisplayRef(response: unknown): string | null {
+  const payload = unwrapPostResponsePayload(response)
+  if (!payload) return null
+  const giftCard = payload.gift_card as Record<string, unknown> | undefined
+  const raw = giftCard?.card_id
+  if (raw == null || raw === '') return null
+  return String(raw)
+}
+
+/** Cart refs when a create endpoint already adds the card (guest-cards/dash-go, carts/create-dashgo). */
+export function extractCreateCartMeta(response: unknown): {
   cartId?: string
   cartItemId?: string
 } {
   const payload = unwrapPostResponsePayload(response)
-  const cart = payload?.cart as Record<string, unknown> | undefined
-  if (!cart) return {}
+  if (!payload) return {}
+
+  const cart = payload.cart as Record<string, unknown> | undefined
+  const cartId =
+    cart?.cart_id ?? payload.cart_id
+  const cartItemId =
+    cart?.cart_item_id ?? payload.cart_item_id
+
   return {
-    ...(cart.cart_id != null && { cartId: String(cart.cart_id) }),
-    ...(cart.cart_item_id != null && { cartItemId: String(cart.cart_item_id) }),
+    ...(cartId != null && cartId !== '' && { cartId: String(cartId) }),
+    ...(cartItemId != null && cartItemId !== '' && { cartItemId: String(cartItemId) }),
   }
 }
+
+/** True when a create endpoint already placed the card in a cart (skip add-to-cart). */
+export function didCreateEndpointAddToCart(response: unknown): boolean {
+  const meta = extractCreateCartMeta(response)
+  return Boolean(meta.cartId || meta.cartItemId)
+}
+
+/** @deprecated Use extractCreateCartMeta */
+export const extractGuestCreateCartMeta = extractCreateCartMeta
 
 export type CustomDashGoGuestContact = {
   guest_name?: string | null
   guest_email?: string | null
 }
 
-/** Create custom DashGo and add to cart — guest uses /guest-cards/dash-go + guest-carts; members use /carts/create-dashgo. */
+export type CustomGuestCardCartResult = {
+  cardId: string
+  cartId: string
+  cartItemId: string
+  cardDisplayRef?: string
+  createResponse: unknown
+}
+
+/**
+ * POST /guest-cards/dash-pro and /guest-cards/dash-go create the card and add it to the
+ * guest cart in one response — no follow-up add-to-cart call.
+ */
+export function extractGuestCreateCartRefs(response: unknown): CustomGuestCardCartResult {
+  const cardId = extractGiftCardIdFromGuestCreate(response)
+  const meta = extractCreateCartMeta(response)
+  const cardDisplayRef = extractGuestCardDisplayRef(response) ?? undefined
+
+  if (!cardId || !meta.cartId || !meta.cartItemId) {
+    throw new Error('Guest card was created but cart references are missing from the response.')
+  }
+
+  return {
+    cardId,
+    cartId: meta.cartId,
+    cartItemId: meta.cartItemId,
+    cardDisplayRef,
+    createResponse: response,
+  }
+}
+
+/** Create custom DashGo — guest: POST /guest-cards/dash-go (creates + carts in one call). */
 export async function createCustomDashGoAndAddToCart(options: {
   vendor_id: string
   vendorName: string
@@ -257,17 +319,15 @@ export async function createCustomDashGoAndAddToCart(options: {
   redemption_branches: Array<{ branch_id: string }>
   isGuestAuth: boolean
   guestContact?: CustomDashGoGuestContact
-  getGuestCartId: () => number | null
-  getGuestCartUuid?: () => string | null
-  setGuestCartId: (id: number | null) => void
   setGuestCartUuid: (uuid: string | null) => void
-}): Promise<void> {
+}): Promise<CustomGuestCardCartResult | void> {
   const issueDate = new Date().toISOString().split('T')[0]
   const currency = options.currency ?? 'GHS'
   const product = 'DashGo Gift Card'
   const description = `Custom DashGo card for ${options.vendorName}`
 
   if (options.isGuestAuth) {
+    await ensureGuestSession()
     assertGuestCartAmountWithinLimit(options.price)
     const contact = options.guestContact
     const identity = {
@@ -286,25 +346,9 @@ export async function createCustomDashGoAndAddToCart(options: {
       images: [],
       terms_and_conditions: [],
     })
-    const cardId = extractGiftCardIdFromGuestCreate(createResponse)
-    if (!cardId) {
-      throw new Error('Failed to create DashGo card')
-    }
-    const { cartId } = extractGuestCreateCartMeta(createResponse)
-    if (cartId) {
-      options.setGuestCartUuid(cartId)
-      return
-    }
-    await ensureGuestCartAndAddCard({
-      card_id: cardId,
-      amount: options.price,
-      ...identity,
-      getGuestCartId: options.getGuestCartId,
-      getGuestCartUuid: options.getGuestCartUuid,
-      setGuestCartId: options.setGuestCartId,
-      setGuestCartUuid: options.setGuestCartUuid,
-    })
-    return
+    const refs = extractGuestCreateCartRefs(createResponse)
+    options.setGuestCartUuid(refs.cartId)
+    return refs
   }
 
   await createDashGoAndAssign({
@@ -316,6 +360,39 @@ export async function createCustomDashGoAndAddToCart(options: {
     issue_date: issueDate,
     redemption_branches: options.redemption_branches,
   })
+}
+
+/** Create custom DashPro — guest: POST /guest-cards/dash-pro (creates + carts in one call). */
+export async function createCustomDashProAndAddToCart(options: {
+  price: number
+  currency?: string
+  country_code?: string
+  guestContact?: CustomDashGoGuestContact
+  setGuestCartUuid: (uuid: string | null) => void
+}): Promise<CustomGuestCardCartResult> {
+  await ensureGuestSession()
+  assertGuestCartAmountWithinLimit(options.price)
+  const issueDate = new Date().toISOString().split('T')[0]
+  const currency = options.currency ?? 'GHS'
+  const contact = options.guestContact
+  const identity = {
+    ...(contact?.guest_name?.trim() ? { guest_name: contact.guest_name.trim() } : {}),
+    ...(contact?.guest_email?.trim() ? { guest_email: contact.guest_email.trim() } : {}),
+  }
+  const createResponse = await createGuestDashPro({
+    ...identity,
+    product: 'DashPro',
+    description: 'DashPro',
+    price: options.price,
+    currency,
+    issue_date: issueDate,
+    images: [],
+    terms_and_conditions: [],
+    country_code: options.country_code ?? 'GH',
+  })
+  const refs = extractGuestCreateCartRefs(createResponse)
+  options.setGuestCartUuid(refs.cartId)
+  return refs
 }
 
 export const createDashGoAndAssign = async (data: {
@@ -422,14 +499,25 @@ export const getCartItem = async (id: string | number): Promise<CartItemResponse
   return await getMethod(`/carts/${id}`)
 }
 
-export const deleteCartItem = async (id: string | number): Promise<any> => {
-  return await deleteMethod(`/carts/items/${id}`)
-}
-
-export const deleteCartItemRecipient = async (cart_item_id: string | number): Promise<any> => {
+/** DELETE /carts/items/:cart_item_id — remove a line from the cart */
+export const deleteCartItem = async (cart_item_id: string | number): Promise<any> => {
   return await deleteMethod(`/carts/items/${cart_item_id}`)
 }
 
+/** @deprecated Use deleteCartItem */
+export const deleteCartItemRecipient = deleteCartItem
+
+/** DELETE /carts/:id — hard-delete; only active or failed carts */
+export const deleteCart = async (cart_id: string | number): Promise<any> => {
+  return await deleteMethod(`/carts/${cart_id}`)
+}
+
+/** PATCH /carts/:id/archive — soft-archive completed/non-active carts */
+export const archiveCart = async (cart_id: string | number): Promise<any> => {
+  return await patchMethod(`/carts/${cart_id}/archive`)
+}
+
+/** PATCH /carts/items — update quantity of a member cart item */
 export const updateCartItem = async (data: {
   cart_item_id: string | number
   quantity: number

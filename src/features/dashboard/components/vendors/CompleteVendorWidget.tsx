@@ -89,37 +89,68 @@ export default function CompleteVendorWidget() {
           </section>
 
           <div className="space-y-3 mb-6">
-            {steps.map((step) => (
-              <Link
-                key={step.id}
-                to={addAccountParam(step.path)}
-                className={cn(
-                  'flex items-center gap-3 p-3 rounded-lg transition-colors',
-                  step.completed ? 'bg-gray-50 opacity-75' : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
-                )}
-              >
-                <Icon
-                  icon={step.completed ? 'bi:check-circle-fill' : 'bi:circle'}
-                  className={cn(
-                    'text-lg shrink-0',
-                    step.completed ? 'text-[#059669]' : 'text-gray-400',
-                  )}
-                />
-                <div className="flex-1">
-                  <div
+            {steps.map((step) => {
+              const content = (
+                <>
+                  <Icon
+                    icon={
+                      step.completed
+                        ? 'bi:check-circle-fill'
+                        : step.locked
+                          ? 'bi:lock-fill'
+                          : 'bi:circle'
+                    }
                     className={cn(
-                      'text-sm font-medium',
-                      step.completed ? 'text-gray-500 line-through' : 'text-gray-900',
+                      'text-lg shrink-0',
+                      step.completed
+                        ? 'text-[#059669]'
+                        : step.locked
+                          ? 'text-amber-500'
+                          : 'text-gray-400',
                     )}
-                  >
-                    {step.label}
+                  />
+                  <div className="flex-1">
+                    <div
+                      className={cn(
+                        'text-sm font-medium',
+                        step.completed ? 'text-gray-500 line-through' : 'text-gray-900',
+                      )}
+                    >
+                      {step.label}
+                    </div>
+                    {!step.completed && (
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {step.locked ? step.lockedReason || step.description : step.description}
+                      </div>
+                    )}
                   </div>
-                  {!step.completed && (
-                    <div className="text-xs text-gray-500 mt-0.5">{step.description}</div>
+                </>
+              )
+
+              if (step.locked) {
+                return (
+                  <div
+                    key={step.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 opacity-80 cursor-not-allowed"
+                  >
+                    {content}
+                  </div>
+                )
+              }
+
+              return (
+                <Link
+                  key={step.id}
+                  to={addAccountParam(step.path)}
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-lg transition-colors',
+                    step.completed ? 'bg-gray-50 opacity-75' : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
                   )}
-                </div>
-              </Link>
-            ))}
+                >
+                  {content}
+                </Link>
+              )
+            })}
           </div>
 
           <button

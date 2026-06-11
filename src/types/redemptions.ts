@@ -78,16 +78,20 @@ export interface CardBalanceResponse {
   }
 }
 
+export type GuestMomoProvider = 'mtn' | 'vodafone' | 'airtel-tigo'
+
 export interface DashProRedemptionPayload {
   vendor_phone_number: string
   amount: number
   user_phone_number: string
+  provider: GuestMomoProvider
 }
 
 export interface DashProRedemptionForUserPayload {
   vendor_phone_number: string
   amount: number
   user_phone_number?: string
+  provider: GuestMomoProvider
 }
 
 export interface ResolveMomoNamePayload {
@@ -171,8 +175,6 @@ export type CardsRedemptionPayload =
       phone_number?: string
       card_id: string
     }
-
-export type GuestMomoProvider = 'mtn' | 'vodafone' | 'airtel-tigo'
 
 /** POST /guest-redemptions/cards — guest identity comes from Bearer token, not body */
 export type GuestCardsRedemptionPayload =

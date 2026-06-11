@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -99,6 +99,8 @@ export function useOnboardingForm() {
 
   const isPending = isSubmittingPersonalDetailsWithID || isUploading
 
+  const hasInitializedFromProfile = useRef(false)
+
   useEffect(() => {
     if (needsOnlyFront) {
       const currentBackId = form.getValues('back_id')
@@ -110,14 +112,20 @@ export function useOnboardingForm() {
   }, [needsOnlyFront, form])
 
   useEffect(() => {
-    if (!userProfileData) return
+    if (!userProfileData || hasInitializedFromProfile.current) return
+    if (form.formState.isDirty) return
+
+    hasInitializedFromProfile.current = true
+
+    const nameParts = userProfileData.fullname?.split(' ').filter(Boolean) ?? []
+
     form.reset({
-      first_name: userProfileData?.fullname?.split(' ')[0] || '',
-      last_name: userProfileData?.fullname?.split(' ')[1] || '',
-      dob: userProfileData?.dob || '',
-      street_address: userProfileData?.street_address || '',
-      id_type: userProfileData?.id_type || '',
-      id_number: userProfileData?.id_number || '',
+      first_name: nameParts[0] || '',
+      last_name: nameParts.slice(1).join(' ') || '',
+      dob: userProfileData.dob || '',
+      street_address: userProfileData.street_address || '',
+      id_type: userProfileData.id_type || '',
+      id_number: userProfileData.id_number || '',
     } as OnboardingFormData)
   }, [userProfileData, form])
 

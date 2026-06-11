@@ -1,4 +1,4 @@
-import { getImageUrl } from '@/utils/cardDisplay'
+import { resolveRecipientAmountCardImageUrl } from '@/features/website/utils/recipientAmountCardImages'
 import { isAssignedCardRedeemable } from '@/utils/cardExpiry'
 import { formatBranchLabel } from '@/utils/format'
 
@@ -77,7 +77,7 @@ export function mapGuestAssignedCardToVendorCard(
         ? String(card.recipient_id)
         : undefined,
     cart_item_id: card.cart_item_id != null ? String(card.cart_item_id) : undefined,
-    image_url: card.images?.[0]?.file_url ? getImageUrl(card.images[0].file_url) : undefined,
+    image_url: resolveRecipientAmountCardImageUrl(card),
     expiry_date: card.expiry_date,
     description: card.description,
   }

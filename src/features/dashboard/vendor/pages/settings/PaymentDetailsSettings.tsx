@@ -18,6 +18,7 @@ import { AccountLookupStatus } from '@/components/AccountLookupStatus'
 
 export function PaymentDetailsSettings() {
   const {
+    canManagePayment,
     form,
     paymentMethod,
     mobileMoneyProviders,
@@ -32,6 +33,14 @@ export function PaymentDetailsSettings() {
   } = usePaymentDetailsSettingsForm()
 
   const handleSubmit = form.handleSubmit((data: PaymentDetailsFormData) => onSubmit(data))
+
+  if (!canManagePayment) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        Payment details can be added after DashQard verifies your vendor account.
+      </div>
+    )
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

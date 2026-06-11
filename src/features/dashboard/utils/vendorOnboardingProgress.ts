@@ -1,5 +1,6 @@
 import { ROUTES } from '@/utils/constants'
 import type { UserProfileResponse } from '@/types/user'
+import { isVendorAccountApproved } from './vendorAccountStatus'
 
 export type VendorOnboardingStepId =
   | 'profile'
@@ -13,6 +14,8 @@ export type VendorOnboardingStep = {
   description: string
   path: string
   completed: boolean
+  locked?: boolean
+  lockedReason?: string
 }
 
 export type VendorOnboardingProgressInput = {
@@ -59,7 +62,9 @@ export function getVendorOnboardingProgress({
   const hasBranches = branchesCount > 0
   const profileDone = hasProfileAndId(userProfile)
   const businessDone = hasBusinessDetailsAndDocs(userProfile)
+  const isAccountApproved = isVendorAccountApproved(userProfile?.status)
   const paymentDone = hasVendorPaymentDetails(userProfile)
+  const paymentLocked = !isAccountApproved
 
   const steps: VendorOnboardingStep[] = []
 
@@ -83,17 +88,34 @@ export function getVendorOnboardingProgress({
     steps.push({
       id: 'payment',
       label: 'Payment Details',
-      description: 'Add a mobile money or bank account to receive vendor payouts',
+      description: paymentLocked
+        ? 'Available after DashQard verifies your vendor account'
+        : 'Add a mobile money or bank account to receive vendor payouts',
       path: ROUTES.IN_APP.DASHBOARD.VENDOR.PAYMENT_DETAILS,
       completed: paymentDone,
+      locked: paymentLocked,
+      lockedReason: paymentLocked
+        ? 'Payment details can be added after your account is verified.'
+        : undefined,
     })
 
+    const branchLocked = paymentLocked || !paymentDone
     steps.push({
       id: 'branch',
       label: 'Create Your First Branch',
-      description: 'Create at least one branch to get started',
+      description: branchLocked
+        ? paymentLocked
+          ? 'Available after your account is verified and payment details are added'
+          : 'Add payment details before creating your first branch'
+        : 'Create at least one branch to get started',
       path: ROUTES.IN_APP.DASHBOARD.VENDOR.INVITE_BRANCH_MANAGER,
       completed: hasBranches,
+      locked: branchLocked,
+      lockedReason: branchLocked
+        ? paymentLocked
+          ? 'Create your first branch after your account is verified and payment details are added.'
+          : 'Add payment details before creating your first branch.'
+        : undefined,
     })
   }
 
@@ -101,7 +123,7 @@ export function getVendorOnboardingProgress({
   const totalCount = steps.length
   const progressPercentage =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
-  const nextStep = steps.find((s) => !s.completed) ?? null
+  const nextStep = steps.find((s) => !s.completed && !s.locked) ?? null
 
   return {
     steps,

@@ -39,4 +39,29 @@ describe('CompleteCorporateWidget', () => {
     expect(screen.getByText(/complete your corporate onboarding process/i)).toBeInTheDocument()
     expect(screen.getByText(/finish all 2 steps/i)).toBeInTheDocument()
   })
+
+  it('does not link to business details when that step is already complete', async () => {
+    const hooks = await import('@/hooks')
+    vi.spyOn(hooks, 'useUserProfile').mockReturnValue({
+      useGetUserProfileService: () => ({
+        data: {
+          onboarding_progress: {
+            personal_details_completed: false,
+            upload_id_completed: false,
+            business_details_completed: true,
+            business_documents_completed: true,
+          },
+        },
+      }),
+    } as never)
+
+    const user = userEvent.setup()
+    const { container } = renderWithProviders(<CompleteCorporateWidget />)
+    await user.click(screen.getByRole('button', { name: /complete your corporate onboarding/i }))
+
+    expect(
+      container.querySelector('a[href*="business-details"]'),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Business Details & Documents')).toBeInTheDocument()
+  })
 })

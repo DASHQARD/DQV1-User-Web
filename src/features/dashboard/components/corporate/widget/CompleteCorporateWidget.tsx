@@ -170,38 +170,32 @@ export default function CompleteCorporateWidget() {
               </div>
             </Link>
 
-            <Link
-              to={addAccountParam(ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS)}
-              className={cn(
-                'flex items-center gap-3 p-3 rounded-lg transition-colors',
-                hasBusinessDetailsAndDocs
-                  ? 'bg-gray-50 opacity-75'
-                  : 'bg-[#f5f1ff] hover:bg-[#ede9fe]',
-              )}
-            >
-              <Icon
-                icon={hasBusinessDetailsAndDocs ? 'bi:check-circle-fill' : 'bi:circle'}
-                className={cn(
-                  'text-lg shrink-0',
-                  hasBusinessDetailsAndDocs ? 'text-[#059669]' : 'text-gray-400',
-                )}
-              />
-              <div className="flex-1">
-                <div
-                  className={cn(
-                    'text-sm font-medium',
-                    hasBusinessDetailsAndDocs ? 'text-gray-500 line-through' : 'text-gray-900',
-                  )}
-                >
-                  Business Details & Documents
+            {hasBusinessDetailsAndDocs ? (
+              <div
+                className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 opacity-75 cursor-default"
+                aria-disabled="true"
+              >
+                <Icon icon="bi:check-circle-fill" className="text-lg shrink-0 text-[#059669]" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-500 line-through">
+                    Business Details & Documents
+                  </div>
                 </div>
-                {!hasBusinessDetailsAndDocs && (
+              </div>
+            ) : (
+              <Link
+                to={addAccountParam(ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS)}
+                className="flex items-center gap-3 p-3 rounded-lg transition-colors bg-[#f5f1ff] hover:bg-[#ede9fe]"
+              >
+                <Icon icon="bi:circle" className="text-lg shrink-0 text-gray-400" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-900">Business Details & Documents</div>
                   <div className="text-xs text-gray-500 mt-0.5">
                     Complete your business information and upload business documents
                   </div>
-                )}
-              </div>
-            </Link>
+                </div>
+              </Link>
+            )}
           </div>
 
           {/* Continue Button */}

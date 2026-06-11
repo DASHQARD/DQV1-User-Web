@@ -35,6 +35,7 @@ export default function Redeem() {
     availableBalance,
     balanceLoading,
     balanceError,
+    cardPreviewImageUrl,
     isFormValid,
     isSubmitting,
     submitRedemption,
@@ -157,10 +158,18 @@ export default function Redeem() {
 
                   {/* Available Balance */}
                   <div className="mb-6 p-4 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#64748B] flex items-center gap-2">
-                        <Icon icon="bi:wallet2" className="text-[#402D87]" />
-                        Available Balance ({cardType})
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-[#64748B] flex items-center gap-2 min-w-0">
+                        {cardPreviewImageUrl ? (
+                          <img
+                            src={cardPreviewImageUrl}
+                            alt={`${cardType} card`}
+                            className="w-10 h-10 rounded-lg object-cover shrink-0 border border-[#E5E7EB]"
+                          />
+                        ) : (
+                          <Icon icon="bi:wallet2" className="text-[#402D87] shrink-0" />
+                        )}
+                        <span className="truncate">Available Balance ({cardType})</span>
                       </span>
                       {balanceLoading ? (
                         <div className="flex items-center gap-1.5 text-xs text-[#3B82F6]">

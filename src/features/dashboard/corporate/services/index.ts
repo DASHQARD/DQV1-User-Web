@@ -668,7 +668,6 @@ export {
   getAllVendorsManagement,
   getVendorByIdManagement,
   deleteVendorManagement,
-  updateVendorStatusManagement,
   removeVendorAdminManagement,
   getVendorQrCodeManagement,
 } from './vendorManagement'

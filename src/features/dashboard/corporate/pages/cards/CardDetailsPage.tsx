@@ -109,10 +109,11 @@ export default function CorporateCardDetailsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCards.map((card, index) => {
             const cardBackground = getCardBackground(validCardType)
-            const displayAmount = card.balance || card.amount || 0
-            const canRedeem = card.status === 'active' && displayAmount > 0
+            const showBalance = card.showBalance ?? true
+            const displayAmount = showBalance ? card.balance || card.amount || 0 : 0
+            const canRedeem = card.status === 'active' && (showBalance ? displayAmount > 0 : true)
             const cardId = String(card.id ?? card.card_id ?? index)
-            const cardImageUrl = validCardType === 'dashx' ? cardImageUrls[cardId] : null
+            const cardImageUrl = cardImageUrls[cardId] ?? null
 
             return (
               <div
@@ -128,7 +129,7 @@ export default function CorporateCardDetailsPage() {
                     alt={`${CARD_DISPLAY_NAMES[validCardType]} card background`}
                     className="absolute inset-0 h-full w-full object-cover"
                   />
-                  {cardImageUrl && validCardType === 'dashx' && (
+                  {cardImageUrl && (
                     <img
                       src={cardImageUrl}
                       alt={`${card.card_name || CARD_DISPLAY_NAMES[validCardType]} card image`}
@@ -148,8 +149,12 @@ export default function CorporateCardDetailsPage() {
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-2xl font-extrabold">{displayAmount.toFixed(2)}</span>
-                        <span className="text-sm ml-1">GHS</span>
+                        {showBalance ? (
+                          <>
+                            <span className="text-2xl font-extrabold">{displayAmount.toFixed(2)}</span>
+                            <span className="text-sm ml-1">GHS</span>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                     <div className="flex items-end justify-between">
@@ -169,7 +174,7 @@ export default function CorporateCardDetailsPage() {
                       {card.card_name || card.name || `${CARD_DISPLAY_NAMES[validCardType]} Card`}
                     </Text>
                     <div className="flex flex-col gap-2 mb-4">
-                      {card.balance !== undefined && (
+                      {showBalance && card.balance !== undefined && (
                         <div className="flex items-center gap-2">
                           <Icon icon="bi:wallet2" className="text-primary-600" />
                           <Text variant="span" className="text-gray-600">

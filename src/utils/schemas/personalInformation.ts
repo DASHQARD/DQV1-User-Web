@@ -18,6 +18,9 @@ const idTypeEnum = z.enum(ID_TYPE_VALUES as [string, ...string[]], {
   message: 'Select a valid ID type',
 })
 
+export const personalInformationFirstNameSchema = getRequiredStringSchema('First name')
+export const personalInformationLastNameSchema = getRequiredStringSchema('Last name')
+
 export const personalInformationFullNameSchema = getRequiredStringSchema('Full Name').refine(
   (value) => {
     const names = value.trim().split(/\s+/)

@@ -35,13 +35,15 @@ describe('PaymentDetails (payment modal)', () => {
     expect(screen.getByText('Payment Details')).toBeInTheDocument()
   })
 
-  it('renders Payment Information and detail rows', () => {
+  it('renders detail rows without transaction id or user type', () => {
     renderWithProviders(<PaymentDetails />)
-    expect(screen.getByText('Payment Information')).toBeInTheDocument()
     expect(screen.getByText('Status')).toBeInTheDocument()
     expect(screen.getByText('Receipt Number')).toBeInTheDocument()
-    expect(screen.getByText('TXN-001')).toBeInTheDocument()
     expect(screen.getByText('Test User')).toBeInTheDocument()
+    expect(screen.queryByText('Transaction ID')).not.toBeInTheDocument()
+    expect(screen.queryByText('User Type')).not.toBeInTheDocument()
+    expect(screen.queryByText('Payment Information')).not.toBeInTheDocument()
+    expect(screen.queryByText('TXN-001')).not.toBeInTheDocument()
   })
 
   it('Close button calls closeModal', async () => {

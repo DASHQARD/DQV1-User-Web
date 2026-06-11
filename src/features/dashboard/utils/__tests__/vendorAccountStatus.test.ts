@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   canFetchVendorPaymentDetails,
+  canManageVendorPaymentDetails,
   isVendorAccountApproved,
   isVendorPendingAdminApproval,
 } from '../vendorAccountStatus'
@@ -70,6 +71,18 @@ describe('isVendorPendingAdminApproval', () => {
     expect(
       isVendorPendingAdminApproval({ ...baseProfile, status: 'active' } as any, true),
     ).toBe(false)
+  })
+})
+
+describe('canManageVendorPaymentDetails', () => {
+  it('requires an approved vendor account', () => {
+    expect(canManageVendorPaymentDetails(baseProfile as any)).toBe(false)
+    expect(
+      canManageVendorPaymentDetails({ ...baseProfile, status: 'verified' } as any),
+    ).toBe(true)
+    expect(canManageVendorPaymentDetails({ ...baseProfile, user_type: 'branch' } as any)).toBe(
+      false,
+    )
   })
 })
 

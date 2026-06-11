@@ -33,7 +33,8 @@ export function useAssignToSelfToggle(options: Options) {
   } = options
 
   const [assignToSelf, setAssignToSelf] = useState(initialAssignToSelf)
-  const usesAccountAssignToSelf = assignToSelf && !isLocalGuest
+  /** Members only — guests use checkout sender details or API backfill on assign_to_self. */
+  const usesAccountAssignToSelf = assignToSelf && !isLocalGuest && !isGuestAuth
 
   const applyContactPrefill = useCallback(() => {
     const contact = getAssignToSelfContactPrefill({

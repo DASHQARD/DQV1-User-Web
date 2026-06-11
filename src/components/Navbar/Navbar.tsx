@@ -23,6 +23,7 @@ import {
   getCorporateAccessState,
   isAnyCorporateUser,
 } from '@/features/dashboard/corporate/utils/corporateNavAccess'
+import { MobileSwitchWorkspace } from '@/features/dashboard/components/MobileSwitchWorkspace'
 import { VendorPendingApprovalsBell } from '@/features/dashboard/components/vendors/VendorPendingApprovalsBell'
 import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
 
@@ -276,26 +277,32 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
     {
       label: 'About',
       path: ROUTES.IN_APP.ABOUT,
+      icon: 'bi:info-circle',
     },
     {
       label: 'Gift Cards',
       path: ROUTES.IN_APP.DASHQARDS,
+      icon: 'bi:gift',
     },
     {
       label: 'Vendors',
       path: ROUTES.IN_APP.VENDORS,
+      icon: 'bi:shop',
     },
     {
       label: 'Redeem',
       path: ROUTES.IN_APP.REDEEM,
+      icon: 'bi:arrow-repeat',
     },
     {
       label: 'Contact',
       path: ROUTES.IN_APP.CONTACT,
+      icon: 'bi:envelope',
     },
     {
       label: 'FAQ',
       path: ROUTES.IN_APP.FAQ,
+      icon: 'bi:question-circle',
     },
   ]
 
@@ -407,75 +414,75 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
               <GuestAddToCartModal />
 
               {/* Account Button */}
-              {isAuthenticated ? (
-                <Popover open={accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="bg-gray-50 flex items-center justify-center rounded-full overflow-hidden relative hover:bg-gray-100 transition-colors ring-2 ring-transparent hover:ring-primary-200"
-                      aria-label="Account"
-                    >
-                      {showNavProfileImage ? (
-                        <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                          <img
-                            src={navAvatarDisplaySrc}
-                            alt={displayName}
-                            className="w-full h-full rounded-full object-cover"
-                            onError={(e) => {
-                              // Fall back to default avatar when logo/avatar URL fails.
-                              // Keep this handler stateless because avatarUrl is memo-derived.
-                              const img = e.currentTarget as HTMLImageElement | undefined
-                              if (img) img.src = DEFAULT_AVATAR_SRC
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <Icon icon="bi:person-circle" className="size-10 text-primary-600" />
-                      )}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    align="end"
-                    sideOffset={12}
-                    className="w-64 p-0 border border-gray-200 rounded-xl shadow-xl bg-white"
-                  >
-                    <div className="p-4 border-b border-gray-100 bg-linear-to-r from-gray-50 to-white">
-                      <p className="text-sm text-gray-600">
-                        Hi, <span className="font-semibold text-gray-900">{displayName}</span>
-                      </p>
-                    </div>
-                    <div className="flex flex-col p-2 gap-0.5 text-sm">
-                      {menuItems.map((item) => (
-                        <button
-                          type="button"
-                          key={item.label}
-                          onClick={() => {
-                            navigate(item.path)
-                            setAccountPopoverOpen(false)
-                          }}
-                          className="flex items-center gap-3 px-3 py-2.5 text-left text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition-colors"
-                        >
-                          <Icon icon={item.icon} className="text-lg shrink-0" />
-                          <span className="font-medium">{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="border-t border-gray-100 p-2">
+              {isAuthenticated && !isGuestAuth ? (
+                  <Popover open={accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
+                    <PopoverTrigger asChild>
                       <button
                         type="button"
-                        onClick={() => {
-                          handleLogout()
-                          setAccountPopoverOpen(false)
-                          navigate(ROUTES.IN_APP.HOME)
-                        }}
-                        className="flex items-center gap-3 px-3 py-2.5 text-red-600 font-semibold hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors w-full"
+                        className="bg-gray-50 flex items-center justify-center rounded-full overflow-hidden relative hover:bg-gray-100 transition-colors ring-2 ring-transparent hover:ring-primary-200"
+                        aria-label="Account"
                       >
-                        <Icon icon="bi:box-arrow-right" className="text-lg shrink-0" />
-                        <span>Sign Out</span>
+                        {showNavProfileImage ? (
+                          <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                            <img
+                              src={navAvatarDisplaySrc}
+                              alt={displayName}
+                              className="w-full h-full rounded-full object-cover"
+                              onError={(e) => {
+                                // Fall back to default avatar when logo/avatar URL fails.
+                                // Keep this handler stateless because avatarUrl is memo-derived.
+                                const img = e.currentTarget as HTMLImageElement | undefined
+                                if (img) img.src = DEFAULT_AVATAR_SRC
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <Icon icon="bi:person-circle" className="size-10 text-primary-600" />
+                        )}
                       </button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="end"
+                      sideOffset={12}
+                      className="w-64 p-0 border border-gray-200 rounded-xl shadow-xl bg-white"
+                    >
+                      <div className="p-4 border-b border-gray-100 bg-linear-to-r from-gray-50 to-white">
+                        <p className="text-sm text-gray-600">
+                          Hi, <span className="font-semibold text-gray-900">{displayName}</span>
+                        </p>
+                      </div>
+                      <div className="flex flex-col p-2 gap-0.5 text-sm">
+                        {menuItems.map((item) => (
+                          <button
+                            type="button"
+                            key={item.label}
+                            onClick={() => {
+                              navigate(item.path)
+                              setAccountPopoverOpen(false)
+                            }}
+                            className="flex items-center gap-3 px-3 py-2.5 text-left text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition-colors"
+                          >
+                            <Icon icon={item.icon} className="text-lg shrink-0" />
+                            <span className="font-medium">{item.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="border-t border-gray-100 p-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleLogout()
+                            setAccountPopoverOpen(false)
+                            navigate(ROUTES.IN_APP.HOME)
+                          }}
+                          className="flex items-center gap-3 px-3 py-2.5 text-red-600 font-semibold hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors w-full"
+                        >
+                          <Icon icon="bi:box-arrow-right" className="text-lg shrink-0" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
               ) : (
                 <div className="flex items-center gap-2 bg-gray-50 py-2 px-4 rounded-full">
                   <Link
@@ -498,27 +505,24 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
 
           {/* Mobile Menu Button */}
           <div className="flex lg:hidden items-center gap-2">
-            {isAuthenticated && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => openCart()}
-                  className="bg-gray-50 p-2.5 flex items-center justify-center rounded-full relative hover:bg-gray-100 transition-colors"
-                  aria-label="Cart"
-                >
-                  <Icon icon="bi:bag" className="size-5 text-gray-700" />
-                </button>
-                <Modal
-                  position="side"
-                  isOpen={isCartOpen}
-                  setIsOpen={(open) => (open ? openCart() : closeCart())}
-                  panelClass="!w-[393px] max-w-[90vw] p-0"
-                  overflowHidden
-                >
-                  <CartPopoverContent />
-                </Modal>
-              </>
-            )}
+            <button
+              type="button"
+              onClick={() => openCart()}
+              className="bg-gray-50 p-2.5 flex items-center justify-center rounded-full relative hover:bg-gray-100 transition-colors"
+              aria-label="Cart"
+            >
+              <Icon icon="bi:bag" className="size-5 text-gray-700" />
+            </button>
+            <Modal
+              position="side"
+              isOpen={isCartOpen}
+              setIsOpen={(open) => (open ? openCart() : closeCart())}
+              panelClass="!w-[393px] max-w-[90vw] p-0"
+              overflowHidden
+            >
+              <CartPopoverContent />
+            </Modal>
+            <GuestAddToCartModal />
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -557,7 +561,13 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
                               : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600',
                           )}
                         >
-                          <Icon icon="bi:chevron-right" className="text-lg text-gray-400" />
+                          <Icon
+                            icon={item.icon}
+                            className={cn(
+                              'text-lg shrink-0',
+                              isActive ? 'text-primary-500' : 'text-gray-400',
+                            )}
+                          />
                           <span>{item.label}</span>
                         </Link>
                       )
@@ -567,80 +577,98 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
               ) : null}
 
               {/* Mobile Auth Section */}
-              {isAuthenticated ? (
+              {isAuthenticated && !isGuestAuth ? (
                 <>
                   <div className="border-t border-gray-200 pt-3 mt-3">
-                    <div className="flex items-center gap-3 px-4 py-3 mb-2">
-                      {showNavProfileImage ? (
-                        <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                          <img
-                            src={navAvatarDisplaySrc}
-                            alt={displayName}
-                            className="w-full h-full rounded-full object-cover"
-                            onError={(e) => {
-                              const img = e.currentTarget as HTMLImageElement | undefined
-                              if (img) img.src = DEFAULT_AVATAR_SRC
-                            }}
-                          />
+                      <>
+                        <div className="flex items-center gap-3 px-4 py-3 mb-2">
+                          {showNavProfileImage ? (
+                            <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                              <img
+                                src={navAvatarDisplaySrc}
+                                alt={displayName}
+                                className="w-full h-full rounded-full object-cover"
+                                onError={(e) => {
+                                  const img = e.currentTarget as HTMLImageElement | undefined
+                                  if (img) img.src = DEFAULT_AVATAR_SRC
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <Icon icon="bi:person-circle" className="size-10 text-primary-600" />
+                          )}
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">{displayName}</p>
+                            <p className="text-xs text-gray-500">Account</p>
+                          </div>
                         </div>
-                      ) : (
-                        <Icon icon="bi:person-circle" className="size-10 text-primary-600" />
-                      )}
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">{displayName}</p>
-                        <p className="text-xs text-gray-500">Account</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      {menuItems.map((item) => (
+                        {isDashboardVariant && isCorporateSuperAdmin && (
+                          <MobileSwitchWorkspace onAfterSwitch={() => setMobileMenuOpen(false)} />
+                        )}
+                        <div className="flex flex-col gap-0.5">
+                          {menuItems.map((item) => (
+                            <button
+                              type="button"
+                              key={item.label}
+                              onClick={() => {
+                                navigate(item.path)
+                                setMobileMenuOpen(false)
+                              }}
+                              className="flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition-colors"
+                            >
+                              <Icon icon={item.icon} className="text-lg shrink-0" />
+                              <span className="font-medium">{item.label}</span>
+                            </button>
+                          ))}
+                        </div>
                         <button
                           type="button"
-                          key={item.label}
                           onClick={() => {
-                            navigate(item.path)
+                            handleLogout()
                             setMobileMenuOpen(false)
+                            navigate(ROUTES.IN_APP.HOME)
                           }}
-                          className="flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition-colors"
+                          className="flex items-center gap-3 px-4 py-3 text-red-600 font-semibold hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors w-full mt-2"
                         >
-                          <Icon icon={item.icon} className="text-lg shrink-0" />
-                          <span className="font-medium">{item.label}</span>
+                          <Icon icon="bi:box-arrow-right" className="text-lg shrink-0" />
+                          <span>Sign Out</span>
                         </button>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleLogout()
-                        setMobileMenuOpen(false)
-                        navigate(ROUTES.IN_APP.HOME)
-                      }}
-                      className="flex items-center gap-3 px-4 py-3 text-red-600 font-semibold hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors w-full mt-2"
-                    >
-                      <Icon icon="bi:box-arrow-right" className="text-lg shrink-0" />
-                      <span>Sign Out</span>
-                    </button>
+                      </>
                   </div>
                 </>
               ) : null}
               </div>
             </div>
-            {!isAuthenticated && (
-              <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-3">
-                <div className="wrapper flex flex-col gap-2">
+            {(!isAuthenticated || isGuestAuth) && (
+              <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-4">
+                <div className="wrapper flex flex-col gap-3">
+                  <p className="text-center text-xs text-gray-500 leading-relaxed">
+                    Shop and checkout as a guest — no account required.
+                  </p>
                   <Link
-                    to={ROUTES.IN_APP.AUTH.LOGIN}
+                    to={ROUTES.IN_APP.DASHQARDS}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center w-full px-4 py-2.5 text-gray-700 font-medium border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors"
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-primary-500 text-white font-semibold hover:bg-primary-700 rounded-xl transition-colors"
                   >
-                    Login
+                    <Icon icon="bi:gift" className="text-lg" />
+                    Browse gift cards
                   </Link>
-                  <Link
-                    to={ROUTES.IN_APP.AUTH.REGISTER}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center w-full px-4 py-2.5 bg-primary-500 text-white font-semibold hover:bg-primary-700 rounded-lg transition-colors"
-                  >
-                    Sign up
-                  </Link>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      to={ROUTES.IN_APP.AUTH.LOGIN}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center w-full px-4 py-2.5 text-gray-700 font-medium border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to={ROUTES.IN_APP.AUTH.REGISTER}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center w-full px-4 py-2.5 bg-primary-50 text-primary-700 font-semibold hover:bg-primary-100 rounded-xl transition-colors"
+                    >
+                      Sign up
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}

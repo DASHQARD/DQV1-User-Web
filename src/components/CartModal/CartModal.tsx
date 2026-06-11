@@ -22,6 +22,9 @@ export default function CartPopoverContent() {
     getCardBackground,
     getImageUrl,
     getCardTypeName,
+    canUpdateCartItemQuantity,
+    canRemoveCartItem,
+    isLocalGuestCartLineId,
   } = useCartModal()
 
   return (
@@ -89,30 +92,32 @@ export default function CartPopoverContent() {
                 const cartTotalAmount = parseFloat(cart.total_amount || '0')
                 const totalAmount = itemTotalAmount > 0 ? itemTotalAmount : cartTotalAmount
                 const quantity = item.total_quantity || 1
+                const cartStatus = cart.cart_status
+                const isLocalLine = isLocalGuestCartLineId(item.cart_item_id)
+                const quantityEditable = isLocalLine || canUpdateCartItemQuantity(cartStatus)
+                const itemRemovable = isLocalLine || canRemoveCartItem(cartStatus)
 
                 const handleQuantityChange = (newQuantity: number) => {
                   if (newQuantity < 1) {
-                    handleRemoveItem(item.cart_item_id)
+                    handleRemoveItem(item.cart_item_id, cartStatus)
                     return
                   }
                   if (item.cart_item_id) {
                     updateCartItem({
                       cart_item_id: item.cart_item_id,
                       quantity: newQuantity,
+                      cart_status: cartStatus,
                     })
                   } else {
                     console.warn('Cannot update quantity: cart_item_id is missing', { item, cart })
                   }
                 }
 
-                // Generate QR code for the card
-                const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`${item.product}-${item.card_id}`)}&bgcolor=FFFFFF&color=000000&margin=0`
-
                 const isDeleting = deletingItemId === item.cart_item_id
 
                 return (
                   <div
-                    key={`${cart.cart_id}-${item.card_id}`}
+                    key={`${cart.cart_id}-${item.cart_item_id ?? item.card_id}`}
                     className={`flex gap-4 transition-all duration-300 ${
                       isDeleting ? 'opacity-50 pointer-events-none' : 'opacity-100'
                     }`}
@@ -140,31 +145,20 @@ export default function CartPopoverContent() {
 
                       {/* Card Overlay Content */}
                       <div className="absolute inset-0 p-2 flex flex-col justify-between text-white pointer-events-none">
-                        {/* Top Section */}
-                        <div className="flex items-start justify-between">
-                          {/* Left: Card Type */}
-                          <div className="flex items-center gap-1">
-                            <Icon icon="bi:gift" className="size-3" />
-                            <span className="text-xs font-bold tracking-wide">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <Icon icon="bi:gift" className="size-3 shrink-0" />
+                            <span className="text-xs font-bold tracking-wide leading-none">
                               {getCardTypeName(itemType)}
                             </span>
                           </div>
-                          {/* Right: Price */}
-                          <div className="text-right">
-                            <span className="text-xs font-bold">{formatCurrency(totalAmount)}</span>
-                          </div>
+                          <span className="text-xs font-bold leading-none shrink-0">
+                            {formatCurrency(totalAmount)}
+                          </span>
                         </div>
 
-                        {/* Bottom Section */}
-                        <div className="flex items-end justify-between">
-                          {/* Left: Product Name */}
-                          <div className="text-[10px] font-semibold uppercase truncate max-w-[60%]">
-                            {item.product}
-                          </div>
-                          {/* Right: QR Code */}
-                          <div className="p-1 rounded bg-white/10 backdrop-blur-sm">
-                            <img src={qrCodeUrl} alt="QR Code" className="w-8 h-8" />
-                          </div>
+                        <div className="text-[10px] font-semibold uppercase truncate">
+                          {item.product}
                         </div>
                       </div>
                     </div>
@@ -185,7 +179,12 @@ export default function CartPopoverContent() {
                           <button
                             type="button"
                             onClick={() => handleQuantityChange(quantity - 1)}
-                            disabled={isUpdating || quantity <= 1}
+                            disabled={isUpdating || quantity <= 1 || !quantityEditable}
+                            title={
+                              !quantityEditable
+                                ? 'Quantity cannot be changed for this cart'
+                                : undefined
+                            }
                             className="px-2 py-1 text-gray-600 hover:text-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             aria-label="Decrease quantity"
                           >
@@ -199,7 +198,12 @@ export default function CartPopoverContent() {
                             onClick={() => {
                               handleQuantityChange(quantity + 1)
                             }}
-                            disabled={isUpdating}
+                            disabled={isUpdating || !quantityEditable}
+                            title={
+                              !quantityEditable
+                                ? 'Quantity cannot be changed for this cart'
+                                : undefined
+                            }
                             className="px-2 py-1 text-gray-600 hover:text-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             aria-label="Increase quantity"
                           >
@@ -209,8 +213,8 @@ export default function CartPopoverContent() {
 
                         <button
                           type="button"
-                          onClick={() => handleRemoveItem(item.cart_item_id)}
-                          disabled={isDeleting || isUpdating}
+                          onClick={() => handleRemoveItem(item.cart_item_id, cartStatus)}
+                          disabled={isDeleting || isUpdating || !itemRemovable}
                           className="text-red-500 hover:text-red-700 transition-colors ml-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[24px] min-h-[24px]"
                           aria-label="Remove item"
                         >

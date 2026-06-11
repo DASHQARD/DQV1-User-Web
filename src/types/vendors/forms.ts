@@ -4,6 +4,7 @@ export interface VendorDetailsFormProps {
   onSubmit: (data: any) => void
   onCancel: () => void
   corporateUser?: UserProfileResponse | null
+  isSubmitting?: boolean
 }
 
 export interface VendorProfileFormProps {

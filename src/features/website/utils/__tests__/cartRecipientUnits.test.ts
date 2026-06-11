@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getCartRecipientDisplayLines,
   getRecipientsForCartUnit,
   isCartUnitAssigned,
 } from '../cartRecipientUnits'
@@ -26,6 +27,26 @@ describe('cartRecipientUnits', () => {
     expect(unit0[0]?.email).toBe('djokotoabeeku619@gmail.com')
     expect(unit0[0]?.amount).toBe(10)
     expect(unit1[0]?.amount).toBe(10)
+  })
+
+  it('getCartRecipientDisplayLines prefers phone when email is missing', () => {
+    expect(
+      getCartRecipientDisplayLines({
+        phone: '+233559617908',
+      }),
+    ).toEqual({ primary: '+233559617908' })
+  })
+
+  it('getCartRecipientDisplayLines avoids duplicating email on both lines', () => {
+    expect(
+      getCartRecipientDisplayLines({
+        email: 'user@example.com',
+        phone: '+233559611108',
+      }),
+    ).toEqual({
+      primary: 'user@example.com',
+      secondary: '+233559611108',
+    })
   })
 
   it('maps separate recipients to separate unit indices', () => {

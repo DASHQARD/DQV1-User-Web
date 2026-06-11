@@ -9,6 +9,7 @@ export { useUpdateBranchManagerInvitationModal } from './useUpdateBranchManagerI
 export { useUpdateBranchStatusModal } from './useUpdateBranchStatusModal'
 export {
   useVendorRequestDetails,
+  type RequestEntityImage,
   type RequestInfoRow,
   type UseVendorRequestDetailsReturn,
 } from './useVendorRequestDetails'

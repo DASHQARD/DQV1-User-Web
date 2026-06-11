@@ -11,7 +11,7 @@ import {
 } from '../services/payment'
 import { processCheckoutResponse } from '../utils/checkoutRedirect'
 
-type CheckoutError = { status?: number; message?: string }
+type CheckoutError = { status?: number; message?: string; requires_account?: boolean }
 
 function handleCheckoutMutationError(
   error: CheckoutError,
@@ -26,6 +26,9 @@ function handleCheckoutMutationError(
   }
 
   if (options?.isGuest && error?.status === 400) {
+    if (error.requires_account) {
+      return
+    }
     const lower = message.toLowerCase()
     if (
       lower.includes('cart not found') ||
@@ -73,11 +76,21 @@ export function usePayments() {
     })
   }
 
-  function useGuestCheckoutService(options?: { onCartRefetch?: () => void }) {
+  function useGuestCheckoutService(options?: {
+    onCartRefetch?: () => void
+    onRequiresAccount?: (message: string) => void
+  }) {
     return useMutation({
       mutationFn: (data: GuestCheckoutPayload) =>
         runCheckoutMutation(guestCheckout, data, queryClient, true),
       onError: (error: CheckoutError) => {
+        if (error?.status === 400 && error.requires_account) {
+          options?.onRequiresAccount?.(
+            error.message ||
+              'This purchase exceeds the guest limit. Please create an account to continue.',
+          )
+          return
+        }
         handleCheckoutMutationError(error, toast, {
           isGuest: true,
           onCartRefetch: options?.onCartRefetch,

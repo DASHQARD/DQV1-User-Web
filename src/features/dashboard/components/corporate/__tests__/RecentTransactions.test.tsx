@@ -43,6 +43,7 @@ describe('RecentTransactions', () => {
           {
             id: 1,
             trans_id: 'TXN-001',
+            receipt_number: '#DQI00836',
             type: 'purchase',
             amount: 100,
             status: 'completed',
@@ -53,7 +54,8 @@ describe('RecentTransactions', () => {
       isLoading: false,
     })
     renderWithProviders(<RecentTransactions />)
-    expect(screen.getByText('TXN-001')).toBeInTheDocument()
+    expect(screen.getByText('#DQI00836')).toBeInTheDocument()
+    expect(screen.queryByText('TXN-001')).not.toBeInTheDocument()
     expect(screen.getByText('purchase')).toBeInTheDocument()
   })
 })

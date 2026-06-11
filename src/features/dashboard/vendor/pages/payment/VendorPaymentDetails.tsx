@@ -7,6 +7,7 @@ import { VendorAccountStatusBanner } from '@/features/dashboard/components/vendo
 import { useVendorOnboardingProgress } from '@/features/dashboard/hooks/useVendorOnboardingProgress'
 import {
   canFetchVendorPaymentDetails,
+  canManageVendorPaymentDetails,
   hasVendorPaymentDetails,
   isVendorPendingAdminApproval,
 } from '@/features/dashboard/utils/vendorAccountStatus'
@@ -59,6 +60,7 @@ export default function VendorPaymentDetails() {
   const { isComplete: isOnboardingComplete } = useVendorOnboardingProgress()
   const hasExistingPaymentDetails = hasVendorPaymentDetails(userProfile)
   const canFetchPaymentDetails = canFetchVendorPaymentDetails(userProfile)
+  const canManagePaymentDetails = canManageVendorPaymentDetails(userProfile)
   const showPendingApprovalBanner = isVendorPendingAdminApproval(
     userProfile,
     isOnboardingComplete,
@@ -189,24 +191,33 @@ export default function VendorPaymentDetails() {
         />
       )}
 
-      {hasExistingPaymentDetails && !canFetchPaymentDetails && (
+      {!canManagePaymentDetails && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Payment details can be added after DashQard verifies your vendor account. Complete your
+          compliance steps and wait for admin approval before setting up payouts.
+        </div>
+      )}
+
+      {hasExistingPaymentDetails && !canFetchPaymentDetails && canManagePaymentDetails && (
         <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
           Payment details are saved on your profile. Full payout management will be available after
           a DashQard administrator approves your account.
         </div>
       )}
-      <div className="flex justify-end">
-        <div className="flex items-center gap-3">
-          {canFetchPaymentDetails && (
-            <Button variant="danger" onClick={() => setIsDeleteAllModalOpen(true)}>
-              Delete All Payment Methods
+      {canManagePaymentDetails && (
+        <div className="flex justify-end">
+          <div className="flex items-center gap-3">
+            {canFetchPaymentDetails && (
+              <Button variant="danger" onClick={() => setIsDeleteAllModalOpen(true)}>
+                Delete All Payment Methods
+              </Button>
+            )}
+            <Button variant="secondary" onClick={() => setIsAddModalOpen(true)}>
+              Add Payment Details
             </Button>
-          )}
-          <Button variant="secondary" onClick={() => setIsAddModalOpen(true)}>
-            Add Payment Details
-          </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
         <Text variant="h6" weight="medium">
@@ -238,7 +249,8 @@ export default function VendorPaymentDetails() {
                       <button
                         type="button"
                         onClick={() => openEditPaymentModal('mobile_money', account)}
-                        className="absolute top-2 right-2 text-gray-500 hover:text-primary-900 transition-colors"
+                        disabled={!canManagePaymentDetails}
+                        className="absolute top-2 right-2 text-gray-500 hover:text-primary-900 transition-colors disabled:hidden"
                         aria-label="Update payment details"
                       >
                         <Icon icon="bi:three-dots-vertical" className="text-base" />
@@ -275,7 +287,8 @@ export default function VendorPaymentDetails() {
                       <button
                         type="button"
                         onClick={() => openEditPaymentModal('bank', account)}
-                        className="absolute top-2 right-2 text-gray-500 hover:text-primary-900 transition-colors"
+                        disabled={!canManagePaymentDetails}
+                        className="absolute top-2 right-2 text-gray-500 hover:text-primary-900 transition-colors disabled:hidden"
                         aria-label="Update payment details"
                       >
                         <Icon icon="bi:three-dots-vertical" className="text-base" />

@@ -176,10 +176,12 @@ export type CartItemResponse = {
 
 export type CartListResponse = {
   cart_created_at: string
-  cart_id: number
+  cart_id: number | string
   /** Guest cart UUID for POST /payments/guest/checkout */
   guest_cart_uuid?: string
   cart_status: string
+  /** Set when cart is soft-archived via PATCH /carts/:id/archive */
+  archived_at?: string | null
   cart_updated_at: string
   item_count: string
   items: {
@@ -447,7 +449,7 @@ export type VendorCards = {
 
 /** Base fields required by all checkout gateways */
 export type CheckoutPayloadBase = {
-  cart_id: number
+  cart_id: number | string
   full_name: string
   email: string
   phone_number: string
@@ -556,7 +558,8 @@ export type GuestGetCardSingleParams = {
 export type GuestCheckoutPayloadBase = {
   guest_cart_id: string
   full_name: string
-  email: string
+  /** Omit when the guest does not provide an email. */
+  email?: string
   phone_number: string
   amount_due: number
 }

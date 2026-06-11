@@ -7,7 +7,7 @@ type UsePresignedMediaUrlOptions = {
   enabled?: boolean
 }
 
-/** Resolves a storage file key or uploads path to a browser-loadable URL. */
+/** Resolves profile/media URLs — accepts signed URLs from the API as-is, or legacy storage keys. */
 export function usePresignedMediaUrl(
   fileKey: string | null | undefined,
   options?: UsePresignedMediaUrlOptions,

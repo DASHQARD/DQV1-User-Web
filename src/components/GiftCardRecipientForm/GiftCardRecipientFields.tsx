@@ -12,6 +12,7 @@ type GiftCardRecipientFieldsProps<T extends FieldValues> = {
   assignToSelf: boolean
   usesAccountAssignToSelf?: boolean
   isLocalGuest?: boolean
+  isGuestAuth?: boolean
   fieldNames?: RecipientFieldNames
   /** Use design-system Input components (PurchaseModal) vs native inputs (purchase pages). */
   variant?: 'design-system' | 'native'
@@ -28,6 +29,7 @@ export function GiftCardRecipientFields<T extends FieldValues>({
   assignToSelf,
   usesAccountAssignToSelf = assignToSelf,
   isLocalGuest = false,
+  isGuestAuth = false,
   fieldNames = STANDARD_RECIPIENT_FIELDS,
   variant = 'native',
   phonePlaceholder = EXAMPLE_PHONE_PLACEHOLDER,
@@ -47,8 +49,9 @@ export function GiftCardRecipientFields<T extends FieldValues>({
   const emailError = errors[fieldNames.email]?.message as string | undefined
   const messageError = errors[fieldNames.message]?.message as string | undefined
 
+  const guestSessionAssignToSelf = assignToSelf && isGuestAuth && !isLocalGuest
   const phoneRequired = !assignToSelf
-  const disabled = usesAccountAssignToSelf || assignToSelf
+  const disabled = usesAccountAssignToSelf
 
   const firstNamePlaceholder = usesAccountAssignToSelf
     ? 'Will use your account information'
@@ -64,9 +67,7 @@ export function GiftCardRecipientFields<T extends FieldValues>({
 
   const phoneFieldPlaceholder = usesAccountAssignToSelf
     ? 'Will use your account phone'
-    : assignToSelf
-      ? 'Will use your account phone'
-      : phonePlaceholder
+    : phonePlaceholder
 
   const emailPlaceholder = usesAccountAssignToSelf
     ? 'Will use your account email'
@@ -75,12 +76,24 @@ export function GiftCardRecipientFields<T extends FieldValues>({
       : 'Enter email address'
 
   return (
-    <section className={`border-b border-gray-100 px-10 py-8 ${className ?? ''}`}>
-      <div className="mb-6 space-y-1">
-        <h3 className="text-xl font-semibold text-[#212529]">Recipient Details</h3>
-        <p className="text-sm text-gray-500">Who will receive this gift card?</p>
-      </div>
-      <div className="grid max-w-2xl gap-6">
+    <section className={`border-b border-gray-100 px-4 py-6 sm:px-6 sm:py-8 md:px-10 ${className ?? ''}`}>
+      <div className="mx-auto w-full max-w-2xl">
+        <div className="mb-6 space-y-1">
+          <h3 className="text-xl font-semibold text-[#212529]">Recipient Details</h3>
+          <p className="text-sm text-gray-500">Who will receive this gift card?</p>
+        </div>
+        <div className="grid gap-6">
+        {guestSessionAssignToSelf ? (
+          <div className="rounded-lg border border-primary-100 bg-primary-50/60 p-4 text-sm text-primary-900">
+            <p className="font-medium">Assigned to you</p>
+            <p className="mt-1 text-primary-800">
+              Name and phone are taken from your sender details at checkout. You can still add an
+              optional message below.
+            </p>
+          </div>
+        ) : null}
+        {!guestSessionAssignToSelf ? (
+        <>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm font-semibold text-gray-700">
@@ -208,6 +221,8 @@ export function GiftCardRecipientFields<T extends FieldValues>({
             <p className="mt-1 text-xs text-gray-500">Will use your account email</p>
           ) : null}
         </div>
+        </>
+        ) : null}
         <div>
           <label className="mb-2 block text-sm font-semibold text-gray-700">
             Personal Message{messageRequired ? ' *' : ' (optional)'}
@@ -233,6 +248,7 @@ export function GiftCardRecipientFields<T extends FieldValues>({
               {messageError ? <p className="mt-1 text-xs text-red-500">{messageError}</p> : null}
             </>
           )}
+        </div>
         </div>
       </div>
     </section>

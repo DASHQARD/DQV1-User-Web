@@ -81,8 +81,8 @@ export default function Settings() {
   ]
 
   return (
-    <div className="min-h-[600px] bg-gray-50 rounded-xl overflow-hidden flex max-h-[calc(100vh-8rem)]">
-      <div className="flex flex-col gap-2 min-w-[240px] p-4 bg-white shrink-0 border-r border-gray-200">
+    <div className="min-h-[600px] bg-gray-50 rounded-xl overflow-x-hidden flex flex-col lg:flex-row lg:max-h-[calc(100vh-8rem)]">
+      <div className="flex flex-col gap-2 w-full lg:min-w-[240px] lg:max-w-[240px] p-4 bg-white shrink-0 border-b lg:border-b-0 lg:border-r border-gray-200">
         <div className="mb-4">
           <Text variant="h3" weight="semibold" className="text-[#402D87]">
             Settings
@@ -115,7 +115,7 @@ export default function Settings() {
             >
               <Icon
                 icon={setting.icon}
-                className={cn('text-lg', active ? 'text-[#402D87]' : 'text-gray-500')}
+                className={cn('text-lg shrink-0', active ? 'text-[#402D87]' : 'text-gray-500')}
               />
               <Text variant="span" weight={active ? 'semibold' : 'normal'} className="text-sm">
                 {setting.label}
@@ -125,14 +125,14 @@ export default function Settings() {
         })}
       </div>
 
-      <div className="bg-white flex flex-col flex-1 overflow-y-auto">
+      <div className="bg-white flex flex-col flex-1 min-w-0 overflow-y-auto">
         <TabbedView
           tabs={settingsTabs}
           defaultTab="business-details"
           urlParam="tab"
-          containerClassName="p-6"
-          btnClassName="pb-3"
-          tabsClassName="gap-6 border-b border-gray-200"
+          containerClassName="p-4 sm:p-6 min-w-0"
+          btnClassName="pb-3 whitespace-nowrap"
+          tabsClassName="gap-2 sm:gap-6 border-b border-gray-200 overflow-x-auto"
         />
       </div>
     </div>

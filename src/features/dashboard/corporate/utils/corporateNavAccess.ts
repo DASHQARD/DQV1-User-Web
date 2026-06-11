@@ -86,6 +86,16 @@ export function getCorporateAccessState(profile?: CorporateProfileForAccess | nu
   }
 }
 
+/** Business details onboarding step is locked after both details and documents are submitted. */
+export function isCorporateBusinessDetailsSubmitted(
+  onboardingProgress?: CorporateProfileForAccess['onboarding_progress'] | null,
+): boolean {
+  return Boolean(
+    onboardingProgress?.business_details_completed &&
+      onboardingProgress?.business_documents_completed,
+  )
+}
+
 type CorporateNavAccessOptions = {
   canAccessRestrictedFeatures?: boolean
 }

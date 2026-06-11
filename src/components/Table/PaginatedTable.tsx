@@ -4,7 +4,7 @@ import { type ColumnDef } from '@tanstack/react-table'
 import dayjs from 'dayjs'
 
 import EmptyStateImage from '@/assets/images/empty-state.png'
-import { cn } from '@/libs'
+import { cn, Icon } from '@/libs'
 import type { CsvHeader, DropdownOption, QueryType } from '@/types'
 import { generateAndDownloadCsv, getQueryString } from '@/utils/helpers'
 
@@ -78,10 +78,12 @@ const removeCursorFromQuery = (query: QueryType) => {
 }
 
 const FILTER_BUTTON_CLASSNAME =
-  'border border-[#e2e4ed] bg-white py-0 rounded-md w-full md:w-fit text-xs text-[#7c8689] font-normal capitalize min-w-0 truncate justify-between'
+  'border border-[#e2e4ed] bg-white py-0 rounded-md w-full sm:w-auto text-xs text-[#7c8689] font-normal capitalize min-w-0 truncate justify-between'
 
 const EXPORT_BUTTON_CLASSNAME =
-  'border border-[#e2e4ed] bg-white py-0 rounded-md w-full md:w-fit text-xs text-primary-900 capitalize font-semibold min-w-0 justify-between'
+  'border border-[#e2e4ed] bg-white py-0 rounded-md w-full sm:w-auto text-xs text-primary-900 capitalize font-semibold min-w-0 justify-between'
+
+const FILTER_TOOLBAR_ITEM_CLASSNAME = 'w-full min-w-0 sm:w-auto sm:flex-none'
 
 /** Legacy pages passed absolute positioning here; it caused filters to overlap the table. */
 function sanitizeFilterWrapperClassName(className?: string) {
@@ -266,7 +268,7 @@ export function PaginatedTable({
         )}
 
         {hasFilterControls ? (
-          <div className="flex flex-wrap gap-2 items-stretch sm:items-center w-full min-w-0">
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-start">
             {filterBy?.simpleSelects?.map((item) => {
               const selectedValue = query[item.label as keyof QueryType]
               const selectedOption = item.options.find(
@@ -280,66 +282,74 @@ export function PaginatedTable({
                   : `Filter by ${item.label === 'direction' ? 'transaction type' : item.label}`
 
               return (
-                <Dropdown
-                  key={item.label}
-                  contentClassName=""
-                  align="start"
-                  actions={[
-                    {
-                      label: 'All',
-                      value: '',
-                    },
-                    ...item.options.map((x) =>
-                      typeof x === 'string' ? { label: x, value: x } : x,
-                    ),
-                  ].map((option) => ({
-                    label: option.label,
-                    onClickFn: () => {
-                      setQuery({
-                        ...removeCursorFromQuery(query),
-                        [item.label]: option.value,
-                      } as QueryType)
-                    },
-                  }))}
-                >
-                  <Button
-                    variant="outline"
-                    icon="hugeicons:arrow-down-01"
-                    iconPosition="right"
-                    size="medium"
-                    className={FILTER_BUTTON_CLASSNAME}
+                <div key={item.label} className={FILTER_TOOLBAR_ITEM_CLASSNAME}>
+                  <Dropdown
+                    contentClassName=""
+                    align="start"
+                    actions={[
+                      {
+                        label: 'All',
+                        value: '',
+                      },
+                      ...item.options.map((x) =>
+                        typeof x === 'string' ? { label: x, value: x } : x,
+                      ),
+                    ].map((option) => ({
+                      label: option.label,
+                      onClickFn: () => {
+                        setQuery({
+                          ...removeCursorFromQuery(query),
+                          [item.label]: option.value,
+                        } as QueryType)
+                      },
+                    }))}
                   >
-                    {displayText}
-                  </Button>
-                </Dropdown>
+                    <Button
+                      variant="ghost"
+                      icon="hugeicons:arrow-down-01"
+                      iconPosition="right"
+                      size="medium"
+                      className={FILTER_BUTTON_CLASSNAME}
+                    >
+                      <span className={selectedValue ? 'text-[#212123]' : 'text-[#7c8689]'}>
+                        {displayText}
+                      </span>
+                    </Button>
+                  </Dropdown>
+                </div>
               )
             })}
 
             {dateFilterConfig ? (
-              <DateRangeFilter
+              <div
                 key="date-range-filter"
-                startDate={startDate}
-                endDate={endDate}
-                onChange={handleDateRangeChange}
-                placeholder={dateFilterConfig.label || 'Date range'}
-                format="DD-MM-YYYY"
-                className="w-full min-w-[200px] sm:w-auto sm:max-w-[280px]"
-              />
+                className={cn(FILTER_TOOLBAR_ITEM_CLASSNAME, 'sm:max-w-[280px]')}
+              >
+                <DateRangeFilter
+                  startDate={startDate}
+                  endDate={endDate}
+                  onChange={handleDateRangeChange}
+                  placeholder={dateFilterConfig.label || 'Date range'}
+                  format="DD-MM-YYYY"
+                  className="w-full"
+                />
+              </div>
             ) : null}
 
             {buttonGroup}
 
             {!noExport ? (
-              <div className="w-full min-w-0 md:w-auto">
+              <div className={FILTER_TOOLBAR_ITEM_CLASSNAME}>
                 <Dropdown actions={actions}>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     icon="hugeicons:arrow-down-01"
                     iconPosition="right"
                     size="medium"
                     className={EXPORT_BUTTON_CLASSNAME}
                   >
-                    Export
+                    <Icon icon="hugeicons:download-01" className="size-4 shrink-0 text-primary-900" />
+                    <span className="text-primary-900">Export</span>
                   </Button>
                 </Dropdown>
               </div>

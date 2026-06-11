@@ -3,6 +3,7 @@ import {
   getCardExpiryEndTimestamp,
   getCardStatusBarWidth,
   isAssignedCardRedeemable,
+  isMyGiftCardActive,
   isCardExpired,
   isCatalogCardPurchasable,
   resolveCardDisplayStatus,
@@ -36,6 +37,35 @@ describe('cardExpiry', () => {
     expect(isCatalogCardPurchasable({ status: 'active', expiry_date: null })).toBe(true)
     expect(isCatalogCardPurchasable({ status: 'expired' })).toBe(false)
     expect(isCatalogCardPurchasable({ status: 'pending' })).toBe(false)
+  })
+
+  it('isMyGiftCardActive groups redeemable vs inactive cards', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-15T00:00:00.000Z'))
+    expect(
+      isMyGiftCardActive({
+        status: 'active',
+        expiry_date: '2026-06-30',
+        is_activated: true,
+        balance: 255,
+      }),
+    ).toBe(true)
+    expect(
+      isMyGiftCardActive({
+        status: 'active',
+        expiry_date: '2026-06-30',
+        is_activated: false,
+        balance: 255,
+      }),
+    ).toBe(false)
+    expect(
+      isMyGiftCardActive({
+        status: 'used',
+        expiry_date: '2026-12-30',
+        balance: 100,
+      }),
+    ).toBe(false)
+    vi.useRealTimers()
   })
 
   it('isAssignedCardRedeemable respects redeemed flag and expiry', () => {

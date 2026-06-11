@@ -11,6 +11,32 @@ export type CartRecipient = {
   [key: string]: unknown
 }
 
+export function getCartRecipientDisplayLines(recipient: CartRecipient): {
+  primary: string
+  secondary?: string
+} {
+  const name = String(recipient.name ?? recipient.recipient_name ?? '').trim()
+  const email = String(recipient.email ?? recipient.recipient_email ?? '').trim()
+  const phone = String(recipient.phone ?? recipient.recipient_phone ?? '').trim()
+
+  if (name && name !== email) {
+    return {
+      primary: name,
+      secondary: email || phone || undefined,
+    }
+  }
+  if (email) {
+    return {
+      primary: email,
+      secondary: phone && phone !== email ? phone : undefined,
+    }
+  }
+  if (phone) {
+    return { primary: phone }
+  }
+  return { primary: 'Recipient' }
+}
+
 export function getRecipientQuantity(recipient: CartRecipient): number {
   const q = Number(recipient.quantity ?? recipient.recipient_quantity)
   return Number.isFinite(q) && q > 0 ? Math.floor(q) : 1
@@ -43,11 +69,13 @@ export function getRecipientsForCartUnit(
         unitAmount ??
         (Number.isFinite(rawAmount) && qty > 1 ? rawAmount / qty : rawAmount)
 
+      const display = getCartRecipientDisplayLines(recipient)
       return [
         {
           ...recipient,
           id: recipient.recipient_id ?? recipient.id,
-          name: recipient.name ?? recipient.recipient_name ?? recipient.email,
+          name: display.primary,
+          recipient_name: display.primary,
           amount: perUnitAmount,
         },
       ]

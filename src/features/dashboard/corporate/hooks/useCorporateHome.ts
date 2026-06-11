@@ -112,6 +112,7 @@ export function useCorporateHome() {
   }
 
   const navigateToBusinessStep = () => {
+    if (hasBusinessDetailsAndDocs) return
     navigate(addAccountParam(ROUTES.IN_APP.DASHBOARD.CORPORATE.COMPLIANCE.BUSINESS_DETAILS))
   }
 

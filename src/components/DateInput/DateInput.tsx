@@ -70,7 +70,7 @@ export function DateInput(props: Props) {
         minDate={minDate}
         strictParsing={strictParsing}
         className={cn(
-          'w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-600 placeholder:text-gray-300 focus:border-primary-400 focus:outline-none',
+          'w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-600 placeholder:text-gray-300 placeholder:opacity-100 hover:placeholder:text-gray-300 focus:border-primary-400 focus:outline-none',
           disabled && 'cursor-not-allowed bg-[#f3f3f4] text-gray-400 placeholder:text-gray-400',
           error && 'border-red-500 ring-1 ring-red-500',
         )}

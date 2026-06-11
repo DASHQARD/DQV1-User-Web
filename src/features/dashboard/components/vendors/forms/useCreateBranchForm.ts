@@ -66,9 +66,12 @@ export function useCreateBranchForm() {
 
   const { useAddBranchService } = useVendorMutations()
   const { useAddCorporateBranchService } = corporateMutations()
-  const { mutateAsync: createVendorBranch } = useAddBranchService()
-  const { mutateAsync: createCorporateBranch } = useAddCorporateBranchService()
+  const { mutateAsync: createVendorBranch, isPending: isVendorBranchPending } =
+    useAddBranchService()
+  const { mutateAsync: createCorporateBranch, isPending: isCorporateBranchPending } =
+    useAddCorporateBranchService()
   const createBranch = isCorporateSuperAdmin ? createCorporateBranch : createVendorBranch
+  const isSubmitting = isCorporateSuperAdmin ? isCorporateBranchPending : isVendorBranchPending
 
   const isUserActive =
     userProfileData?.status === 'active' ||
@@ -176,6 +179,7 @@ export function useCreateBranchForm() {
     isFormDisabled,
     missingVendorId,
     vendorId,
+    isSubmitting,
     onSubmit,
   }
 }

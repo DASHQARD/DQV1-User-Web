@@ -12,8 +12,7 @@ import { useAuthStore } from '@/stores'
 import { MODAL_NAMES } from '@/utils/constants'
 import { getAssignToSelfContactPrefill } from '@/features/website/utils/assignToSelfContactPrefill'
 import { formatPersonName, splitPersonName } from '@/utils/personName'
-import { isValidInternationalPhoneDigits } from '@/utils/schemas/shared'
-import { isLocalGuestCartLineId, useGuestLocalCartStore } from '@/stores/guestLocalCart'
+import { isLocalGuestCartLineId } from '@/stores/guestLocalCart'
 import {
   AssignToSelfToggle,
   GiftCardAmountSection,
@@ -226,27 +225,8 @@ export default function PurchaseModal() {
     }
 
     const recipientFullName = formatPersonName(data.first_name ?? '', data.last_name ?? '')
-    const resolvedAmount = data.amount ?? initialAmount ?? 0
 
     if (isLocalGuestAssign) {
-      let phone = data.phone?.trim() ?? ''
-      if (phone && !isValidInternationalPhoneDigits(phone)) {
-        phone = data.assign_to_self ? '' : phone
-      }
-      useGuestLocalCartStore.getState().upsertRecipientDraft(String(currentCartItemId), {
-        quantity_index: modal.modalData?.quantity_index ?? 0,
-        assign_to_self: data.assign_to_self,
-        first_name: data.assign_to_self ? '' : data.first_name,
-        last_name: data.assign_to_self ? '' : data.last_name,
-        phone: data.assign_to_self ? '' : phone,
-        email: data.assign_to_self ? '' : data.email,
-        message: data.message || '',
-        amount: resolvedAmount,
-        draftId: modal.modalData?.local_draft_id,
-      })
-      modal.closeModal()
-      form.reset()
-      setAssignToSelf(!isLocalGuestAssign)
       return
     }
 
@@ -318,14 +298,14 @@ export default function PurchaseModal() {
       showClose
       isOpen={modal.isModalOpen(MODAL_NAMES.RECIPIENT.ASSIGN)}
       setIsOpen={modal.closeModal}
-      panelClass="!max-w-[900px] md:!w-full"
+      panelClass="!w-full !max-w-[900px] max-md:!max-w-[calc(100vw-0.5rem)] max-md:!my-2 max-md:max-h-[calc(100dvh-0.5rem)] overflow-x-hidden overflow-y-auto"
     >
       <GiftCardRecipientFormHeader
         title="Recipient details"
         subtitle={`Who receives this ${cardProduct || cardTypeName} gift card. Turn on Assign to Self if it is for you — otherwise enter their name, phone, email, and an optional message.`}
       />
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-w-0 flex-col overflow-x-hidden">
         <GiftCardFlipPreview
           cardTypeName={cardTypeName}
           backgroundImage={cardBackground}
@@ -343,6 +323,7 @@ export default function PurchaseModal() {
           description={getAssignToSelfDescription({
             assignToSelf,
             isLocalGuest: isLocalGuestAssign,
+            isGuestAuth: isGuestAuth && !isLocalGuestAssign,
           })}
         />
 
@@ -364,18 +345,19 @@ export default function PurchaseModal() {
           assignToSelf={assignToSelf}
           usesAccountAssignToSelf={usesAccountAssignToSelf}
           isLocalGuest={isLocalGuestAssign}
+          isGuestAuth={isGuestAuth && !isLocalGuestAssign}
           variant="design-system"
         />
 
         <GiftCardRecipientFormActions>
-          <Button type="button" variant="outline" onClick={handleCloseModal} className="md:w-auto">
+          <Button type="button" variant="outline" onClick={handleCloseModal} className="w-full sm:w-auto">
             Cancel
           </Button>
           <Button
             type="submit"
             variant="secondary"
             loading={form.formState.isSubmitting || activeMutation.isPending}
-            className="md:w-auto"
+            className="w-full sm:w-auto"
           >
             Save Recipient
           </Button>

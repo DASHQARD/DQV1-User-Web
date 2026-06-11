@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
+import { getApiErrorMessage } from '@/utils/apiError'
 import { useAuthStore } from '@/stores'
 import { deleteCartItem } from '../services/cart'
 import { deleteRecipient } from '@/features/dashboard/services'
@@ -19,8 +20,8 @@ export function useViewBagMutations() {
       toast.success('Item removed from cart')
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to remove item')
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, 'Failed to remove item'))
     },
   })
 
@@ -31,8 +32,8 @@ export function useViewBagMutations() {
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
       queryClient.invalidateQueries({ queryKey: ['cart-all-recipients'] })
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to remove recipient')
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, 'Failed to remove recipient'))
     },
   })
 

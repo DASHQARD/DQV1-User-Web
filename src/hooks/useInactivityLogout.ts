@@ -28,7 +28,8 @@ type Options = {
  * Logs the authenticated user out after a period of inactivity.
  *
  * - Listens for mouse / keyboard / touch / scroll activity and resets a timer.
- * - On expiry, calls `/auth/logout` or `/guest-auth/logout` based on session type,
+ * - On expiry, calls `/auth/logout`, `/guest-auth/session/logout`, or `/guest-auth/logout`
+ *   based on session type,
  *   clears local auth state and the react-query cache, then redirects to login.
  * - No-ops when unauthenticated or in the test environment.
  */

@@ -27,7 +27,7 @@ export default function CreateBranch() {
 
   return (
     <div className="lg:py-10">
-      <div className="flex flex-col gap-8">
+      <div className="mx-auto flex w-full max-w-[640px] flex-col gap-8">
         <div className="flex items-center justify-between">
           <Text variant="h2" weight="semibold" className="text-primary-900">
             Create Branch
@@ -45,9 +45,7 @@ export default function CreateBranch() {
             </Text>
           </div>
 
-          <div className="max-w-[600px]">
-            <CreateBranchForm />
-          </div>
+          <CreateBranchForm />
         </div>
       </div>
     </div>

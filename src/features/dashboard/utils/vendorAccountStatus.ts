@@ -35,3 +35,11 @@ export function canFetchVendorPaymentDetails(
 ): boolean {
   return hasVendorPaymentDetails(userProfile) && isVendorAccountApproved(userProfile?.status)
 }
+
+/** Add, update, or delete vendor payout details — only after admin approval / verification. */
+export function canManageVendorPaymentDetails(
+  userProfile: UserProfileResponse | null | undefined,
+): boolean {
+  if (!userProfile || userProfile.user_type === 'branch') return false
+  return isVendorAccountApproved(userProfile.status)
+}

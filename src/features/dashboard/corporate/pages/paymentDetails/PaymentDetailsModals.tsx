@@ -66,16 +66,16 @@ function PaymentFormFields({ form, setForm, countries, formatFieldLabel }: Payme
       />
 
       {form.payment_method === 'mobile_money' ? (
-        <div className="rounded-xl border border-[#e8eaef] bg-[#faf9fc] p-5 space-y-5">
-          <div className="flex items-start gap-3">
+        <div className="rounded-xl border border-[#e8eaef] bg-[#faf9fc] p-4 sm:p-5 space-y-4 sm:space-y-5 min-w-0">
+          <div className="flex items-start gap-3 min-w-0">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#402D87]/10">
               <Icon icon="bi:phone" className="text-base text-[#402D87]" />
             </span>
-            <Text variant="span" className="text-sm text-gray-600 leading-relaxed">
+            <Text variant="span" className="text-sm text-gray-600 leading-relaxed min-w-0">
               Enter the mobile money account where you would like to receive vendor payouts.
             </Text>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 gap-4 sm:gap-5 min-w-0">
             <Select
               label="Mobile Money Provider"
               placeholder="Select provider"
@@ -93,16 +93,16 @@ function PaymentFormFields({ form, setForm, countries, formatFieldLabel }: Payme
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-[#e8eaef] bg-[#faf9fc] p-5 space-y-5">
-          <div className="flex items-start gap-3">
+        <div className="rounded-xl border border-[#e8eaef] bg-[#faf9fc] p-4 sm:p-5 space-y-4 sm:space-y-5 min-w-0">
+          <div className="flex items-start gap-3 min-w-0">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#402D87]/10">
               <Icon icon="bi:bank" className="text-base text-[#402D87]" />
             </span>
-            <Text variant="span" className="text-sm text-gray-600 leading-relaxed">
+            <Text variant="span" className="text-sm text-gray-600 leading-relaxed min-w-0">
               Enter your bank account details for receiving vendor payouts.
             </Text>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
             <Input
               label={formatFieldLabel('bank_name')}
               placeholder="e.g. GCB Bank"
@@ -119,7 +119,7 @@ function PaymentFormFields({ form, setForm, countries, formatFieldLabel }: Payme
                 updateField('account_number', e.target.value)
               }
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Branch"
                 placeholder="Branch name"
@@ -180,14 +180,14 @@ function PaymentModalShell({
   isLoading,
 }: PaymentModalShellProps) {
   return (
-    <>
-      <div className="px-6 pt-6 pb-5 border-b border-gray-100">
-        <div className="flex items-start gap-3 pr-8">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#402D87]/10">
-            <Icon icon="bi:credit-card-2-front" className="text-xl text-[#402D87]" />
+    <div className="flex max-h-[90dvh] flex-col overflow-hidden">
+      <div className="shrink-0 border-b border-gray-100 px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5">
+        <div className="flex items-start gap-3 pr-10 sm:pr-8">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#402D87]/10 sm:h-11 sm:w-11">
+            <Icon icon="bi:credit-card-2-front" className="text-lg text-[#402D87] sm:text-xl" />
           </span>
           <div className="min-w-0">
-            <Text variant="h3" weight="semibold" className="text-gray-900">
+            <Text variant="h3" weight="semibold" className="text-gray-900 text-lg sm:text-xl">
               {title}
             </Text>
             <Text variant="span" className="mt-1 block text-sm text-gray-500 leading-relaxed">
@@ -197,27 +197,27 @@ function PaymentModalShell({
         </div>
       </div>
 
-      <div className="px-6 py-6">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">{children}</div>
 
       <div
         className={cn(
-          'flex flex-col-reverse gap-3 px-6 py-5 border-t border-gray-100 bg-gray-50/50',
-          'sm:flex-row sm:justify-end',
+          'shrink-0 flex flex-col-reverse gap-3 border-t border-gray-100 bg-gray-50/50 px-4 py-4',
+          'sm:flex-row sm:justify-end sm:px-6 sm:py-5',
         )}
       >
-        <Button variant="outline" onClick={onCancel} className="sm:min-w-[108px]">
+        <Button variant="outline" onClick={onCancel} className="w-full sm:w-auto sm:min-w-[108px]">
           Cancel
         </Button>
         <Button
           variant="secondary"
           onClick={onSubmit}
           loading={isLoading}
-          className="sm:min-w-[180px]"
+          className="w-full sm:w-auto sm:min-w-[180px]"
         >
           {submitLabel}
         </Button>
       </div>
-    </>
+    </div>
   )
 }
 
@@ -246,7 +246,7 @@ export function PaymentDetailsModals({
       <Modal
         isOpen={isAddModalOpen}
         setIsOpen={setIsAddModalOpen}
-        panelClass="!w-[560px] !max-w-[95vw] p-0 overflow-hidden"
+        panelClass="!w-full sm:!w-[560px] !max-w-[95vw] p-0 overflow-hidden"
         position="center"
         showClose
         title="Add Payment Details"
@@ -271,7 +271,7 @@ export function PaymentDetailsModals({
       <Modal
         isOpen={isEditModalOpen}
         setIsOpen={setIsEditModalOpen}
-        panelClass="!w-[560px] !max-w-[95vw] p-0 overflow-hidden"
+        panelClass="!w-full sm:!w-[560px] !max-w-[95vw] p-0 overflow-hidden"
         position="center"
         showClose
         title="Update Payment Details"
@@ -296,12 +296,12 @@ export function PaymentDetailsModals({
       <Modal
         isOpen={isDeleteAllModalOpen}
         setIsOpen={setIsDeleteAllModalOpen}
-        panelClass="!max-w-md p-0 overflow-hidden"
+        panelClass="!w-full sm:!max-w-md p-0 overflow-hidden"
         position="center"
         showClose
         title="Delete All Payment Methods"
       >
-        <div className="px-6 pt-6 pb-4">
+        <div className="px-4 pt-5 pb-4 sm:px-6 sm:pt-6">
           <Text variant="h3" weight="semibold" className="text-gray-900">
             Delete All Payment Methods
           </Text>
@@ -310,11 +310,20 @@ export function PaymentDetailsModals({
             mobile money and bank accounts.
           </Text>
         </div>
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 px-6 py-5 border-t border-gray-100 bg-gray-50/50">
-          <Button variant="outline" onClick={() => setIsDeleteAllModalOpen(false)}>
+        <div className="flex flex-col-reverse gap-3 border-t border-gray-100 bg-gray-50/50 px-4 py-4 sm:flex-row sm:justify-end sm:px-6 sm:py-5">
+          <Button
+            variant="outline"
+            onClick={() => setIsDeleteAllModalOpen(false)}
+            className="w-full sm:w-auto"
+          >
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleDeleteAll} loading={isDeleting}>
+          <Button
+            variant="danger"
+            onClick={handleDeleteAll}
+            loading={isDeleting}
+            className="w-full sm:w-auto"
+          >
             Yes, Delete All
           </Button>
         </div>

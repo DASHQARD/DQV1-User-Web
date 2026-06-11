@@ -4,6 +4,7 @@ import { Button, Text } from '@/components'
 import { Icon } from '@/libs'
 import { useAuthStore } from '@/stores'
 import { getPaymentSuccessActions } from '@/features/website/utils/paymentSuccessActions'
+import { useArchiveCheckoutCart } from '@/features/website/hooks/useArchiveCheckoutCart'
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams()
@@ -22,6 +23,8 @@ export default function PaymentSuccess() {
   })
 
   const isMember = isAuthenticated && !isGuestAuth
+
+  useArchiveCheckoutCart(isMember)
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-[#f8fafc] to-[#e2e8f0] p-4">

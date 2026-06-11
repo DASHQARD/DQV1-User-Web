@@ -127,16 +127,8 @@ export function PaymentDetails() {
       value: currency,
     },
     {
-      label: 'Transaction ID',
-      value: paymentData?.trans_id || 'N/A',
-    },
-    {
       label: 'User',
       value: paymentData?.user_name || 'N/A',
-    },
-    {
-      label: 'User Type',
-      value: paymentData?.user_type || 'N/A',
     },
     {
       label: 'Created At',
@@ -158,11 +150,7 @@ export function PaymentDetails() {
     >
       <div className="flex flex-col h-full p-6">
         <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
-          {/* Payment Details Section */}
           <div className="mb-6">
-            <Text variant="h3" weight="bold" className="text-gray-900 mb-4">
-              Payment Information
-            </Text>
             <div className="flex flex-col gap-2">
               {displayDetails.map((detail, index) => (
                 <div

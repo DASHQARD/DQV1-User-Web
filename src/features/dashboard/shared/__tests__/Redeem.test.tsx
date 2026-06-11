@@ -9,22 +9,31 @@ vi.mock('@/hooks', () => ({
 
 vi.mock('../../hooks/useRedemptionForm', () => ({
   useRedemptionForm: () => ({
-    form: { redemptionAmount: null },
-    rawVendor: '',
-    setRawVendor: vi.fn(),
+    cardType: 'DashPro',
+    setCardType: vi.fn(),
+    redemptionAmount: null,
+    setRedemptionAmount: vi.fn(),
+    rawVendorPhone: '',
+    setRawVendorPhone: vi.fn(),
     validatingVendor: false,
-    vendorError: null,
-    vendorName: null,
+    vendorPhoneError: null,
+    vendorPhoneName: null,
+    vendorSearch: '',
+    setVendorSearch: vi.fn(),
+    vendorSearchResults: [],
+    isSearchingVendors: false,
+    selectedVendor: null,
+    handleSelectVendor: vi.fn(),
+    availableBalance: null,
+    balanceLoading: false,
+    balanceError: null,
+    cardPreviewImageUrl: undefined,
     isFormValid: false,
     isSubmitting: false,
     submitRedemption: vi.fn(),
     clearForm: vi.fn(),
-    balance: null,
-    balanceCheckComplete: false,
-    balanceError: null,
     showSummaryModal: false,
     setShowSummaryModal: vi.fn(),
-    setForm: vi.fn(),
   }),
 }))
 
@@ -38,20 +47,16 @@ vi.mock('../../components/RedemptionSummary', () => ({
   default: () => <div data-testid="redemption-summary">RedemptionSummary</div>,
 }))
 
-vi.mock('../../components/RedemptionOTPModal', () => ({
-  default: () => <div data-testid="redemption-otp-modal">RedemptionOTPModal</div>,
-}))
-
 describe('Redeem (dashboard shared)', () => {
   it('renders Redeem Your Gift Card heading', () => {
     renderWithProviders(<Redeem />)
     expect(screen.getByText('Redeem Your Gift Card')).toBeInTheDocument()
   })
 
-  it('renders Vendor Information section', () => {
+  it('renders vendor section for DashPro', () => {
     renderWithProviders(<Redeem />)
-    expect(screen.getByText('Vendor Information')).toBeInTheDocument()
-    expect(screen.getByText(/vendor mobile money/i)).toBeInTheDocument()
+    expect(screen.getByText('Vendor Mobile Money')).toBeInTheDocument()
+    expect(screen.getByText(/vendor's mobile money number/i)).toBeInTheDocument()
   })
 
   it('renders Redemption Amount section', () => {
@@ -59,14 +64,14 @@ describe('Redeem (dashboard shared)', () => {
     expect(screen.getByText('Redemption Amount')).toBeInTheDocument()
   })
 
-  it('renders Reset Form and Continue to Redemption buttons', () => {
+  it('renders Reset and Redeem Now buttons', () => {
     renderWithProviders(<Redeem />)
-    expect(screen.getByRole('button', { name: /reset form/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /continue to redemption/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /reset/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /redeem now/i })).toBeInTheDocument()
   })
 
-  it('renders Your Account Details section', () => {
+  it('renders Your Account section', () => {
     renderWithProviders(<Redeem />)
-    expect(screen.getByText('Your Account Details')).toBeInTheDocument()
+    expect(screen.getByText('Your Account')).toBeInTheDocument()
   })
 })

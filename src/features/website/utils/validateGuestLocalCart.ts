@@ -2,7 +2,7 @@ import {
   GIFT_CARD_AMOUNT_MAX,
   GIFT_CARD_AMOUNT_MIN,
 } from '@/utils/giftCardAmount'
-import type { LocalGuestCartLine } from '@/stores/guestLocalCart'
+import type { LocalGuestCartLine } from '@/features/website/utils/guestLocalCartTypes'
 
 /** Max single-card amount for guest checkout (per product FAQ). */
 export const GUEST_CHECKOUT_MAX_CARD_AMOUNT = 1000

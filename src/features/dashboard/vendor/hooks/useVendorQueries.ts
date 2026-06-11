@@ -36,10 +36,7 @@ export function vendorQueries() {
   function useGetAllVendorsDetailsService() {
     const { useGetUserProfileService } = useUserProfile()
     const { data: userProfile, isLoading: isLoadingProfile } = useGetUserProfileService()
-    const userType = userProfile?.user_type
-    const isCorporateUser =
-      userType === 'corporate super admin' || userType === 'corporate admin'
-    const canFetch = !isCorporateUser || isCorporateManagementApiEnabled(userProfile)
+    const canFetch = isCorporateManagementApiEnabled(userProfile)
 
     return useQuery({
       queryKey: ['all-vendors-details'],

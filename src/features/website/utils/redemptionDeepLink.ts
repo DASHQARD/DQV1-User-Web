@@ -45,7 +45,7 @@ export function vendorIdFlowRequiresBranch(
   return branchCount > 0 && selectedBranchId === null
 }
 
-/** Deep link from My Cards / corporate card details into vendor-ID redemption. */
+/** Deep link from My Cards / corporate card details into redemption. */
 export function buildRedemptionUrlFromCard(card: {
   card_type: string
   vendor_id?: string | number
@@ -54,6 +54,14 @@ export function buildRedemptionUrlFromCard(card: {
   gvid?: string
 }): string {
   const cardType = card.card_type?.toLowerCase()
+
+  if (cardType === 'dashpro') {
+    return buildRedemptionUrl({
+      method: 'vendor_mobile_money',
+      card_type: 'dashpro',
+    })
+  }
+
   const includeCardId =
     card.card_id != null &&
     (cardType === 'dashx' || cardType === 'dashpass' || cardType === 'dashgo')

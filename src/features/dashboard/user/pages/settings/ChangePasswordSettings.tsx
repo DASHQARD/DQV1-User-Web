@@ -67,7 +67,7 @@ export function ChangePasswordSettings() {
             type="submit"
             disabled={isPending}
             loading={isPending}
-            variant="primary"
+            variant="secondary"
             className="min-w-[150px]"
           >
             <Icon icon="bi:check-circle" className="size-4 mr-2" />

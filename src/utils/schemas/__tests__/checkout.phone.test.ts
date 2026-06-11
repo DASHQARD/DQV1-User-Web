@@ -5,7 +5,8 @@ import { UserInfoSchema } from '../checkout'
 describe('UserInfoSchema phone_number', () => {
   it('rejects dial-code-only phone numbers', () => {
     const result = UserInfoSchema.safeParse({
-      full_name: 'Jane Doe',
+      first_name: 'Jane',
+      last_name: 'Doe',
       email: 'jane@example.com',
       phone_number: '+233',
     })
@@ -14,7 +15,8 @@ describe('UserInfoSchema phone_number', () => {
 
   it('accepts valid phone numbers', () => {
     const result = UserInfoSchema.safeParse({
-      full_name: 'Jane Doe',
+      first_name: 'Jane',
+      last_name: 'Doe',
       email: 'jane@example.com',
       phone_number: EXAMPLE_PHONE_E164,
     })

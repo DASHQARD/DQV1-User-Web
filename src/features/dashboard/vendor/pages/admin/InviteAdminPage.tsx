@@ -4,7 +4,7 @@ import { InviteAdmin } from '../invite/InviteAdmin'
 export default function InviteAdminPage() {
   return (
     <div className="lg:py-10">
-      <div className="flex flex-col gap-8">
+      <div className="mx-auto flex w-full max-w-[640px] flex-col gap-8">
         <div className="flex flex-col gap-1">
           <Text variant="h3" weight="semibold" className="text-gray-900">
             Invite Admin

@@ -3,12 +3,17 @@ import { useAuthStore } from '@/stores'
 import {
   addToCart,
   deleteCartItem,
-  deleteCartItemRecipient,
   getCartItems,
   updateCartItem,
 } from '../services/cart'
 import type { AddToCartPayload } from '@/types/responses'
 import { useToast } from '@/hooks'
+import { getApiErrorMessage } from '@/utils/apiError'
+import {
+  getCartItemRemoveErrorMessage,
+  getCartItemUpdateErrorMessage,
+  removeOrArchiveCart,
+} from '@/features/website/utils/cartLifecycle'
 
 /** Logged-in user cart only. For guest cart use useGuestCart(). */
 export function useCart(query?: Record<string, any>) {
@@ -28,6 +33,10 @@ export function useCart(query?: Record<string, any>) {
 
   const cartItems = cartItemsQuery.data ?? []
 
+  const invalidateCartQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+  }
+
   const addToCartMutation = useMutation({
     mutationFn: (data: AddToCartPayload) => {
       if (isGuestAuth) {
@@ -38,45 +47,45 @@ export function useCart(query?: Record<string, any>) {
       }
       return addToCart(data)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-    },
-    onError: (error: { status: number; message: string }) => {
-      toastError(error.message || 'Failed to add item to cart')
+    onSuccess: invalidateCartQueries,
+    onError: (error: unknown) => {
+      toastError(getApiErrorMessage(error, 'Failed to add item to cart'))
     },
   })
 
-  // Delete entire cart
-  const deleteCartMutation = useMutation({
-    mutationFn: (id: number) => deleteCartItem(id),
+  const removeOrArchiveCartMutation = useMutation({
+    mutationFn: ({
+      cart_id,
+      cart_status,
+    }: {
+      cart_id: string | number
+      cart_status?: string | null
+    }) => removeOrArchiveCart(cart_id, cart_status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
+      invalidateCartQueries()
       success('Cart removed')
     },
-    onError: (error: { status: number; message: string }) => {
-      toastError(error.message || 'Failed to remove cart')
+    onError: (error: unknown) => {
+      toastError(getApiErrorMessage(error, 'Failed to remove cart'))
     },
   })
 
-  // Delete item from cart (cart_item_id)
   const deleteCartItemMutation = useMutation({
-    mutationFn: (cart_item_id: string | number) => deleteCartItemRecipient(cart_item_id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] })
-    },
-    onError: (error: { status: number; message: string }) => {
-      toastError(error.message || 'Failed to remove item')
+    mutationFn: (cart_item_id: string | number) => deleteCartItem(cart_item_id),
+    onSuccess: invalidateCartQueries,
+    onError: (error: unknown) => {
+      toastError(getCartItemRemoveErrorMessage(error))
     },
   })
 
   const updateCartItemMutation = useMutation({
     mutationFn: (data: { cart_item_id: string | number; quantity: number }) => updateCartItem(data),
     onSuccess: () => {
-      queryClient.invalidateQueries()
+      invalidateCartQueries()
       success('Cart updated')
     },
-    onError: (error: { status: number; message: string }) => {
-      toastError(error.message || 'Failed to update cart item')
+    onError: (error: unknown) => {
+      toastError(getCartItemUpdateErrorMessage(error))
     },
   })
 
@@ -87,12 +96,23 @@ export function useCart(query?: Record<string, any>) {
     addToCart: addToCartMutation.mutate,
     addToCartAsync: addToCartMutation.mutateAsync,
     isAdding: addToCartMutation.isPending,
-    deleteCartItem: deleteCartItemMutation.mutate, // Deletes item from cart (cart_item_id)
+    deleteCartItem: deleteCartItemMutation.mutate,
     deleteCartItemAsync: deleteCartItemMutation.mutateAsync,
     isDeleting: deleteCartItemMutation.isPending,
-    deleteCart: deleteCartMutation.mutate, // Deletes entire cart (cart_id)
-    deleteCartAsync: deleteCartMutation.mutateAsync,
-    isDeletingCart: deleteCartMutation.isPending,
+    removeOrArchiveCart: removeOrArchiveCartMutation.mutate,
+    removeOrArchiveCartAsync: removeOrArchiveCartMutation.mutateAsync,
+    isRemovingCart: removeOrArchiveCartMutation.isPending,
+    /** @deprecated Use removeOrArchiveCart — picks delete vs archive from cart status */
+    deleteCart: (cart_id: string | number) =>
+      removeOrArchiveCartMutation.mutate({ cart_id }),
+    deleteCartAsync: (cart_id: string | number) =>
+      removeOrArchiveCartMutation.mutateAsync({ cart_id }),
+    isDeletingCart: removeOrArchiveCartMutation.isPending,
+    archiveCart: (cart_id: string | number) =>
+      removeOrArchiveCartMutation.mutate({ cart_id, cart_status: 'completed' }),
+    archiveCartAsync: (cart_id: string | number) =>
+      removeOrArchiveCartMutation.mutateAsync({ cart_id, cart_status: 'completed' }),
+    isArchivingCart: removeOrArchiveCartMutation.isPending,
     updateCartItem: updateCartItemMutation.mutate,
     updateCartItemAsync: updateCartItemMutation.mutateAsync,
     isUpdating: updateCartItemMutation.isPending,

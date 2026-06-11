@@ -7,6 +7,7 @@ import {
   GUEST_PHONE_STORAGE_KEY,
 } from '@/utils/constants'
 import { clearGuestBrowsingAck } from '@/features/website/utils/guestBrowsingSession'
+import { useGuestLocalCartStore } from './guestLocalCart'
 
 type State = {
   token: string | null
@@ -15,6 +16,8 @@ type State = {
   isAuthenticated: boolean
   /** True when authenticated via guest OTP; use guest-auth/token/refresh for refresh */
   isGuestAuth: boolean
+  /** True after guest phone OTP — required before assign-recipient APIs. */
+  guestOtpVerified: boolean
   /** Guest cart numeric id — used for guest-carts/add-card when required */
   guestCartId: number | null
   /** Guest cart UUID — required for POST /payments/guest/checkout */
@@ -29,6 +32,7 @@ type Actions = {
     token: string
     refreshToken?: string | null
     isGuestAuth?: boolean
+    guestOtpVerified?: boolean
   }) => void
   getToken: () => State['token']
   getRefreshToken: () => State['refreshToken']
@@ -57,6 +61,7 @@ const initialState: State = {
   isAuthenticated: false,
   user: null,
   isGuestAuth: false,
+  guestOtpVerified: false,
   guestCartId: null,
   guestCartUuid: null,
   isSessionReady: false,
@@ -65,13 +70,14 @@ const initialState: State = {
 const authStore: StateCreator<State & Actions> = (set, get) => ({
   ...initialState,
   reset: () => set({ ...initialState, isSessionReady: true }),
-  authenticate: ({ token, refreshToken, isGuestAuth = false }) => {
+  authenticate: ({ token, refreshToken, isGuestAuth = false, guestOtpVerified = false }) => {
     set({
       user: decodeUser(token),
       token,
       refreshToken: refreshToken ?? null,
       isAuthenticated: true,
       isGuestAuth,
+      guestOtpVerified: isGuestAuth ? guestOtpVerified : false,
       isSessionReady: true,
       ...(isGuestAuth
         ? {}
@@ -83,10 +89,12 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
   },
   logout: () => {
     clearGuestBrowsingAck()
+    useGuestLocalCartStore.getState().clearContact()
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(GUEST_EMAIL_STORAGE_KEY)
       localStorage.removeItem(GUEST_NAME_STORAGE_KEY)
       localStorage.removeItem(GUEST_PHONE_STORAGE_KEY)
+      localStorage.removeItem('dashqard-guest-local-cart')
     }
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.removeItem(GUEST_EMAIL_STORAGE_KEY)
@@ -99,6 +107,7 @@ const authStore: StateCreator<State & Actions> = (set, get) => ({
       user: null,
       isAuthenticated: false,
       isGuestAuth: false,
+      guestOtpVerified: false,
       guestCartId: null,
       guestCartUuid: null,
       isSessionReady: true,
@@ -129,6 +138,7 @@ const useAuthStore = create(
       user: state.user,
       isAuthenticated: state.isAuthenticated,
       isGuestAuth: state.isGuestAuth,
+      guestOtpVerified: state.guestOtpVerified,
       guestCartId: state.guestCartId,
       guestCartUuid: state.guestCartUuid,
     }),

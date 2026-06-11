@@ -8,6 +8,9 @@ import { cn, Icon } from '@/libs'
 import 'react-datepicker/dist/react-datepicker.css'
 import './DateInput.scss'
 
+const DATE_RANGE_FILTER_BUTTON_CLASSNAME =
+  'border border-[#e2e4ed] bg-white py-0 rounded-md w-full sm:w-auto text-xs text-[#7c8689] font-normal min-w-0 truncate justify-between'
+
 export function DateRangeFilter({
   startDate,
   endDate,
@@ -30,7 +33,7 @@ export function DateRangeFilter({
   className?: string
 }) {
   return (
-    <div className={cn('relative w-full min-w-0 md:w-max', className)}>
+    <div className={cn('relative w-full min-w-0', className)}>
       <DatePicker
         showPopperArrow={false}
         selectsRange
@@ -41,23 +44,30 @@ export function DateRangeFilter({
         calendarClassName="date-range-calendar"
         customInput={
           <Button
-            variant="outline"
+            variant="ghost"
             as="span"
-            className={cn(
-              'font-normal w-full md:w-max cursor-default !rounded-[6px] border border-[#E4E7EC] bg-white px-4 py-2 text-sm text-[#7C8689] hover:bg-white hover:border-[#E4E7EC] h-[38px] justify-between',
-              {
-                'font-medium text-[#212123]': startDate && endDate,
-              },
-            )}
+            size="medium"
+            className={cn('cursor-default', DATE_RANGE_FILTER_BUTTON_CLASSNAME)}
             iconPosition="right"
             icon={showButtonIcon ? 'lucide:chevron-down' : ''}
             iconProps={{ width: '16', className: 'text-[#98A2B3]' }}
           >
-            <Icon icon="hugeicons:calendar-04" className={cn('size-4', iconClassName)} />
+            <Icon
+              icon="hugeicons:calendar-04"
+              className={cn(
+                'size-4 shrink-0 text-[#98A2B3]',
+                startDate && endDate && 'text-[#212123]',
+                iconClassName,
+              )}
+            />
 
-            {startDate && endDate
-              ? `${dayjs(startDate).format(format)} - ${dayjs(endDate).format(format)}`
-              : `${placeholder}`}
+            {startDate && endDate ? (
+              <span className="text-[#212123]">
+                {`${dayjs(startDate).format(format)} - ${dayjs(endDate).format(format)}`}
+              </span>
+            ) : (
+              <span className="text-[#7c8689]">{placeholder}</span>
+            )}
           </Button>
         }
         onChange={onChange}

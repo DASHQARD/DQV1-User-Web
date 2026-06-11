@@ -9,6 +9,7 @@ import {
 import 'react-international-phone/style.css'
 
 import { cn } from '@/libs'
+import { isDialCodeOnlyPhone } from '@/utils/schemas/shared'
 import { ErrorText } from '../Text'
 
 interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
@@ -78,6 +79,15 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
     const value = toE164(selectedVal ?? '')
     void options
 
+    /** Skip the mount-time dial-code-only value from forceDialCode (avoids instant RHF validation). */
+    const skipInitialDialCode = React.useRef(!selectedVal?.trim())
+
+    React.useEffect(() => {
+      if (!selectedVal?.trim()) {
+        skipInitialDialCode.current = false
+      }
+    }, [selectedVal])
+
     return (
       <div className={cn('grid w-full gap-2')}>
         {label ? (
@@ -88,8 +98,11 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
         ) : null}
         <div
           className={cn(
-            'relative flex h-12 w-full min-w-0 items-center rounded-lg border border-gray-300 px-3 transition-colors',
-            'focus-within:z-50 focus-within:border-primary-400 focus-within:outline-none focus-within:ring-1 focus-within:ring-primary-400',
+            'relative flex h-12 min-h-12 w-full min-w-0 items-center overflow-hidden rounded-lg border border-gray-300 bg-white px-3 transition-colors',
+            'focus-within:border-primary-400 focus-within:outline-none',
+            '[&_.react-international-phone]:!h-full [&_.react-international-phone]:!w-full [&_.react-international-phone]:!border-0 [&_.react-international-phone]:!bg-transparent [&_.react-international-phone]:!shadow-none',
+            '[&_.react-international-phone-input]:!border-0 [&_.react-international-phone-input]:!shadow-none',
+            '[&_.react-international-phone-country-selector-button]:!border-0 [&_.react-international-phone-country-selector-button]:!shadow-none',
             error && 'border-red-500',
             disabled && 'cursor-not-allowed border-gray-300 bg-[#f3f3f4] opacity-100',
           )}
@@ -108,7 +121,13 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
                   ? `+${meta.country.dialCode}`
                   : dialCodeE164(defaultCountryIso)
               }
-              handleChange(toLegacyFormat(sanitizedPhone))
+              const normalized = toLegacyFormat(sanitizedPhone)
+              if (!skipInitialDialCode.current && isDialCodeOnlyPhone(normalized)) {
+                skipInitialDialCode.current = true
+                return
+              }
+              skipInitialDialCode.current = true
+              handleChange(normalized)
             }}
             disabled={disabled}
             placeholder={placeholder}
@@ -142,9 +161,9 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
                 },
               } as React.InputHTMLAttributes<HTMLInputElement>
             }
-            className="flex-1 min-w-0 bg-transparent"
+            className="!flex !h-full !min-w-0 !flex-1 !border-0 !bg-transparent !shadow-none"
             inputClassName={cn(
-              '!border-0 min-w-0 flex-1 bg-transparent text-sm font-light outline-none placeholder:text-gray-400',
+              '!min-h-0 !border-0 !shadow-none min-w-0 flex-1 bg-transparent text-sm font-light outline-none placeholder:text-gray-300',
               disabled && 'text-gray-400 placeholder:text-gray-400',
             )}
             inputStyle={{ border: 'none' }}

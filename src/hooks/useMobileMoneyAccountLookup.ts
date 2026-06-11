@@ -6,6 +6,7 @@ import {
   toLookupApiProvider,
 } from '@/utils/accountLookupMappers'
 import { convertToInternationalFormat, detectMobileMoneyProvider } from '@/features/dashboard/services/redemptions'
+import type { GuestMomoProvider } from '@/types/redemptions'
 
 export function useMobileMoneyAccountLookup(options: {
   enabled: boolean
@@ -20,11 +21,13 @@ export function useMobileMoneyAccountLookup(options: {
   const [isResolving, setIsResolving] = useState(false)
   const [accountName, setAccountName] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [resolvedProvider, setResolvedProvider] = useState<GuestMomoProvider | null>(null)
 
   useEffect(() => {
     if (!enabled) {
       setAccountName(null)
       setError(null)
+      setResolvedProvider(null)
       setIsResolving(false)
       return
     }
@@ -33,6 +36,7 @@ export function useMobileMoneyAccountLookup(options: {
     if (!debouncedPhone || digits.length < 10) {
       setAccountName(null)
       setError(null)
+      setResolvedProvider(null)
       setIsResolving(false)
       return
     }
@@ -44,9 +48,12 @@ export function useMobileMoneyAccountLookup(options: {
     if (!apiProvider) {
       setError('Unable to detect mobile money provider. Please select a provider or enter a valid Ghana phone number.')
       setAccountName(null)
+      setResolvedProvider(null)
       setIsResolving(false)
       return
     }
+
+    setResolvedProvider(apiProvider)
 
     let cancelled = false
     setIsResolving(true)
@@ -83,16 +90,18 @@ export function useMobileMoneyAccountLookup(options: {
   const reset = () => {
     setAccountName(null)
     setError(null)
+    setResolvedProvider(null)
     setIsResolving(false)
   }
 
-  const isVerified = !!(accountName && !error)
+  const isVerified = !!(accountName && !error && resolvedProvider)
 
   return {
     accountName,
     error,
     isResolving,
     isVerified,
+    resolvedProvider,
     reset,
   }
 }

@@ -5,7 +5,7 @@ import {
   GuestCartAmountLimitError,
   validateGuestLocalCartForCheckout,
 } from '../validateGuestLocalCart'
-import type { LocalGuestCartLine } from '@/stores/guestLocalCart'
+import type { LocalGuestCartLine } from '@/features/website/utils/guestLocalCartTypes'
 
 describe('assertGuestCartAmountWithinLimit', () => {
   it('allows amounts at the guest per-card maximum', () => {

@@ -1,11 +1,12 @@
 import { Button, Input } from '@/components'
 import { Icon } from '@/libs'
 import { CURRENCY_PREFIX, DEFAULT_CURRENCY, formatCurrencyLabel } from '@/utils/format'
-import { getApiErrorMessage, isGuestAmountThresholdMessage } from '@/utils/apiError'
 import {
-  assertGuestCartAmountWithinLimit,
-  GuestCartAmountLimitError,
-} from '@/features/website/utils/validateGuestLocalCart'
+  getApiErrorMessage,
+  isGuestAmountThresholdMessage,
+  isGuestCardMinimumPriceMessage,
+} from '@/utils/apiError'
+import { GuestCartAmountLimitError } from '@/features/website/utils/validateGuestLocalCart'
 import {
   GIFT_CARD_AMOUNT_MAX,
   GIFT_CARD_AMOUNT_MIN,
@@ -16,11 +17,9 @@ import {
 import { useForm } from 'react-hook-form'
 import { useCartStore } from '@/stores/cart'
 import { useAuthStore } from '@/stores'
-import { useGuestLocalCartStore } from '@/stores/guestLocalCart'
-import { setGuestBrowsingAck } from '@/features/website/utils/guestBrowsingSession'
 import { useToast } from '@/hooks'
 import { createCustomDashGoAndAddToCart } from '../../services/cards'
-import { getGuestEmailFromAuth, getGuestNameFromAuth } from '../../utils/guestAuth'
+import { assignGuestSelfRecipient } from '../../utils/guestCustomCardAssign'
 import React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { VENDOR_DASHGO_FORM } from '../../pages/vendors/vendorProfileUtils'
@@ -49,12 +48,8 @@ export default function PublicDashGoForm({
   const toast = useToast()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isGuestAuth = useAuthStore((s) => s.isGuestAuth)
-  const user = useAuthStore((s) => s.user)
-  const getGuestCartId = useAuthStore((s) => s.getGuestCartId)
-  const getGuestCartUuid = useAuthStore((s) => s.getGuestCartUuid)
-  const setGuestCartId = useAuthStore((s) => s.setGuestCartId)
   const setGuestCartUuid = useAuthStore((s) => s.setGuestCartUuid)
-  const addCustomDashGoLine = useGuestLocalCartStore((s) => s.addCustomDashGoLine)
+  const isMember = isAuthenticated && !isGuestAuth
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   const form = useForm<{ amount: string }>({
@@ -91,60 +86,25 @@ export default function PublicDashGoForm({
       branch_id: branch.branch_id,
     }))
 
-    if (!isAuthenticated) {
-      if (redemptionBranches.length === 0) {
-        toast.error('Select a vendor with at least one branch to add DashGo to your bag.')
-        return
-      }
-      try {
-        assertGuestCartAmountWithinLimit(cardAmount)
-        setGuestBrowsingAck()
-        addCustomDashGoLine({
-          vendor_id,
-          product: 'DashGo Gift Card',
-          description: `Custom DashGo card for ${vendorName}`,
-          amount: cardAmount,
-          currency: DEFAULT_CURRENCY,
-          redemption_branches: redemptionBranches,
-          assign_to_self: false,
-          first_name: '',
-          last_name: '',
-          phone: '',
-          email: '',
-          message: '',
-        })
-        toast.success('DashGo gift card saved to your bag')
-        openCart()
-      } catch (err: unknown) {
-        const message = getApiErrorMessage(err, 'Failed to add DashGo to cart')
-        if (err instanceof GuestCartAmountLimitError || isGuestAmountThresholdMessage(message)) {
-          form.setError('amount', { type: 'server', message })
-        }
-        toast.error(message)
-      }
+    if (redemptionBranches.length === 0) {
+      toast.error('Select a vendor with at least one branch to add DashGo to your bag.')
       return
     }
 
     setIsSubmitting(true)
     try {
-      await createCustomDashGoAndAddToCart({
+      const createResult = await createCustomDashGoAndAddToCart({
         vendor_id,
         vendorName,
         price: cardAmount,
         currency: DEFAULT_CURRENCY,
         redemption_branches: redemptionBranches,
-        isGuestAuth,
-        guestContact: isGuestAuth
-          ? {
-              guest_name: getGuestNameFromAuth(user),
-              guest_email: getGuestEmailFromAuth(user),
-            }
-          : undefined,
-        getGuestCartId,
-        getGuestCartUuid,
-        setGuestCartId,
+        isGuestAuth: !isMember,
         setGuestCartUuid,
       })
+      if (!isMember && createResult?.cartItemId) {
+        await assignGuestSelfRecipient(createResult.cartItemId, cardAmount)
+      }
       queryClient.invalidateQueries({ queryKey: ['cart-items'] })
       toast.success('DashGo gift card added to cart')
       openCart()
@@ -152,7 +112,8 @@ export default function PublicDashGoForm({
       const message = getApiErrorMessage(err, 'Failed to add DashGo to cart')
       if (
         err instanceof GuestCartAmountLimitError ||
-        isGuestAmountThresholdMessage(message)
+        isGuestAmountThresholdMessage(message) ||
+        isGuestCardMinimumPriceMessage(message)
       ) {
         form.setError('amount', { type: 'server', message })
       }
