@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderWithProviders } from '@/test/test-utils'
+import { useAuthStore } from '@/stores'
+import { ROUTES } from '@/utils/constants'
 import Login from '../login/Login'
 
 vi.mock('../../hooks', () => ({
@@ -26,6 +28,7 @@ vi.mock('../../hooks', () => ({
 describe('Login (auth)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    useAuthStore.getState().reset()
   })
 
   it('renders Welcome Back heading', () => {
@@ -36,5 +39,33 @@ describe('Login (auth)', () => {
   it('renders Sign In button', () => {
     const { getByRole } = renderWithProviders(<Login />)
     expect(getByRole('button', { name: /sign in/i })).toBeInTheDocument()
+  })
+
+  it('redirects signed-in members to the dashboard', () => {
+    useAuthStore.setState({
+      isAuthenticated: true,
+      isGuestAuth: false,
+      token: 'member-token',
+    })
+
+    const { container } = renderWithProviders(<Login />, {
+      initialEntries: [ROUTES.IN_APP.AUTH.LOGIN],
+    })
+
+    expect(container.querySelector('form')).not.toBeInTheDocument()
+  })
+
+  it('shows login form for guest browse sessions', () => {
+    useAuthStore.setState({
+      isAuthenticated: true,
+      isGuestAuth: true,
+      token: 'guest-token',
+    })
+
+    const { getByRole } = renderWithProviders(<Login />, {
+      initialEntries: [ROUTES.IN_APP.AUTH.LOGIN],
+    })
+
+    expect(getByRole('heading', { name: /welcome back/i })).toBeInTheDocument()
   })
 })

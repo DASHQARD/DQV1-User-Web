@@ -7,13 +7,9 @@ export default function Login() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
 
-  if (isAuthenticated) {
-    return (
-      <Navigate
-        to={isGuestAuth ? ROUTES.IN_APP.DASHQARDS : ROUTES.IN_APP.DASHBOARD.HOME}
-        replace
-      />
-    )
+  // Guest browse/checkout sessions are authenticated but should still be able to sign in.
+  if (isAuthenticated && !isGuestAuth) {
+    return <Navigate to={ROUTES.IN_APP.DASHBOARD.HOME} replace />
   }
 
   return <LoginForm />
