@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderWithProviders } from '@/test/test-utils'
+import { Route, Routes } from 'react-router-dom'
+import { renderWithProviders, screen } from '@/test/test-utils'
 import { useAuthStore } from '@/stores'
 import { ROUTES } from '@/utils/constants'
 import Login from '../login/Login'
@@ -67,5 +68,23 @@ describe('Login (auth)', () => {
     })
 
     expect(getByRole('heading', { name: /welcome back/i })).toBeInTheDocument()
+  })
+
+  it('redirects legacy verification links before checking member session', () => {
+    useAuthStore.setState({
+      isAuthenticated: true,
+      isGuestAuth: false,
+      token: 'member-token',
+    })
+
+    renderWithProviders(
+      <Routes>
+        <Route path={ROUTES.IN_APP.AUTH.LOGIN} element={<Login />} />
+        <Route path={ROUTES.IN_APP.AUTH.VERIFY_EMAIL} element={<div>Verify email page</div>} />
+      </Routes>,
+      { initialEntries: [`${ROUTES.IN_APP.AUTH.LOGIN}?vtoken=legacy-token`] },
+    )
+
+    expect(screen.getByText('Verify email page')).toBeInTheDocument()
   })
 })
