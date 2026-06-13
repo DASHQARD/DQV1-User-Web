@@ -9,13 +9,12 @@ import { Icon } from '@/libs'
 // import { useCart } from '@/features/website/hooks/useCart'
 import { useAuthStore, useCartStore } from '@/stores'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/PopOver'
-import { Modal } from '@/components'
+import { Modal, Avatar } from '@/components'
 import { CartPopoverContent } from '@/components/CartModal'
 import { GuestAddToCartModal } from '@/features/website/components/GuestAddToCartModal'
 import { useUserProfile, usePresignedMediaUrl } from '@/hooks'
 import { getBusinessLogoFileKey } from '@/utils/businessLogo'
 import { getBranchUserAvatarUrl } from '@/utils/branchUserAvatar'
-import { DEFAULT_AVATAR_SRC } from '@/components/Avatar/Avatar'
 import { vendorQueries } from '@/features'
 import { useAuth } from '@/features/auth'
 import { getGuestNameFromAuth } from '@/features/website/utils/guestAuth'
@@ -311,7 +310,6 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
     isAuthenticated &&
     !isGuestAuth &&
     (isRegularUser || isCorporateUser || isVendor || isBranchManager)
-  const navAvatarDisplaySrc = avatarUrl ?? DEFAULT_AVATAR_SRC
 
   const handleLogout = () => {
     logoutMutation(undefined, {
@@ -423,19 +421,12 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
                         aria-label="Account"
                       >
                         {showNavProfileImage ? (
-                          <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                            <img
-                              src={navAvatarDisplaySrc}
-                              alt={displayName}
-                              className="w-full h-full rounded-full object-cover"
-                              onError={(e) => {
-                                // Fall back to default avatar when logo/avatar URL fails.
-                                // Keep this handler stateless because avatarUrl is memo-derived.
-                                const img = e.currentTarget as HTMLImageElement | undefined
-                                if (img) img.src = DEFAULT_AVATAR_SRC
-                              }}
-                            />
-                          </div>
+                          <Avatar
+                            size="sm"
+                            src={avatarUrl}
+                            name={displayName}
+                            alt={displayName}
+                          />
                         ) : (
                           <Icon icon="bi:person-circle" className="size-10 text-primary-600" />
                         )}
@@ -582,17 +573,12 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
                       <>
                         <div className="flex items-center gap-3 px-4 py-3 mb-2">
                           {showNavProfileImage ? (
-                            <div className="size-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                              <img
-                                src={navAvatarDisplaySrc}
-                                alt={displayName}
-                                className="w-full h-full rounded-full object-cover"
-                                onError={(e) => {
-                                  const img = e.currentTarget as HTMLImageElement | undefined
-                                  if (img) img.src = DEFAULT_AVATAR_SRC
-                                }}
-                              />
-                            </div>
+                            <Avatar
+                              size="sm"
+                              src={avatarUrl}
+                              name={displayName}
+                              alt={displayName}
+                            />
                           ) : (
                             <Icon icon="bi:person-circle" className="size-10 text-primary-600" />
                           )}

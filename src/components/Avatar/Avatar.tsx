@@ -1,11 +1,7 @@
 import React from 'react'
 
 import { cn } from '@/libs'
-// import { Icon } from '@/libs';
-
-/** Image for this pin: https://www.pinterest.com/pin/1008454541535131743/ */
-export const DEFAULT_AVATAR_SRC =
-  'https://i.pinimg.com/originals/57/99/ac/5799ac920c25355b131390474e453361.jpg'
+import { getDisplayInitials } from '@/utils/getDisplayInitials'
 
 type AvatarProps = {
   src?: string | null
@@ -23,6 +19,13 @@ const sizeClasses = {
   lg: 'h-20 w-20',
 }
 
+const textSizeClasses = {
+  xs: 'text-[10px]',
+  sm: 'text-sm',
+  md: 'text-2xl',
+  lg: 'text-3xl',
+}
+
 export function Avatar({
   src,
   alt = 'User avatar',
@@ -33,26 +36,22 @@ export function Avatar({
 }: Readonly<AvatarProps>) {
   const [error, setError] = React.useState(false)
 
-  const handleError = () => {
-    setError(true)
-  }
+  React.useEffect(() => {
+    setError(false)
+  }, [src])
 
-  const getInitials = (fullName?: string) => {
-    if (!fullName) return ''
-    return fullName
-      .split(' ')
-      .map((word) => word.charAt(0).toUpperCase())
-      .slice(0, 2)
-      .join('')
-  }
-
-  const imageSource = error || !src ? DEFAULT_AVATAR_SRC : src
-  const initials = getInitials(name)
+  const initials = getDisplayInitials(name)
+  const showImage = Boolean(src) && !error
+  const showInitials = !showImage && Boolean(initials)
 
   if (error && fallback) {
     return (
       <div
-        className={`flex items-center justify-center overflow-hidden shrink-0 rounded-full bg-gray-200 ${sizeClasses[size]} ${className}`}
+        className={cn(
+          'flex items-center justify-center overflow-hidden shrink-0 rounded-full bg-gray-200',
+          sizeClasses[size],
+          className,
+        )}
       >
         {fallback}
       </div>
@@ -61,21 +60,29 @@ export function Avatar({
 
   return (
     <div
-      className={`overflow-hidden rounded-full shrink-0 bg-gray-200 ${sizeClasses[size]} ${className}`}
+      className={cn(
+        'flex items-center justify-center overflow-hidden shrink-0 rounded-full',
+        showInitials ? 'bg-primary-100' : 'bg-gray-200',
+        sizeClasses[size],
+        className,
+      )}
+      aria-label={showInitials ? `${name} avatar` : undefined}
     >
-      {src ? (
+      {showImage ? (
         <img
-          src={imageSource}
+          src={src!}
           alt={alt}
           className="h-full w-full object-cover"
-          onError={handleError}
+          onError={() => setError(true)}
         />
-      ) : (
-        <h1 className={cn(`text-[38px] leading-[38px] text-[#4b5675] font-semibold`, className)}>
-          {initials?.charAt(0)}
-          {initials?.charAt(1)}
-        </h1>
-      )}
+      ) : showInitials ? (
+        <span
+          className={cn('font-semibold text-primary-700 select-none', textSizeClasses[size])}
+          aria-hidden="true"
+        >
+          {initials}
+        </span>
+      ) : null}
     </div>
   )
 }

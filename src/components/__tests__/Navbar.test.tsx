@@ -248,9 +248,9 @@ describe('Navbar', () => {
       expect(mockNavigate).toHaveBeenCalledWith(ROUTES.IN_APP.DASHBOARD.HOME)
     })
 
-    it('shows default avatar image when no avatar URL', () => {
+    it('shows customer initials when no avatar URL', () => {
       renderWithProviders(<Navbar />)
-      expect(screen.getByRole('img', { name: 'Jane Doe' })).toHaveAttribute('src', expect.any(String))
+      expect(screen.getByText('JD')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument()
     })
 
@@ -265,7 +265,7 @@ describe('Navbar', () => {
       )
     })
 
-    it('avatar img onError falls back to default avatar image', async () => {
+    it('falls back to initials when avatar image fails to load', async () => {
       mockUseGetUserProfileService.mockReturnValue({
         data: { avatar: 'avatar-key', user_type: 'user' },
       })
@@ -275,10 +275,7 @@ describe('Navbar', () => {
         img.dispatchEvent(new Event('error', { bubbles: true }))
       })
       await waitFor(() => {
-        expect(screen.getByRole('img', { name: 'Jane Doe' })).toHaveAttribute(
-          'src',
-          expect.stringContaining('pinimg.com'),
-        )
+        expect(screen.getByText('JD')).toBeInTheDocument()
       })
     })
   })
