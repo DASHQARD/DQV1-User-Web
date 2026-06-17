@@ -1465,6 +1465,8 @@ export default function RedemptionPage() {
         return
       }
 
+      const redeemAmount = roundRedemptionAmount(parseFloat(amount))
+
       setIsProcessingRedemption(true)
       try {
         const vendorPhone = convertToInternationalFormat(rawVendorPhone)
