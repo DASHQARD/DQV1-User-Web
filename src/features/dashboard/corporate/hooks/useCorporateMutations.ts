@@ -366,7 +366,6 @@ export function corporateMutations() {
         full_name: string
         email: string
         phone_number: string
-        amount_due: number
         user_id: number
       }) => checkout(data),
       onSuccess: (response: any) => {

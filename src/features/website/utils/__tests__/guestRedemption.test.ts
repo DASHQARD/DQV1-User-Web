@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   buildGuestCardTypeAvailability,
   buildGuestCardsRedemptionPayload,
+  exceedsAvailableBalance,
   filterGuestAssignedByType,
   filterGuestAssignedByVendorAndBranch,
+  getInsufficientBalanceMessage,
   isGuestAssignedCardRedeemable,
   isGuestRedemptionSuccess,
   isValidRedemptionAmountInput,
@@ -115,6 +117,25 @@ describe('guestRedemption', () => {
   it('isValidRedemptionAmountInput rejects more than 2 decimal places', () => {
     expect(isValidRedemptionAmountInput('10.001')).toBe(false)
     expect(isValidRedemptionAmountInput('10.50')).toBe(true)
+  })
+
+  it('exceedsAvailableBalance detects amount over balance', () => {
+    expect(exceedsAvailableBalance('5900', 190.62)).toBe(true)
+    expect(exceedsAvailableBalance('190.62', 190.62)).toBe(false)
+    expect(exceedsAvailableBalance('100', 190.62)).toBe(false)
+    expect(exceedsAvailableBalance('', 190.62)).toBe(false)
+    expect(exceedsAvailableBalance('5900', null)).toBe(false)
+  })
+
+  it('exceedsAvailableBalance coerces string balances', () => {
+    expect(exceedsAvailableBalance('5900', '190.62' as unknown as number)).toBe(true)
+  })
+
+  it('getInsufficientBalanceMessage returns user-facing copy', () => {
+    expect(getInsufficientBalanceMessage('5900', 190.62)).toBe(
+      'Insufficient DashPro balance. Available: GHS 190.62',
+    )
+    expect(getInsufficientBalanceMessage('50', 190.62)).toBeNull()
   })
 
   it('isGuestAssignedCardRedeemable excludes redeemed rows', () => {

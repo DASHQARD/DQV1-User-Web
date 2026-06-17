@@ -5,7 +5,11 @@ import {
   interpretMobileMoneyLookupResponse,
   toLookupApiProvider,
 } from '@/utils/accountLookupMappers'
-import { convertToInternationalFormat, detectMobileMoneyProvider } from '@/features/dashboard/services/redemptions'
+import { resolveRequestErrorMessage } from '@/utils/networkError'
+import {
+  convertToInternationalFormat,
+  detectMobileMoneyProvider,
+} from '@/features/dashboard/services/redemptions'
 import type { GuestMomoProvider } from '@/types/redemptions'
 
 export function useMobileMoneyAccountLookup(options: {
@@ -74,8 +78,10 @@ export function useMobileMoneyAccountLookup(options: {
         if (cancelled) return
         setAccountName(null)
         setError(
-          err?.message ||
+          resolveRequestErrorMessage(
+            err,
             'Mobile money number could not be verified. Please check the details and try again.',
+          ),
         )
       })
       .finally(() => {

@@ -1,4 +1,5 @@
 import { useToast } from '@/hooks'
+import { resolveRequestErrorMessage } from '@/utils/networkError'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getCardBalance,
@@ -57,7 +58,7 @@ export function useRedemptionMutation() {
         queryClient.invalidateQueries({ queryKey: ['redeemable-cards'] })
       },
       onError: (err: any) => {
-        error(err?.message || 'Failed to process redemption. Please try again.')
+        error(resolveRequestErrorMessage(err, 'Failed to process redemption. Please try again.'))
       },
     })
   }
@@ -71,7 +72,7 @@ export function useRedemptionMutation() {
         queryClient.invalidateQueries({ queryKey: ['redeemable-cards'] })
       },
       onError: (err: any) => {
-        error(err?.message || 'Failed to process redemption. Please try again.')
+        error(resolveRequestErrorMessage(err, 'Failed to process redemption. Please try again.'))
       },
     })
   }
@@ -92,7 +93,7 @@ export function useRedemptionMutation() {
           error('Something went wrong, please try again.')
           return
         }
-        error(err?.message || 'Failed to process redemption. Please try again.')
+        error(resolveRequestErrorMessage(err, 'Failed to process redemption. Please try again.'))
       },
     })
   }
@@ -135,9 +136,10 @@ export function useRedemptionMutation() {
       onSuccess: (response: any) => {
         success(response?.message || 'Redemption processed successfully')
         queryClient.invalidateQueries({ queryKey: ['redemptions'] })
+        queryClient.invalidateQueries({ queryKey: ['redemptions-amount-dash-pro'] })
       },
       onError: (err: any) => {
-        error(err?.message || 'Failed to process redemption. Please try again.')
+        error(resolveRequestErrorMessage(err, 'Failed to process redemption. Please try again.'))
       },
     })
   }
@@ -154,7 +156,7 @@ export function useRedemptionMutation() {
         queryClient.invalidateQueries({ queryKey: ['redemptions-amount-dash-pro'] })
       },
       onError: (err: any) => {
-        error(err?.message || 'Failed to process redemption. Please try again.')
+        error(resolveRequestErrorMessage(err, 'Failed to process redemption. Please try again.'))
       },
     })
   }

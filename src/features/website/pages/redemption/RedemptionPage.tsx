@@ -10,11 +10,12 @@ import {
   Combobox,
   Loader,
   Modal,
+  NetworkWarning,
 } from '@/components'
 import { Icon } from '@/libs'
 import { useAuthStore, useGuestAddToCartModalStore } from '@/stores'
 import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
-import { useUserProfile, useCountriesData, useToast } from '@/hooks'
+import { useUserProfile, useCountriesData, useToast, useNetworkStatus } from '@/hooks'
 import { convertToInternationalFormat } from '@/features/dashboard/services/redemptions'
 import type { DropdownOption } from '@/types'
 import { BasePhoneInput } from '@/components/BasePhoneNumber/BasePhoneNumber'
@@ -41,6 +42,8 @@ import {
   formatBranchLabel,
   isGuestAssignedCardRedeemable,
   isGuestRedemptionSuccess,
+  exceedsAvailableBalance,
+  getInsufficientBalanceMessage,
   isValidRedemptionAmountInput,
   mapGuestAssignedCardToVendorCard,
   parseGuestRecipientAmountTotalBalance,
@@ -54,16 +57,30 @@ import { parseGuestAssignedCardsResponse } from '@/features/website/utils/guestA
 import { parseGuestRedemptionsResponse } from '@/features/website/utils/guestRedemptionsHistory'
 import { GuestGiftCardTile } from '@/features/website/pages/guest/GuestGiftCardTile'
 import type { GuestCardsRedemptionData, VendorSearchResult } from '@/types/redemptions'
-import { CARD_EXPIRED_MESSAGE, isAssignedCardRedeemable, isCatalogCardPurchasable } from '@/utils/cardExpiry'
+import {
+  CARD_EXPIRED_MESSAGE,
+  isAssignedCardRedeemable,
+  isCatalogCardPurchasable,
+} from '@/utils/cardExpiry'
 import {
   parseRedemptionSearchParams,
   vendorIdFlowRequiresBranch,
 } from '@/features/website/utils/redemptionDeepLink'
 import { findRedemptionCardInList } from '@/features/website/utils/guestCardRedemptionNavigation'
 import { isExactGvidPathLookup } from '@/features/website/utils/cardsRedemption'
+import { isNetworkError, NETWORK_ISSUE_MESSAGE } from '@/utils/networkError'
 
 type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
+
+const CARD_TYPE_LABELS: Record<CardType, string> = {
+  dashgo: 'DashGo',
+  dashpro: 'DashPro',
+  dashx: 'DashX',
+  dashpass: 'DashPass',
+}
+
+const noCardTypeAvailableMessage = (type: CardType) => `No ${CARD_TYPE_LABELS[type]} Available`
 
 interface VendorCard {
   card_id: string
@@ -131,6 +148,7 @@ export default function RedemptionPage() {
   const [isSubmittingRating, setIsSubmittingRating] = useState(false)
   const [showActionChoiceModal, setShowActionChoiceModal] = useState(false)
   const toast = useToast()
+  const { isOnline } = useNetworkStatus()
 
   const normalizeToLocalPhone = (value: string) => {
     const digitsOnly = (value || '').replace(/[^0-9]/g, '')
@@ -396,8 +414,35 @@ export default function RedemptionPage() {
           !!dashGoParams?.phone_number &&
           !!(dashGoParams?.vendor_id || dashGoParams?.branch_id))
 
-  const { data: redemptionsAmountDashPro, isLoading: isLoadingRedemptionsAmountDashPro } =
-    useGetRedemptionsAmountDashProService(dashProAmountsEnabled)
+  const {
+    data: redemptionsAmountDashPro,
+    isLoading: isLoadingRedemptionsAmountDashPro,
+    isError: isDashProBalanceError,
+    error: dashProBalanceError,
+  } = useGetRedemptionsAmountDashProService(dashProAmountsEnabled)
+
+  const vendorMomoHasNetworkIssue = useMemo(() => {
+    if (redemptionMethod !== 'vendor_mobile_money') return false
+    if (!isOnline) return true
+    if (isDashProBalanceError && isNetworkError(dashProBalanceError)) return true
+    if (vendorPhoneError === NETWORK_ISSUE_MESSAGE) return true
+    return false
+  }, [redemptionMethod, isOnline, isDashProBalanceError, dashProBalanceError, vendorPhoneError])
+
+  const vendorMomoAvailableBalance = useMemo((): number | null => {
+    if (redemptionMethod !== 'vendor_mobile_money') return balance
+    if (balance !== null) return balance
+    return parseGuestRecipientAmountTotalBalance(redemptionsAmountDashPro)
+  }, [redemptionMethod, balance, redemptionsAmountDashPro])
+
+  const vendorMomoInsufficientBalanceMessage = useMemo(
+    () =>
+      redemptionMethod === 'vendor_mobile_money'
+        ? getInsufficientBalanceMessage(amount, vendorMomoAvailableBalance, 'DashPro')
+        : null,
+    [redemptionMethod, amount, vendorMomoAvailableBalance],
+  )
+
   const { data: redemptionsAmountDashX, isLoading: isLoadingRedemptionsAmountDashX } =
     useGetRedemptionsAmountDashXService(dashXParams)
   const { data: redemptionsAmountDashPass, isLoading: isLoadingRedemptionsAmountDashPass } =
@@ -601,14 +646,15 @@ export default function RedemptionPage() {
     if (selectedVendor?.branches?.length) {
       return selectedVendor.branches.map(
         (branch: { id: string; branch_name?: string; branch_location?: string }) => ({
-        branch_id: String(branch.id),
-        branch_name: formatBranchLabel({
-          branch_id: branch.id,
-          branch_name: branch.branch_name,
-          branch_location: branch.branch_location,
+          branch_id: String(branch.id),
+          branch_name: formatBranchLabel({
+            branch_id: branch.id,
+            branch_name: branch.branch_name,
+            branch_location: branch.branch_location,
+          }),
+          branch_location: branch.branch_location || '',
         }),
-        branch_location: branch.branch_location || '',
-      }))
+      )
     }
     if (!selectedVendor || !selectedVendor.branches_with_cards) return []
     const branchMap = new Map<string, any>()
@@ -1285,9 +1331,17 @@ export default function RedemptionPage() {
         toast.error('Please enter a valid amount (up to 2 decimal places)')
         return
       }
-      const redeemAmount = roundRedemptionAmount(parseFloat(amount))
-      if (balance !== null && redeemAmount > balance) {
-        toast.error('Insufficient DashPro balance')
+      if (balance !== null && balance <= 0) {
+        toast.error('No Available DashPro Balance')
+        return
+      }
+      const insufficientMomoMsg = getInsufficientBalanceMessage(
+        amount,
+        vendorMomoAvailableBalance,
+        'DashPro',
+      )
+      if (insufficientMomoMsg) {
+        toast.error(insufficientMomoMsg)
         return
       }
       const dashProCards =
@@ -1385,6 +1439,21 @@ export default function RedemptionPage() {
         return
       }
 
+      if (vendorMomoAvailableBalance !== null && vendorMomoAvailableBalance <= 0) {
+        toast.error('No Available DashPro Balance')
+        return
+      }
+
+      const insufficientMomoMsg = getInsufficientBalanceMessage(
+        amount,
+        vendorMomoAvailableBalance,
+        'DashPro',
+      )
+      if (insufficientMomoMsg) {
+        toast.error(insufficientMomoMsg)
+        return
+      }
+
       const userPhoneNumber = isGuestAuth
         ? getGuestPhoneFromAuth(jwtUser)
         : (userProfile as { phonenumber?: string; phone?: string })?.phonenumber ||
@@ -1398,7 +1467,6 @@ export default function RedemptionPage() {
 
       setIsProcessingRedemption(true)
       try {
-        const redeemAmount = roundRedemptionAmount(parseFloat(amount))
         const vendorPhone = convertToInternationalFormat(rawVendorPhone)
 
         if (!resolvedProvider) {
@@ -1869,6 +1937,8 @@ export default function RedemptionPage() {
                         </Text>
                       </div>
 
+                      {vendorMomoHasNetworkIssue && <NetworkWarning className="mb-2" />}
+
                       {!isAuthenticated && (
                         <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-6">
                           <Button
@@ -1974,10 +2044,29 @@ export default function RedemptionPage() {
                               min="0.01"
                               placeholder="Enter amount to redeem"
                               value={amount}
+                              error={vendorMomoInsufficientBalanceMessage ?? undefined}
                               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                 handleAmountChange(e.target.value)
                               }
                             />
+                            {vendorMomoInsufficientBalanceMessage ? (
+                              <div
+                                className="mt-3 p-4 rounded-lg bg-red-50 border border-red-200"
+                                role="alert"
+                                aria-live="polite"
+                              >
+                                <Text
+                                  variant="span"
+                                  weight="semibold"
+                                  className="text-sm text-red-900 block"
+                                >
+                                  {vendorMomoInsufficientBalanceMessage}
+                                </Text>
+                                <Text variant="span" className="text-sm text-red-800 block mt-1">
+                                  Enter an amount up to your available DashPro balance to continue.
+                                </Text>
+                              </div>
+                            ) : null}
                           </div>
 
                           {balanceLoading ? (
@@ -1985,6 +2074,19 @@ export default function RedemptionPage() {
                               <Loader />
                               <Text variant="span" className="text-gray-600 text-sm">
                                 Loading DashPro balance...
+                              </Text>
+                            </div>
+                          ) : balance !== null && balance <= 0 ? (
+                            <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
+                              <Text
+                                variant="span"
+                                weight="semibold"
+                                className="text-sm text-amber-900 block"
+                              >
+                                No Available DashPro Balance
+                              </Text>
+                              <Text variant="span" className="text-sm text-amber-800 block mt-1">
+                                You do not have any DashPro funds available to redeem.
                               </Text>
                             </div>
                           ) : balance !== null ? (
@@ -1999,7 +2101,9 @@ export default function RedemptionPage() {
                           ) : (
                             <div className="p-4 bg-gray-50 rounded-lg">
                               <Text variant="span" className="text-gray-600 text-sm">
-                                Unable to fetch DashPro balance
+                                {isDashProBalanceError && isNetworkError(dashProBalanceError)
+                                  ? NETWORK_ISSUE_MESSAGE
+                                  : 'Unable to fetch DashPro balance'}
                               </Text>
                             </div>
                           )}
@@ -2008,9 +2112,12 @@ export default function RedemptionPage() {
                             variant="secondary"
                             onClick={handleRedeem}
                             disabled={
+                              !isOnline ||
                               !isVendorPhoneVerified ||
                               !isValidRedemptionAmountInput(amount) ||
-                              (balance !== null && parseFloat(amount) > balance) ||
+                              (vendorMomoAvailableBalance !== null &&
+                                vendorMomoAvailableBalance <= 0) ||
+                              exceedsAvailableBalance(amount, vendorMomoAvailableBalance) ||
                               isProcessingRedemption
                             }
                             loading={isProcessingRedemption}
@@ -2096,9 +2203,12 @@ export default function RedemptionPage() {
                                 {debouncedVendorId.length >= 2 &&
                                 !isSearchingById &&
                                 vendorIdSearchResults.length === 0 ? (
-                                  <Text variant="span" className="text-sm text-amber-700 block mt-2">
-                                    No vendor found for &quot;{debouncedVendorId}&quot;. Try the full
-                                    vendor ID (e.g. GH-0001) or search by business name.
+                                  <Text
+                                    variant="span"
+                                    className="text-sm text-amber-700 block mt-2"
+                                  >
+                                    No vendor found for &quot;{debouncedVendorId}&quot;. Try the
+                                    full vendor ID (e.g. GH-0001) or search by business name.
                                   </Text>
                                 ) : null}
                                 {debouncedVendorId.length >= 2 &&
@@ -2112,9 +2222,7 @@ export default function RedemptionPage() {
                                           onClick={() =>
                                             applyVendorSelection(
                                               result.vendor_id,
-                                              result.vendor_name ||
-                                                result.business_name ||
-                                                '',
+                                              result.vendor_name || result.business_name || '',
                                               result.gvid,
                                               result,
                                             )
@@ -2204,12 +2312,13 @@ export default function RedemptionPage() {
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     {(
                                       [
-                                        { type: 'dashgo' as const, label: 'DashGo' },
-                                        { type: 'dashpro' as const, label: 'DashPro' },
-                                        { type: 'dashx' as const, label: 'DashX' },
-                                        { type: 'dashpass' as const, label: 'DashPass' },
+                                        { type: 'dashgo' as const },
+                                        { type: 'dashpro' as const },
+                                        { type: 'dashx' as const },
+                                        { type: 'dashpass' as const },
                                       ] as const
-                                    ).map(({ type, label }) => {
+                                    ).map(({ type }) => {
+                                      const label = CARD_TYPE_LABELS[type]
                                       const available = isCardTypeAvailable(type)
                                       return (
                                         <button
@@ -2221,13 +2330,23 @@ export default function RedemptionPage() {
                                             setCardType(type)
                                             setSelectedCard(null)
                                           }}
-                                          className={`p-4 border-2 rounded-lg transition-colors ${
+                                          className={`p-4 border-2 rounded-lg transition-colors text-left ${
                                             cardType === type
                                               ? 'border-primary-500 bg-primary-50'
                                               : 'border-gray-200 hover:border-gray-300'
                                           } ${!available ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         >
-                                          {label}
+                                          <span className="block font-medium text-gray-900">
+                                            {label}
+                                          </span>
+                                          {!available ? (
+                                            <Text
+                                              variant="span"
+                                              className="text-xs text-amber-700 block mt-1"
+                                            >
+                                              {noCardTypeAvailableMessage(type)}
+                                            </Text>
+                                          ) : null}
                                         </button>
                                       )
                                     })}
@@ -2240,11 +2359,11 @@ export default function RedemptionPage() {
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                                       Select Card <span className="text-red-500">*</span>
                                     </label>
-                                    {filteredCards.length === 0 ? (
+                                    {filteredCards.length === 0 ||
+                                    !isCardTypeAvailable(cardType) ? (
                                       <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                                         <Text variant="span" className="text-yellow-800 text-sm">
-                                          No {cardType === 'dashx' ? 'DashX' : 'DashPass'} cards
-                                          available
+                                          {noCardTypeAvailableMessage(cardType)}
                                         </Text>
                                       </div>
                                     ) : (
@@ -2299,33 +2418,46 @@ export default function RedemptionPage() {
                                 )}
 
                                 {/* Amount input for DashGo and DashPro */}
-                                {(cardType === 'dashgo' || cardType === 'dashpro') && (
-                                  <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                      Amount <span className="text-red-500">*</span>
-                                    </label>
-                                    <Input
-                                      type="number"
-                                      step="0.01"
-                                      min="0.01"
-                                      placeholder="Enter amount to redeem"
-                                      value={amount}
-                                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                        handleAmountChange(e.target.value)
-                                      }
-                                    />
-                                  </div>
-                                )}
+                                {(cardType === 'dashgo' || cardType === 'dashpro') &&
+                                  !isCardTypeAvailable(cardType) && (
+                                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                      <Text variant="span" className="text-yellow-800 text-sm">
+                                        {noCardTypeAvailableMessage(cardType)}
+                                      </Text>
+                                    </div>
+                                  )}
+
+                                {(cardType === 'dashgo' || cardType === 'dashpro') &&
+                                  isCardTypeAvailable(cardType) && (
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Amount <span className="text-red-500">*</span>
+                                      </label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        placeholder="Enter amount to redeem"
+                                        value={amount}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                          handleAmountChange(e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                  )}
 
                                 {/* Balance display - Show balance for selected card type */}
-                                {balanceLoading ? (
+                                {(cardType === 'dashgo' || cardType === 'dashpro') &&
+                                isCardTypeAvailable(cardType) &&
+                                balanceLoading ? (
                                   <div className="p-4 bg-gray-50 rounded-lg flex items-center gap-2">
                                     <Loader />
                                     <Text variant="span" className="text-gray-600 text-sm">
                                       Loading balance...
                                     </Text>
                                   </div>
-                                ) : (
+                                ) : (cardType === 'dashgo' || cardType === 'dashpro') &&
+                                  isCardTypeAvailable(cardType) ? (
                                   <div className="space-y-4">
                                     {/* DashGo Balance */}
                                     {cardType === 'dashgo' && dashGoBalance !== null && (
@@ -2411,7 +2543,7 @@ export default function RedemptionPage() {
                                         </div>
                                       )}
                                   </div>
-                                )}
+                                ) : null}
 
                                 <Button
                                   variant="secondary"
@@ -2420,6 +2552,7 @@ export default function RedemptionPage() {
                                     !selectedVendor ||
                                     !selectedVendorGvid ||
                                     !cardType ||
+                                    !isCardTypeAvailable(cardType as CardType) ||
                                     vendorIdFlowRequiresBranch(
                                       availableBranches.length,
                                       selectedBranchId,

@@ -453,7 +453,6 @@ export type CheckoutPayloadBase = {
   full_name: string
   email: string
   phone_number: string
-  amount_due: number
 }
 
 /** Paystack: base only */
@@ -561,7 +560,6 @@ export type GuestCheckoutPayloadBase = {
   /** Omit when the guest does not provide an email. */
   email?: string
   phone_number: string
-  amount_due: number
 }
 
 /** Guest Paystack checkout */

@@ -20,7 +20,6 @@ describe('guestCheckout service', () => {
       full_name: 'Ama Mensah',
       email: 'ama@example.com',
       phone_number: '0241234567',
-      amount_due: 50,
     }
     await guestCheckout(payload)
     expect(postMethod).toHaveBeenCalledWith('/payments/guest/checkout', payload)

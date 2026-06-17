@@ -10,7 +10,7 @@ import { filterShoppingCarts } from '@/features/website/utils/cartFilters'
 import { useCart } from './useCart'
 import { useGuestCart } from './useGuestCart'
 import { usePayments } from './usePayments'
-import { usePersistedModalState, useToast } from '@/hooks'
+import { usePersistedModalState, useToast, useNetworkStatus } from '@/hooks'
 import { useUserProfile } from '@/hooks'
 import { MODAL_NAMES } from '@/utils/constants'
 import { bulkAssignRecipients } from '@/features/dashboard/services'
@@ -32,7 +32,6 @@ import { CHECKOUT_GATEWAY } from '@/features/website/utils/paymentConstants'
 import {
   appendGatewayFields,
   isHostedRedirectGateway,
-  roundCheckoutAmount,
 } from '@/features/website/utils/checkoutPayload'
 import type {
   CheckoutFollowUp,
@@ -64,6 +63,7 @@ import {
   resolveServiceFeeRate,
 } from '@/utils/pricingFees'
 import { formatPersonName, splitPersonName } from '@/utils/personName'
+import { isNetworkError, resolveRequestErrorMessage } from '@/utils/networkError'
 
 /** Checkout-specific flattened cart item (one row per quantity unit, with quantity_index) */
 export type CheckoutFlattenedCartItem = FlattenedCartItem & {
@@ -73,6 +73,7 @@ export type CheckoutFlattenedCartItem = FlattenedCartItem & {
 export function useCheckout() {
   const queryClient = useQueryClient()
   const toast = useToast()
+  const { isOnline } = useNetworkStatus()
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const isSessionReady = useAuthStore((state) => state.isSessionReady)
   const { recipientActionsBlocked } = useMemberMustCompleteOnboardingForCustomCards()
@@ -90,16 +91,21 @@ export function useCheckout() {
   const guestCartRefetch = guestCart.refetch
   const { useCheckoutService, useGuestCheckoutService, usePaymentProviderConfig, useServiceFeesConfig } =
     usePayments()
-  const { mutateAsync: checkoutMutation, isPending: isMemberCheckingOut } = useCheckoutService()
   const [guestRequiresAccountMessage, setGuestRequiresAccountMessage] = useState<string | null>(
     null,
   )
+  const [checkoutNetworkError, setCheckoutNetworkError] = useState(false)
+  const handleCheckoutNetworkError = useCallback(() => setCheckoutNetworkError(true), [])
+  const { mutateAsync: checkoutMutation, isPending: isMemberCheckingOut } = useCheckoutService({
+    onNetworkError: handleCheckoutNetworkError,
+  })
   const { mutateAsync: guestCheckoutMutation, isPending: isGuestCheckingOut } = useGuestCheckoutService(
     {
       onCartRefetch: () => {
         void guestCartRefetch()
       },
       onRequiresAccount: (message) => setGuestRequiresAccountMessage(message),
+      onNetworkError: handleCheckoutNetworkError,
     },
   )
   const isCheckingOut = isGuestAuth ? isGuestCheckingOut : isMemberCheckingOut
@@ -267,7 +273,17 @@ export function useCheckout() {
   const serviceFeeRate = resolveServiceFeeRate(serviceFeesConfig?.serviceFeeRate)
   const serviceFee = computeServiceFee(totalAmount, serviceFeeRate)
   const amountDue = computeAmountCharged(totalAmount, serviceFeeRate)
-  const checkoutAmountDue = totalAmount
+
+  const hasNetworkIssue = useMemo(() => {
+    if (!isOnline) return true
+    return checkoutNetworkError
+  }, [isOnline, checkoutNetworkError])
+
+  React.useEffect(() => {
+    if (isOnline) {
+      setCheckoutNetworkError(false)
+    }
+  }, [isOnline])
 
   const contactPhone = userInfoForm.watch('phone_number')
   const contactEmail = userInfoForm.watch('email')
@@ -346,6 +362,12 @@ export function useCheckout() {
   }, [setLocalContact, userInfoForm])
 
   const handleCheckout = useCallback(async () => {
+    if (!isOnline) {
+      setCheckoutNetworkError(true)
+      return
+    }
+    setCheckoutNetworkError(false)
+
     if (recipientActionsBlocked) {
       toast.error('Complete onboarding in your dashboard before checkout.')
       return
@@ -377,7 +399,6 @@ export function useCheckout() {
     const paymentValues = paymentForm.getValues()
     const paymentMethod = paymentValues.payment_method_type ?? 'mobile_money'
     const phone = userValues.phone_number ?? ''
-    const amountDue = roundCheckoutAmount(checkoutAmountDue)
 
     const runMutation = async (payload: CheckoutPayload | GuestCheckoutPayload) => {
       const result = isGuestAuth
@@ -388,7 +409,22 @@ export function useCheckout() {
     }
 
     if (isGuestAuth) {
-      const guestCartUuid = await resolveGuestCartUuidForCheckout()
+      let guestCartUuid: string | null
+      try {
+        guestCartUuid = await resolveGuestCartUuidForCheckout()
+      } catch (error) {
+        if (isNetworkError(error)) {
+          setCheckoutNetworkError(true)
+        }
+        toast.error(
+          resolveRequestErrorMessage(
+            error,
+            'Could not load your cart. Please refresh the page and try again.',
+          ),
+        )
+        return
+      }
+
       if (!guestCartUuid) {
         toast.error('Could not load your cart. Please refresh the page and try again.')
         void guestCartRefetch()
@@ -401,7 +437,6 @@ export function useCheckout() {
         guest_cart_id: guestCartUuid,
         phone_number: userValues.phone_number,
         full_name: guestFullName.trim(),
-        amount_due: amountDue,
         ...(guestEmail ? { email: guestEmail } : {}),
       }
 
@@ -453,7 +488,6 @@ export function useCheckout() {
       full_name: guestFullName,
       email: userValues.email ?? '',
       phone_number: userValues.phone_number,
-      amount_due: amountDue,
     }
 
     if (isHostedRedirectGateway(gateway)) {
@@ -499,7 +533,6 @@ export function useCheckout() {
   }, [
     isGuestAuth,
     activeCartItems,
-    checkoutAmountDue,
     userInfoForm,
     persistGuestContactFromForm,
     paymentForm,
@@ -512,6 +545,7 @@ export function useCheckout() {
     applyCheckoutFollowUp,
     resolveGuestCartUuidForCheckout,
     guestCartRefetch,
+    isOnline,
   ])
 
   const bulkAssignMutation = useMutation({
@@ -563,6 +597,7 @@ export function useCheckout() {
     totalAmount,
     serviceFee,
     amountDue,
+    hasNetworkIssue,
     userInfoForm,
     userInfo: userInfoForm.watch(),
     paymentForm,

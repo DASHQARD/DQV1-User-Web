@@ -8,17 +8,22 @@ import { buildCardsRedemptionPayload } from '@/features/website/utils/cardsRedem
 import { pickGuestRedemptionCardId } from '@/features/website/utils/guestRedemption'
 import { resolveRecipientAmountPreviewImageUrl } from '@/features/website/utils/recipientAmountCardImages'
 import { useMobileMoneyAccountLookup } from '@/hooks/useMobileMoneyAccountLookup'
+import { useNetworkStatus } from '@/hooks/useNetworkStatus'
+import {
+  isNetworkError,
+  NETWORK_ISSUE_MESSAGE,
+  resolveRequestErrorMessage,
+} from '@/utils/networkError'
 
 export type CardType = 'DashPro' | 'DashGo' | 'DashX' | 'DashPass'
 
 export function useRedemptionForm() {
   const { user } = useAuthStore()
+  const { isOnline } = useNetworkStatus()
   const userPhone = (user as any)?.phonenumber || (user as any)?.phone || ''
 
-  const {
-    useProcessDashProRedemptionForUserService,
-    useProcessUserRedemptionCardsService,
-  } = useRedemptionMutation()
+  const { useProcessDashProRedemptionForUserService, useProcessUserRedemptionCardsService } =
+    useRedemptionMutation()
 
   const {
     useSearchVendorsService,
@@ -93,23 +98,33 @@ export function useRedemptionForm() {
   const availableBalance: number | null = (activeBalanceQuery.data as any)?.balance ?? null
   const balanceLoading = activeBalanceQuery.isLoading || activeBalanceQuery.isFetching
   const balanceError: string | null = activeBalanceQuery.isError
-    ? ((activeBalanceQuery.error as any)?.message ?? 'Failed to fetch balance')
+    ? resolveRequestErrorMessage(activeBalanceQuery.error, 'Failed to fetch balance')
     : null
+
+  const hasNetworkIssue = useMemo(() => {
+    if (!isOnline) return true
+    if (activeBalanceQuery.isError && isNetworkError(activeBalanceQuery.error)) return true
+    if (cardType === 'DashPro' && vendorPhoneError === NETWORK_ISSUE_MESSAGE) return true
+    return false
+  }, [isOnline, activeBalanceQuery.isError, activeBalanceQuery.error, cardType, vendorPhoneError])
 
   const cardPreviewImageUrl = useMemo(
     () => resolveRecipientAmountPreviewImageUrl(activeBalanceQuery.data),
     [activeBalanceQuery.data],
   )
 
-  const handleCardTypeChange = useCallback((newType: CardType) => {
-    setCardType(newType)
-    setRawVendorPhone('')
-    resetMomoLookup()
-    setVendorSearch('')
-    setDebouncedVendorSearch('')
-    setSelectedVendor(null)
-    setRedemptionAmount(null)
-  }, [resetMomoLookup])
+  const handleCardTypeChange = useCallback(
+    (newType: CardType) => {
+      setCardType(newType)
+      setRawVendorPhone('')
+      resetMomoLookup()
+      setVendorSearch('')
+      setDebouncedVendorSearch('')
+      setSelectedVendor(null)
+      setRedemptionAmount(null)
+    },
+    [resetMomoLookup],
+  )
 
   // Debounce vendor search (vendor-scoped cards)
   useEffect(() => {
@@ -123,6 +138,7 @@ export function useRedemptionForm() {
   }, [])
 
   const isFormValid = useMemo(() => {
+    if (!isOnline) return false
     if (!redemptionAmount || redemptionAmount <= 0) return false
     if (availableBalance === null || redemptionAmount > availableBalance) return false
     if (!userPhone) return false
@@ -131,7 +147,15 @@ export function useRedemptionForm() {
       return isVendorPhoneVerified
     }
     return !!selectedVendor
-  }, [cardType, redemptionAmount, availableBalance, isVendorPhoneVerified, selectedVendor, userPhone])
+  }, [
+    cardType,
+    redemptionAmount,
+    availableBalance,
+    isVendorPhoneVerified,
+    selectedVendor,
+    userPhone,
+    isOnline,
+  ])
 
   const clearForm = useCallback(() => {
     setRedemptionAmount(null)
@@ -229,6 +253,7 @@ export function useRedemptionForm() {
     availableBalance,
     balanceLoading,
     balanceError,
+    hasNetworkIssue,
     cardPreviewImageUrl,
     // Submission
     isFormValid,

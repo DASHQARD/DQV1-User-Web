@@ -12,6 +12,7 @@ import {
   EmptyState,
   Input,
   BasePhoneInput,
+  NetworkWarning,
 } from '@/components'
 import PurchaseModal from '@/components/PurchaseModal/PurchaseModal'
 import FileUploader from '@/components/FileUploader/FileUploader'
@@ -77,6 +78,7 @@ export default function Checkout() {
     totalAmount,
     serviceFee,
     amountDue,
+    hasNetworkIssue,
     userInfoForm,
     paymentForm,
     paymentMethod,
@@ -888,6 +890,7 @@ export default function Checkout() {
                   Assign recipients to all gift cards before completing your purchase.
                 </p>
               ) : null}
+              {hasNetworkIssue ? <NetworkWarning className="mb-4" /> : null}
               {guestBagReady || !isGuestCheckoutFlow ? (
               <Button
                 variant="secondary"
@@ -896,6 +899,7 @@ export default function Checkout() {
                 loading={isCheckingOut}
                 disabled={
                   isCheckingOut ||
+                  hasNetworkIssue ||
                   !allRecipientsAssigned ||
                   recipientActionsBlocked ||
                   isUserInfoIncomplete

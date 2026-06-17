@@ -307,7 +307,6 @@ export const checkout = async (data: {
   full_name: string
   email: string
   phone_number: string
-  amount_due: number
   user_id: number
 }): Promise<any> => {
   return await postMethod(`/payments/checkout`, data)

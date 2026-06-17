@@ -1,9 +1,4 @@
-import { roundMoney } from '@/utils/pricingFees'
 import { CHECKOUT_GATEWAY } from './paymentConstants'
-
-export function roundCheckoutAmount(amount: number): number {
-  return roundMoney(amount)
-}
 
 type GatewayPaymentValues = {
   payment_method_type?: string

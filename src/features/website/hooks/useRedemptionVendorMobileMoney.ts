@@ -7,6 +7,7 @@ import {
 } from '@/features/dashboard/services/redemptions'
 import { interpretMomoResolveResponse } from '@/features/website/utils/momoResolve'
 import { toLookupApiProvider } from '@/utils/accountLookupMappers'
+import { resolveRequestErrorMessage } from '@/utils/networkError'
 import type { GuestMomoProvider } from '@/types/redemptions'
 
 export function useRedemptionVendorMobileMoney(enabled: boolean, isGuestAuth = false) {
@@ -68,8 +69,10 @@ export function useRedemptionVendorMobileMoney(enabled: boolean, isGuestAuth = f
         setGuestMomoWarning(null)
         setGuestProvider(null)
         setGuestPhoneError(
-          err?.message ||
+          resolveRequestErrorMessage(
+            err,
             'Could not verify this mobile money number. Please check and try again.',
+          ),
         )
       })
       .finally(() => {

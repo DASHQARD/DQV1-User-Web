@@ -238,6 +238,42 @@ export function isValidRedemptionAmountInput(value: string): boolean {
   return /^\d+(\.\d{1,2})?$/.test(trimmed)
 }
 
+function parseAvailableBalance(availableBalance: number | null): number | null {
+  if (availableBalance === null) return null
+  const numeric =
+    typeof availableBalance === 'number'
+      ? availableBalance
+      : parseFloat(String(availableBalance))
+  return Number.isFinite(numeric) ? numeric : null
+}
+
+/** True when a positive entered amount exceeds the available balance. */
+export function exceedsAvailableBalance(
+  amountInput: string,
+  availableBalance: number | null,
+): boolean {
+  const balance = parseAvailableBalance(availableBalance)
+  if (balance === null || balance <= 0) return false
+  const trimmed = amountInput.trim()
+  if (!trimmed) return false
+  const parsed = parseFloat(trimmed)
+  if (!Number.isFinite(parsed) || parsed <= 0) return false
+  return roundRedemptionAmount(parsed) > balance
+}
+
+/** User-facing message when redemption amount exceeds balance; null when not applicable. */
+export function getInsufficientBalanceMessage(
+  amountInput: string,
+  availableBalance: number | null,
+  cardLabel = 'DashPro',
+): string | null {
+  const balance = parseAvailableBalance(availableBalance)
+  if (balance === null || !exceedsAvailableBalance(amountInput, balance)) {
+    return null
+  }
+  return `Insufficient ${cardLabel} balance. Available: GHS ${balance.toFixed(2)}`
+}
+
 /** Build type-discriminated POST /guest-redemptions/cards body */
 export function buildGuestCardsRedemptionPayload(
   input:

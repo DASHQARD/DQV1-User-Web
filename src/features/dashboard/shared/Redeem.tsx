@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Icon } from '@/libs'
 import { BasePhoneInput } from '@/components/BasePhoneNumber/BasePhoneNumber'
+import { NetworkWarning } from '@/components'
 import { useRedemptionForm, type CardType } from '../hooks/useRedemptionForm'
 import { useUserInfo } from '../hooks/useUserInfo'
 import { useCountriesData } from '@/hooks'
@@ -35,6 +36,7 @@ export default function Redeem() {
     availableBalance,
     balanceLoading,
     balanceError,
+    hasNetworkIssue,
     cardPreviewImageUrl,
     isFormValid,
     isSubmitting,
@@ -129,6 +131,7 @@ export default function Redeem() {
               </div>
 
               <div className="max-w-[500px] w-full mx-auto">
+                {hasNetworkIssue && <NetworkWarning className="mb-6" />}
                 <form onSubmit={handleSubmit} className="redemption-form">
 
                   {/* Card Type Selector */}
