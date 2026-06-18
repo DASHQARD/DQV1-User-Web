@@ -15,6 +15,7 @@ import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorp
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 import {
   getBranchRecordId,
+  resolveBranchManagerBranchId,
   useExperienceFormBranches,
 } from '@/features/dashboard/utils/experienceBranchOptions'
 
@@ -73,7 +74,7 @@ export function EditExperience() {
   const { useUpdateCardService } = useVendorMutations()
   const { mutateAsync: updateCard, isPending: isUpdating } = useUpdateCardService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const { branchesArray } = useExperienceFormBranches()
+  const { branchesArray, branchManagerBranch, branchManagerBranchId } = useExperienceFormBranches()
   const { useUpdateBranchExperienceService } = useBranchMutations()
   const { mutateAsync: updateBranchExperience, isPending: isUpdatingBranchExperience } =
     useUpdateBranchExperienceService()
@@ -272,7 +273,10 @@ export function EditExperience() {
         })),
         redemption_branches: [
           {
-            branch_id: userProfileData?.branches?.[0]?.id,
+            branch_id:
+              branchManagerBranchId ||
+              resolveBranchManagerBranchId(branchManagerBranch, userProfileData?.branches) ||
+              userProfileData?.branches?.[0]?.id,
           },
         ],
       }

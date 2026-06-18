@@ -16,6 +16,7 @@ import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorp
 import { resolveVendorUserIdForCorporateSwitch } from '@/utils/resolveVendorUserId'
 import {
   getBranchRecordId,
+  resolveBranchManagerBranchId,
   useExperienceFormBranches,
 } from '@/features/dashboard/utils/experienceBranchOptions'
 
@@ -35,7 +36,7 @@ export default function CreateExperienceForm() {
   const { data: userProfileData } = useGetUserProfileService()
   const { useGetAllVendorsDetailsService } = vendorQueries()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
-  const { branchesArray, isLoadingBranches, isBranchManager, isCorporateSuperAdmin } =
+  const { branchesArray, branchManagerBranch, branchManagerBranchId, isLoadingBranches, isBranchManager, isCorporateSuperAdmin } =
     useExperienceFormBranches()
   const { useCreateBranchExperienceService } = useBranchMutations()
   const { mutateAsync: createBranchExperience, isPending: isCreatingBranchExperience } =
@@ -104,19 +105,20 @@ export default function CreateExperienceForm() {
 
   const isModalOpen = modal.isModalOpen(MODALS.EXPERIENCE.CREATE)
 
-  // Auto-select branch for branch managers
+  // Auto-select branch for branch managers (from GET /branches/info or profile fallback)
   useEffect(() => {
-    if (isBranchManager && userProfileData?.branches?.[0]?.id && isModalOpen) {
-      const branchId = String(userProfileData.branches[0].id)
-      setSelectedBranches([branchId])
-      setSelectedBranchOptions([
-        {
-          label: `${userProfileData.branches[0].branch_name} - ${userProfileData.branches[0].branch_location}`,
-          value: String(branchId),
-        },
-      ])
-    }
-  }, [isBranchManager, userProfileData?.branches, isModalOpen])
+    if (!isBranchManager || !isModalOpen) return
+    const branchId = branchManagerBranchId || resolveBranchManagerBranchId(null, userProfileData?.branches)
+    if (!branchId) return
+    const branch = branchManagerBranch ?? userProfileData?.branches?.[0]
+    setSelectedBranches([branchId])
+    setSelectedBranchOptions([
+      {
+        label: `${branch?.branch_name ?? 'Branch'} - ${branch?.branch_location ?? ''}`,
+        value: branchId,
+      },
+    ])
+  }, [isBranchManager, branchManagerBranch, branchManagerBranchId, userProfileData?.branches, isModalOpen])
 
   useEffect(() => {
     if (!isModalOpen) {
@@ -223,13 +225,25 @@ export default function CreateExperienceForm() {
         file_name: termsFiles[index].name,
       }))
 
-      // Use selected branches (already determined in handleBranchOptionChange)
-      const allowedBranchIds = new Set(branchesArray.map(getBranchRecordId).filter(Boolean))
-      const branchIds = selectedBranches.filter((id) => allowedBranchIds.has(id))
-
-      if (!isBranchManager && branchesArray.length > 0 && branchIds.length === 0) {
-        toast.error('Select at least one redemption branch for this experience.')
-        return
+      let branchIds: string[]
+      if (isBranchManager) {
+        const managerBranchId =
+          branchManagerBranchId ||
+          resolveBranchManagerBranchId(branchManagerBranch, userProfileData?.branches) ||
+          selectedBranches[0] ||
+          ''
+        branchIds = managerBranchId ? [managerBranchId] : []
+        if (branchIds.length === 0) {
+          toast.error('Could not determine your branch. Please refresh and try again.')
+          return
+        }
+      } else {
+        const allowedBranchIds = new Set(branchesArray.map(getBranchRecordId).filter(Boolean))
+        branchIds = selectedBranches.filter((id) => allowedBranchIds.has(id))
+        if (branchesArray.length > 0 && branchIds.length === 0) {
+          toast.error('Select at least one redemption branch for this experience.')
+          return
+        }
       }
 
       const payload: any = {
@@ -438,14 +452,14 @@ export default function CreateExperienceForm() {
       )}
 
       {/* Branch info for branch managers */}
-      {isBranchManager && userProfileData?.branches?.[0] && (
+      {isBranchManager && (branchManagerBranch ?? userProfileData?.branches?.[0]) && (
         <div className="border-t border-gray-200 pt-4">
           <Text as="p" className="text-sm font-medium text-gray-700 mb-2">
             Branch
           </Text>
           <Text as="p" className="text-sm text-gray-600">
-            {userProfileData.branches[0].branch_name} -{' '}
-            {userProfileData.branches[0].branch_location}
+            {(branchManagerBranch ?? userProfileData?.branches?.[0])?.branch_name} -{' '}
+            {(branchManagerBranch ?? userProfileData?.branches?.[0])?.branch_location}
           </Text>
           <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">
             <strong>Note:</strong> Experiences created by branch managers require vendor admin
