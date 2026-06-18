@@ -163,7 +163,7 @@ export const BasePhoneInput = React.forwardRef<PhoneInputRefType, InputProps>(
             }
             className="!flex !h-full !min-w-0 !flex-1 !border-0 !bg-transparent !shadow-none"
             inputClassName={cn(
-              '!min-h-0 !border-0 !shadow-none min-w-0 flex-1 bg-transparent text-sm font-light outline-none placeholder:text-gray-300',
+              '!min-h-0 !border-0 !shadow-none min-w-0 flex-1 bg-transparent text-base font-light outline-none placeholder:text-gray-300',
               disabled && 'text-gray-400 placeholder:text-gray-400',
             )}
             inputStyle={{ border: 'none' }}

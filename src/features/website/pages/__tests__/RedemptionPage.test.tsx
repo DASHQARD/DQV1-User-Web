@@ -81,6 +81,7 @@ vi.mock('@/features/dashboard/hooks', () => ({
     useGetGuestAssignedCardsService: () => ({ data: null, isLoading: false }),
     useGetGuestRedemptionsService: () => ({ data: null, isLoading: false }),
     useGetRedeemableCardsService: () => ({ data: null, isLoading: false }),
+    useGetVendorRedemptionCatalogService: () => ({ data: null, isLoading: false }),
     useSearchVendorsService: () => mockVendorSearchResponse,
     useSearchVendorByGvidService: () => ({ data: null, isFetching: false }),
   }),
@@ -144,7 +145,7 @@ describe('RedemptionPage (website)', () => {
     expect(screen.getByRole('button', { name: 'Redeem DashPro' })).toBeDisabled()
   })
 
-  it('auto-identifies vendor from QR gvid deep link (AC2)', async () => {
+  it('auto-identifies vendor from QR gvid deep link after choosing redeem (AC2)', async () => {
     mockVendorSearchResponse.data = {
       data: [
         {
@@ -157,9 +158,16 @@ describe('RedemptionPage (website)', () => {
       ],
     }
 
+    const user = userEvent.setup()
+
     renderWithProviders(<RedemptionPage />, {
       initialEntries: ['/redeem?gvid=7407-01'],
     })
+
+    expect(screen.getByText('Choose Your Next Step')).toBeInTheDocument()
+    expect(screen.getByText('Select Redemption Method')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Redeem a card/i }))
 
     expect(screen.queryByText('Select Redemption Method')).not.toBeInTheDocument()
 

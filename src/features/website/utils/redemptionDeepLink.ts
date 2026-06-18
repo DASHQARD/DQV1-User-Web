@@ -47,6 +47,24 @@ export function parseRedemptionSearchParams(
   }
 }
 
+/**
+ * Bare vendor QR landing (`/redeem?gvid=…`) with no card/method deep-link params.
+ * User should choose purchase vs redeem before auto-entering redemption details.
+ */
+export function isVendorQrScanEntry(searchParams: URLSearchParams): boolean {
+  const hasGvid = Boolean(
+    searchParams.get('gvid')?.trim() || searchParams.get('vendor_gvid')?.trim(),
+  )
+  if (!hasGvid) return false
+
+  if (searchParams.get('method')) return false
+  if (searchParams.get('card_type')) return false
+  if (searchParams.get('card_id')) return false
+  if (searchParams.get('branch_id')) return false
+
+  return true
+}
+
 /** Branch is required when the vendor has one or more branches. */
 export function vendorIdFlowRequiresBranch(
   branchCount: number,

@@ -63,9 +63,11 @@ import {
   isCatalogCardPurchasable,
 } from '@/utils/cardExpiry'
 import {
+  isVendorQrScanEntry,
   parseRedemptionSearchParams,
   vendorIdFlowRequiresBranch,
 } from '@/features/website/utils/redemptionDeepLink'
+import { buildVendorProfilePathFromGvid } from '@/features/website/utils/vendorProfilePath'
 import { findRedemptionCardInList } from '@/features/website/utils/guestCardRedemptionNavigation'
 import { isExactGvidPathLookup } from '@/features/website/utils/cardsRedemption'
 import { isNetworkError, NETWORK_ISSUE_MESSAGE } from '@/utils/networkError'
@@ -162,42 +164,8 @@ export default function RedemptionPage() {
   }
 
   const deepLinkApplied = useRef(false)
+  const qrChoiceResolved = useRef(false)
   const pendingDeepLinkCardIdRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    if (searchParams.get('redeem') === 'true') {
-      setShowActionChoiceModal(true)
-    }
-  }, [searchParams])
-
-  useEffect(() => {
-    if (deepLinkApplied.current) return
-    const parsed = parseRedemptionSearchParams(searchParams)
-    if (!parsed.method) return
-    deepLinkApplied.current = true
-    setRedemptionMethod(parsed.method)
-    setStep('details')
-    const normalizedType = parsed.card_type?.toLowerCase()
-    if (
-      normalizedType === 'dashgo' ||
-      normalizedType === 'dashpro' ||
-      normalizedType === 'dashx' ||
-      normalizedType === 'dashpass'
-    ) {
-      setCardType(normalizedType)
-    }
-    if (parsed.vendor_gvid) {
-      setVendorIdInput(parsed.vendor_gvid)
-    } else if (parsed.vendor_id) {
-      setVendorIdInput(parsed.vendor_id)
-    }
-    if (parsed.branch_id) {
-      setSelectedBranchId(parsed.branch_id)
-    }
-    if (parsed.card_id?.trim()) {
-      pendingDeepLinkCardIdRef.current = parsed.card_id.trim()
-    }
-  }, [searchParams])
 
   useEffect(() => {
     if (isAuthenticated || phoneNumber) return
@@ -207,22 +175,11 @@ export default function RedemptionPage() {
     }
   }, [isAuthenticated, phoneNumber, jwtUser])
 
-  const clearRedeemQueryParam = () => {
+  const clearRedeemQueryParam = useCallback(() => {
     const params = new URLSearchParams(searchParams)
     params.delete('redeem')
     setSearchParams(params, { replace: true })
-  }
-
-  const handleChooseRedeem = () => {
-    setShowActionChoiceModal(false)
-    clearRedeemQueryParam()
-  }
-
-  const handleChoosePurchase = () => {
-    setShowActionChoiceModal(false)
-    clearRedeemQueryParam()
-    navigate(ROUTES.IN_APP.DASHQARDS)
-  }
+  }, [searchParams, setSearchParams])
 
   const invalidateRedemptionGuestQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['guest-assigned-cards'] })
@@ -271,6 +228,73 @@ export default function RedemptionPage() {
     isSearchingById,
     resetVendorLookup,
   } = vendorLookup
+
+  const applyRedemptionDeepLink = useCallback(
+    (parsed: ReturnType<typeof parseRedemptionSearchParams>) => {
+      if (deepLinkApplied.current || !parsed.method) return
+      deepLinkApplied.current = true
+      setRedemptionMethod(parsed.method)
+      setStep('details')
+      const normalizedType = parsed.card_type?.toLowerCase()
+      if (
+        normalizedType === 'dashgo' ||
+        normalizedType === 'dashpro' ||
+        normalizedType === 'dashx' ||
+        normalizedType === 'dashpass'
+      ) {
+        setCardType(normalizedType)
+      }
+      if (parsed.vendor_gvid) {
+        setVendorIdInput(parsed.vendor_gvid)
+      } else if (parsed.vendor_id) {
+        setVendorIdInput(parsed.vendor_id)
+      }
+      if (parsed.branch_id) {
+        setSelectedBranchId(parsed.branch_id)
+      }
+      if (parsed.card_id?.trim()) {
+        pendingDeepLinkCardIdRef.current = parsed.card_id.trim()
+      }
+    },
+    [setVendorIdInput],
+  )
+
+  useEffect(() => {
+    if (deepLinkApplied.current || qrChoiceResolved.current) return
+
+    if (searchParams.get('redeem') === 'true' || isVendorQrScanEntry(searchParams)) {
+      setShowActionChoiceModal(true)
+      return
+    }
+
+    applyRedemptionDeepLink(parseRedemptionSearchParams(searchParams))
+  }, [searchParams, applyRedemptionDeepLink])
+
+  const handleChooseRedeem = useCallback(() => {
+    qrChoiceResolved.current = true
+    setShowActionChoiceModal(false)
+    clearRedeemQueryParam()
+    applyRedemptionDeepLink(parseRedemptionSearchParams(searchParams))
+  }, [applyRedemptionDeepLink, clearRedeemQueryParam, searchParams])
+
+  const handleChoosePurchase = useCallback(() => {
+    qrChoiceResolved.current = true
+    setShowActionChoiceModal(false)
+    clearRedeemQueryParam()
+    const gvid =
+      searchParams.get('gvid')?.trim() || searchParams.get('vendor_gvid')?.trim() || ''
+    if (gvid) {
+      navigate(buildVendorProfilePathFromGvid(gvid))
+      return
+    }
+    navigate(ROUTES.IN_APP.DASHQARDS)
+  }, [clearRedeemQueryParam, navigate, searchParams])
+
+  const handleDismissActionChoice = useCallback(() => {
+    qrChoiceResolved.current = true
+    setShowActionChoiceModal(false)
+    clearRedeemQueryParam()
+  }, [clearRedeemQueryParam])
 
   const { data: vendorsResponse } = usePublicVendorsService(
     redemptionMethod === 'vendor_id' ? { limit: 100 } : undefined,
@@ -2896,7 +2920,7 @@ export default function RedemptionPage() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => setShowActionChoiceModal(false)}
+              onClick={handleDismissActionChoice}
             >
               Maybe later
             </Button>

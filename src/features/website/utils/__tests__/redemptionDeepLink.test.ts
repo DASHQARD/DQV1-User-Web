@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildRedemptionUrl,
   buildRedemptionUrlFromCard,
+  isVendorQrScanEntry,
   parseRedemptionSearchParams,
   vendorIdFlowRequiresBranch,
 } from '../redemptionDeepLink'
@@ -43,6 +44,19 @@ describe('redemptionDeepLink', () => {
     const params = parseRedemptionSearchParams(new URLSearchParams('vendor_id=vendor-uuid-1'))
     expect(params.method).toBe('vendor_id')
     expect(params.vendor_id).toBe('vendor-uuid-1')
+  })
+
+  it('isVendorQrScanEntry is true for bare gvid QR landings', () => {
+    expect(isVendorQrScanEntry(new URLSearchParams('gvid=7407-01'))).toBe(true)
+    expect(isVendorQrScanEntry(new URLSearchParams('vendor_gvid=GH-0001'))).toBe(true)
+  })
+
+  it('isVendorQrScanEntry is false when deep-link params are present', () => {
+    expect(isVendorQrScanEntry(new URLSearchParams('gvid=7407-01&method=vendor_id'))).toBe(false)
+    expect(isVendorQrScanEntry(new URLSearchParams('gvid=7407-01&card_type=dashgo'))).toBe(false)
+    expect(
+      isVendorQrScanEntry(new URLSearchParams('gvid=7407-01&branch_id=b1&card_id=c1')),
+    ).toBe(false)
   })
 
   it('buildRedemptionUrlFromCard uses vendor mobile money for DashPro', () => {
