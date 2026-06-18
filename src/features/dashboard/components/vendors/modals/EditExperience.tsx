@@ -176,12 +176,10 @@ export function EditExperience() {
     branchesArrayForForm.length > 0
       ? [
           { label: 'All Branches', value: 'all' },
-          ...branchesArrayForForm.map(
-            (branch: { branch_name?: string; branch_location?: string }) => ({
-              label: `${branch.branch_name} - ${branch.branch_location}`,
-              value: getBranchRecordId(branch),
-            }),
-          ),
+          ...branchesArrayForForm.map((branch) => ({
+            label: `${branch.branch_name} - ${branch.branch_location}`,
+            value: getBranchRecordId(branch),
+          })),
         ]
       : [{ label: 'All Branches', value: 'all' }]
 

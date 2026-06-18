@@ -19,6 +19,7 @@ export function ApproveAction() {
     id: number | string
     request_id?: string
     status?: string
+    current_approver_level?: string
     approvalVendorId?: string | null
   }>({
     paramName: MODALS.REQUEST.PARAM_NAME,

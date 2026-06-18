@@ -7,7 +7,6 @@ import { useUploadFiles } from '@/hooks'
 import { useToast } from '@/hooks'
 import { usePersistedModalState, useUserProfile } from '@/hooks'
 import { MODALS, ROUTES } from '@/utils/constants'
-import { useAuthStore } from '@/stores'
 import { useVendorMutations, vendorQueries } from '@/features'
 import { CreateExperienceSchema } from '@/utils/schemas'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -32,7 +31,6 @@ export default function CreateExperienceForm() {
   const { mutateAsync: createCorporateCardForVendor, isPending: isCreatingCorporateCard } =
     useCreateCorporateSuperAdminCardForVendorService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const { user } = useAuthStore()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
   const { useGetAllVendorsDetailsService } = vendorQueries()
@@ -57,8 +55,6 @@ export default function CreateExperienceForm() {
   const [selectedBranchOptions, setSelectedBranchOptions] = useState<
     Array<{ label: string; value: string }>
   >([])
-
-  const userType = (user as any)?.user_type
 
   const vendorsList = useMemo(() => {
     if (!allVendorsDetails) return []
@@ -187,7 +183,7 @@ export default function CreateExperienceForm() {
     branchesArray.length > 0
       ? [
           { label: 'All Branches', value: 'all' },
-          ...branchesArray.map((branch: { branch_name?: string; branch_location?: string }) => ({
+          ...branchesArray.map((branch) => ({
             label: `${branch.branch_name} - ${branch.branch_location}`,
             value: getBranchRecordId(branch),
           })),

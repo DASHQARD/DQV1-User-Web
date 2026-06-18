@@ -11,6 +11,13 @@ import { canApproveAtCurrentLevel } from '@/utils/requestStatus'
 import { getAwaitingApprovalNotice, parseApprovalChain } from '@/utils/requestEntity'
 import type { ApprovalChainItem, RequestApprovalContext } from '@/types/requests'
 
+type VendorRequestModalData = {
+  id: number | string
+  request_id?: string
+  status?: string
+  current_approver_level?: string
+}
+
 export interface RequestEntityImage {
   id?: string
   file_url?: string
@@ -27,7 +34,7 @@ export interface RequestInfoRow {
 }
 
 export interface UseVendorRequestDetailsReturn {
-  modal: ReturnType<typeof usePersistedModalState<{ id: number | string; request_id?: string }>>
+  modal: ReturnType<typeof usePersistedModalState<VendorRequestModalData>>
   isPending: boolean
   requestInfo: RequestInfoRow[]
   data: Record<string, unknown> | null
@@ -42,7 +49,7 @@ export function useVendorRequestDetails(): UseVendorRequestDetailsReturn {
   const [searchParams] = useSearchParams()
   const vendorIdFromUrl = searchParams.get('vendor_id')
 
-  const modal = usePersistedModalState<{ id: number | string; request_id?: string }>({
+  const modal = usePersistedModalState<VendorRequestModalData>({
     paramName: MODALS.REQUEST.PARAM_NAME,
   })
   const { useGetUserProfileService } = useUserProfile()

@@ -4,10 +4,14 @@ import { vendorQueries } from '@/features'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 import { useUserProfile } from '@/hooks'
 
-export function getBranchRecordId(branch: {
+export type ExperienceBranchRecord = {
   id?: string | number
   branch_id?: string | number
-}): string {
+  branch_name?: string
+  branch_location?: string
+}
+
+export function getBranchRecordId(branch: ExperienceBranchRecord): string {
   const id = branch.id ?? branch.branch_id
   return id != null && String(id).trim() ? String(id).trim() : ''
 }
@@ -51,8 +55,8 @@ export function useExperienceFormBranches() {
   const branchesArray = useMemo(() => {
     if (!branchesResponse) return []
     return Array.isArray(branchesResponse)
-      ? branchesResponse
-      : (branchesResponse as { data?: unknown[] })?.data || []
+      ? (branchesResponse as ExperienceBranchRecord[])
+      : (branchesResponse as { data?: ExperienceBranchRecord[] })?.data || []
   }, [branchesResponse])
 
   return {
