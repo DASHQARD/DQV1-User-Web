@@ -30,10 +30,15 @@ import type {
   ResolveMomoNameResponse,
   RedeemableCardsParams,
   RedeemableCardsResponse,
+  GetVendorRedemptionCatalogParams,
+  VendorRedemptionCatalogResponse,
 } from '@/types'
 import { getQueryString } from '@/utils/helpers'
 import { resolveMobileMoneyAccount } from '@/services/accountLookup'
-import { interpretMobileMoneyLookupResponse, toLookupApiProvider } from '@/utils/accountLookupMappers'
+import {
+  interpretMobileMoneyLookupResponse,
+  toLookupApiProvider,
+} from '@/utils/accountLookupMappers'
 
 /**
  * Helper function to detect mobile money provider from phone number in Ghana
@@ -203,6 +208,20 @@ export const searchVendorByGvid = async (
   const encoded = encodeURIComponent(gvid.trim())
   const response = await axiosClient.get(`${commonUrl}/search/vendors/${encoded}`, { params })
   return response as unknown as SearchVendorsResponse
+}
+
+/** GET /redemptions/vendors/:gvid/catalog — vendor branches and redeemable cards */
+export const getVendorRedemptionCatalog = async (
+  gvid: string,
+  params?: GetVendorRedemptionCatalogParams,
+): Promise<VendorRedemptionCatalogResponse> => {
+  const encoded = encodeURIComponent(gvid.trim())
+  const queryString = getQueryString(params ?? {})
+  const fullUrl = queryString
+    ? `${commonUrl}/vendors/${encoded}/catalog?${queryString}`
+    : `${commonUrl}/vendors/${encoded}/catalog`
+  const response = await axiosClient.get(fullUrl)
+  return response as unknown as VendorRedemptionCatalogResponse
 }
 
 /** GET /redemptions/redeemable-cards — guest / public */

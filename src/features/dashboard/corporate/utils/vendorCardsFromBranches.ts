@@ -73,9 +73,7 @@ function mapRawToCatalogCard(
         ? String(card.base_price)
         : null,
     markup_price:
-      card.markup_price != null && card.markup_price !== ''
-        ? Number(card.markup_price)
-        : null,
+      card.markup_price != null && card.markup_price !== '' ? Number(card.markup_price) : null,
     markup_amount:
       card.markup_amount != null && String(card.markup_amount) !== 'null'
         ? (card.markup_amount as string | number)
@@ -165,13 +163,17 @@ export function countVendorBranches(vendor: VendorWithBranches | null | undefine
 }
 
 /** Map flattened vendor catalog rows to CardItems / FeaturedCardProps. */
-export function vendorCatalogCardToFeaturedCardProps(
-  card: VendorCatalogCard,
-): FeaturedCardProps {
-  const cardId = Number(card.card_id)
-  const vendorId = Number(card.vendor_id)
+export function resolveFeaturedEntityId(id: string | number | undefined): string | number {
+  if (id == null || id === '') return 0
+  const raw = String(id).trim()
+  const numeric = Number(raw)
+  if (Number.isFinite(numeric) && String(numeric) === raw) return numeric
+  return raw
+}
+
+export function vendorCatalogCardToFeaturedCardProps(card: VendorCatalogCard): FeaturedCardProps {
   return {
-    card_id: Number.isFinite(cardId) ? cardId : 0,
+    card_id: resolveFeaturedEntityId(card.card_id),
     product: card.product,
     vendor_name: card.vendor_name,
     branch_name: card.branch_name,
@@ -188,6 +190,6 @@ export function vendorCatalogCardToFeaturedCardProps(
     terms_and_conditions: (card.terms_and_conditions ?? []) as [],
     type: card.type,
     updated_at: card.updated_at,
-    vendor_id: Number.isFinite(vendorId) ? vendorId : 0,
+    vendor_id: resolveFeaturedEntityId(card.vendor_id),
   }
 }

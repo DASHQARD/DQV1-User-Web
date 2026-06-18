@@ -43,6 +43,8 @@ export interface CardDetailsCard {
   type?: string
   branch_name?: string
   branch_location?: string
+  redemption_branches?: Array<{ branch_name?: string; branch_location?: string }>
+  gvid?: string
 }
 
 export interface UseCardDetailsReturn {

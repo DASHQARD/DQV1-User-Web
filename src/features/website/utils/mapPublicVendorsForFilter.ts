@@ -17,6 +17,7 @@ export type PublicVendorBranchRecord = {
 export type PublicVendorRecord = VendorLogoFields & {
   vendor_id?: number | string
   id?: number | string
+  gvid?: string
   business_name?: string
   vendor_name?: string
   branch_name?: string

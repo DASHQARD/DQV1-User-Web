@@ -141,9 +141,13 @@ export function useCardItem(props: CardItemHookProps) {
   const handleCardClick = () => {
     if (onGetQard) {
       onGetQard()
-    } else if (card_id) {
-      navigate(`/card/${card_id}`)
+      return
     }
+    const resolvedId =
+      card_id != null && String(card_id).trim() !== '' && String(card_id) !== '0'
+        ? String(card_id).trim()
+        : ''
+    if (resolvedId) navigate(`/card/${resolvedId}`)
   }
 
   return {

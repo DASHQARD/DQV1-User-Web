@@ -69,6 +69,10 @@ import {
 import { findRedemptionCardInList } from '@/features/website/utils/guestCardRedemptionNavigation'
 import { isExactGvidPathLookup } from '@/features/website/utils/cardsRedemption'
 import { isNetworkError, NETWORK_ISSUE_MESSAGE } from '@/utils/networkError'
+import {
+  mapCatalogBranchesToOptions,
+  mapCatalogCardsToVendorCards,
+} from '@/features/website/utils/vendorRedemptionCatalog'
 
 type RedemptionMethod = 'vendor_mobile_money' | 'vendor_id'
 type CardType = 'dashpro' | 'dashgo' | 'dashx' | 'dashpass'
@@ -236,6 +240,7 @@ export default function RedemptionPage() {
     useGetGuestAssignedCardsService,
     useGetGuestRedemptionsService,
     useGetRedeemableCardsService,
+    useGetVendorRedemptionCatalogService,
   } = useRedemptionQueries()
   const {
     useProcessUserRedemptionCardsService,
@@ -314,6 +319,17 @@ export default function RedemptionPage() {
     selectedCard,
     vendorIdInput,
   ])
+
+  const shouldFetchVendorCatalog =
+    redemptionMethod === 'vendor_id' && Boolean(selectedVendorGvid) && Boolean(selectedVendorId)
+
+  const { data: vendorCatalogResponse } = useGetVendorRedemptionCatalogService(
+    selectedVendorGvid || undefined,
+    undefined,
+    shouldFetchVendorCatalog,
+  )
+
+  const vendorCatalogData = vendorCatalogResponse?.data
 
   const redeemableCardsParams = useMemo(() => {
     if (!isAuthenticated || isGuestAuth || redemptionMethod === '') return undefined
@@ -577,6 +593,14 @@ export default function RedemptionPage() {
           description: card.description,
         })) as VendorCard[]
     }
+
+    if (vendorCatalogData?.cards?.length) {
+      return mapCatalogCardsToVendorCards(
+        vendorCatalogData.cards,
+        vendorCatalogData.vendor,
+      ) as VendorCard[]
+    }
+
     const cards: VendorCard[] = []
 
     // Extract cards from branches_with_cards (includes branch info)
@@ -621,6 +645,7 @@ export default function RedemptionPage() {
     guestAssignedPayload.currency,
     selectedVendor,
     selectedVendorId,
+    vendorCatalogData,
   ])
 
   // Extract unique branches from vendor
@@ -642,6 +667,13 @@ export default function RedemptionPage() {
         }
       })
       return Array.from(branchMap.values())
+    }
+    if (vendorCatalogData?.vendor?.branches?.length) {
+      return mapCatalogBranchesToOptions(vendorCatalogData.vendor).map((branch) => ({
+        branch_id: branch.branch_id,
+        branch_name: formatBranchLabel(branch),
+        branch_location: branch.branch_location || '',
+      }))
     }
     if (selectedVendor?.branches?.length) {
       return selectedVendor.branches.map(
@@ -671,7 +703,7 @@ export default function RedemptionPage() {
       }
     })
     return Array.from(branchMap.values())
-  }, [isGuestAuth, selectedVendor, vendorCards])
+  }, [isGuestAuth, selectedVendor, vendorCards, vendorCatalogData])
 
   // Create branch options for dropdown
   const branchOptions: DropdownOption[] = useMemo(() => {

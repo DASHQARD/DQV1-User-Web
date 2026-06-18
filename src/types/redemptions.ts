@@ -358,3 +358,80 @@ export interface RecipientAmountResponse {
 }
 
 export type UserRedemptionCardsPayload = CardsRedemptionPayload
+
+export interface VendorRedemptionCatalogBranch {
+  id: string
+  branch_name: string
+  branch_location?: string
+  branch_code?: string
+  full_branch_id?: string
+  gvid?: string
+}
+
+export interface VendorRedemptionCatalogCardFile {
+  id?: string | number
+  file_url?: string
+  file_name?: string
+  file_key?: string
+}
+
+export interface VendorRedemptionCatalogCardBranch {
+  branch_id: string | number
+  branch_name?: string
+  branch_location?: string
+  branch_code?: string
+  full_branch_id?: string
+  gvid?: string
+}
+
+export interface VendorRedemptionCatalogCard {
+  id: string | number
+  type: string
+  product: string
+  description?: string
+  amount?: number
+  base_price?: number
+  markup_amount?: number
+  currency?: string
+  status?: string
+  issue_date?: string
+  expiry_date?: string
+  created_at?: string
+  updated_at?: string
+  created_by_name?: string
+  images?: VendorRedemptionCatalogCardFile[]
+  terms_and_conditions?: VendorRedemptionCatalogCardFile[]
+  redemption_branches?: VendorRedemptionCatalogCardBranch[]
+}
+
+export interface VendorRedemptionCatalogVendor {
+  vendor_id: string
+  vendor_name: string
+  gvid: string
+  qr_code_url?: string
+  branches?: VendorRedemptionCatalogBranch[]
+}
+
+export interface VendorRedemptionCatalogData {
+  vendor: VendorRedemptionCatalogVendor
+  cards: VendorRedemptionCatalogCard[]
+}
+
+export interface GetVendorRedemptionCatalogParams {
+  limit?: number
+  after?: string
+}
+
+export interface VendorRedemptionCatalogResponse {
+  status: string
+  statusCode: number
+  message: string
+  data: VendorRedemptionCatalogData
+  pagination?: {
+    limit?: number
+    hasNextPage?: boolean
+    hasPreviousPage?: boolean
+    next?: string | null
+    previous?: string | null
+  }
+}

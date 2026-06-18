@@ -260,14 +260,9 @@ export default function Contact() {
               </div>
             </div>
             <div className="flex flex-col gap-6 border border-[#402d871a] rounded-[12px] p-6 bg-primary-500">
-              <div>
-                <div className="w-10 h-10 flex items-center justify-center rounded-full bg-[#fff3]">
-                  <Icon icon="bi:star-fill" className="size-6 text-white" />
-                </div>
-                <Text variant="h2" weight="bold" className="text-white">
-                  Special Services
-                </Text>
-              </div>
+              <Text variant="h2" weight="bold" className="text-white">
+                Special Services
+              </Text>
 
               <ul className="flex flex-col gap-2">
                 <li className="flex items-center gap-2">

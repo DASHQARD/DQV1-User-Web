@@ -98,6 +98,7 @@ See sections 3.1 and 3.2 in the product email / backend handoff for step-by-step
 |---|---|---|
 | `GET /redemptions/search/vendors` | public | Name / partial GVID search |
 | `GET /redemptions/search/vendors/:gvid` | public | Exact GVID |
+| `GET /redemptions/vendors/:gvid/catalog` | public | Vendor branches + redeemable cards (redemption flow only; not vendor purchase profile) |
 | `GET /redemptions/redeemable-cards` | public | Aggregated balances (unauthenticated phone lookup) |
 | `GET /redemptions/users/redeemable-cards` | Bearer | Aggregated balances (member) |
 | `GET /guest-redemptions/assigned-cards` | Bearer (guest) | Guest cards on phone |

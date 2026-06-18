@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 
 import { useUserProfile } from '@/hooks'
 import {
@@ -15,7 +15,8 @@ import { getVendorOnboardingProgress } from '@/features/dashboard/utils/vendorOn
 /** Whether vendor/branch operational APIs (counts, cards, requests, redemptions) may run. */
 export function useVendorOperationalAccess() {
   const [searchParams] = useSearchParams()
-  const vendorIdFromUrl = searchParams.get('vendor_id')
+  const { pathname } = useLocation()
+  const vendorIdFromUrl = pathname.startsWith('/dashboard') ? searchParams.get('vendor_id') : null
 
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfile, isLoading: isLoadingProfile } = useGetUserProfileService()

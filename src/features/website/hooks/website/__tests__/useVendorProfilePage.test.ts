@@ -3,20 +3,25 @@ import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-import { PUBLIC_VENDORS_QUERY } from '../../../constants/publicCatalog'
 import { useVendorProfilePage } from '../useVendorProfilePage'
 
-const usePublicVendors = vi.fn()
+const useGetVendorRedemptionCatalogService = vi.fn()
 
-vi.mock('../usePublicCatalogQueries', () => ({
-  usePublicCatalogQueries: () => ({ usePublicVendors }),
+vi.mock('@/features/dashboard/hooks', () => ({
+  useRedemptionQueries: () => ({ useGetVendorRedemptionCatalogService }),
 }))
 
-const arsenalVendor = {
-  vendor_id: 'v-arsenal',
-  business_name: 'arsenal',
-  business_country: 'Ghana',
-  branches_with_cards: [],
+const catalogFixture = {
+  data: {
+    vendor: {
+      vendor_id: 'v-arsenal',
+      vendor_name: 'arsenal',
+      gvid: 'GH-0002',
+      qr_code_url: 'https://app.dashqard.com/redeem?gvid=GH-0002',
+      branches: [{ id: 'branch-1', branch_name: 'Main', branch_location: 'Accra' }],
+    },
+    cards: [],
+  },
 }
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -26,22 +31,34 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 describe('useVendorProfilePage', () => {
   beforeEach(() => {
-    usePublicVendors.mockReset()
-  })
-
-  it('uses shared PUBLIC_VENDORS_QUERY and selects vendor client-side', () => {
-    usePublicVendors.mockReturnValue({
-      data: [arsenalVendor, { vendor_id: 'v-other', business_name: 'Other' }],
+    useGetVendorRedemptionCatalogService.mockReset()
+    useGetVendorRedemptionCatalogService.mockReturnValue({
+      data: catalogFixture,
       isLoading: false,
     })
+  })
 
-    const { result } = renderHook(() => useVendorProfilePage('v-arsenal'), { wrapper })
+  it('loads catalog by gvid only', () => {
+    const { result } = renderHook(() => useVendorProfilePage('GH-0002'), { wrapper })
 
-    expect(usePublicVendors).toHaveBeenCalledWith(
-      PUBLIC_VENDORS_QUERY,
-      expect.objectContaining({ enabled: true }),
-    )
+    expect(useGetVendorRedemptionCatalogService).toHaveBeenCalledWith('GH-0002', undefined, true)
     expect(result.current.displayName).toBe('Arsenal')
     expect(result.current.vendor?.vendor_id).toBe('v-arsenal')
+    expect(result.current.catalogGvid).toBe('GH-0002')
+  })
+
+  it('loads numeric gvid formats like 4158-01', () => {
+    renderHook(() => useVendorProfilePage('4158-01'), { wrapper })
+
+    expect(useGetVendorRedemptionCatalogService).toHaveBeenCalledWith('4158-01', undefined, true)
+  })
+
+  it('rejects catalog when legacy vendor_id param does not match catalog vendor', () => {
+    const { result } = renderHook(
+      () => useVendorProfilePage('GH-0002', '019eda1c-8534-7415-a56e-a679e7e78178'),
+      { wrapper },
+    )
+
+    expect(result.current.vendor).toBeNull()
   })
 })

@@ -6,16 +6,16 @@ import { VendorItems } from '../../components/VendorItems'
 import { usePublicCatalogQueries } from '../../hooks/website'
 import { PUBLIC_VENDORS_QUERY, PUBLIC_CATALOG_STALE_MS } from '../../constants/publicCatalog'
 import { vendorHasCatalogCards } from '../../utils/vendorCatalogStats'
+import { buildVendorProfilePath } from '../../utils/vendorProfilePath'
 import { EmptyStateImage } from '@/assets/images'
 
 export default function Vendors() {
   const navigate = useNavigate()
   const [search, setSearch] = React.useState('')
   const { usePublicVendors } = usePublicCatalogQueries()
-  const { data: vendors, isLoading: vendorsLoading } = usePublicVendors(
-    PUBLIC_VENDORS_QUERY,
-    { staleTime: PUBLIC_CATALOG_STALE_MS },
-  )
+  const { data: vendors, isLoading: vendorsLoading } = usePublicVendors(PUBLIC_VENDORS_QUERY, {
+    staleTime: PUBLIC_CATALOG_STALE_MS,
+  })
 
   const vendorsWithCards = vendors?.filter((vendor: any) =>
     vendorHasCatalogCards(vendor.branches_with_cards || []),
@@ -93,14 +93,14 @@ export default function Vendors() {
             />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
             {visibleVendors?.map((vendor: any) => {
               const vendorName = vendor.business_name || vendor.vendor_name || 'Unnamed Vendor'
               return (
                 <div
                   key={vendor.id || vendor.vendor_id}
-                  onClick={() => navigate(`/vendor?vendor_id=${vendor.vendor_id}`)}
-                  className="cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
+                  onClick={() => navigate(buildVendorProfilePath(vendor))}
+                  className="h-full cursor-pointer"
                 >
                   <VendorItems
                     name={vendorName}

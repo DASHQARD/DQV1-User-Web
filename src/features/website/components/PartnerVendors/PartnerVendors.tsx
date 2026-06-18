@@ -5,6 +5,7 @@ import { useHomePageCatalog } from '../../hooks/website/useHomePageCatalog'
 import { Icon } from '@/libs'
 import { EmptyStateImage } from '@/assets/images'
 import { vendorHasCatalogCards } from '../../utils/vendorCatalogStats'
+import { buildVendorProfilePath } from '../../utils/vendorProfilePath'
 
 type VendorWithCards = NonNullable<ReturnType<typeof useHomePageCatalog>['vendors']>[number]
 
@@ -15,19 +16,19 @@ export const PartnerVendors = () => {
   const vendorsWithCards =
     vendors?.filter((vendor) => vendorHasCatalogCards(vendor.branches_with_cards || [])) ?? []
 
-  const openVendor = (vendorId: string | number) => {
-    navigate(`/vendor?vendor_id=${vendorId}`)
+  const openVendor = (vendor: VendorWithCards) => {
+    navigate(buildVendorProfilePath(vendor))
   }
 
   const renderVendor = (vendor: VendorWithCards, variant: 'default' | 'compact') => (
     <div
       role="link"
       tabIndex={0}
-      onClick={() => openVendor(vendor.vendor_id)}
+      onClick={() => openVendor(vendor)}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
-          openVendor(vendor.vendor_id)
+          openVendor(vendor)
         }
       }}
       className="h-full cursor-pointer"
@@ -89,9 +90,11 @@ export const PartnerVendors = () => {
                 ))}
               </div>
 
-              <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="hidden auto-rows-fr md:grid md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {vendorsWithCards.map((vendor) => (
-                  <div key={vendor.vendor_id}>{renderVendor(vendor, 'default')}</div>
+                  <div key={vendor.vendor_id} className="h-full">
+                    {renderVendor(vendor, 'default')}
+                  </div>
                 ))}
               </div>
             </>

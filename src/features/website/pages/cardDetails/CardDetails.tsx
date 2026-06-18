@@ -12,6 +12,7 @@ import { CardDetailsGallery } from './components/CardDetailsGallery'
 import { CardDetailsDescription } from './components/CardDetailsDescription'
 import { CardDetailsQuickFacts } from './components/CardDetailsQuickFacts'
 import { CARD_DETAILS_PANEL, formatTermDisplayName, getCardTypeAccent } from './cardDetailsUtils'
+import { buildVendorProfilePath } from '../../utils/vendorProfilePath'
 
 const REDEMPTION_STEPS = [
   'Purchase this gift card — it appears in your account.',
@@ -108,61 +109,70 @@ export default function CardDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28 md:pb-0">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="wrapper max-md:px-4 py-2.5 md:py-4">
-          <div className="flex items-center justify-between gap-3">
-            <Link
-              to={ROUTES.IN_APP.DASHQARDS}
-              className="inline-flex items-center gap-0.5 text-sm font-medium text-gray-600 hover:text-primary-600 -ml-0.5"
-            >
-              <Icon icon="bi:chevron-left" className="size-5" />
-              Cards
-            </Link>
-            <p className="text-lg md:text-xl font-extrabold text-gray-900 tabular-nums shrink-0">
-              {formatCurrency(displayPrice, currency)}
-            </p>
-          </div>
+      <header className="border-b border-gray-100 bg-white">
+        <div className="wrapper max-md:px-4 py-3 md:py-5">
+          <Link
+            to={ROUTES.IN_APP.DASHQARDS}
+            className="-ml-0.5 inline-flex items-center gap-0.5 text-sm font-medium text-gray-500 transition-colors hover:text-[#402D87]"
+          >
+            <Icon icon="bi:chevron-left" className="size-5" />
+            Cards
+          </Link>
 
-          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-            <span
-              className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide ${badgeClass}`}
-            >
-              {typeLabel}
-            </span>
-            {statusLabel && (
+          <div className="mt-4 flex items-start justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
               <span
-                className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold ${
-                  displayStatus === 'active'
-                    ? 'bg-green-100 text-green-800'
-                    : displayStatus === 'expired'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-gray-100 text-gray-600'
-                }`}
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${badgeClass}`}
               >
-                {statusLabel}
+                {typeLabel}
               </span>
-            )}
+              {statusLabel ? (
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                    displayStatus === 'active'
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : displayStatus === 'expired'
+                        ? 'bg-red-50 text-red-700'
+                        : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {statusLabel}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="shrink-0 text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                Price
+              </p>
+              <p className="text-xl font-extrabold tabular-nums text-gray-900 md:text-2xl">
+                {formatCurrency(displayPrice, currency)}
+              </p>
+            </div>
           </div>
 
-          <h1 className="mt-1.5 text-lg md:text-2xl font-bold text-gray-900 leading-snug line-clamp-2">
+          <h1 className="mt-3 text-xl font-bold leading-snug text-gray-900 md:mt-4 md:text-2xl lg:text-[1.75rem] lg:leading-tight">
             {displayProduct}
           </h1>
 
-          {vendorDisplayName && card.vendor_id != null && (
+          {vendorDisplayName && card.vendor_id != null ? (
             <button
               type="button"
               onClick={() =>
                 navigate(
-                  `/vendor?vendor_id=${card.vendor_id}&name=${encodeURIComponent(vendorDisplayName)}`,
+                  buildVendorProfilePath({
+                    vendor_id: card.vendor_id,
+                    gvid: (card as { gvid?: string }).gvid,
+                  }),
                 )
               }
-              className="mt-1 inline-flex max-w-full items-center gap-1 text-sm text-gray-600 hover:text-primary-600"
+              className="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-[#402D87]/25 hover:bg-[#402D87]/5 hover:text-[#402D87] md:mt-4"
             >
-              <Icon icon="bi:shop" className="size-3.5 shrink-0" />
+              <Icon icon="bi:shop" className="size-4 shrink-0 text-[#402D87]" />
               <span className="truncate">{vendorDisplayName}</span>
-              <Icon icon="bi:chevron-right" className="size-3.5 shrink-0 opacity-60" />
+              <Icon icon="bi:chevron-right" className="size-3.5 shrink-0 text-[#402D87]" />
             </button>
-          )}
+          ) : null}
         </div>
       </header>
 
@@ -219,9 +229,7 @@ export default function CardDetails() {
               </section>
             )}
 
-            <details
-              className={`group overflow-hidden ${CARD_DETAILS_PANEL} max-md:shadow-none`}
-            >
+            <details className={`group overflow-hidden ${CARD_DETAILS_PANEL} max-md:shadow-none`}>
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 max-md:px-0 max-md:py-0 p-4 md:p-5 font-bold text-gray-900 md:hover:bg-gray-50">
                 <span className="flex items-center gap-2 text-base md:text-lg">
                   <Icon icon="bi:card-checklist" className="text-primary-600" />
@@ -263,13 +271,8 @@ export default function CardDetails() {
                   {card.terms_and_conditions.map((term, index) => {
                     const termKey = `term-${term.id ?? term.file_name ?? index}`
                     const termUrl = getCardFileUrl(term.file_url)
-                    const termName = formatTermDisplayName(
-                      term.file_name || '',
-                      index,
-                    )
-                    const canPreview = Boolean(
-                      termUrl && isPdfFile(term.file_url, term.file_name),
-                    )
+                    const termName = formatTermDisplayName(term.file_name || '', index)
+                    const canPreview = Boolean(termUrl && isPdfFile(term.file_url, term.file_name))
 
                     return (
                       <li key={termKey}>

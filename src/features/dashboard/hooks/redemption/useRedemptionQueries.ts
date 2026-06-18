@@ -27,8 +27,9 @@ import {
   type GetRedemptionsAmountDashXParams,
   getRedemptionsAmountDashPass,
   type GetRedemptionsAmountDashPassParams,
+  getVendorRedemptionCatalog,
 } from '../../services/redemptions'
-import type { RedeemableCardsParams } from '@/types'
+import type { GetVendorRedemptionCatalogParams, RedeemableCardsParams } from '@/types'
 import { useAuthStore } from '@/stores'
 import { useVendorOperationalAccess } from '@/features/dashboard/hooks/useVendorOperationalAccess'
 
@@ -49,10 +50,19 @@ export function useRedemptionQueries() {
     })
   }
 
-  function useGetRedeemableCardsService(
-    params: RedeemableCardsParams | undefined,
+  function useGetVendorRedemptionCatalogService(
+    gvid?: string,
+    params?: GetVendorRedemptionCatalogParams,
     enabled = true,
   ) {
+    return useQuery({
+      queryKey: ['vendor-redemption-catalog', gvid, params],
+      queryFn: () => getVendorRedemptionCatalog(gvid!, params),
+      enabled: enabled && !!gvid?.trim(),
+    })
+  }
+
+  function useGetRedeemableCardsService(params: RedeemableCardsParams | undefined, enabled = true) {
     const { isAuthenticated, isGuestAuth } = useAuthStore()
     const useUserEndpoint = isAuthenticated && !isGuestAuth
     return useQuery({
@@ -204,6 +214,7 @@ export function useRedemptionQueries() {
   return {
     useSearchVendorsService,
     useSearchVendorByGvidService,
+    useGetVendorRedemptionCatalogService,
     useGetRedeemableCardsService,
     useGetRedemptionsService,
     useGetUserRedemptionsService,

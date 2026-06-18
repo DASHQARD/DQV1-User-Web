@@ -140,7 +140,7 @@ export interface VendorCardCountsResponse {
 }
 
 export type FeaturedCardProps = {
-  card_id: number
+  card_id: string | number
   product: string
   branch_name: string
   branch_location: string
@@ -159,8 +159,9 @@ export type FeaturedCardProps = {
   terms_and_conditions: []
   type: string
   updated_at: string
-  vendor_id: number
+  vendor_id: string | number
   vendor_name: string
+  gvid?: string
   /** From GET /vendors/all/details — pre-signed S3 URL */
   logo?: string | null
   /** From GET /vendors/all/details — storage key fallback */

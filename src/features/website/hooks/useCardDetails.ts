@@ -27,6 +27,7 @@ import { useAuthStore } from '@/stores'
 import { useCart } from './useCart'
 import { useCartStore } from '@/stores/cart'
 import { usePublicCatalogQueries } from './website/usePublicCatalogQueries'
+import { findCatalogCardInCache } from '@/features/website/utils/vendorRedemptionCatalog'
 import { ensureGuestCartAndAddCard } from '@/features/website/services/cards'
 import { ensureGuestSession } from '@/features/website/services/guestSession'
 import { assertGuestCartAmountWithinLimit } from '@/features/website/utils/validateGuestLocalCart'
@@ -62,7 +63,6 @@ export function useCardDetails(): UseCardDetailsReturn {
     PUBLIC_VENDORS_QUERY,
     { staleTime: PUBLIC_CATALOG_STALE_MS },
   )
-  const isLoading = isLoadingCards || isLoadingVendors
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isGuestAuth = useAuthStore((s) => s.isGuestAuth)
   const user = useAuthStore((s) => s.user)
@@ -74,7 +74,7 @@ export function useCardDetails(): UseCardDetailsReturn {
   const queryClient = useQueryClient()
   const toast = useToast()
 
-  const card = useMemo(() => {
+  const publicCard = useMemo(() => {
     if (!cardsResponse || !id) return null
     const cards = Array.isArray(cardsResponse)
       ? cardsResponse
@@ -87,9 +87,26 @@ export function useCardDetails(): UseCardDetailsReturn {
     return (found ?? null) as CardDetailsCard | null
   }, [cardsResponse, id])
 
+  const catalogCard = useMemo(() => {
+    if (!id || publicCard) return null
+    return findCatalogCardInCache(queryClient, id)
+  }, [id, publicCard, queryClient])
+
+  const card = publicCard ?? catalogCard
+  const isLoading = !card && (isLoadingCards || isLoadingVendors)
+
   /** Redemption locations from the card (cards-info includes branch_name + branch_location per card). */
   const redemptionBranches = useMemo((): RedemptionBranch[] => {
     if (!card) return []
+    const catalogBranches = card.redemption_branches
+    if (catalogBranches?.length) {
+      return catalogBranches
+        .map((branch) => ({
+          branch_name: formatCardDisplayTitle(branch.branch_name || ''),
+          branch_location: branch.branch_location?.trim() ?? '',
+        }))
+        .filter((branch) => branch.branch_name)
+    }
     const c = card as { branch_name?: string; branch_location?: string }
     if (!c.branch_name) return []
     return [
@@ -193,6 +210,7 @@ export function useCardDetails(): UseCardDetailsReturn {
     isGuestAuth,
     user,
     getGuestCartId,
+    getGuestCartUuid,
     setGuestCartId,
     addToCartAsync,
     openCart,
