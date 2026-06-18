@@ -7,7 +7,11 @@ export function resolveVendorUserIdForCorporateSwitch(
 
   const match = vendors.find((vendor) => {
     const vendorId = vendor.vendor_id ?? vendor.id
-    return String(vendorId) === String(vendorIdFromUrl)
+    const gvid = vendor.gvid ?? vendor.vendor_gvid
+    const needle = String(vendorIdFromUrl).trim()
+    return (
+      String(vendorId ?? '').trim() === needle || String(gvid ?? '').trim() === needle
+    )
   })
 
   if (!match) return null

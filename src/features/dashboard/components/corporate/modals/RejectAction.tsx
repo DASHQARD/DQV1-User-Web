@@ -1,5 +1,6 @@
 import type { SubmitHandler } from 'react-hook-form'
 import { Controller } from 'react-hook-form'
+import { useNavigate } from 'react-router-dom'
 
 import { Button, CreatableCombobox, Modal, Text } from '@/components'
 import { usePersistedModalState } from '@/hooks'
@@ -12,8 +13,13 @@ import { corporateMutations } from '@/features/dashboard/corporate/hooks'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
 import { resolveVendorIdForCorporateApproval } from '@/utils/resolveVendorIdFromRequest'
 import { canApproveAtCurrentLevel } from '@/utils/requestStatus'
+import {
+  buildCorporateVendorManagementUrl,
+  buildVendorScopedRequestActionUrl,
+} from '@/utils/vendorScopedRequestNavigation'
 
 export function RejectAction() {
+  const navigate = useNavigate()
   const modal = usePersistedModalState<{
     id: number | string
     request_id?: string
@@ -39,15 +45,9 @@ export function RejectAction() {
       (modal.modalData ?? {}) as Record<string, unknown>,
       corporateVendors,
     )
-  const useVendorScopedApproval = isCorporateSuperAdmin && Boolean(approvalVendorId)
 
-  const { useUpdateRequestStatusService, useUpdateCorporateSuperAdminVendorRequestStatusService } =
-    corporateMutations()
-  const { mutate: updateRequestStatus, isPending: isPendingCorporate } =
-    useUpdateRequestStatusService()
-  const { mutate: updateVendorScopedRequestStatus, isPending: isPendingVendorScoped } =
-    useUpdateCorporateSuperAdminVendorRequestStatusService()
-  const isPending = isPendingCorporate || isPendingVendorScoped
+  const { useUpdateRequestStatusService } = corporateMutations()
+  const { mutate: updateRequestStatus, isPending } = useUpdateRequestStatusService()
 
   const form = useCustomForm({
     resolver: zodResolver(ToggleCustomerStatusSchema),
@@ -73,21 +73,24 @@ export function RejectAction() {
     const needsVendorScoped =
       isCorporateSuperAdmin &&
       canApproveAtCurrentLevel(
-        { status: modal.modalData?.status, current_approver_level: 'vendor_admin' },
+        {
+          status: modal.modalData?.status,
+          current_approver_level: modal.modalData?.current_approver_level,
+        },
         'corporate-vendor-scoped',
       )
 
-    if (needsVendorScoped && !approvalVendorId) {
-      toast.error(
-        'Open this vendor from Vendor Management (switch to vendor account), then reject from Vendor → Requests.',
-      )
-      return
-    }
+    if (needsVendorScoped) {
+      if (!approvalVendorId) {
+        modal.closeModal()
+        toast.info('Select a vendor from Vendor Management, then reject from Requests.')
+        navigate(buildCorporateVendorManagementUrl())
+        return
+      }
 
-    if (useVendorScopedApproval && approvalVendorId) {
-      updateVendorScopedRequestStatus(
-        { vendorId: approvalVendorId, data: payload },
-        { onSuccess: () => modal.closeModal() },
+      modal.closeModal()
+      navigate(
+        buildVendorScopedRequestActionUrl('reject', modal.modalData ?? {}, approvalVendorId),
       )
       return
     }

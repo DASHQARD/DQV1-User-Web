@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen, waitFor } from '@/test/test-utils'
 import RedemptionPage from '../redemption/RedemptionPage'
 
-const { mockAuthState, mockDashProResponse, mockVendorMobileMoney } = vi.hoisted(() => ({
+const { mockAuthState, mockDashProResponse, mockVendorMobileMoney, mockVendorSearchResponse } =
+  vi.hoisted(() => ({
   mockAuthState: {
     isAuthenticated: false,
     isGuestAuth: false,
@@ -26,6 +27,18 @@ const { mockAuthState, mockDashProResponse, mockVendorMobileMoney } = vi.hoisted
     isVendorPhoneVerified: true,
     resolvedProvider: 'mtn' as const,
     resetVendorMobileMoney: vi.fn(),
+  },
+  mockVendorSearchResponse: {
+    data: null as {
+      data: Array<{
+        vendor_id: string
+        vendor_name: string
+        gvid: string
+        branch_count: string
+        branches: []
+      }>
+    } | null,
+    isFetching: false,
   },
 }))
 
@@ -68,7 +81,7 @@ vi.mock('@/features/dashboard/hooks', () => ({
     useGetGuestAssignedCardsService: () => ({ data: null, isLoading: false }),
     useGetGuestRedemptionsService: () => ({ data: null, isLoading: false }),
     useGetRedeemableCardsService: () => ({ data: null, isLoading: false }),
-    useSearchVendorsService: () => ({ data: null, isFetching: false }),
+    useSearchVendorsService: () => mockVendorSearchResponse,
     useSearchVendorByGvidService: () => ({ data: null, isFetching: false }),
   }),
   useRedemptionMutation: () => ({
@@ -94,6 +107,8 @@ describe('RedemptionPage (website)', () => {
     mockDashProResponse.data = { total_balance: 190.62 }
     mockDashProResponse.isLoading = false
     mockVendorMobileMoney.isVendorPhoneVerified = true
+    mockVendorSearchResponse.data = null
+    mockVendorSearchResponse.isFetching = false
   })
 
   it('renders redemption heading and method selection', () => {
@@ -127,5 +142,33 @@ describe('RedemptionPage (website)', () => {
       ).toBeGreaterThan(0)
     })
     expect(screen.getByRole('button', { name: 'Redeem DashPro' })).toBeDisabled()
+  })
+
+  it('auto-identifies vendor from QR gvid deep link (AC2)', async () => {
+    mockVendorSearchResponse.data = {
+      data: [
+        {
+          vendor_id: 'vendor-1',
+          vendor_name: 'Marvel Universe Merch',
+          gvid: '7407-01',
+          branch_count: '0',
+          branches: [],
+        },
+      ],
+    }
+
+    renderWithProviders(<RedemptionPage />, {
+      initialEntries: ['/redeem?gvid=7407-01'],
+    })
+
+    expect(screen.queryByText('Select Redemption Method')).not.toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(screen.getByText('Marvel Universe Merch')).toBeInTheDocument()
+    })
+    expect(screen.getByText('ID: 7407-01')).toBeInTheDocument()
+    expect(
+      screen.getByText('Vendor identified from your QR code. Verify your phone to continue.'),
+    ).toBeInTheDocument()
   })
 })

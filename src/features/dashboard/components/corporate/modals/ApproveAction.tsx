@@ -7,8 +7,14 @@ import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorpor
 import { resolveVendorIdForCorporateApproval } from '@/utils/resolveVendorIdFromRequest'
 import { canApproveAtCurrentLevel } from '@/utils/requestStatus'
 import { useToast } from '@/hooks'
+import { useNavigate } from 'react-router-dom'
+import {
+  buildCorporateVendorManagementUrl,
+  buildVendorScopedRequestActionUrl,
+} from '@/utils/vendorScopedRequestNavigation'
 
 export function ApproveAction() {
+  const navigate = useNavigate()
   const modal = usePersistedModalState<{
     id: number | string
     request_id?: string
@@ -34,15 +40,10 @@ export function ApproveAction() {
       (modal.modalData ?? {}) as Record<string, unknown>,
       corporateVendors,
     )
-  const useVendorScopedApproval = isCorporateSuperAdmin && Boolean(approvalVendorId)
 
-  const { useUpdateRequestStatusService, useUpdateCorporateSuperAdminVendorRequestStatusService } =
+  const { useUpdateRequestStatusService } =
     corporateMutations()
-  const { mutate: updateRequestStatus, isPending: isPendingCorporate } =
-    useUpdateRequestStatusService()
-  const { mutate: updateVendorScopedRequestStatus, isPending: isPendingVendorScoped } =
-    useUpdateCorporateSuperAdminVendorRequestStatusService()
-  const isPending = isPendingCorporate || isPendingVendorScoped
+  const { mutate: updateRequestStatus, isPending } = useUpdateRequestStatusService()
 
   const handleApprove = () => {
     const requestId = modal.modalData?.id ?? modal.modalData?.request_id
@@ -55,21 +56,24 @@ export function ApproveAction() {
     const needsVendorScoped =
       isCorporateSuperAdmin &&
       canApproveAtCurrentLevel(
-        { status: modal.modalData?.status, current_approver_level: 'vendor_admin' },
+        {
+          status: modal.modalData?.status,
+          current_approver_level: modal.modalData?.current_approver_level,
+        },
         'corporate-vendor-scoped',
       )
 
-    if (needsVendorScoped && !approvalVendorId) {
-      toast.error(
-        'Open this vendor from Vendor Management (switch to vendor account), then approve from Vendor → Requests.',
-      )
-      return
-    }
+    if (needsVendorScoped) {
+      if (!approvalVendorId) {
+        modal.closeModal()
+        toast.info('Select a vendor from Vendor Management, then approve from Requests.')
+        navigate(buildCorporateVendorManagementUrl())
+        return
+      }
 
-    if (useVendorScopedApproval && approvalVendorId) {
-      updateVendorScopedRequestStatus(
-        { vendorId: approvalVendorId, data: payload },
-        { onSuccess: () => modal.closeModal() },
+      modal.closeModal()
+      navigate(
+        buildVendorScopedRequestActionUrl('approve', modal.modalData ?? {}, approvalVendorId),
       )
       return
     }

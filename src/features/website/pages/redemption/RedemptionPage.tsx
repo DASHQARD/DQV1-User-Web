@@ -255,7 +255,7 @@ export default function RedemptionPage() {
     isGuestAuth,
   )
   const vendorLookup = useRedemptionVendorLookup(
-    redemptionMethod === 'vendor_id' && step === 'details' && isAuthenticated,
+    redemptionMethod === 'vendor_id' && step === 'details',
   )
   const {
     vendorIdInput,
@@ -1788,12 +1788,6 @@ export default function RedemptionPage() {
     resetVendorLookup()
   }, [resetVendorLookup])
 
-  useEffect(() => {
-    if (redemptionMethod !== 'vendor_id' || isAuthenticated) return
-    if (!selectedVendorId) return
-    handleResetVendor()
-  }, [redemptionMethod, isAuthenticated, selectedVendorId, handleResetVendor])
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#e2e8f0]">
       <div className="flex min-h-screen">
@@ -2142,9 +2136,11 @@ export default function RedemptionPage() {
                               Continue as guest
                             </Text>
                             <Text variant="span" className="text-sm text-gray-500">
-                              Verify your phone with a one-time code (same as guest checkout). Name
-                              and email are optional. After verification, search for your vendor and
-                              branch.
+                              {selectedVendor
+                                ? 'Vendor identified from your QR code. Verify your phone to continue.'
+                                : vendorIdInput
+                                  ? 'Identifying vendor from your QR code…'
+                                  : 'Verify your phone with a one-time code (same as guest checkout). Name and email are optional. After verification, search for your vendor and branch.'}
                             </Text>
                           </>
                         ) : (
@@ -2160,22 +2156,55 @@ export default function RedemptionPage() {
                       </div>
 
                       {!isAuthenticated && (
-                        <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-6">
-                          <Button
-                            type="button"
-                            variant="primary"
-                            className="w-full bg-linear-to-r from-[#402D87] to-[#7950ed] hover:from-[#402D87]/90 hover:to-[#7950ed]/90 text-white border-0"
-                            onClick={() =>
-                              openGuestVerifyModal(
-                                { redemptionOnly: true },
-                                invalidateRedemptionGuestQueries,
-                              )
-                            }
-                          >
-                            <Icon icon="bi:shield-lock" className="mr-2 inline" />
-                            Verify your phone
-                          </Button>
-                        </div>
+                        <>
+                          {selectedVendor ? (
+                            <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                                  <Icon icon="bi:shop-window" className="text-white text-lg" />
+                                </div>
+                                <div>
+                                  <Text variant="span" weight="semibold" className="text-gray-900">
+                                    {vendorName}
+                                  </Text>
+                                  {selectedVendor?.gvid ? (
+                                    <Text variant="span" className="text-gray-500 text-sm block">
+                                      ID: {selectedVendor.gvid}
+                                    </Text>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+                          ) : vendorIdInput && isSearchingById ? (
+                            <Text variant="span" className="text-sm text-gray-500 block">
+                              Looking up vendor…
+                            </Text>
+                          ) : vendorIdInput &&
+                            debouncedVendorId.length >= 2 &&
+                            !isSearchingById &&
+                            vendorIdSearchResults.length === 0 ? (
+                            <Text variant="span" className="text-sm text-amber-700 block">
+                              No vendor found for &quot;{debouncedVendorId}&quot;. Check the QR code
+                              and try again.
+                            </Text>
+                          ) : null}
+                          <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-6">
+                            <Button
+                              type="button"
+                              variant="primary"
+                              className="w-full bg-linear-to-r from-[#402D87] to-[#7950ed] hover:from-[#402D87]/90 hover:to-[#7950ed]/90 text-white border-0"
+                              onClick={() =>
+                                openGuestVerifyModal(
+                                  { redemptionOnly: true },
+                                  invalidateRedemptionGuestQueries,
+                                )
+                              }
+                            >
+                              <Icon icon="bi:shield-lock" className="mr-2 inline" />
+                              Verify your phone
+                            </Button>
+                          </div>
+                        </>
                       )}
 
                       {isAuthenticated && (

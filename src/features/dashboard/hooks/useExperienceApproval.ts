@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks'
+/** @deprecated Use unified `/requests/*` inbox — POST /cards/:id/approve|reject is legacy. */
 import { approveExperience, rejectExperience } from '../corporate/services/experienceApproval'
 
 export function useApproveExperience() {

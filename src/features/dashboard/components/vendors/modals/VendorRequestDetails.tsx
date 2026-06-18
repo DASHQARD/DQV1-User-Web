@@ -8,12 +8,21 @@ import {
   type RequestInfoRow,
   type UseVendorRequestDetailsReturn,
 } from '@/features/dashboard/vendor/hooks'
-import { isRequestAwaitingApproval } from '@/utils/requestStatus'
 import { RequestDetailsImageGallery } from './RequestDetailsImageGallery'
+import { RequestApprovalChain } from '@/features/dashboard/components/requests'
 
 export function VendorRequestDetails() {
-  const { modal, isPending, requestInfo, data, openApproveModal, openRejectModal } =
-    useVendorRequestDetails() as UseVendorRequestDetailsReturn
+  const {
+    modal,
+    isPending,
+    requestInfo,
+    data,
+    canApproveOrReject,
+    approvalChain,
+    awaitingApprovalNotice,
+    openApproveModal,
+    openRejectModal,
+  } = useVendorRequestDetails() as UseVendorRequestDetailsReturn
 
   return (
     <Modal
@@ -74,7 +83,15 @@ export function VendorRequestDetails() {
               })}
             </div>
 
-            {isRequestAwaitingApproval(String(data?.status ?? '')) && (
+            {awaitingApprovalNotice ? (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                {awaitingApprovalNotice}
+              </p>
+            ) : null}
+
+            <RequestApprovalChain chain={approvalChain} />
+
+            {canApproveOrReject && (
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 shrink-0">
                 <Button variant="secondary" loading={isPending} onClick={openApproveModal}>
                   Approve

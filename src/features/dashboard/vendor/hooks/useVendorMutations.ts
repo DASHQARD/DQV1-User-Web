@@ -39,17 +39,21 @@ import type {
 import { useToast } from '@/hooks'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
+import { getRequestApiErrorMessage } from '@/utils/requestApiError'
+import { useRequestInitiatorNavigation } from '@/features/dashboard/hooks/useRequestInitiatorNavigation'
 
 export function useVendorMutations() {
   const { success, error } = useToast()
 
   function useCreateExperienceService() {
     const queryClient = useQueryClient()
+    const { goToSubmittedRequest } = useRequestInitiatorNavigation()
     return useMutation({
       mutationFn: createExperience,
       onSuccess: (response: any) => {
         success(response?.message || 'Experience created successfully')
         queryClient.invalidateQueries({ queryKey: ['cards-by-vendor-id'] })
+        goToSubmittedRequest(response)
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to create experience. Please try again.')
@@ -59,12 +63,14 @@ export function useVendorMutations() {
 
   function useUpdateCardService() {
     const queryClient = useQueryClient()
+    const { goToSubmittedRequest } = useRequestInitiatorNavigation()
     return useMutation({
       mutationFn: updateCard,
       onSuccess: (response: any) => {
         success(response?.message || 'Experience updated successfully')
         queryClient.invalidateQueries({ queryKey: ['cards-by-vendor-id'] })
         queryClient.invalidateQueries({ queryKey: ['card-by-id'] })
+        goToSubmittedRequest(response)
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to update experience. Please try again.')
@@ -289,8 +295,8 @@ export function useVendorMutations() {
         queryClient.invalidateQueries({ queryKey: ['requests-corporate-super-admin-vendor'] })
         queryClient.invalidateQueries({ queryKey: ['corporate-request', variables.id] })
       },
-      onError: (err: any) => {
-        error(err?.message || 'Failed to update request status. Please try again.')
+      onError: (err: unknown) => {
+        error(getRequestApiErrorMessage(err))
       },
     })
   }

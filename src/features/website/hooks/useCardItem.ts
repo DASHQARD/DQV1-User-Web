@@ -55,6 +55,7 @@ export function useCardItem(props: CardItemHookProps) {
   } = props
 
   const [isHovered, setIsHovered] = useState(false)
+  const [isGuestAdding, setIsGuestAdding] = useState(false)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isGuestAuth = useAuthStore((state) => state.isGuestAuth)
   const user = useAuthStore((state) => state.user)
@@ -103,6 +104,7 @@ export function useCardItem(props: CardItemHookProps) {
         getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
         (user as { guest_email?: string } | null)?.guest_email ||
         ''
+      setIsGuestAdding(true)
       try {
         assertGuestCartAmountWithinLimit(priceNum)
         await ensureGuestSession()
@@ -119,6 +121,8 @@ export function useCardItem(props: CardItemHookProps) {
         openCart()
       } catch (err: unknown) {
         toast.error(getApiErrorMessage(err, 'Failed to add item to cart'))
+      } finally {
+        setIsGuestAdding(false)
       }
       return
     }
@@ -162,7 +166,7 @@ export function useCardItem(props: CardItemHookProps) {
     vendor_name,
     buttonText,
     rating,
-    isAdding,
+    isAdding: isAdding || isGuestAdding,
     isPurchasable,
   }
 }

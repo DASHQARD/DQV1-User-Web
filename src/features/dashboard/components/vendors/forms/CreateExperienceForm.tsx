@@ -15,6 +15,10 @@ import { Icon } from '@/libs'
 import { useBranchMutations } from '@/features/dashboard/branch'
 import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
 import { resolveVendorUserIdForCorporateSwitch } from '@/utils/resolveVendorUserId'
+import {
+  getBranchRecordId,
+  useExperienceFormBranches,
+} from '@/features/dashboard/utils/experienceBranchOptions'
 
 type FormData = z.infer<typeof CreateExperienceSchema>
 
@@ -31,9 +35,10 @@ export default function CreateExperienceForm() {
   const { user } = useAuthStore()
   const { useGetUserProfileService } = useUserProfile()
   const { data: userProfileData } = useGetUserProfileService()
-  const { useBranchesService, useGetAllVendorsDetailsService } = vendorQueries()
-  const { data: branches, isLoading: isLoadingBranches } = useBranchesService()
+  const { useGetAllVendorsDetailsService } = vendorQueries()
   const { data: allVendorsDetails } = useGetAllVendorsDetailsService()
+  const { branchesArray, isLoadingBranches, isBranchManager, isCorporateSuperAdmin } =
+    useExperienceFormBranches()
   const { useCreateBranchExperienceService } = useBranchMutations()
   const { mutateAsync: createBranchExperience, isPending: isCreatingBranchExperience } =
     useCreateBranchExperienceService()
@@ -54,8 +59,6 @@ export default function CreateExperienceForm() {
   >([])
 
   const userType = (user as any)?.user_type
-  const isBranchManager = userType === 'branch'
-  const isCorporateSuperAdmin = userType === 'corporate super admin'
 
   const vendorsList = useMemo(() => {
     if (!allVendorsDetails) return []
@@ -167,10 +170,8 @@ export default function CreateExperienceForm() {
     const hasAllBranches = options.some((opt) => opt.value === 'all')
 
     if (hasAllBranches) {
-      // If "All Branches" is selected, select all branch IDs
-      const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
       if (branchesArray.length > 0) {
-        setSelectedBranches(branchesArray.map((branch: any) => String(branch.id)))
+        setSelectedBranches(branchesArray.map(getBranchRecordId).filter(Boolean))
       }
     } else {
       // Otherwise, use the selected branch IDs (excluding "all")
@@ -179,10 +180,6 @@ export default function CreateExperienceForm() {
     }
   }
 
-  // Build branch options for the select
-  // Handle both array response and wrapped response with data property
-  const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
-
   // Check if branches are available for vendors (not branch managers)
   const hasNoBranches = !isBranchManager && branchesArray.length === 0 && !isLoadingBranches
 
@@ -190,9 +187,9 @@ export default function CreateExperienceForm() {
     branchesArray.length > 0
       ? [
           { label: 'All Branches', value: 'all' },
-          ...branchesArray.map((branch: any) => ({
+          ...branchesArray.map((branch: { branch_name?: string; branch_location?: string }) => ({
             label: `${branch.branch_name} - ${branch.branch_location}`,
-            value: String(branch.id),
+            value: getBranchRecordId(branch),
           })),
         ]
       : [{ label: 'All Branches', value: 'all' }]
@@ -231,7 +228,13 @@ export default function CreateExperienceForm() {
       }))
 
       // Use selected branches (already determined in handleBranchOptionChange)
-      const branchIds = selectedBranches
+      const allowedBranchIds = new Set(branchesArray.map(getBranchRecordId).filter(Boolean))
+      const branchIds = selectedBranches.filter((id) => allowedBranchIds.has(id))
+
+      if (!isBranchManager && branchesArray.length > 0 && branchIds.length === 0) {
+        toast.error('Select at least one redemption branch for this experience.')
+        return
+      }
 
       const payload: any = {
         product: data.product,

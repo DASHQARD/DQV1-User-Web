@@ -7,6 +7,9 @@ import { getStatusVariant } from '@/utils/helpers'
 import { formatFullDate } from '@/utils/format'
 import { vendorQueries } from '@/features/dashboard/vendor/hooks'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
+import { canApproveAtCurrentLevel } from '@/utils/requestStatus'
+import { getAwaitingApprovalNotice, parseApprovalChain } from '@/utils/requestEntity'
+import type { ApprovalChainItem, RequestApprovalContext } from '@/types/requests'
 
 export interface RequestEntityImage {
   id?: string
@@ -28,6 +31,9 @@ export interface UseVendorRequestDetailsReturn {
   isPending: boolean
   requestInfo: RequestInfoRow[]
   data: Record<string, unknown> | null
+  canApproveOrReject: boolean
+  approvalChain: ApprovalChainItem[]
+  awaitingApprovalNotice: string | null
   openApproveModal: () => void
   openRejectModal: () => void
 }
@@ -217,11 +223,45 @@ export function useVendorRequestDetails(): UseVendorRequestDetailsReturn {
     return rows
   }, [data])
 
+  const approvalContext: RequestApprovalContext =
+    isCorporateSuperAdmin && vendorIdFromUrl ? 'corporate-vendor-scoped' : 'vendor'
+
+  const canApproveOrReject = useMemo(() => {
+    if (!data) return false
+    return canApproveAtCurrentLevel(
+      {
+        status: String(data.status ?? ''),
+        current_approver_level: (data as { current_approver_level?: string })
+          .current_approver_level,
+      },
+      approvalContext,
+    )
+  }, [data, approvalContext])
+
+  const approvalChain = useMemo(() => parseApprovalChain(data), [data])
+
+  const awaitingApprovalNotice = useMemo(
+    () =>
+      getAwaitingApprovalNotice(
+        data
+          ? {
+              status: String(data.status ?? ''),
+              current_approver_level: (data as { current_approver_level?: string })
+                .current_approver_level,
+            }
+          : null,
+        canApproveOrReject,
+      ),
+    [data, canApproveOrReject],
+  )
+
   const openApproveModal = React.useCallback(() => {
     if (!data) return
     modal.openModal(MODALS.REQUEST.CHILDREN.APPROVE, {
       id: data.id,
       request_id: data.request_id,
+      status: data.status,
+      current_approver_level: (data as { current_approver_level?: string }).current_approver_level,
     })
   }, [data, modal])
 
@@ -230,6 +270,8 @@ export function useVendorRequestDetails(): UseVendorRequestDetailsReturn {
     modal.openModal(MODALS.REQUEST.CHILDREN.REJECT, {
       id: data.id,
       request_id: data.request_id,
+      status: data.status,
+      current_approver_level: (data as { current_approver_level?: string }).current_approver_level,
     })
   }, [data, modal])
 
@@ -238,6 +280,9 @@ export function useVendorRequestDetails(): UseVendorRequestDetailsReturn {
     isPending,
     requestInfo,
     data,
+    canApproveOrReject,
+    approvalChain,
+    awaitingApprovalNotice,
     openApproveModal,
     openRejectModal,
   }

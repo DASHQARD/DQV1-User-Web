@@ -12,6 +12,14 @@ describe('resolveVendorUserIdForCorporateSwitch', () => {
     ).toBe(9001)
   })
 
+  it('matches vendor by gvid when vendor_id param is a GVID', () => {
+    expect(
+      resolveVendorUserIdForCorporateSwitch('0493-01', [
+        { vendor_id: '019eb501-f5dd-7c95-b770-e0c5559cf03c', gvid: '0493-01', vendor_user_id: 9001 },
+      ]),
+    ).toBe(9001)
+  })
+
   it('returns null when no match', () => {
     expect(resolveVendorUserIdForCorporateSwitch('42', [{ vendor_id: 1 }])).toBeNull()
   })

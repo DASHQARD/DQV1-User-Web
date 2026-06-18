@@ -15,10 +15,7 @@ import {
   PUBLIC_VENDORS_QUERY,
   PUBLIC_CATALOG_STALE_MS,
 } from '../constants/publicCatalog'
-import {
-  getCardPriceBreakdown,
-  getVendorNameById,
-} from '../pages/cardDetails/cardDetailsUtils'
+import { getCardPriceBreakdown, getVendorNameById } from '../pages/cardDetails/cardDetailsUtils'
 import {
   type CardDetailsCard,
   type CardDetailsDocument,
@@ -106,6 +103,7 @@ export function useCardDetails(): UseCardDetailsReturn {
   const [selectedDocument, setSelectedDocument] = useState<CardDetailsDocument | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [lightboxIndex, setLightboxIndex] = useState(-1)
+  const [isGuestAdding, setIsGuestAdding] = useState(false)
 
   useEffect(() => {
     setSelectedDocument(null)
@@ -160,6 +158,7 @@ export function useCardDetails(): UseCardDetailsReturn {
         getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
         (user as { guest_email?: string } | null)?.guest_email ||
         ''
+      setIsGuestAdding(true)
       try {
         assertGuestCartAmountWithinLimit(price)
         await ensureGuestSession()
@@ -176,6 +175,8 @@ export function useCardDetails(): UseCardDetailsReturn {
         openCart()
       } catch (err: unknown) {
         toast.error(getApiErrorMessage(err, 'Failed to add to cart'))
+      } finally {
+        setIsGuestAdding(false)
       }
       return
     }
@@ -231,10 +232,7 @@ export function useCardDetails(): UseCardDetailsReturn {
     return fromCatalog ? formatCardDisplayTitle(fromCatalog) : null
   }, [card, vendorsResponse])
 
-  const priceBreakdown = useMemo(
-    () => (card ? getCardPriceBreakdown(card) : null),
-    [card],
-  )
+  const priceBreakdown = useMemo(() => (card ? getCardPriceBreakdown(card) : null), [card])
 
   const formattedExpiry = useMemo(() => {
     const c = card as { expiry_date?: string } | null
@@ -261,7 +259,7 @@ export function useCardDetails(): UseCardDetailsReturn {
     getCardBackground,
     getCardTypeName,
     handleAddToCart,
-    isAdding,
+    isAdding: isAdding || isGuestAdding,
     lightboxImages,
     displayPrice,
     displayProduct,

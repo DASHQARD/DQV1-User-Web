@@ -26,6 +26,25 @@ describe('redemptionDeepLink', () => {
     expect(params.card_type).toBe('dashpro')
   })
 
+  it('parses gvid alias and infers vendor_id method for QR deep links', () => {
+    const params = parseRedemptionSearchParams(new URLSearchParams('gvid=7407-01'))
+    expect(params.method).toBe('vendor_id')
+    expect(params.vendor_gvid).toBe('7407-01')
+  })
+
+  it('prefers vendor_gvid over gvid when both are present', () => {
+    const params = parseRedemptionSearchParams(
+      new URLSearchParams('gvid=7407-01&vendor_gvid=GH-0001'),
+    )
+    expect(params.vendor_gvid).toBe('GH-0001')
+  })
+
+  it('infers vendor_id method from vendor_id param without explicit method', () => {
+    const params = parseRedemptionSearchParams(new URLSearchParams('vendor_id=vendor-uuid-1'))
+    expect(params.method).toBe('vendor_id')
+    expect(params.vendor_id).toBe('vendor-uuid-1')
+  })
+
   it('buildRedemptionUrlFromCard uses vendor mobile money for DashPro', () => {
     expect(
       buildRedemptionUrlFromCard({

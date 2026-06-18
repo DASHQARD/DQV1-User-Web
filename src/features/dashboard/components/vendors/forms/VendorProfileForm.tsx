@@ -88,7 +88,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
             </Text>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="First Name"
               isRequired
@@ -140,7 +140,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
               isRequired
               placeholder="Enter vendor email"
               type="email"
-              className="col-span-full"
+              className="col-span-1"
               {...form.register('email')}
               error={form.formState.errors.email?.message}
               {...lockedFieldProps}
@@ -158,7 +158,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
                   return d
                 })()
                 return (
-                  <div className="col-span-full">
+                  <div className="col-span-1">
                     <DateInput
                       label="Date of Birth"
                       id="dob"
@@ -209,7 +209,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
               render={({ field, fieldState: { error } }) => (
                 <Combobox
                   label="ID Type"
-                  className="col-span-full"
+                  className="col-span-1"
                   isRequired
                   placeholder="Select your ID type"
                   {...field}
@@ -223,7 +223,7 @@ export function VendorProfileForm({ onSubmit, onCancel, corporateUser }: VendorP
               label="ID Number"
               isRequired
               placeholder={isNationalId ? 'e.g. GHA-123456789-0' : 'Enter your ID number'}
-              className="col-span-full"
+              className="col-span-1"
               {...form.register('id_number')}
               error={form.formState.errors.id_number?.message}
               {...lockedFieldProps}

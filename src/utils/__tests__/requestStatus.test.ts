@@ -47,6 +47,16 @@ describe('requestStatus', () => {
     expect(canApproveAtCurrentLevel(request, 'corporate')).toBe(false)
   })
 
+  it('vendor context cannot approve requests awaiting corporate admin', () => {
+    const request = {
+      status: 'Awaiting Corporate Approval',
+      current_approver_level: 'corporate_admin',
+    }
+    expect(canApproveAtCurrentLevel(request, 'vendor')).toBe(false)
+    expect(canApproveAtCurrentLevel(request, 'corporate-vendor-scoped')).toBe(false)
+    expect(canApproveAtCurrentLevel(request, 'corporate')).toBe(true)
+  })
+
   it('countAwaitingApprovalRequests', () => {
     expect(
       countAwaitingApprovalRequests([

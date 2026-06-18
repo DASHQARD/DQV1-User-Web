@@ -7,12 +7,16 @@ import { FileUploader, Input, Combobox, Button, Modal, Text, GiftCardPriceFormFi
 import { useUploadFiles, usePersistedModalState, useUserProfile } from '@/hooks'
 import { useToast } from '@/hooks'
 import { MODALS } from '@/utils/constants'
-import { useVendorMutations, vendorQueries } from '@/features'
+import { useVendorMutations } from '@/features'
 import { CreateExperienceSchema } from '@/utils/schemas'
 import { Icon } from '@/libs'
 import { useBranchMutations } from '@/features/dashboard/branch/hooks'
 import { corporateMutations } from '@/features/dashboard/corporate/hooks/useCorporateMutations'
 import { corporateQueries } from '@/features/dashboard/corporate/hooks/useCorporateQueries'
+import {
+  getBranchRecordId,
+  useExperienceFormBranches,
+} from '@/features/dashboard/utils/experienceBranchOptions'
 
 type FormData = z.infer<typeof CreateExperienceSchema> & { id: number }
 
@@ -69,8 +73,7 @@ export function EditExperience() {
   const { useUpdateCardService } = useVendorMutations()
   const { mutateAsync: updateCard, isPending: isUpdating } = useUpdateCardService()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFiles()
-  const { useBranchesService } = vendorQueries()
-  const { data: branches } = useBranchesService()
+  const { branchesArray } = useExperienceFormBranches()
   const { useUpdateBranchExperienceService } = useBranchMutations()
   const { mutateAsync: updateBranchExperience, isPending: isUpdatingBranchExperience } =
     useUpdateBranchExperienceService()
@@ -168,15 +171,17 @@ export function EditExperience() {
     setTermsFiles(newFiles.filter(Boolean) as File[])
   }
 
-  const branchesArray = Array.isArray(branches) ? branches : branches?.data || []
+  const branchesArrayForForm = branchesArray
   const branchOptions =
-    branchesArray.length > 0
+    branchesArrayForForm.length > 0
       ? [
           { label: 'All Branches', value: 'all' },
-          ...branchesArray.map((branch: any) => ({
-            label: `${branch.branch_name} - ${branch.branch_location}`,
-            value: String(branch.id),
-          })),
+          ...branchesArrayForForm.map(
+            (branch: { branch_name?: string; branch_location?: string }) => ({
+              label: `${branch.branch_name} - ${branch.branch_location}`,
+              value: getBranchRecordId(branch),
+            }),
+          ),
         ]
       : [{ label: 'All Branches', value: 'all' }]
 
@@ -189,7 +194,7 @@ export function EditExperience() {
     const hasAllBranches = options.some((opt) => opt.value === 'all')
 
     if (hasAllBranches) {
-      setSelectedBranches(branchesArray.map((branch: any) => String(branch.id)))
+      setSelectedBranches(branchesArrayForForm.map(getBranchRecordId).filter(Boolean))
     } else {
       const branchIds = options.filter((opt) => opt.value !== 'all').map((opt) => String(opt.value))
       setSelectedBranches(branchIds)
@@ -223,7 +228,8 @@ export function EditExperience() {
         uploadedTerms = [...uploadedTerms, ...newTerms]
       }
 
-      const branchIds = selectedBranches
+      const allowedBranchIds = new Set(branchesArrayForForm.map(getBranchRecordId).filter(Boolean))
+      const branchIds = selectedBranches.filter((id) => allowedBranchIds.has(id))
 
       // API allows only file_url and file_name for images/terms (no id)
       const imagesPayload = uploadedImages.map((img: any) => ({

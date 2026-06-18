@@ -56,6 +56,8 @@ import type {
 } from '@/types/responses'
 import type { UpdateBranchDetailsPayload } from '@/types'
 import { buildPaymentDetailsRequestUpdatePayload } from '@/features/dashboard/utils/buildPaymentDetailsRequestUpdatePayload'
+import { getRequestApiErrorMessage } from '@/utils/requestApiError'
+import { useRequestInitiatorNavigation } from '@/features/dashboard/hooks/useRequestInitiatorNavigation'
 
 export function corporateMutations() {
   const { user } = useAuthStore.getState()
@@ -428,6 +430,7 @@ export function corporateMutations() {
   function useRequestPaymentDetailsUpdateService() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
+    const { goToSubmittedRequest } = useRequestInitiatorNavigation()
     return useMutation({
       mutationFn: (data: Parameters<typeof requestPaymentDetailsUpdate>[0]) =>
         requestPaymentDetailsUpdate(data),
@@ -438,9 +441,10 @@ export function corporateMutations() {
         )
         queryClient.invalidateQueries({ queryKey: ['corporate-payment-details'] })
         queryClient.invalidateQueries({ queryKey: ['corp-admin-payment-details'] })
+        goToSubmittedRequest(response)
       },
-      onError: (err: any) => {
-        error(err?.message || 'Failed to submit payment details update request. Please try again.')
+      onError: (err: unknown) => {
+        error(getRequestApiErrorMessage(err, 'Failed to submit payment details update request. Please try again.'))
       },
     })
   }
@@ -448,6 +452,7 @@ export function corporateMutations() {
   function useUpdatePaymentDetailsService() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
+    const { goToSubmittedRequest } = useRequestInitiatorNavigation()
 
     type UpdatePaymentPayload = {
       payment_method: 'mobile_money' | 'bank'
@@ -501,6 +506,9 @@ export function corporateMutations() {
         )
         queryClient.invalidateQueries({ queryKey: ['corporate-payment-details'] })
         queryClient.invalidateQueries({ queryKey: ['corp-admin-payment-details'] })
+        if (usesCorporatePaymentDetailsRequestFlow) {
+          goToSubmittedRequest(response)
+        }
       },
       onError: (err: any) => {
         error(err?.message || 'Failed to update payment details. Please try again.')
@@ -541,8 +549,8 @@ export function corporateMutations() {
         queryClient.invalidateQueries({ queryKey: ['corporate-branches-list'] })
         queryClient.invalidateQueries({ queryKey: ['corporate-branches'] })
       },
-      onError: (err: any) => {
-        error(err?.message || 'Failed to update request status. Please try again.')
+      onError: (err: unknown) => {
+        error(getRequestApiErrorMessage(err))
       },
     })
   }
@@ -587,8 +595,8 @@ export function corporateMutations() {
         queryClient.invalidateQueries({ queryKey: ['requests-vendor'] })
         queryClient.invalidateQueries({ queryKey: ['corporate-request', data.id] })
       },
-      onError: (err: any) => {
-        error(err?.message || 'Failed to update request status. Please try again.')
+      onError: (err: unknown) => {
+        error(getRequestApiErrorMessage(err))
       },
     })
   }
@@ -612,6 +620,7 @@ export function corporateMutations() {
   function useRequestBusinessUpdateService() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
+    const { goToSubmittedRequest } = useRequestInitiatorNavigation()
     return useMutation({
       mutationFn: (data: {
         fields_to_update: Record<string, boolean>
@@ -621,9 +630,10 @@ export function corporateMutations() {
       onSuccess: (response: any) => {
         success(response?.message || 'Update request submitted successfully')
         queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+        goToSubmittedRequest(response)
       },
-      onError: (err: any) => {
-        error(err?.message || 'Failed to submit update request. Please try again.')
+      onError: (err: unknown) => {
+        error(getRequestApiErrorMessage(err, 'Failed to submit update request. Please try again.'))
       },
     })
   }
@@ -631,6 +641,7 @@ export function corporateMutations() {
   function useRequestCorporateAccountUpdateService() {
     const { success, error } = useToast()
     const queryClient = useQueryClient()
+    const { goToSubmittedRequest } = useRequestInitiatorNavigation()
     return useMutation({
       mutationFn: (data: {
         fields_to_update: Record<string, boolean>
@@ -643,9 +654,12 @@ export function corporateMutations() {
             'Corporate account update request created successfully. An admin will review your request.',
         )
         queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+        goToSubmittedRequest(response)
       },
-      onError: (err: any) => {
-        error(err?.message || 'Failed to submit account update request. Please try again.')
+      onError: (err: unknown) => {
+        error(
+          getRequestApiErrorMessage(err, 'Failed to submit account update request. Please try again.'),
+        )
       },
     })
   }

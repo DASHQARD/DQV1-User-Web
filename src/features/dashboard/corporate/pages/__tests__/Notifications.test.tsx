@@ -1,28 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderWithProviders } from '@/test/test-utils'
 import Notifications from '../notifications/Notifications'
+import { ROUTES } from '@/utils/constants'
 
-vi.mock('@/features/dashboard/hooks/useNotifications', () => ({
-  useApprovePaymentChange: () => ({ mutate: vi.fn(), isPending: false }),
-  useRejectPaymentChange: () => ({ mutate: vi.fn(), isPending: false }),
-}))
-vi.mock('@/features/dashboard/hooks/useExperienceApproval', () => ({
-  useApproveExperience: () => ({ mutate: vi.fn(), isPending: false }),
-  useRejectExperience: () => ({ mutate: vi.fn(), isPending: false }),
-}))
+const mockNavigate = vi.fn()
+
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>()
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  }
+})
 
 describe('Notifications (corporate)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    mockNavigate.mockReset()
   })
 
-  it('renders Notifications title', () => {
-    const { getByText } = renderWithProviders(<Notifications />)
-    expect(getByText('Notifications')).toBeInTheDocument()
-  })
-
-  it('renders All tab', () => {
-    const { getByRole } = renderWithProviders(<Notifications />)
-    expect(getByRole('button', { name: /all/i })).toBeInTheDocument()
+  it('redirects to corporate Requests inbox', () => {
+    renderWithProviders(<Notifications />)
+    expect(mockNavigate).toHaveBeenCalledWith(ROUTES.IN_APP.DASHBOARD.CORPORATE.REQUESTS, {
+      replace: true,
+    })
   })
 })

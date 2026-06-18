@@ -26,12 +26,22 @@ export function buildRedemptionUrl(params: RedemptionDeepLinkParams): string {
 export function parseRedemptionSearchParams(
   searchParams: URLSearchParams,
 ): RedemptionDeepLinkParams {
-  const method = searchParams.get('method')
+  const methodParam = searchParams.get('method')
+  const vendor_gvid =
+    searchParams.get('vendor_gvid')?.trim() || searchParams.get('gvid')?.trim() || undefined
+  const vendor_id = searchParams.get('vendor_id')?.trim() || undefined
+  const resolvedMethod =
+    methodParam === 'vendor_id' || methodParam === 'vendor_mobile_money'
+      ? methodParam
+      : vendor_gvid || vendor_id
+        ? 'vendor_id'
+        : undefined
+
   return {
-    method: method === 'vendor_id' || method === 'vendor_mobile_money' ? method : undefined,
+    method: resolvedMethod,
     card_type: searchParams.get('card_type') ?? undefined,
-    vendor_gvid: searchParams.get('vendor_gvid') ?? undefined,
-    vendor_id: searchParams.get('vendor_id') ?? undefined,
+    vendor_gvid,
+    vendor_id,
     branch_id: searchParams.get('branch_id') ?? undefined,
     card_id: searchParams.get('card_id') ?? undefined,
   }

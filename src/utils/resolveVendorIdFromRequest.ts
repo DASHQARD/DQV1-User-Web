@@ -18,6 +18,8 @@ export function resolveVendorIdFromRequest(
     currentData?.vendor_id,
     entityDetails?.vendor_id,
     entityDetails?.vendor_account_id,
+    entityDetails?.entity_id,
+    request.entity_id,
   ]
 
   for (const candidate of candidates) {
@@ -47,6 +49,9 @@ export function resolveVendorIdForCorporateApproval(
   const entityDetails = (request?.entity_details ?? request?.card_details) as
     | Record<string, unknown>
     | undefined
+  const requestData = request?.request_data as Record<string, unknown> | undefined
+  const proposedData = requestData?.proposed_data as Record<string, unknown> | undefined
+  const currentData = requestData?.current_data as Record<string, unknown> | undefined
   const entityVendorName = String(entityDetails?.vendor_name ?? entityDetails?.name ?? '')
     .trim()
     .toLowerCase()
@@ -62,6 +67,25 @@ export function resolveVendorIdForCorporateApproval(
         .filter(Boolean)
       return names.some((n) => n === entityVendorName || entityVendorName.includes(n))
     })
+    if (match) {
+      const id = match.vendor_id ?? match.id
+      if (id != null && String(id).trim() !== '') return String(id)
+    }
+  }
+
+  const gvidCandidates = [
+    request?.gvid,
+    requestData?.gvid,
+    proposedData?.gvid,
+    currentData?.gvid,
+    entityDetails?.gvid,
+  ]
+  for (const gvid of gvidCandidates) {
+    const normalized = String(gvid ?? '').trim().toLowerCase()
+    if (!normalized) continue
+    const match = vendors.find(
+      (vendor) => String(vendor.gvid ?? '').trim().toLowerCase() === normalized,
+    )
     if (match) {
       const id = match.vendor_id ?? match.id
       if (id != null && String(id).trim() !== '') return String(id)
