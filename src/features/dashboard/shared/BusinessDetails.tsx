@@ -30,7 +30,7 @@ export default function BusinessDetails() {
   }
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="flex w-full max-w-4xl mx-auto flex-col gap-6">
       <div className="flex items-start gap-3 flex-col">
         <button
           className="flex gap-1 items-center text-[10px] text-[#95aac9]"
@@ -43,7 +43,7 @@ export default function BusinessDetails() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl p-4 sm:p-6 w-full max-w-4xl">
+      <div className="bg-white rounded-xl p-4 sm:p-6 w-full shadow-sm border border-gray-100">
         <BusinessDetailsForm />
       </div>
     </section>

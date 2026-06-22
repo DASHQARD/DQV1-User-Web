@@ -54,7 +54,9 @@ export function useViewBag() {
   const guestCart = useGuestCart()
   const cartItems = isGuestAuth ? guestCart.cartItems : userCart.cartItems
   const isLoadingCart = isGuestAuth ? guestCart.isLoading : userCart.isLoading
-  const updateCartItem = isGuestAuth ? guestCart.updateCartItem : userCart.updateCartItem
+  const updateCartItemAsync = isGuestAuth
+    ? guestCart.updateCartItemAsync
+    : userCart.updateCartItemAsync
   const isUpdating = isGuestAuth ? guestCart.isUpdating : userCart.isUpdating
   const deleteCartItemAsync = isGuestAuth
     ? guestCart.deleteCartItemAsync
@@ -97,6 +99,8 @@ export function useViewBag() {
     amount?: string | number
     recipient_amount?: string | number
   } | null>(null)
+  const [updatingItemId, setUpdatingItemId] = useState<string | number | null>(null)
+  const [deletingItemId, setDeletingItemId] = useState<string | number | null>(null)
 
   const activeCartItems = useMemo(() => {
     if (!Array.isArray(cartItems)) return []
@@ -187,25 +191,39 @@ export function useViewBag() {
         toast.error('This cart can no longer be modified.')
         return
       }
-      await deleteCartItemAsync(cartItemId)
+      setDeletingItemId(cartItemId)
+      try {
+        await deleteCartItemAsync(cartItemId)
+      } catch (error) {
+        console.error('Failed to remove cart item', error)
+      } finally {
+        setDeletingItemId(null)
+      }
     },
     [deleteCartItemAsync, toast],
   )
 
   const handleQuantityChange = useCallback(
-    (cartItemId: string | number, quantity: number, cartStatus?: string) => {
+    async (cartItemId: string | number, quantity: number, cartStatus?: string) => {
       if (isLocalGuestCartLineId(cartItemId)) return
       if (quantity < 1) {
-        handleRemoveItem(cartItemId, cartStatus)
+        await handleRemoveItem(cartItemId, cartStatus)
         return
       }
       if (!canUpdateCartItemQuantity(cartStatus)) {
         toast.error('This cart can no longer be changed. Remove the item or start a new order.')
         return
       }
-      updateCartItem({ cart_item_id: cartItemId, quantity })
+      setUpdatingItemId(cartItemId)
+      try {
+        await updateCartItemAsync({ cart_item_id: cartItemId, quantity })
+      } catch (error) {
+        console.error('Failed to update cart item quantity', error)
+      } finally {
+        setUpdatingItemId(null)
+      }
     },
-    [updateCartItem, handleRemoveItem, toast],
+    [updateCartItemAsync, handleRemoveItem, toast],
   )
 
   const handleAddRecipient = useCallback(
@@ -295,6 +313,8 @@ export function useViewBag() {
     handleRemoveItem,
     handleQuantityChange,
     isUpdating,
+    updatingItemId,
+    deletingItemId,
     handleAddRecipient,
     handleEditRecipient,
     handleDeleteRecipient,

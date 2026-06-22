@@ -18,8 +18,20 @@ vi.mock('@/stores', () => ({
     mockUseAuthStore(selector),
 }))
 
+vi.mock('@/features/website/hooks/useArchiveCheckoutCart', () => ({
+  useArchiveCheckoutCart: vi.fn(),
+}))
+
+const mockUseClearGuestCheckoutAfterPurchase = vi.fn()
+
+vi.mock('@/features/website/hooks/useClearGuestCheckoutAfterPurchase', () => ({
+  useClearGuestCheckoutAfterPurchase: (...args: unknown[]) =>
+    mockUseClearGuestCheckoutAfterPurchase(...args),
+}))
+
 describe('PaymentSuccess (website)', () => {
   beforeEach(() => {
+    mockUseClearGuestCheckoutAfterPurchase.mockClear()
     mockUseAuthStore.mockImplementation((selector) =>
       selector({
         isAuthenticated: true,
@@ -36,6 +48,7 @@ describe('PaymentSuccess (website)', () => {
 
   it('renders member dashboard actions', () => {
     renderWithProviders(<PaymentSuccess />)
+    expect(mockUseClearGuestCheckoutAfterPurchase).toHaveBeenCalledWith(false)
     expect(screen.getByRole('button', { name: /go to dashboard/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /view orders/i })).toBeInTheDocument()
   })
@@ -49,6 +62,7 @@ describe('PaymentSuccess (website)', () => {
       }),
     )
     renderWithProviders(<PaymentSuccess />)
+    expect(mockUseClearGuestCheckoutAfterPurchase).toHaveBeenCalledWith(true)
     expect(screen.getByRole('button', { name: /continue shopping/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /redeem a gift card/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /go to dashboard/i })).not.toBeInTheDocument()

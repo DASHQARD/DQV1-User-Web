@@ -82,7 +82,6 @@ export function useCart(query?: Record<string, any>) {
     mutationFn: (data: { cart_item_id: string | number; quantity: number }) => updateCartItem(data),
     onSuccess: () => {
       invalidateCartQueries()
-      success('Cart updated')
     },
     onError: (error: unknown) => {
       toastError(getCartItemUpdateErrorMessage(error))

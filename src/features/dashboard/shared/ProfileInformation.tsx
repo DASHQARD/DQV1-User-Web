@@ -13,7 +13,7 @@ import {
 
 export default function ProfileInformation() {
   return (
-    <section className="flex flex-col gap-6">
+    <section className="flex w-full max-w-4xl mx-auto flex-col gap-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -28,7 +28,7 @@ export default function ProfileInformation() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="bg-white rounded-xl p-4 sm:p-6 w-full max-w-4xl">
+      <div className="bg-white rounded-xl p-4 sm:p-6 w-full shadow-sm border border-gray-100">
         <OnboardingForm />
       </div>
       <OnboardingSuccessModal />

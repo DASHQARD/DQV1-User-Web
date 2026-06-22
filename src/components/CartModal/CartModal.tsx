@@ -16,6 +16,7 @@ export default function CartPopoverContent() {
     subtotal,
     updateCartItem,
     isUpdating,
+    updatingItemId,
     deletingItemId,
     handleCheckout,
     handleRemoveItem,
@@ -114,6 +115,7 @@ export default function CartPopoverContent() {
                 }
 
                 const isDeleting = deletingItemId === item.cart_item_id
+                const isItemUpdating = updatingItemId === item.cart_item_id
 
                 return (
                   <div
@@ -175,36 +177,52 @@ export default function CartPopoverContent() {
 
                       <div className="flex flex-col items-center justify-between gap-4">
                         {/* Quantity Controls */}
-                        <div className="flex items-center gap-2 border border-gray-300 rounded-lg">
+                        <div
+                          className={`flex items-center gap-2 border border-gray-300 rounded-lg transition-opacity ${
+                            isItemUpdating ? 'opacity-70' : ''
+                          }`}
+                        >
                           <button
                             type="button"
                             onClick={() => handleQuantityChange(quantity - 1)}
-                            disabled={isUpdating || quantity <= 1 || !quantityEditable}
+                            disabled={
+                              isItemUpdating || isUpdating || quantity <= 1 || !quantityEditable
+                            }
                             title={
                               !quantityEditable
                                 ? 'Quantity cannot be changed for this cart'
                                 : undefined
                             }
-                            className="px-2 py-1 text-gray-600 hover:text-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-2 py-1 text-gray-600 hover:text-primary-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             aria-label="Decrease quantity"
                           >
                             <Icon icon="bi:dash" className="size-4" />
                           </button>
-                          <span className="px-3 py-1 text-sm font-semibold text-gray-900 min-w-8 text-center">
-                            {quantity}
+                          <span className="flex h-7 min-w-8 items-center justify-center px-2">
+                            {isItemUpdating ? (
+                              <Icon
+                                icon="mdi:loading"
+                                className="size-4 animate-spin text-primary-500"
+                                aria-hidden
+                              />
+                            ) : (
+                              <span className="text-sm font-semibold text-gray-900 tabular-nums">
+                                {quantity}
+                              </span>
+                            )}
                           </span>
                           <button
                             type="button"
                             onClick={() => {
                               handleQuantityChange(quantity + 1)
                             }}
-                            disabled={isUpdating || !quantityEditable}
+                            disabled={isItemUpdating || isUpdating || !quantityEditable}
                             title={
                               !quantityEditable
                                 ? 'Quantity cannot be changed for this cart'
                                 : undefined
                             }
-                            className="px-2 py-1 text-gray-600 hover:text-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-2 py-1 text-gray-600 hover:text-primary-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             aria-label="Increase quantity"
                           >
                             <Icon icon="bi:plus" className="size-4" />
@@ -214,8 +232,8 @@ export default function CartPopoverContent() {
                         <button
                           type="button"
                           onClick={() => handleRemoveItem(item.cart_item_id, cartStatus)}
-                          disabled={isDeleting || isUpdating || !itemRemovable}
-                          className="text-red-500 hover:text-red-700 transition-colors ml-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[24px] min-h-[24px]"
+                          disabled={isDeleting || isItemUpdating || isUpdating || !itemRemovable}
+                          className="text-red-500 hover:text-red-700 cursor-pointer transition-colors ml-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[24px] min-h-[24px]"
                           aria-label="Remove item"
                         >
                           {isDeleting ? (

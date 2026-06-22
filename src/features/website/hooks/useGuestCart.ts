@@ -20,7 +20,7 @@ export function useGuestCart(query?: Record<string, any>) {
   const getGuestCartId = useAuthStore((state) => state.getGuestCartId)
   const setGuestCartId = useAuthStore((state) => state.setGuestCartId)
   const setGuestCartUuid = useAuthStore((state) => state.setGuestCartUuid)
-  const { success, error: toastError } = useToast()
+  const { error: toastError } = useToast()
   const { useGetGuestCardsService } = useGuestQueries()
   const { data: guestCreatedCards = [] } = useGetGuestCardsService()
 
@@ -90,7 +90,6 @@ export function useGuestCart(query?: Record<string, any>) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart-items', 'guest'] })
       queryClient.invalidateQueries({ queryKey: ['guest-cart'] })
-      success('Cart updated')
     },
     onError: (error: { status?: number; message?: string }) => {
       toastError(error.message ?? 'Failed to update cart item')

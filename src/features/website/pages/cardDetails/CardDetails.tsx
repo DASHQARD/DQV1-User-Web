@@ -323,7 +323,7 @@ export default function CardDetails() {
                 type="button"
                 onClick={handleAddToCart}
                 disabled={isAdding || !isPurchasable}
-                className="flex-1 flex items-center justify-center gap-2 min-h-12 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl disabled:opacity-70"
+                className="flex-1 flex items-center justify-center gap-2 min-h-12 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isAdding ? (
                   <>
@@ -340,7 +340,7 @@ export default function CardDetails() {
               <button
                 type="button"
                 onClick={() => navigate(ROUTES.IN_APP.DASHQARDS)}
-                className="px-5 min-h-12 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
+                className="px-5 min-h-12 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 cursor-pointer"
               >
                 Back
               </button>
@@ -378,7 +378,7 @@ export default function CardDetails() {
             type="button"
             onClick={handleAddToCart}
             disabled={isAdding || !isPurchasable}
-            className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary-500 px-5 min-h-11 text-sm font-bold text-white hover:bg-primary-600 disabled:opacity-70"
+            className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary-500 px-5 min-h-11 text-sm font-bold text-white hover:bg-primary-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isAdding ? (
               <Icon icon="mdi:loading" className="size-5 animate-spin" />

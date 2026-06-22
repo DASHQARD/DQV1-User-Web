@@ -5,6 +5,7 @@ import { Icon } from '@/libs'
 import { useAuthStore } from '@/stores'
 import { getPaymentSuccessActions } from '@/features/website/utils/paymentSuccessActions'
 import { useArchiveCheckoutCart } from '@/features/website/hooks/useArchiveCheckoutCart'
+import { useClearGuestCheckoutAfterPurchase } from '@/features/website/hooks/useClearGuestCheckoutAfterPurchase'
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams()
@@ -23,8 +24,10 @@ export default function PaymentSuccess() {
   })
 
   const isMember = isAuthenticated && !isGuestAuth
+  const isGuestCheckout = isAuthenticated && isGuestAuth
 
   useArchiveCheckoutCart(isMember)
+  useClearGuestCheckoutAfterPurchase(isGuestCheckout)
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-[#f8fafc] to-[#e2e8f0] p-4">

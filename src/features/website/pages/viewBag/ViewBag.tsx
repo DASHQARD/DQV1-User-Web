@@ -42,6 +42,8 @@ export default function ViewBag() {
     handleRemoveItem,
     handleQuantityChange,
     isUpdating,
+    updatingItemId,
+    deletingItemId,
     handleAddRecipient,
     handleEditRecipient,
     handleDeleteRecipient,
@@ -143,13 +145,15 @@ export default function ViewBag() {
 
                   const handleDecreaseQuantity = () => {
                     if (quantity === 1) {
-                      handleRemoveItem(item.cart_item_id || item.cart_id, cartStatus)
+                      void handleRemoveItem(item.cart_item_id || item.cart_id, cartStatus)
                       return
                     }
                     if (item.cart_item_id) {
-                      handleQuantityChange(item.cart_item_id, quantity - 1, cartStatus)
+                      void handleQuantityChange(item.cart_item_id, quantity - 1, cartStatus)
                     }
                   }
+                  const isItemUpdating = updatingItemId === item.cart_item_id
+                  const isDeleting = deletingItemId === item.cart_item_id
 
                   return (
                     <div
@@ -209,54 +213,77 @@ export default function ViewBag() {
                       </div>
 
                       <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
+                        <div
+                          className={`flex items-center gap-2 transition-opacity ${
+                            isItemUpdating ? 'opacity-70' : ''
+                          }`}
+                        >
                           <button
                             type="button"
                             onClick={handleDecreaseQuantity}
-                            className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                             aria-label={quantity === 1 ? 'Remove item' : 'Decrease quantity'}
                             disabled={
+                              isItemUpdating ||
                               isUpdating ||
                               (quantity > 1 && (!item.cart_item_id || !quantityEditable)) ||
                               (quantity === 1 && !itemRemovable)
                             }
                           >
-                            {isUpdating ? (
-                              <Icon icon="mdi:loading" className="animate-spin text-sm" />
-                            ) : (
-                              <Icon icon="bi:dash" className="text-sm" />
-                            )}
+                            <Icon icon="bi:dash" className="text-sm" />
                           </button>
-                          <span className="min-w-[28px] text-center text-sm font-semibold text-gray-900">
-                            {quantity}
+                          <span className="flex h-9 min-w-[28px] items-center justify-center">
+                            {isItemUpdating ? (
+                              <Icon
+                                icon="mdi:loading"
+                                className="size-4 animate-spin text-[#402D87]"
+                                aria-hidden
+                              />
+                            ) : (
+                              <span className="text-center text-sm font-semibold text-gray-900 tabular-nums">
+                                {quantity}
+                              </span>
+                            )}
                           </span>
                           <button
                             type="button"
                             onClick={() =>
                               item.cart_item_id &&
-                              handleQuantityChange(item.cart_item_id, quantity + 1, cartStatus)
+                              void handleQuantityChange(
+                                item.cart_item_id,
+                                quantity + 1,
+                                cartStatus,
+                              )
                             }
-                            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#402D87] text-white hover:bg-[#402D87]/90 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#402D87] text-white hover:bg-[#402D87]/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                             aria-label="Increase quantity"
-                            disabled={isUpdating || !item.cart_item_id || !quantityEditable}
+                            disabled={
+                              isItemUpdating ||
+                              isUpdating ||
+                              !item.cart_item_id ||
+                              !quantityEditable
+                            }
                           >
-                            {isUpdating ? (
-                              <Icon icon="mdi:loading" className="animate-spin text-sm" />
-                            ) : (
-                              <Icon icon="bi:plus" className="text-sm" />
-                            )}
+                            <Icon icon="bi:plus" className="text-sm" />
                           </button>
                         </div>
                         <button
                           type="button"
                           onClick={() =>
-                            handleRemoveItem(item.cart_item_id || item.cart_id, cartStatus)
+                            void handleRemoveItem(item.cart_item_id || item.cart_id, cartStatus)
                           }
-                          className="text-sm font-medium text-[#402D87] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                          className="text-red-500 hover:text-red-700 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[24px] min-h-[24px]"
                           aria-label="Remove item"
-                          disabled={isUpdating || !itemRemovable}
+                          disabled={isDeleting || isItemUpdating || isUpdating || !itemRemovable}
                         >
-                          Remove
+                          {isDeleting ? (
+                            <Icon
+                              icon="mdi:loading"
+                              className="text-lg animate-spin text-red-500"
+                            />
+                          ) : (
+                            <Icon icon="bi:trash" className="text-lg" />
+                          )}
                         </button>
                       </div>
 

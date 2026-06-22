@@ -163,7 +163,7 @@ export default function CorporateHome() {
                           'text-xs font-semibold px-3 py-1 rounded-full shrink-0 self-start',
                           hasProfileAndID
                             ? 'bg-[#ecfdf5] text-[#059669]'
-                            : 'bg-[#fef2f2] text-[#dc2626]',
+                            : 'bg-[#fff7ed] text-[#c2410c]',
                         )}
                       >
                         {hasProfileAndID ? 'Complete' : 'Pending'}
@@ -229,7 +229,7 @@ export default function CorporateHome() {
                             'text-xs font-semibold px-3 py-1 rounded-full shrink-0 self-start',
                             hasBusinessDetailsAndDocs
                               ? 'bg-[#ecfdf5] text-[#059669]'
-                              : 'bg-[#fef2f2] text-[#dc2626]',
+                              : 'bg-[#fff7ed] text-[#c2410c]',
                           )}
                         >
                           {hasBusinessDetailsAndDocs ? 'Complete' : 'Pending'}

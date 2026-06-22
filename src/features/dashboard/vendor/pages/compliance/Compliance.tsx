@@ -193,7 +193,7 @@ export default function Compliance() {
                       className={`text-xs font-semibold px-3 py-1 rounded-full ${
                         item.isComplete
                           ? 'bg-[#ecfdf5] text-[#059669]'
-                          : 'bg-[#fef2f2] text-[#dc2626]'
+                          : 'bg-[#fff7ed] text-[#c2410c]'
                       }`}
                     >
                       {item.isComplete ? 'Complete' : 'Pending'}

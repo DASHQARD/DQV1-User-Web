@@ -129,24 +129,27 @@ export default function Hero() {
               </section>
               <animated.div
                 style={buttonsSpring}
-                className="grid grid-cols-2 gap-2 w-full sm:flex sm:flex-row sm:w-auto md:gap-4"
+                className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto pt-1"
               >
                 <Button
                   variant="primary"
                   size="medium"
-                  className="rounded-4xl! w-full min-h-11 sm:max-w-[220px] text-sm! md:text-base!"
-                  icon="mdi:arrow-right-thin"
+                  className="rounded-full! w-full sm:w-auto sm:min-w-[210px] min-h-12 px-6 text-sm! md:text-base! font-semibold! shadow-[0_8px_24px_rgba(0,0,0,0.18)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)] hover:-translate-y-0.5 transition-all duration-200"
+                  icon="mdi:arrow-right"
                   iconPosition="right"
                   onClick={() => navigate(ROUTES.IN_APP.AUTH.REGISTER)}
-                  iconProps={{ className: 'size-4 text-[#353535]' }}
+                  iconProps={{ className: 'size-5' }}
                 >
                   Get Started
                 </Button>
                 <Button
                   variant="outline"
                   size="medium"
+                  icon="bi:gift"
+                  iconPosition="left"
                   onClick={() => navigate(ROUTES.IN_APP.DASHQARDS)}
-                  className="rounded-4xl! w-full min-h-11 sm:max-w-[220px] text-sm! md:text-base! !border-white !text-white !bg-transparent hover:!bg-white hover:!text-primary-500"
+                  className="rounded-full! w-full sm:w-auto sm:min-w-[210px] min-h-12 px-6 text-sm! md:text-base! font-semibold! !border-2 !border-white/80 !text-white !bg-white/10 hover:!bg-white hover:!text-primary-500 hover:!border-white hover:-translate-y-0.5 transition-all duration-200 backdrop-blur-sm"
+                  iconProps={{ className: 'size-4' }}
                 >
                   Get a Card
                 </Button>

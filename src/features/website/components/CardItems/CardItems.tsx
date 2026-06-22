@@ -12,10 +12,12 @@ import type { VendorLogoFields } from '@/utils/vendorLogo'
 type CardItemsProps = FeaturedCardProps & {
   /** Tighter layout for two-column mobile grids (e.g. landing Featured Cards). */
   density?: 'default' | 'compact'
+  /** Highlights the card as actively selected (e.g. bulk assign flow). */
+  isSelected?: boolean
 }
 
 export const CardItems = (props: CardItemsProps) => {
-  const { density = 'default', ...card } = props
+  const { density = 'default', isSelected = false, ...card } = props
   const isCompact = density === 'compact'
   const { displayPrice, displayProduct, handleCardClick, product, vendor_name, branch_name, isPurchasable } =
     useCardItem({
@@ -34,15 +36,18 @@ export const CardItems = (props: CardItemsProps) => {
   return (
     <article
       className={cn(
-        'flex h-fit w-full self-start flex-col bg-white overflow-hidden group transition-shadow',
+        'relative flex h-fit w-full self-start flex-col bg-white overflow-hidden group transition-shadow',
         isExpired ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
-        isCompact
-          ? 'rounded-lg border border-gray-200/80 shadow-none md:rounded-xl md:border-gray-100 md:shadow-[0_2px_8px_rgba(0,0,0,0.06)] md:hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]'
-          : 'rounded-xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]',
+        isSelected
+          ? 'rounded-xl border-2 border-primary-600 bg-primary-50/40 shadow-[0_4px_20px_rgba(64,45,135,0.18)]'
+          : isCompact
+            ? 'rounded-lg border border-gray-200/80 shadow-none md:rounded-xl md:border-gray-100 md:shadow-[0_2px_8px_rgba(0,0,0,0.06)] md:hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]'
+            : 'rounded-xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]',
       )}
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
+      aria-pressed={isSelected}
       onKeyPress={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
@@ -50,7 +55,18 @@ export const CardItems = (props: CardItemsProps) => {
         }
       }}
     >
+      {isSelected ? (
+        <span
+          className="pointer-events-none absolute inset-y-0 left-0 z-20 w-2 bg-[#402D87]"
+          aria-hidden
+        />
+      ) : null}
       <div className="relative aspect-video shrink-0 bg-gray-100 overflow-hidden">
+        {isSelected ? (
+          <span className="absolute left-3 top-2 z-10 rounded-full bg-primary-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+            Selected
+          </span>
+        ) : null}
         {isExpired ? (
           <span className="absolute left-2 top-2 z-10 rounded-full bg-gray-900/80 px-2 py-0.5 text-[10px] font-semibold text-white">
             Expired

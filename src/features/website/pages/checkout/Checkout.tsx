@@ -345,18 +345,18 @@ export default function Checkout() {
                         )}
                       />
                     </div>
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                      Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="email"
-                      {...userInfoForm.register('email')}
-                      error={userInfoForm.formState.errors.email?.message}
-                      placeholder="john@example.com"
-                      className="w-full"
-                    />
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Email Address <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="email"
+                        {...userInfoForm.register('email')}
+                        error={userInfoForm.formState.errors.email?.message}
+                        placeholder="john@example.com"
+                        className="w-full"
+                      />
+                    </div>
                   </div>
                 </form>
               </CheckoutSection>

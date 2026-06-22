@@ -16,7 +16,7 @@ import DashProBg from '@/assets/svgs/dashpro_bg.svg'
 import RecipientTemplate from '@/assets/recipient_template.xlsx?url'
 import { usePersistedModalState } from '@/hooks'
 import { VendorLogoImage } from '@/features/website/components/VendorLogo/VendorLogoImage'
-import { Icon } from '@/libs'
+import { Icon, cn } from '@/libs'
 import { MODALS } from '@/utils/constants'
 import { formatCurrency } from '@/utils/format'
 import {
@@ -87,6 +87,96 @@ function RecipientsPreviewTable({
   )
 }
 
+type RecipientSelectionTableProps = {
+  recipients: RecipientRow[]
+  selectedRecipients: Set<number>
+  onToggleRecipient: (id: number) => void
+  onSelectAllRecipients: () => void
+}
+
+function RecipientSelectionTable({
+  recipients,
+  selectedRecipients,
+  onToggleRecipient,
+  onSelectAllRecipients,
+}: RecipientSelectionTableProps) {
+  const recipientsWithIds = recipients.filter((r) => r.id != null)
+  const allSelected =
+    recipientsWithIds.length > 0 && selectedRecipients.size === recipientsWithIds.length
+  const someSelected =
+    selectedRecipients.size > 0 && selectedRecipients.size < recipientsWithIds.length
+
+  return (
+    <div className="max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 sticky top-0 z-10">
+          <tr>
+            <th className="px-4 py-3 text-left font-semibold text-gray-700 w-12">
+              <Checkbox
+                checked={allSelected}
+                indeterminate={someSelected}
+                onChange={onSelectAllRecipients}
+              />
+            </th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-700">Recipient Name</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-700">Email</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-700">Phone</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-700">Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {recipientsWithIds.map((recipient) => {
+            const isChecked = selectedRecipients.has(recipient.id!)
+            return (
+              <tr
+                key={`recipient-${recipient.id}`}
+                aria-selected={isChecked}
+                onClick={() => onToggleRecipient(recipient.id!)}
+                className={cn(
+                  'border-t border-gray-200 cursor-pointer transition-colors',
+                  isChecked
+                    ? 'bg-primary-50 hover:bg-primary-100/70 ring-1 ring-inset ring-primary-300'
+                    : 'hover:bg-gray-50',
+                )}
+              >
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={isChecked}
+                    onChange={() => onToggleRecipient(recipient.id!)}
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <Text
+                    variant="span"
+                    className={cn('font-medium', isChecked ? 'text-primary-900' : 'text-gray-900')}
+                  >
+                    {recipient.name}
+                  </Text>
+                </td>
+                <td className="px-4 py-3">
+                  <Text variant="span" className={isChecked ? 'text-primary-800' : 'text-gray-700'}>
+                    {recipient.email}
+                  </Text>
+                </td>
+                <td className="px-4 py-3">
+                  <Text variant="span" className={isChecked ? 'text-primary-800' : 'text-gray-700'}>
+                    {recipient.phone}
+                  </Text>
+                </td>
+                <td className="px-4 py-3">
+                  <Text variant="span" className={isChecked ? 'text-primary-700' : 'text-gray-600'}>
+                    {recipient.message || '-'}
+                  </Text>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export function BulkPurchaseEmployees() {
   const modal = usePersistedModalState({
     paramName: MODALS.BULK_EMPLOYEE_PURCHASE.PARAM_NAME,
@@ -136,6 +226,7 @@ export function BulkPurchaseEmployeesModal() {
     selectedVendorBranchCount,
     vendorCards,
     isLoadingVendors,
+    isVendorCatalogLoading,
     downloadTemplate,
     handleUpload,
     handleToggleRecipient,
@@ -611,81 +702,12 @@ export function BulkPurchaseEmployeesModal() {
                       </Button>
                     </div>
 
-                    <div className="max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50 sticky top-0">
-                          <tr>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 w-12">
-                              <Checkbox
-                                checked={
-                                  uploadedRecipients.filter((r: RecipientRow) => r.id).length > 0 &&
-                                  selectedRecipients.size ===
-                                    uploadedRecipients.filter((r: RecipientRow) => r.id).length
-                                }
-                                indeterminate={
-                                  selectedRecipients.size > 0 &&
-                                  selectedRecipients.size <
-                                    uploadedRecipients.filter((r: RecipientRow) => r.id).length
-                                }
-                                onChange={handleSelectAllRecipients}
-                              />
-                            </th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                              Recipient Name
-                            </th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                              Email
-                            </th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                              Phone
-                            </th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                              Message
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {uploadedRecipients.map((recipient: RecipientRow) => {
-                            if (!recipient.id) return null
-                            const isChecked = selectedRecipients.has(recipient.id)
-
-                            return (
-                              <tr
-                                key={`recipient-${recipient.id}`}
-                                className="border-t border-gray-200 hover:bg-gray-50"
-                              >
-                                <td className="px-4 py-3">
-                                  <Checkbox
-                                    checked={isChecked}
-                                    onChange={() => handleToggleRecipient(recipient.id!)}
-                                  />
-                                </td>
-                                <td className="px-4 py-3">
-                                  <Text variant="span" className="font-medium text-gray-900">
-                                    {recipient.name}
-                                  </Text>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <Text variant="span" className="text-gray-700">
-                                    {recipient.email}
-                                  </Text>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <Text variant="span" className="text-gray-700">
-                                    {recipient.phone}
-                                  </Text>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <Text variant="span" className="text-gray-600">
-                                    {recipient.message || '-'}
-                                  </Text>
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                    <RecipientSelectionTable
+                      recipients={uploadedRecipients}
+                      selectedRecipients={selectedRecipients}
+                      onToggleRecipient={handleToggleRecipient}
+                      onSelectAllRecipients={handleSelectAllRecipients}
+                    />
 
                     <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
                       <Text variant="span" className="text-sm text-gray-700">
@@ -858,7 +880,14 @@ export function BulkPurchaseEmployeesModal() {
 
                 {/* DashGo Featured Section - Always shown for selected vendor */}
                 {selectedVendor && (
-                  <div className="bg-linear-to-br from-[#f8f9fa] to-[#e9ecef] rounded-lg p-6 border border-gray-200">
+                  <div
+                    className={cn(
+                      'rounded-lg p-6 border bg-linear-to-br from-[#f8f9fa] to-[#e9ecef]',
+                      selectedCardType === 'dashgo'
+                        ? 'border-primary-500 ring-2 ring-primary-600 ring-offset-2 shadow-md'
+                        : 'border-gray-200',
+                    )}
+                  >
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
                       {/* Left Column - DashGo Card Visual */}
                       <div className="flex justify-center">
@@ -937,27 +966,31 @@ export function BulkPurchaseEmployeesModal() {
                 )}
 
                 {/* Other Vendor Cards (DashX, DashPass, etc.) */}
-                {vendorCards.length > 0 ? (
+                {isVendorCatalogLoading ? (
+                  <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                    <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+                    <Text variant="span" className="text-sm text-gray-600">
+                      Loading vendor cards…
+                    </Text>
+                  </div>
+                ) : vendorCards.length > 0 ? (
                   <div className="space-y-3">
                     <Text variant="span" weight="semibold" className="text-gray-900">
                       Other Cards
                     </Text>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-h-[50vh] overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-h-[50vh] overflow-y-auto p-1">
                       {vendorCards.map((card: any) => {
                         const assignmentKey = `card-${card.card_id}`
                         const assignment = cardRecipientAssignments[assignmentKey]
                         const assignedCount = assignment?.recipientIds.length || 0
                         const isSelected =
-                          selectedCardId === card.card_id && selectedCardType === 'card'
+                          String(selectedCardId) === String(card.card_id) &&
+                          selectedCardType === 'card'
 
                         return (
-                          <div
-                            key={card.card_id}
-                            className={`transition-all ${
-                              isSelected ? 'ring-2 ring-primary-500 rounded-2xl' : ''
-                            }`}
-                          >
+                          <div key={card.card_id} className="transition-all">
                             <CardItems
+                              isSelected={isSelected}
                               branch_name={card.branch_name || ''}
                               branch_location={card.branch_location || ''}
                               card_id={card.card_id}
@@ -981,6 +1014,13 @@ export function BulkPurchaseEmployeesModal() {
                               buttonText="Quick Assign"
                               onGetQard={() => handleCardSelect(card.card_id, 'card')}
                             />
+                            {isSelected && (
+                              <div className="mt-2 text-center">
+                                <span className="bg-primary-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                  Selected — pick recipients below
+                                </span>
+                              </div>
+                            )}
                             {assignedCount > 0 && (
                               <div className="mt-2 text-center">
                                 <span className="bg-primary-100 text-primary-700 text-xs font-medium px-2 py-1 rounded-full">
@@ -1024,81 +1064,12 @@ export function BulkPurchaseEmployeesModal() {
                       </Button>
                     </div>
 
-                    <div className="max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50 sticky top-0">
-                          <tr>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 w-12">
-                              <Checkbox
-                                checked={
-                                  uploadedRecipients.filter((r: RecipientRow) => r.id).length > 0 &&
-                                  selectedRecipients.size ===
-                                    uploadedRecipients.filter((r: RecipientRow) => r.id).length
-                                }
-                                indeterminate={
-                                  selectedRecipients.size > 0 &&
-                                  selectedRecipients.size <
-                                    uploadedRecipients.filter((r: RecipientRow) => r.id).length
-                                }
-                                onChange={handleSelectAllRecipients}
-                              />
-                            </th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                              Recipient Name
-                            </th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                              Email
-                            </th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                              Phone
-                            </th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                              Message
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {uploadedRecipients.map((recipient: RecipientRow) => {
-                            if (!recipient.id) return null
-                            const isChecked = selectedRecipients.has(recipient.id)
-
-                            return (
-                              <tr
-                                key={`recipient-${recipient.id}`}
-                                className="border-t border-gray-200 hover:bg-gray-50"
-                              >
-                                <td className="px-4 py-3">
-                                  <Checkbox
-                                    checked={isChecked}
-                                    onChange={() => handleToggleRecipient(recipient.id!)}
-                                  />
-                                </td>
-                                <td className="px-4 py-3">
-                                  <Text variant="span" className="font-medium text-gray-900">
-                                    {recipient.name}
-                                  </Text>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <Text variant="span" className="text-gray-700">
-                                    {recipient.email}
-                                  </Text>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <Text variant="span" className="text-gray-700">
-                                    {recipient.phone}
-                                  </Text>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <Text variant="span" className="text-gray-600">
-                                    {recipient.message || '-'}
-                                  </Text>
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                    <RecipientSelectionTable
+                      recipients={uploadedRecipients}
+                      selectedRecipients={selectedRecipients}
+                      onToggleRecipient={handleToggleRecipient}
+                      onSelectAllRecipients={handleSelectAllRecipients}
+                    />
 
                     <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
                       <div>

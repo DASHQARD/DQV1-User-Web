@@ -24,10 +24,13 @@ export function useCartModal() {
   const deleteCartItemAsync = isGuestAuth
     ? guestCart.deleteCartItemAsync
     : userCart.deleteCartItemAsync
-  const updateCartItem = isGuestAuth ? guestCart.updateCartItem : userCart.updateCartItem
+  const updateCartItemAsync = isGuestAuth
+    ? guestCart.updateCartItemAsync
+    : userCart.updateCartItemAsync
   const isUpdating = isGuestAuth ? guestCart.isUpdating : userCart.isUpdating
 
   const [deletingItemId, setDeletingItemId] = useState<string | number | null>(null)
+  const [updatingItemId, setUpdatingItemId] = useState<string | number | null>(null)
 
   const serverCartItems = useMemo(() => {
     if (!Array.isArray(cartItems)) return []
@@ -81,15 +84,25 @@ export function useCartModal() {
   )
 
   const handleUpdateQuantity = useCallback(
-    (params: { cart_item_id: string | number; quantity: number; cart_status?: string }) => {
+    async (params: { cart_item_id: string | number; quantity: number; cart_status?: string }) => {
       if (isLocalGuestCartLineId(params.cart_item_id)) return
       if (!canUpdateCartItemQuantity(params.cart_status)) {
         toast.error('This cart can no longer be changed. Remove the item or start a new order.')
         return
       }
-      updateCartItem({ cart_item_id: params.cart_item_id, quantity: params.quantity })
+      setUpdatingItemId(params.cart_item_id)
+      try {
+        await updateCartItemAsync({
+          cart_item_id: params.cart_item_id,
+          quantity: params.quantity,
+        })
+      } catch (error) {
+        console.error('Failed to update cart item quantity', error)
+      } finally {
+        setUpdatingItemId(null)
+      }
     },
-    [updateCartItem, toast],
+    [updateCartItemAsync, toast],
   )
 
   return {
@@ -101,6 +114,7 @@ export function useCartModal() {
     subtotal,
     updateCartItem: handleUpdateQuantity,
     isUpdating,
+    updatingItemId,
     deletingItemId,
     handleCheckout,
     handleRemoveItem,

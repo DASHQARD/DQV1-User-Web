@@ -156,8 +156,8 @@ export default function OnboardingForm() {
           ) : userProfileData?.id_images?.length && userProfileData?.id_images?.length > 0 ? (
             <section
               className={cn(
-                'grid gap-4 flex-1 max-w-[554px]',
-                needsOnlyFront ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
+                'grid w-full grid-cols-1 gap-4',
+                needsOnlyFront ? '' : 'sm:grid-cols-2',
               )}
             >
               <div className="min-w-0">
@@ -170,7 +170,7 @@ export default function OnboardingForm() {
                 </p>
                 <div
                   className={cn(
-                    'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
+                    'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0 w-full',
                   )}
                 >
                   {frontOfIdentification ? (
@@ -189,7 +189,7 @@ export default function OnboardingForm() {
                   </p>
                   <div
                     className={cn(
-                      'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0',
+                      'border-2 border-dashed rounded-lg p-4 transition-colors min-h-48 flex items-center justify-center min-w-0 w-full',
                     )}
                   >
                     {backOfIdentification ? (
@@ -206,48 +206,52 @@ export default function OnboardingForm() {
           ) : (
             <section
               className={cn(
-                'grid gap-4 flex-1 max-w-[554px]',
-                needsOnlyFront ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2',
+                'grid w-full grid-cols-1 gap-4',
+                needsOnlyFront ? '' : 'sm:grid-cols-2',
               )}
             >
-              <Controller
-                control={form.control}
-                name="front_id"
-                render={({ field: { onChange, value }, fieldState: { error } }) => (
-                  <FileUploader
-                    label={
-                      isPassport
-                        ? 'Upload Passport Page'
-                        : isNationalId
-                          ? 'Upload Picture of Front of National ID'
-                          : 'Upload Picture of Front of Identification'
-                    }
-                    value={value}
-                    onChange={onChange}
-                    error={error?.message}
-                    id="front_id"
-                  />
-                )}
-              />
-
-              {!needsOnlyFront && (
+              <div className="min-w-0">
                 <Controller
                   control={form.control}
-                  name="back_id"
+                  name="front_id"
                   render={({ field: { onChange, value }, fieldState: { error } }) => (
                     <FileUploader
                       label={
-                        isNationalId
-                          ? 'Upload Picture of Back of National ID'
-                          : 'Upload Picture of Back of Identification'
+                        isPassport
+                          ? 'Upload Passport Page'
+                          : isNationalId
+                            ? 'Upload Picture of Front of National ID'
+                            : 'Upload Picture of Front of Identification'
                       }
                       value={value}
                       onChange={onChange}
                       error={error?.message}
-                      id="back_id"
+                      id="front_id"
                     />
                   )}
                 />
+              </div>
+
+              {!needsOnlyFront && (
+                <div className="min-w-0">
+                  <Controller
+                    control={form.control}
+                    name="back_id"
+                    render={({ field: { onChange, value }, fieldState: { error } }) => (
+                      <FileUploader
+                        label={
+                          isNationalId
+                            ? 'Upload Picture of Back of National ID'
+                            : 'Upload Picture of Back of Identification'
+                        }
+                        value={value}
+                        onChange={onChange}
+                        error={error?.message}
+                        id="back_id"
+                      />
+                    )}
+                  />
+                </div>
               )}
             </section>
           )}

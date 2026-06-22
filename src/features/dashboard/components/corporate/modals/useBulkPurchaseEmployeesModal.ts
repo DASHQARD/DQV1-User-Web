@@ -5,7 +5,12 @@ import { assignCardToRecipients } from '@/features/dashboard/corporate/services'
 import { usePersistedModalState, useToast } from '@/hooks'
 import { MODALS } from '@/utils/constants'
 import { corporateMutations, corporateQueries } from '@/features/dashboard/corporate/hooks'
+import { useRedemptionQueries } from '@/features/dashboard/hooks'
 import { usePublicCatalogQueries } from '@/features/website/hooks/website/usePublicCatalogQueries'
+import {
+  mapVendorRedemptionCatalogToPublicVendor,
+  resolveVendorProfileCatalogGvid,
+} from '@/features/website/utils/vendorRedemptionCatalog'
 import type { RecipientRow } from '@/types'
 import type { CardRecipientAssignment } from '@/types/corporate/recipients'
 import type { DropdownOption } from '@/types'
@@ -67,6 +72,7 @@ export function useBulkPurchaseEmployeesModal() {
 
   const { useGetAllRecipientsService, useGetCartsService } = corporateQueries()
   const { usePublicVendorsService } = usePublicCatalogQueries()
+  const { useGetVendorRedemptionCatalogService } = useRedemptionQueries()
 
   const {
     useUploadBulkRecipientsService,
@@ -109,9 +115,34 @@ export function useBulkPurchaseEmployeesModal() {
     [vendorList, selectedVendorId],
   )
   const selectedVendor = selectedVendorId ? selectedVendorId : null
+  const catalogGvid = useMemo(
+    () => resolveVendorProfileCatalogGvid({ legacyVendorId: selectedVendorId }, queryClient),
+    [selectedVendorId, queryClient],
+  )
+
+  const shouldFetchVendorCatalog =
+    isOpen && step === STEP_SELECT_CARDS && Boolean(selectedVendorId) && Boolean(catalogGvid)
+
+  const {
+    data: vendorCatalogResponse,
+    isLoading: isLoadingVendorCatalog,
+    isFetching: isFetchingVendorCatalog,
+  } = useGetVendorRedemptionCatalogService(
+    catalogGvid || undefined,
+    undefined,
+    shouldFetchVendorCatalog,
+  )
+
+  const catalogMappedVendor = useMemo(() => {
+    if (!vendorCatalogResponse?.data) return null
+    return mapVendorRedemptionCatalogToPublicVendor(vendorCatalogResponse.data)
+  }, [vendorCatalogResponse])
+
   const selectedVendorName = useMemo(() => {
+    const catalogName = vendorCatalogResponse?.data?.vendor?.vendor_name
+    if (catalogName) return catalogName
     return selectedVendorRecord?.business_name || selectedVendorRecord?.vendor_name || ''
-  }, [selectedVendorRecord])
+  }, [vendorCatalogResponse, selectedVendorRecord])
   const selectedVendorLogo = useMemo(() => {
     const record = selectedVendorRecord as
       | { logo?: string; logo_key?: string; vendor_logo?: string; business_logo?: string }
@@ -124,14 +155,27 @@ export function useBulkPurchaseEmployeesModal() {
       business_logo: record.business_logo ?? null,
     }
   }, [selectedVendorRecord])
-  const selectedVendorBranchCount = useMemo(
-    () => countVendorBranches(selectedVendorRecord),
-    [selectedVendorRecord],
-  )
-  const vendorCards = useMemo(
-    () => getVendorCardsFromBranches(selectedVendorRecord),
-    [selectedVendorRecord],
-  )
+  const selectedVendorBranchCount = useMemo(() => {
+    const catalogBranches = vendorCatalogResponse?.data?.vendor?.branches
+    if (catalogBranches) return catalogBranches.length
+    return countVendorBranches(selectedVendorRecord)
+  }, [vendorCatalogResponse, selectedVendorRecord])
+
+  const vendorCards = useMemo(() => {
+    if (catalogMappedVendor) return getVendorCardsFromBranches(catalogMappedVendor)
+    if (!isLoadingVendorCatalog && !isFetchingVendorCatalog) {
+      return getVendorCardsFromBranches(selectedVendorRecord)
+    }
+    return []
+  }, [
+    catalogMappedVendor,
+    selectedVendorRecord,
+    isLoadingVendorCatalog,
+    isFetchingVendorCatalog,
+  ])
+
+  const isVendorCatalogLoading =
+    shouldFetchVendorCatalog && (isLoadingVendorCatalog || isFetchingVendorCatalog)
 
   const { data: cartsResponse } = useGetCartsService()
   const existingCartItems = useMemo(() => {
@@ -432,6 +476,7 @@ export function useBulkPurchaseEmployeesModal() {
     selectedVendorBranchCount,
     vendorCards,
     isLoadingVendors,
+    isVendorCatalogLoading,
     downloadTemplate,
     handleUpload,
     handleToggleRecipient,
