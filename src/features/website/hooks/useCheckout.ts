@@ -153,10 +153,14 @@ export function useCheckout() {
   const profilePhone = userProfileData?.phonenumber ?? ''
 
   React.useEffect(() => {
-    const hasSameUserInfo = (
-      current: Pick<UserInfoFormData, 'first_name' | 'last_name' | 'email' | 'phone_number'>,
-      next: Pick<UserInfoFormData, 'first_name' | 'last_name' | 'email' | 'phone_number'>,
-    ) =>
+    type UserInfoSnapshot = {
+      first_name?: string
+      last_name?: string
+      email?: string
+      phone_number?: string
+    }
+
+    const hasSameUserInfo = (current: UserInfoSnapshot, next: UserInfoSnapshot) =>
       (current.first_name ?? '') === (next.first_name ?? '') &&
       (current.last_name ?? '') === (next.last_name ?? '') &&
       (current.email ?? '') === (next.email ?? '') &&
