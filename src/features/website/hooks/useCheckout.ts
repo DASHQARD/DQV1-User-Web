@@ -142,37 +142,79 @@ export function useCheckout() {
         },
   })
 
+  const { reset: resetUserInfoForm, getValues: getUserInfoValues } = userInfoForm
+
   const user = useAuthStore((state) => state.user)
+  const guestAuthPhone = getGuestPhoneFromAuth(user)
+  const guestAuthName = getGuestNameFromAuth(user)
+  const guestAuthEmail = getGuestEmailFromAuth(user)
+  const profileFullname = userProfileData?.fullname ?? ''
+  const profileEmail = userProfileData?.email ?? ''
+  const profilePhone = userProfileData?.phonenumber ?? ''
 
   React.useEffect(() => {
+    const hasSameUserInfo = (
+      current: Pick<UserInfoFormData, 'first_name' | 'last_name' | 'email' | 'phone_number'>,
+      next: Pick<UserInfoFormData, 'first_name' | 'last_name' | 'email' | 'phone_number'>,
+    ) =>
+      (current.first_name ?? '') === (next.first_name ?? '') &&
+      (current.last_name ?? '') === (next.last_name ?? '') &&
+      (current.email ?? '') === (next.email ?? '') &&
+      (current.phone_number ?? '') === (next.phone_number ?? '')
+
     if (isGuestAuth) {
       const savedName =
         formatPersonName(localContact.first_name ?? '', localContact.last_name ?? '') ||
         localContact.full_name?.trim() ||
-        getGuestNameFromAuth(user) ||
+        guestAuthName ||
         getGuestContactSessionItem(GUEST_NAME_STORAGE_KEY) ||
         ''
-      userInfoForm.reset({
+      const nextValues = {
         ...splitPersonName(savedName),
         email:
           localContact.email ||
-          getGuestEmailFromAuth(user) ||
+          guestAuthEmail ||
           getGuestContactSessionItem(GUEST_EMAIL_STORAGE_KEY) ||
           '',
         phone_number:
           localContact.phone ||
-          getGuestPhoneFromAuth(user) ||
+          guestAuthPhone ||
           getGuestContactSessionItem(GUEST_PHONE_STORAGE_KEY) ||
           '',
-      })
-    } else if (userProfileData) {
-      userInfoForm.reset({
-        ...splitPersonName(userProfileData?.fullname ?? ''),
-        email: userProfileData?.email ?? '',
-        phone_number: userProfileData?.phonenumber ?? '',
-      })
+      }
+      const currentValues = getUserInfoValues()
+      if (hasSameUserInfo(currentValues, nextValues)) return
+      resetUserInfoForm(nextValues)
+      return
     }
-  }, [isGuestAuth, localContact, user, userProfileData, userInfoForm])
+
+    if (!userProfileData) return
+
+    const nextValues = {
+      ...splitPersonName(profileFullname),
+      email: profileEmail,
+      phone_number: profilePhone,
+    }
+    const currentValues = getUserInfoValues()
+    if (hasSameUserInfo(currentValues, nextValues)) return
+    resetUserInfoForm(nextValues)
+  }, [
+    isGuestAuth,
+    localContact.phone,
+    localContact.email,
+    localContact.first_name,
+    localContact.last_name,
+    localContact.full_name,
+    guestAuthPhone,
+    guestAuthName,
+    guestAuthEmail,
+    profileFullname,
+    profileEmail,
+    profilePhone,
+    userProfileData,
+    resetUserInfoForm,
+    getUserInfoValues,
+  ])
 
   type PaymentMethodFormValues = Omit<PaymentMethodFormData, 'expiry_month' | 'expiry_year'> & {
     expiry_month?: unknown
@@ -185,6 +227,8 @@ export function useCheckout() {
       payment_method_type: 'mobile_money',
     },
   })
+
+  const paymentMethodType = paymentForm.watch('payment_method_type')
 
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
   const [isMissingRecipientsModalOpen, setIsMissingRecipientsModalOpen] = useState(false)
@@ -599,9 +643,8 @@ export function useCheckout() {
     amountDue,
     hasNetworkIssue,
     userInfoForm,
-    userInfo: userInfoForm.watch(),
     paymentForm,
-    paymentMethod: paymentForm.watch(),
+    paymentMethodType,
     checkoutGateway,
     isPersonalDetailsCompleted,
     isUserInfoIncomplete,

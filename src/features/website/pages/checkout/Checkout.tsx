@@ -81,7 +81,7 @@ export default function Checkout() {
     hasNetworkIssue,
     userInfoForm,
     paymentForm,
-    paymentMethod,
+    paymentMethodType,
     checkoutGateway,
     isGuestCheckoutFlow,
     guestBagReady,
@@ -118,10 +118,11 @@ export default function Checkout() {
     checkoutGateway === CHECKOUT_GATEWAY.EGNANOW || checkoutGateway === CHECKOUT_GATEWAY.KOWRI
   const isEgnanow = checkoutGateway === CHECKOUT_GATEWAY.EGNANOW
   const isKowri = checkoutGateway === CHECKOUT_GATEWAY.KOWRI
-  const isMobileMoney = paymentMethod?.payment_method_type === 'mobile_money'
-  const isCard = paymentMethod?.payment_method_type === 'card'
+  const isMobileMoney = paymentMethodType === 'mobile_money'
+  const isCard = paymentMethodType === 'card'
 
   const phoneNumber = userInfoForm.watch('phone_number')
+  const { setValue: setPaymentValue, getValues: getPaymentValues } = paymentForm
 
   React.useEffect(() => {
     if (!showPaymentMethodSection || !isMobileMoney) return
@@ -133,8 +134,11 @@ export default function Checkout() {
       const mappedProvider =
         detectedNetwork === 'mtn' ? 'MTNGH' : detectedNetwork === 'airteltigo' ? 'ATGH' : 'TCELGH'
 
-      if (paymentForm.getValues('paypartner_code') !== mappedProvider) {
-        paymentForm.setValue('paypartner_code', mappedProvider, { shouldValidate: true })
+      if (getPaymentValues('paypartner_code') !== mappedProvider) {
+        setPaymentValue('paypartner_code', mappedProvider, {
+          shouldValidate: false,
+          shouldDirty: false,
+        })
       }
       return
     }
@@ -147,11 +151,22 @@ export default function Checkout() {
             ? 'AIRTELTIGO_MONEY'
             : 'VODAFONE_CASH'
 
-      if (paymentForm.getValues('kowri_provider') !== mappedProvider) {
-        paymentForm.setValue('kowri_provider', mappedProvider, { shouldValidate: true })
+      if (getPaymentValues('kowri_provider') !== mappedProvider) {
+        setPaymentValue('kowri_provider', mappedProvider, {
+          shouldValidate: false,
+          shouldDirty: false,
+        })
       }
     }
-  }, [isEgnanow, isKowri, isMobileMoney, paymentForm, phoneNumber, showPaymentMethodSection])
+  }, [
+    isEgnanow,
+    isKowri,
+    isMobileMoney,
+    getPaymentValues,
+    setPaymentValue,
+    phoneNumber,
+    showPaymentMethodSection,
+  ])
 
   const recipientsStepComplete = isGuestCheckoutFlow
     ? allRecipientsAssigned && guestBagReady
@@ -233,8 +248,7 @@ export default function Checkout() {
     )
   }
 
-  const hasCheckoutItems =
-    Array.isArray(pendingCartItems) && pendingCartItems.length > 0
+  const hasCheckoutItems = Array.isArray(pendingCartItems) && pendingCartItems.length > 0
 
   if (!hasCheckoutItems || displayCartItems.length === 0) {
     return (
@@ -293,7 +307,8 @@ export default function Checkout() {
               >
                 {showPaymentMethodSection && (
                   <p className="text-sm text-gray-500 mb-4">
-                    Your phone number is also used for mobile money when you choose that payment option.
+                    Your phone number is also used for mobile money when you choose that payment
+                    option.
                   </p>
                 )}
                 <form onSubmit={userInfoForm.handleSubmit(() => {})} className="space-y-4">
@@ -371,136 +386,140 @@ export default function Checkout() {
                 <MemberOnboardingRecipientBlock />
               ) : (
                 <>
-              <div className="mb-4 flex gap-3 rounded-lg border border-primary-100 bg-primary-50/60 p-4">
-                <Icon icon="bi:person-check" className="mt-0.5 size-5 shrink-0 text-primary-600" />
-                <div className="text-sm text-primary-900">
-                  <p className="font-medium">Assign to Self</p>
-                  <p className="mt-1 text-primary-800">
-                    When you tap Assign Recipient, turn on <strong>Assign to Self</strong> if the
-                    gift is for you
-                    {isGuestCheckoutFlow
-                      ? ' — your name and phone are filled in automatically when you pay'
-                      : ' — your account details are used and you do not need to fill in recipient fields'}
-                    .
-                    Otherwise enter recipient name, phone, email, and an optional message.
-                  </p>
-                </div>
-              </div>
-              <div className="divide-y divide-gray-200 rounded-lg border border-gray-200">
-                {displayCartItems
-                  ?.filter((item: CheckoutFlattenedCartItem) => item.cart_item_id)
-                  .map((item: CheckoutFlattenedCartItem) => {
-                    const cardBackground = getCardBackground(item.type || '')
-                    const displayPrice = parseFloat(item.amount || '0')
-                    const key = item.cart_item_id
-                      ? `${item.cart_item_id}-${item.quantity_index ?? 0}`
-                      : ''
-                    const itemRecipients =
-                      key && recipientsByCartItem[key] ? recipientsByCartItem[key] : []
-                    const hasRecipients = itemRecipients.length > 0
-                    const cardImageUrl = item.images?.[0]?.file_url
-                      ? getImageUrl(item.images[0].file_url)
-                      : null
+                  <div className="mb-4 flex gap-3 rounded-lg border border-primary-100 bg-primary-50/60 p-4">
+                    <Icon
+                      icon="bi:person-check"
+                      className="mt-0.5 size-5 shrink-0 text-primary-600"
+                    />
+                    <div className="text-sm text-primary-900">
+                      <p className="font-medium">Assign to Self</p>
+                      <p className="mt-1 text-primary-800">
+                        When you tap Assign Recipient, turn on <strong>Assign to Self</strong> if
+                        the gift is for you
+                        {isGuestCheckoutFlow
+                          ? ' — your name and phone are filled in automatically when you pay'
+                          : ' — your account details are used and you do not need to fill in recipient fields'}
+                        . Otherwise enter recipient name, phone, email, and an optional message.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="divide-y divide-gray-200 rounded-lg border border-gray-200">
+                    {displayCartItems
+                      ?.filter((item: CheckoutFlattenedCartItem) => item.cart_item_id)
+                      .map((item: CheckoutFlattenedCartItem) => {
+                        const cardBackground = getCardBackground(item.type || '')
+                        const displayPrice = parseFloat(item.amount || '0')
+                        const key = item.cart_item_id
+                          ? `${item.cart_item_id}-${item.quantity_index ?? 0}`
+                          : ''
+                        const itemRecipients =
+                          key && recipientsByCartItem[key] ? recipientsByCartItem[key] : []
+                        const hasRecipients = itemRecipients.length > 0
+                        const cardImageUrl = item.images?.[0]?.file_url
+                          ? getImageUrl(item.images[0].file_url)
+                          : null
 
-                    return (
-                      <div
-                        key={`${item.cart_id}-${item.cart_item_id || item.card_id}-${item.quantity_index ?? 0}`}
-                        className="p-6"
-                      >
-                        <div className="flex gap-4">
-                          <div className="w-24 h-16 shrink-0 rounded-md overflow-hidden bg-gray-200 relative">
-                            <img
-                              src={cardBackground}
-                              alt={`${item.type} card background`}
-                              className="absolute inset-0 w-full h-full object-cover"
-                            />
-                            {cardImageUrl && (
-                              <img
-                                src={cardImageUrl}
-                                alt={item.product || 'Cart item'}
-                                className="absolute inset-0 w-full h-full object-cover"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement
-                                  target.style.display = 'none'
-                                }}
-                              />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <h3 className="text-base font-semibold text-gray-900 mb-1">
-                                  {item.product || `Card #${item.card_id}`}
-                                </h3>
-                                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                                  <span>{getCardTypeName(item.type)}</span>
-                                </div>
-                                {hasRecipients && (
-                                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                                    <Icon icon="bi:check-circle" className="size-3" />
-                                    {itemRecipients.length} Recipient
-                                    {itemRecipients.length !== 1 ? 's' : ''}
-                                  </div>
+                        return (
+                          <div
+                            key={`${item.cart_id}-${item.cart_item_id || item.card_id}-${item.quantity_index ?? 0}`}
+                            className="p-6"
+                          >
+                            <div className="flex gap-4">
+                              <div className="w-24 h-16 shrink-0 rounded-md overflow-hidden bg-gray-200 relative">
+                                <img
+                                  src={cardBackground}
+                                  alt={`${item.type} card background`}
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                                {cardImageUrl && (
+                                  <img
+                                    src={cardImageUrl}
+                                    alt={item.product || 'Cart item'}
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement
+                                      target.style.display = 'none'
+                                    }}
+                                  />
                                 )}
                               </div>
-                              <div className="text-right">
-                                <p className="text-base font-semibold text-gray-900">
-                                  {formatCurrency(displayPrice)}
-                                </p>
-                              </div>
-                            </div>
-                            {itemRecipients.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-gray-100">
-                                <div className="space-y-2">
-                                  {itemRecipients.map((recipient) => (
-                                    <div
-                                      key={recipient.id}
-                                      className="flex items-center justify-between text-sm"
-                                    >
-                                      <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-gray-900 truncate">
-                                          {recipient.name}
-                                        </p>
-                                        <p className="text-gray-500 truncate">{recipient.email}</p>
-                                      </div>
-                                      <span className="ml-4 text-gray-600 font-medium">
-                                        {formatCurrency(recipient.amount)}
-                                      </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1">
+                                    <h3 className="text-base font-semibold text-gray-900 mb-1">
+                                      {item.product || `Card #${item.card_id}`}
+                                    </h3>
+                                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                                      <span>{getCardTypeName(item.type)}</span>
                                     </div>
-                                  ))}
+                                    {hasRecipients && (
+                                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                                        <Icon icon="bi:check-circle" className="size-3" />
+                                        {itemRecipients.length} Recipient
+                                        {itemRecipients.length !== 1 ? 's' : ''}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-base font-semibold text-gray-900">
+                                      {formatCurrency(displayPrice)}
+                                    </p>
+                                  </div>
+                                </div>
+                                {itemRecipients.length > 0 && (
+                                  <div className="mt-4 pt-4 border-t border-gray-100">
+                                    <div className="space-y-2">
+                                      {itemRecipients.map((recipient) => (
+                                        <div
+                                          key={recipient.id}
+                                          className="flex items-center justify-between text-sm"
+                                        >
+                                          <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-gray-900 truncate">
+                                              {recipient.name}
+                                            </p>
+                                            <p className="text-gray-500 truncate">
+                                              {recipient.email}
+                                            </p>
+                                          </div>
+                                          <span className="ml-4 text-gray-600 font-medium">
+                                            {formatCurrency(recipient.amount)}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="mt-4">
+                                  {itemRecipients.length === 0 ? (
+                                    <Button
+                                      onClick={() => openAssignModal(item)}
+                                      variant="outline"
+                                      size="small"
+                                      className="w-full sm:w-auto"
+                                      disabled={
+                                        recipientActionsBlocked ||
+                                        (isGuestCheckoutFlow && !guestCanAssignRecipients)
+                                      }
+                                      title={
+                                        recipientActionsBlocked
+                                          ? 'Complete onboarding in your dashboard first'
+                                          : isGuestCheckoutFlow && !guestCanAssignRecipients
+                                            ? 'Sync your bag in step 1 first'
+                                            : undefined
+                                      }
+                                    >
+                                      <Icon icon="bi:person-plus" className="mr-1.5" />
+                                      Assign Recipient
+                                    </Button>
+                                  ) : null}
                                 </div>
                               </div>
-                            )}
-                            <div className="mt-4">
-                              {itemRecipients.length === 0 ? (
-                                <Button
-                                  onClick={() => openAssignModal(item)}
-                                  variant="outline"
-                                  size="small"
-                                  className="w-full sm:w-auto"
-                                  disabled={
-                                    recipientActionsBlocked ||
-                                    (isGuestCheckoutFlow && !guestCanAssignRecipients)
-                                  }
-                                  title={
-                                    recipientActionsBlocked
-                                      ? 'Complete onboarding in your dashboard first'
-                                      : isGuestCheckoutFlow && !guestCanAssignRecipients
-                                        ? 'Sync your bag in step 1 first'
-                                        : undefined
-                                  }
-                                >
-                                  <Icon icon="bi:person-plus" className="mr-1.5" />
-                                  Assign Recipient
-                                </Button>
-                              ) : null}
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-              </div>
+                        )
+                      })}
+                  </div>
                 </>
               )}
             </CheckoutSection>
@@ -508,410 +527,394 @@ export default function Checkout() {
             {!recipientActionsBlocked &&
               ((isGuestCheckoutFlow && guestBagReady) ||
                 (!isGuestCheckoutFlow && showPaymentMethodSection)) && (
-              <CheckoutSection
-                step={isGuestCheckoutFlow ? 2 : 3}
-                title="Payment"
-                subtitle={
-                  canProceedToPayment
-                    ? isGuestCheckoutFlow
-                      ? 'Enter your details and choose how to pay.'
-                      : 'Choose how you want to pay for this order.'
-                    : 'Available after recipient details are complete.'
-                }
-              >
-                {isGuestCheckoutFlow ? (
-                  <div className="mb-6 space-y-4 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
-                    <p className="text-sm text-gray-600">
-                      Your details for payment and receipts. Assign-to-self recipients are updated
-                      automatically from these details.
-                    </p>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                          First name <span className="text-red-500">*</span>
-                        </label>
-                        <Input
-                          type="text"
-                          {...userInfoForm.register('first_name')}
-                          error={userInfoForm.formState.errors.first_name?.message}
-                          placeholder="Kojo"
-                          className="w-full bg-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                          Last name <span className="text-red-500">*</span>
-                        </label>
-                        <Input
-                          type="text"
-                          {...userInfoForm.register('last_name')}
-                          error={userInfoForm.formState.errors.last_name?.message}
-                          placeholder="Sender"
-                          className="w-full bg-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                          Phone number <span className="text-red-500">*</span>
-                        </label>
-                        <Controller
-                          name="phone_number"
-                          control={userInfoForm.control}
-                          render={({ field: { value, onChange, onBlur, ref } }) => (
-                            <BasePhoneInput
-                              ref={ref}
-                              selectedVal={value || ''}
-                              handleChange={onChange}
-                              onBlur={onBlur}
-                              error={
-                                userInfoForm.formState.touchedFields.phone_number
-                                  ? userInfoForm.formState.errors.phone_number?.message
-                                  : undefined
-                              }
-                              placeholder={EXAMPLE_PHONE_LOCAL}
-                            />
-                          )}
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                          Email <span className="font-normal text-gray-400">(optional)</span>
-                        </label>
-                        <Input
-                          type="email"
-                          {...userInfoForm.register('email')}
-                          error={userInfoForm.formState.errors.email?.message}
-                          placeholder="john@example.com"
-                          className="w-full bg-white"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-
-                {showPaymentMethodSection ? (
-                <>
-                <div className="flex gap-2 p-1 bg-gray-100 rounded-lg mb-4">
-                  <button
-                    type="button"
-                    onClick={() => paymentForm.setValue('payment_method_type', 'mobile_money')}
-                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                      isMobileMoney
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Mobile Money
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => paymentForm.setValue('payment_method_type', 'card')}
-                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                      isCard
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Card
-                  </button>
-                </div>
-
-                {isMobileMoney && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Mobile network <span className="text-red-500">*</span>
-                      </label>
-                      <Controller
-                        name={isEgnanow ? 'paypartner_code' : 'kowri_provider'}
-                        control={paymentForm.control}
-                        rules={{ required: 'Please select your mobile network' }}
-                        render={({ field }) => (
-                          <select
-                            {...field}
-                            value={field.value ?? ''}
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value ? (e.target.value as typeof field.value) : '',
-                              )
-                            }
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                            aria-required
-                          >
-                            <option value="">Select your network</option>
-                            {(isEgnanow ? EGNANOW_NETWORK_OPTIONS : KOWRI_NETWORK_OPTIONS).map(
-                              (opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ),
-                            )}
-                          </select>
-                        )}
-                      />
-                      {(paymentForm.formState.errors.paypartner_code?.message ||
-                        paymentForm.formState.errors.kowri_provider?.message) && (
-                        <p className="text-sm text-red-600">
-                          {paymentForm.formState.errors.paypartner_code?.message ??
-                            paymentForm.formState.errors.kowri_provider?.message}
-                        </p>
-                      )}
-                    </div>
-                    {!isGuestCheckoutFlow ? (
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          Phone number (for payment) <span className="text-red-500">*</span>
-                        </label>
-                        <Controller
-                          name="phone_number"
-                          control={userInfoForm.control}
-                          render={({ field: { value, onChange, onBlur, ref } }) => (
-                            <BasePhoneInput
-                              ref={ref}
-                              selectedVal={value || ''}
-                              handleChange={onChange}
-                              onBlur={onBlur}
-                              error={
-                                userInfoForm.formState.touchedFields.phone_number
-                                  ? userInfoForm.formState.errors.phone_number?.message
-                                  : undefined
-                              }
-                              placeholder={EXAMPLE_PHONE_LOCAL}
-                            />
-                          )}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-
-                {isCard && isKowri && !isGuestCheckoutFlow && (
-                  <div className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          First name <span className="text-red-500">*</span>
-                        </label>
-                        <Input
-                          type="text"
-                          {...userInfoForm.register('first_name')}
-                          error={userInfoForm.formState.errors.first_name?.message}
-                          placeholder="John"
-                          className="w-full bg-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          Last name <span className="text-red-500">*</span>
-                        </label>
-                        <Input
-                          type="text"
-                          {...userInfoForm.register('last_name')}
-                          error={userInfoForm.formState.errors.last_name?.message}
-                          placeholder="Doe"
-                          className="w-full bg-white"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          Email <span className="text-red-500">*</span>
-                        </label>
-                        <Input
-                          type="email"
-                          {...userInfoForm.register('email')}
-                          error={userInfoForm.formState.errors.email?.message}
-                          placeholder="john@example.com"
-                          className="w-full bg-white"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-white/70 p-3">
-                      <Icon
-                        icon="bi:credit-card"
-                        className="mt-0.5 size-5 shrink-0 text-blue-600"
-                      />
-                      <div>
-                        <p className="text-sm font-medium text-blue-900">Secure card payment</p>
-                        <p className="mt-1 text-sm text-blue-700">
-                          You will be redirected to a secure payment page to enter your card details
-                          and complete the transaction.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {isCard && isKowri && isGuestCheckoutFlow && (
-                  <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                    <Icon icon="bi:credit-card" className="mt-0.5 size-5 shrink-0 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium text-blue-900">Secure card payment</p>
-                      <p className="mt-1 text-sm text-blue-700">
-                        You will be redirected to a secure payment page to complete your purchase.
+                <CheckoutSection
+                  step={isGuestCheckoutFlow ? 2 : 3}
+                  title="Payment"
+                  subtitle={
+                    canProceedToPayment
+                      ? isGuestCheckoutFlow
+                        ? 'Enter your details and choose how to pay.'
+                        : 'Choose how you want to pay for this order.'
+                      : 'Available after recipient details are complete.'
+                  }
+                >
+                  {isGuestCheckoutFlow ? (
+                    <div className="mb-6 space-y-4 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+                      <p className="text-sm text-gray-600">
+                        Your details for payment and receipts. Assign-to-self recipients are updated
+                        automatically from these details.
                       </p>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                            First name <span className="text-red-500">*</span>
+                          </label>
+                          <Input
+                            type="text"
+                            {...userInfoForm.register('first_name')}
+                            error={userInfoForm.formState.errors.first_name?.message}
+                            placeholder="Kojo"
+                            className="w-full bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                            Last name <span className="text-red-500">*</span>
+                          </label>
+                          <Input
+                            type="text"
+                            {...userInfoForm.register('last_name')}
+                            error={userInfoForm.formState.errors.last_name?.message}
+                            placeholder="Sender"
+                            className="w-full bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                            Phone number <span className="text-red-500">*</span>
+                          </label>
+                          <Controller
+                            name="phone_number"
+                            control={userInfoForm.control}
+                            render={({ field: { value, onChange, onBlur, ref } }) => (
+                              <BasePhoneInput
+                                ref={ref}
+                                selectedVal={value || ''}
+                                handleChange={onChange}
+                                onBlur={onBlur}
+                                error={
+                                  userInfoForm.formState.touchedFields.phone_number
+                                    ? userInfoForm.formState.errors.phone_number?.message
+                                    : undefined
+                                }
+                                placeholder={EXAMPLE_PHONE_LOCAL}
+                              />
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                            Email <span className="font-normal text-gray-400">(optional)</span>
+                          </label>
+                          <Input
+                            type="email"
+                            {...userInfoForm.register('email')}
+                            error={userInfoForm.formState.errors.email?.message}
+                            placeholder="john@example.com"
+                            className="w-full bg-white"
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ) : null}
 
-                {isCard && isEgnanow && (
-                  <div className="space-y-3 pt-2">
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Name on card
-                      </label>
-                      <Input
-                        {...paymentForm.register('card_name')}
-                        placeholder="Name as it appears on the card"
-                        error={paymentForm.formState.errors.card_name?.message}
-                        className="w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Card number
-                      </label>
-                      <Input
-                        {...paymentForm.register('card_number')}
-                        placeholder="4111 1111 1111 1111"
-                        error={paymentForm.formState.errors.card_number?.message}
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          Expiry month
-                        </label>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={12}
-                          placeholder="MM"
-                          {...paymentForm.register('expiry_month')}
-                          error={paymentForm.formState.errors.expiry_month?.message}
-                          className="w-full"
-                        />
+                  {showPaymentMethodSection ? (
+                    <>
+                      <div className="flex gap-2 p-1 bg-gray-100 rounded-lg mb-4">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            paymentForm.setValue('payment_method_type', 'mobile_money')
+                          }
+                          className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                            isMobileMoney
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          Mobile Money
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => paymentForm.setValue('payment_method_type', 'card')}
+                          className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                            isCard
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          Card
+                        </button>
                       </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          Expiry year
-                        </label>
-                        <Input
-                          type="number"
-                          min={2020}
-                          max={2040}
-                          placeholder="YYYY"
-                          {...paymentForm.register('expiry_year')}
-                          error={paymentForm.formState.errors.expiry_year?.message}
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">CVV</label>
-                      <Input
-                        {...paymentForm.register('cvv')}
-                        placeholder="123"
-                        type="password"
-                        autoComplete="off"
-                        error={paymentForm.formState.errors.cvv?.message}
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                )}
-                </>
-                ) : (
-                  <p className="text-sm text-gray-600">
-                    Click Complete Purchase to pay securely — you will be redirected to the payment
-                    page.
-                  </p>
-                )}
-              </CheckoutSection>
-            )}
+
+                      {isMobileMoney && (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                              Mobile network <span className="text-red-500">*</span>
+                            </label>
+                            <Controller
+                              name={isEgnanow ? 'paypartner_code' : 'kowri_provider'}
+                              control={paymentForm.control}
+                              rules={{ required: 'Please select your mobile network' }}
+                              render={({ field }) => (
+                                <select
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  onChange={(e) =>
+                                    field.onChange(
+                                      e.target.value ? (e.target.value as typeof field.value) : '',
+                                    )
+                                  }
+                                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                  aria-required
+                                >
+                                  <option value="">Select your network</option>
+                                  {(isEgnanow
+                                    ? EGNANOW_NETWORK_OPTIONS
+                                    : KOWRI_NETWORK_OPTIONS
+                                  ).map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            />
+                            {(paymentForm.formState.errors.paypartner_code?.message ||
+                              paymentForm.formState.errors.kowri_provider?.message) && (
+                              <p className="text-sm text-red-600">
+                                {paymentForm.formState.errors.paypartner_code?.message ??
+                                  paymentForm.formState.errors.kowri_provider?.message}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {isCard && isKowri && !isGuestCheckoutFlow && (
+                        <div className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                                First name <span className="text-red-500">*</span>
+                              </label>
+                              <Input
+                                type="text"
+                                {...userInfoForm.register('first_name')}
+                                error={userInfoForm.formState.errors.first_name?.message}
+                                placeholder="John"
+                                className="w-full bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                                Last name <span className="text-red-500">*</span>
+                              </label>
+                              <Input
+                                type="text"
+                                {...userInfoForm.register('last_name')}
+                                error={userInfoForm.formState.errors.last_name?.message}
+                                placeholder="Doe"
+                                className="w-full bg-white"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                                Email <span className="text-red-500">*</span>
+                              </label>
+                              <Input
+                                type="email"
+                                {...userInfoForm.register('email')}
+                                error={userInfoForm.formState.errors.email?.message}
+                                placeholder="john@example.com"
+                                className="w-full bg-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-white/70 p-3">
+                            <Icon
+                              icon="bi:credit-card"
+                              className="mt-0.5 size-5 shrink-0 text-blue-600"
+                            />
+                            <div>
+                              <p className="text-sm font-medium text-blue-900">
+                                Secure card payment
+                              </p>
+                              <p className="mt-1 text-sm text-blue-700">
+                                You will be redirected to a secure payment page to enter your card
+                                details and complete the transaction.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {isCard && isKowri && isGuestCheckoutFlow && (
+                        <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                          <Icon
+                            icon="bi:credit-card"
+                            className="mt-0.5 size-5 shrink-0 text-blue-600"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-blue-900">Secure card payment</p>
+                            <p className="mt-1 text-sm text-blue-700">
+                              You will be redirected to a secure payment page to complete your
+                              purchase.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {isCard && isEgnanow && (
+                        <div className="space-y-3 pt-2">
+                          <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">
+                              Name on card
+                            </label>
+                            <Input
+                              {...paymentForm.register('card_name')}
+                              placeholder="Name as it appears on the card"
+                              error={paymentForm.formState.errors.card_name?.message}
+                              className="w-full"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">
+                              Card number
+                            </label>
+                            <Input
+                              {...paymentForm.register('card_number')}
+                              placeholder="4111 1111 1111 1111"
+                              error={paymentForm.formState.errors.card_number?.message}
+                              className="w-full"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                                Expiry month
+                              </label>
+                              <Input
+                                type="number"
+                                min={1}
+                                max={12}
+                                placeholder="MM"
+                                {...paymentForm.register('expiry_month')}
+                                error={paymentForm.formState.errors.expiry_month?.message}
+                                className="w-full"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                                Expiry year
+                              </label>
+                              <Input
+                                type="number"
+                                min={2020}
+                                max={2040}
+                                placeholder="YYYY"
+                                {...paymentForm.register('expiry_year')}
+                                error={paymentForm.formState.errors.expiry_year?.message}
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">
+                              CVV
+                            </label>
+                            <Input
+                              {...paymentForm.register('cvv')}
+                              placeholder="123"
+                              type="password"
+                              autoComplete="off"
+                              error={paymentForm.formState.errors.cvv?.message}
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-600">
+                      Click Complete Purchase to pay securely — you will be redirected to the
+                      payment page.
+                    </p>
+                  )}
+                </CheckoutSection>
+              )}
           </div>
 
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-              <div className="mb-4 flex items-start gap-3">
-                <span
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white"
-                  aria-hidden
-                >
-                  {isGuestCheckoutFlow ? 3 : 4}
-                </span>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Review order</h2>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Confirm items and totals before you pay.
-                  </p>
-                </div>
+            <div className="sticky top-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="border-b border-gray-100 bg-gray-50/80 px-6 py-4">
+                <h2 className="m-0 text-lg font-semibold leading-none text-gray-900">
+                  Review order
+                </h2>
+                <p className="m-0 text-sm leading-tight text-gray-500">
+                  Confirm items and totals before you pay.
+                </p>
               </div>
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal ({displayCartItems.length} items)</span>
-                  <span className="font-medium text-gray-900">{formatCurrency(totalAmount)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Service Fee</span>
-                  <span className="font-medium text-gray-900">{formatCurrency(serviceFee)}</span>
-                </div>
-                <div className="border-t border-gray-200 pt-3">
-                  <div className="flex justify-between">
-                    <span className="text-base font-semibold text-gray-900">Total</span>
-                    <span className="text-lg font-bold text-gray-900">
-                      {formatCurrency(amountDue)}
+              <div className="p-6">
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">
+                      Subtotal ({displayCartItems.length} items)
                     </span>
+                    <span className="font-medium text-gray-900">{formatCurrency(totalAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Service Fee</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(serviceFee)}</span>
+                  </div>
+                  <div className="border-t border-gray-200 pt-3">
+                    <div className="flex justify-between">
+                      <span className="text-base font-semibold text-gray-900">Total</span>
+                      <span className="text-lg font-bold text-gray-900">
+                        {formatCurrency(amountDue)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {guestRequiresAccountMessage ? (
-                <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
-                  <p className="font-medium">Guest purchase limit reached</p>
-                  <p className="mt-1">{guestRequiresAccountMessage}</p>
-                  <Link
-                    to={ROUTES.IN_APP.AUTH.REGISTER}
-                    className="mt-3 inline-flex items-center gap-1.5 font-semibold text-primary-700 no-underline hover:text-primary-800"
+                {guestRequiresAccountMessage ? (
+                  <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+                    <p className="font-medium">Guest purchase limit reached</p>
+                    <p className="mt-1">{guestRequiresAccountMessage}</p>
+                    <Link
+                      to={ROUTES.IN_APP.AUTH.REGISTER}
+                      className="mt-3 inline-flex items-center gap-1.5 font-semibold text-primary-700 no-underline hover:text-primary-800"
+                    >
+                      Create a free account
+                      <Icon icon="bi:arrow-right" className="text-sm" />
+                    </Link>
+                  </div>
+                ) : null}
+                {recipientActionsBlocked ? (
+                  <p className="text-sm text-amber-700 mb-3">
+                    Complete onboarding in your dashboard before you can assign recipients or
+                    complete this purchase.
+                  </p>
+                ) : !allRecipientsAssigned ? (
+                  <p className="text-sm text-amber-600 mb-3">
+                    Assign recipients to all gift cards before completing your purchase.
+                  </p>
+                ) : null}
+                {hasNetworkIssue ? <NetworkWarning className="mb-4" /> : null}
+                {guestBagReady || !isGuestCheckoutFlow ? (
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={handleCheckout}
+                    loading={isCheckingOut}
+                    disabled={
+                      isCheckingOut ||
+                      hasNetworkIssue ||
+                      !allRecipientsAssigned ||
+                      recipientActionsBlocked ||
+                      isUserInfoIncomplete
+                    }
                   >
-                    Create a free account
-                    <Icon icon="bi:arrow-right" className="text-sm" />
-                  </Link>
-                </div>
-              ) : null}
-              {recipientActionsBlocked ? (
-                <p className="text-sm text-amber-700 mb-3">
-                  Complete onboarding in your dashboard before you can assign recipients or complete
-                  this purchase.
-                </p>
-              ) : !allRecipientsAssigned ? (
-                <p className="text-sm text-amber-600 mb-3">
-                  Assign recipients to all gift cards before completing your purchase.
-                </p>
-              ) : null}
-              {hasNetworkIssue ? <NetworkWarning className="mb-4" /> : null}
-              {guestBagReady || !isGuestCheckoutFlow ? (
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={handleCheckout}
-                loading={isCheckingOut}
-                disabled={
-                  isCheckingOut ||
-                  hasNetworkIssue ||
-                  !allRecipientsAssigned ||
-                  recipientActionsBlocked ||
-                  isUserInfoIncomplete
-                }
-              >
-                {isCheckingOut
-                  ? 'Processing...'
-                  : hasFailedCheckoutCart
-                    ? 'Retry payment'
-                    : 'Complete Purchase'}
-              </Button>
-              ) : null}
+                    {isCheckingOut
+                      ? 'Processing...'
+                      : hasFailedCheckoutCart
+                        ? 'Retry payment'
+                        : 'Complete Purchase'}
+                  </Button>
+                ) : null}
+              </div>
             </div>
 
             {isGuestCheckoutFlow ? (

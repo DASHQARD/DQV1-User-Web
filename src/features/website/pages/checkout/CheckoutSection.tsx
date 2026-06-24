@@ -25,9 +25,9 @@ export function CheckoutSection({ step, title, subtitle, children, className }: 
           >
             {step}
           </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-            {subtitle ? <p className="mt-1 text-sm text-gray-500">{subtitle}</p> : null}
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <h2 className="text-lg font-semibold leading-tight text-gray-900">{title}</h2>
+            {subtitle ? <p className="text-sm leading-snug text-gray-500">{subtitle}</p> : null}
           </div>
         </div>
       </div>
