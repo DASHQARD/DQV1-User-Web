@@ -10,13 +10,12 @@ describe('EditUserProfileSchema', () => {
       dob: '1995-06-12',
       id_type: 'ghana_card',
       id_number: 'GHA-123456789-0',
-      email: 'yaa.new@example.com',
     })
 
     expect(result.success).toBe(true)
   })
 
-  it('allows optional email to be omitted', () => {
+  it('ignores email when present in input', () => {
     const result = EditUserProfileSchema.safeParse({
       full_name: 'Yaa Mensah',
       phone_number: '+233241234567',
@@ -24,8 +23,12 @@ describe('EditUserProfileSchema', () => {
       dob: '1995-06-12',
       id_type: 'ghana_card',
       id_number: 'GHA-123456789-0',
+      email: 'yaa.new@example.com',
     })
 
     expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data).not.toHaveProperty('email')
+    }
   })
 })

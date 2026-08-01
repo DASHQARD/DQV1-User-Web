@@ -6,7 +6,8 @@ import { ID_TYPE_OPTIONS, EXAMPLE_PHONE_PLACEHOLDER } from '@/utils/constants'
 import { usePersonalInformationSettings } from './usePersonalInformationSettings'
 
 export function PersonalInformationSettings() {
-  const { form, onSubmit, handleReset, isPending, phoneCountries } = usePersonalInformationSettings()
+  const { form, onSubmit, handleReset, isPending, phoneCountries, profileEmail } =
+    usePersonalInformationSettings()
   const dobMaxDate = useMemo(() => {
     const today = new Date()
     const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
@@ -72,14 +73,9 @@ export function PersonalInformationSettings() {
             <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
               <Icon icon="bi:envelope-fill" className="size-4 mr-2 text-gray-500" />
               Email
-              <span className="text-gray-400 font-normal ml-1">(optional)</span>
             </label>
-            <Input
-              type="email"
-              placeholder="Enter your email address"
-              {...form.register('email')}
-              error={form.formState.errors.email?.message}
-            />
+            <Input type="email" value={profileEmail} disabled readOnly />
+            <p className="text-xs text-gray-500 mt-1">Email cannot be changed from this form.</p>
           </div>
 
           <div>

@@ -10,6 +10,9 @@ type JwtPayload = {
   exp?: number
 }
 
+/** In-flight refresh shared by the axios interceptor and useAutoRefreshToken. */
+let refreshPromise: Promise<string> | null = null
+
 export function extractTokensFromPayload(payload: unknown): {
   accessToken?: string
   refreshToken?: string
@@ -57,8 +60,7 @@ export function isInvalidTokenTypeMessage(message: unknown): boolean {
     .includes('invalid token type')
 }
 
-/** Refresh access token using the stored refresh token; updates auth store via authenticate(). */
-export async function refreshStoredAccessToken(): Promise<string> {
+async function performTokenRefresh(): Promise<string> {
   const state = useAuthStore.getState()
   const refreshTokenValue = state.getRefreshToken()
   const isGuestAuth = state.isGuestAuth
@@ -85,6 +87,21 @@ export async function refreshStoredAccessToken(): Promise<string> {
   })
 
   return accessToken
+}
+
+/** Refresh access token using the stored refresh token; updates auth store via authenticate(). */
+export async function refreshStoredAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = performTokenRefresh().finally(() => {
+      refreshPromise = null
+    })
+  }
+  return refreshPromise
+}
+
+/** Test helper — clears the shared refresh promise between tests. */
+export function resetRefreshLockForTests(): void {
+  refreshPromise = null
 }
 
 export function isGuestSessionExpiredMessage(message: unknown): boolean {

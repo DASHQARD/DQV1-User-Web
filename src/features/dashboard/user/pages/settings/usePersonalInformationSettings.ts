@@ -17,12 +17,11 @@ function profileToFormValues(
     dob: String(profile?.dob ?? ''),
     id_type: String(profile?.id_type ?? ''),
     id_number: String(profile?.id_number ?? ''),
-    email: String(profile?.email ?? ''),
   }
 }
 
 function buildEditUserProfilePayload(data: EditUserProfileFormData): EditUserProfilePayload {
-  const payload: EditUserProfilePayload = {
+  return {
     full_name: data.full_name.trim(),
     phone_number: data.phone_number.trim(),
     street_address: data.street_address.trim(),
@@ -30,11 +29,6 @@ function buildEditUserProfilePayload(data: EditUserProfileFormData): EditUserPro
     id_type: data.id_type.trim(),
     id_number: data.id_number.trim(),
   }
-  const email = data.email?.trim()
-  if (email) {
-    payload.email = email
-  }
-  return payload
 }
 
 export type PersonalInformationFormData = EditUserProfileFormData

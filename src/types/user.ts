@@ -137,7 +137,6 @@ export type EditUserProfilePayload = {
   dob: string
   id_type: string
   id_number: string
-  email?: string
 }
 
 export type EditUserProfileResponse = {

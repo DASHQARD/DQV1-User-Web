@@ -10,12 +10,14 @@ export default function PasswordRequirementsChecklist({ password, compact = fals
   const hasMinLength = password.length >= 8
   const hasNumber = /\d/.test(password)
   const hasUppercase = /[A-Z]/.test(password)
+  const hasLowercase = /[a-z]/.test(password)
   const hasSpecialChar = /[!@#$%^&*()]/.test(password)
 
   const items = [
     { met: hasMinLength, label: 'Minimum 8 characters' },
+    { met: hasUppercase, label: 'One uppercase letter' },
+    { met: hasLowercase, label: 'One lowercase letter' },
     { met: hasNumber, label: 'One number' },
-    { met: hasUppercase, label: 'One Uppercase character' },
     {
       met: hasSpecialChar,
       label: `One special character (${PASSWORD_SPECIAL_CHARACTERS})`,

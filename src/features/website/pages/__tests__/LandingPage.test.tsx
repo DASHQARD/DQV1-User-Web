@@ -22,11 +22,12 @@ describe('LandingPage (website)', () => {
     expect(screen.getByTestId('hero')).toBeInTheDocument()
   })
 
-  it('renders FeaturedCards and PartnerVendors', () => {
-    renderWithProviders(<LandingPage />)
-    expect(screen.getByTestId('featured-cards')).toBeInTheDocument()
-    expect(screen.getByTestId('partner-vendors')).toBeInTheDocument()
-  })
+  // Temporarily hidden — DashX / DashPass and Partner Vendors are empty
+  // it('renders FeaturedCards and PartnerVendors', () => {
+  //   renderWithProviders(<LandingPage />)
+  //   expect(screen.getByTestId('featured-cards')).toBeInTheDocument()
+  //   expect(screen.getByTestId('partner-vendors')).toBeInTheDocument()
+  // })
 
   it('renders Contact section', () => {
     renderWithProviders(<LandingPage />)

@@ -1,12 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   extractTokensFromPayload,
   isAccessTokenExpired,
   isInvalidTokenTypeMessage,
+  resetRefreshLockForTests,
 } from '@/utils/authSession'
 
 describe('authSession', () => {
+  afterEach(() => {
+    resetRefreshLockForTests()
+  })
   it('extractTokensFromPayload reads nested access_token', () => {
     expect(
       extractTokensFromPayload({

@@ -1,11 +1,11 @@
 import { z } from 'zod'
-import { getRequiredAlphaNumericStringSchema } from '../shared'
+import { getRequiredAlphaNumericStringSchema, getRequiredStringSchema } from '../shared'
 
 export const ChangePasswordSchema = z
   .object({
-    currentPassword: getRequiredAlphaNumericStringSchema('Current Password'),
+    currentPassword: getRequiredStringSchema('Current Password'),
     newPassword: getRequiredAlphaNumericStringSchema('New Password'),
-    confirmPassword: getRequiredAlphaNumericStringSchema('Confirm Password'),
+    confirmPassword: getRequiredStringSchema('Confirm Password'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: 'New passwords do not match',

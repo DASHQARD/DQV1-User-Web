@@ -8,7 +8,15 @@ import { resetAuthInterceptorState } from '@/libs/axios'
 import { useAuthStore } from '@/stores'
 import { cancelMemberSessionQueries } from '@/utils/memberSessionQueries'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Avoid refetch storms when returning to a long-idle tab with an expired token.
+      staleTime: 60_000,
+      retry: 1,
+    },
+  },
+})
 
 function useMemberLogoutQueryCleanup() {
   const wasMemberSession = useRef(false)

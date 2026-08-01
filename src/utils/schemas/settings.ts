@@ -3,7 +3,6 @@ import {
   getRequiredEmailSchema,
   getRequiredInternationalPhoneSchema,
   getRequiredStringSchema,
-  isValidEmailAddress,
 } from './shared'
 import {
   personalInformationFieldsSchema,
@@ -60,7 +59,7 @@ const userDashboardPersonalFieldsSchema = z
 export const UserDashboardOnboardingSchema =
   userDashboardPersonalFieldsSchema.merge(UploadUserIDSchema)
 
-/** Settings form for PUT /users/edit-profile */
+/** Settings form for PUT /users/edit-profile (email is display-only; API rejects it) */
 export const EditUserProfileSchema = z
   .object({
     full_name: personalInformationFullNameSchema,
@@ -69,13 +68,6 @@ export const EditUserProfileSchema = z
     dob: personalInformationDobSchema,
     id_type: personalInformationIdTypeSchema,
     id_number: personalInformationIdNumberSchema,
-    email: z
-      .string()
-      .optional()
-      .refine(
-        (val) => !val?.trim() || isValidEmailAddress(val.trim()),
-        'Please enter a valid email address',
-      ),
   })
   .superRefine(validatePersonalInformationIdNumber)
 

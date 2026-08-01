@@ -1,9 +1,14 @@
 import { Button, Input, Text } from '@/components'
+import PasswordRequirementsChecklist from '@/features/auth/components/PasswordRequirementsChecklist'
 import { Icon } from '@/libs'
 import { useChangePasswordSettings } from './useChangePasswordSettings'
 
 export function ChangePasswordSettings() {
   const { form, onSubmit, handleReset, isPending } = useChangePasswordSettings()
+  const newPassword = form.watch('newPassword') ?? ''
+  const confirmPassword = form.watch('confirmPassword') ?? ''
+  const showPasswordMatchHint = confirmPassword.length > 0
+  const passwordsMatch = newPassword === confirmPassword
 
   return (
     <div className="space-y-6">
@@ -43,9 +48,16 @@ export function ChangePasswordSettings() {
               {...form.register('newPassword')}
               error={form.formState.errors.newPassword?.message}
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Password must be at least 8 characters and contain letters and numbers
-            </p>
+            {newPassword.length > 0 ? (
+              <div className="mt-2">
+                <PasswordRequirementsChecklist password={newPassword} />
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 mt-1">
+                Must be at least 8 characters with uppercase, lowercase, a number, and a special
+                character
+              </p>
+            )}
           </div>
 
           <div>
@@ -59,6 +71,15 @@ export function ChangePasswordSettings() {
               {...form.register('confirmPassword')}
               error={form.formState.errors.confirmPassword?.message}
             />
+            {showPasswordMatchHint && (
+              <p
+                className={`text-xs mt-1 ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}
+                role="status"
+                aria-live="polite"
+              >
+                {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
+              </p>
+            )}
           </div>
         </div>
 

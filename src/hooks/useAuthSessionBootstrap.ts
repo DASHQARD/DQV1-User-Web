@@ -24,7 +24,10 @@ export function useAuthSessionBootstrap() {
         try {
           await refreshStoredAccessToken()
         } catch {
-          // refreshStoredAccessToken callers / axios may reset auth on hard failure
+          // Drop invalid session so boot does not fire authenticated queries with a dead token.
+          if (!cancelled) {
+            useAuthStore.getState().logout()
+          }
         }
       }
 

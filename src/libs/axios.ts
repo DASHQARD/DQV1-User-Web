@@ -2,11 +2,12 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
 import { useAuthStore } from '@/stores'
 
-import { ENV_VARS, ROUTES } from '../utils/constants'
+import { ENV_VARS } from '../utils/constants'
 import {
   isInvalidTokenTypeMessage,
   refreshStoredAccessToken,
 } from '@/utils/authSession'
+import { forceClientLogout } from '@/utils/finishClientLogout'
 import {
   isGuestSessionAuth,
   recreateGuestSession,
@@ -46,11 +47,6 @@ export function resetAuthInterceptorState() {
   failedQueue = []
 }
 
-const shouldRedirectToLogin = () => {
-  const path = window.location.pathname
-  return !path.includes('auth') && !path.includes('/redeem')
-}
-
 function getErrorBody(error: AxiosError): Record<string, unknown> | undefined {
   const errorData = error?.response?.data
   if (errorData && typeof errorData === 'object') {
@@ -83,15 +79,12 @@ function clearAuthAndMaybeRedirect() {
   if (state.isGuestAuth && isGuestSessionAuth()) {
     return
   }
-  const wasGuest = state.isGuestAuth
-  if (wasGuest) {
+  if (state.isGuestAuth) {
     useAuthStore.getState().logout()
     return
   }
-  useAuthStore.getState().reset()
-  if (shouldRedirectToLogin()) {
-    window.location.pathname = ROUTES.IN_APP.HOME
-  }
+  // Hard unload so RouteGuard cannot re-render on a cleared session under /dashboard.
+  forceClientLogout(() => useAuthStore.getState().reset())
 }
 
 instance.interceptors.request.use((request: InternalAxiosRequestConfig) => {

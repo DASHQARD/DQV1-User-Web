@@ -56,13 +56,16 @@ export function getRequiredAlphaNumericStringSchema(label: string = 'Field') {
   return z
     .string()
     .min(8, { message: `${label} must be at least 8 characters long.` })
+    .refine((val) => /[A-Z]/.test(val), {
+      message: `${label} must include at least one uppercase letter.`,
+    })
+    .refine((val) => /[a-z]/.test(val), {
+      message: `${label} must include at least one lowercase letter.`,
+    })
     .refine((val) => /\d/.test(val), {
       message: `${label} must include at least one number.`,
     })
-    .refine((val) => /[a-zA-Z]/.test(val), {
-      message: `${label} must include at least one letter.`,
-    })
-    .refine((val) => /[!@#$%^&*]/.test(val), {
+    .refine((val) => /[!@#$%^&*()]/.test(val), {
       message: `${label} must contain at least one symbol.`,
     })
 }
