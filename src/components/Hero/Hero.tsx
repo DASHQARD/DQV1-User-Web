@@ -1,18 +1,10 @@
-import { useSpring, animated, useTrail, config } from '@react-spring/web'
+import { useSpring, animated, config } from '@react-spring/web'
 import { Button } from '../Button'
 import TransparentLogo from '../../assets/images/transparent-logo.png'
 
-import DashCardsBg from '../../assets/images/groupofdash.png'
+import HeroImage from '../../assets/images/hero-image.png'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/utils/constants'
-
-// import { Text } from '../Text'
-
-const stats = [
-  { value: '1k+', label: 'Happy Users' },
-  { value: '10+', label: 'Partners' },
-  { value: '2.6k+', label: 'Gift Cards Sent' },
-]
 
 export default function Hero() {
   const navigate = useNavigate()
@@ -41,26 +33,18 @@ export default function Hero() {
     config: config.gentle,
   })
 
-  // Stats trail animation
-  const [statsTrail] = useTrail(stats.length, () => ({
-    from: { opacity: 0, x: -20 },
-    to: { opacity: 1, x: 0 },
-    delay: 800,
-    config: config.gentle,
-  }))
-
   // Buttons animation
   const buttonsSpring = useSpring({
     from: { opacity: 0, y: 20 },
     to: { opacity: 1, y: 0 },
-    delay: 1000,
+    delay: 800,
     config: config.gentle,
   })
 
   // Background image animation
   const imageSpring = useSpring({
-    from: { opacity: 0, scale: 0.9, x: 50 },
-    to: { opacity: 1, scale: 1, x: 0 },
+    from: { opacity: 0, x: 50 },
+    to: { opacity: 1, x: 0 },
     delay: 300,
     config: config.slow,
   })
@@ -78,9 +62,9 @@ export default function Hero() {
   })
 
   return (
-    <header className="bg-primary-500 flex pt-20 pb-12 md:pt-24 md:pb-16 lg:pt-28 lg:pb-20 overflow-hidden">
-      <section className="flex flex-col lg:flex-row justify-between items-center wrapper max-md:px-2 py-0 md:py-6 lg:py-8">
-        <div className="text-white relative flex flex-col w-full lg:w-auto z-20 md:py-6 lg:py-8">
+    <header className="bg-primary-500 relative flex overflow-hidden pt-20 pb-12 md:pt-24 md:pb-16 lg:pt-28 lg:pb-0">
+      <section className="wrapper flex w-full flex-col items-center justify-between max-md:px-2 py-0 md:py-6 lg:flex-row lg:items-end lg:py-0 lg:pt-8">
+        <div className="relative z-20 flex w-full flex-col text-white md:py-6 lg:w-auto lg:self-center lg:py-8 lg:pb-16 xl:pb-20">
           {/* Transparent Logo - Background image behind text */}
           <animated.img
             src={TransparentLogo}
@@ -91,50 +75,38 @@ export default function Hero() {
               transform: logoSpring.y.to((y) => `translateY(${y}px)`),
             }}
           />
-          <div className="flex flex-col gap-3 md:gap-5 lg:gap-6 px-2 md:px-6 lg:px-10 md:py-6 lg:py-8 relative z-10">
+          <div className="relative z-10 flex flex-col gap-3 px-2 md:gap-5 md:px-6 md:py-6 lg:gap-6 lg:px-10 lg:py-8">
             <animated.p
               style={badgeSpring}
-              className="w-fit max-w-full text-[11px] md:text-sm font-medium text-white bg-[#ffffff26] border border-white/20 py-1 px-3 md:py-2 md:px-5 rounded-[50px] leading-snug"
+              className="w-fit max-w-full rounded-[50px] border border-white/20 bg-[#ffffff26] px-3 py-1 text-[11px] font-medium leading-snug text-white md:px-5 md:py-2 md:text-sm"
             >
-              <span className="md:hidden">🎁 Ghana&apos;s #1 gifting platform</span>
+              <span className="md:hidden">Ghana&apos;s #1 gifting platform</span>
               <span className="hidden md:inline">
-                🎁 Ghana&apos;s Leading Digital Gifting Platform
+                Ghana&apos;s Leading Digital Gifting Platform
               </span>
             </animated.p>
-            <div className="max-w-[636px] w-full flex flex-col gap-4 md:gap-8 lg:gap-12">
+            <div className="flex w-full max-w-[636px] flex-col gap-4 md:gap-8 lg:gap-12">
               <animated.p
                 style={headingSpring}
-                className="text-[1.65rem] leading-[1.15] md:text-4xl lg:text-5xl xl:text-[64px] font-bold uppercase tracking-tight md:-tracking-[3%] md:leading-[1.1] lg:leading-[72px]"
+                className="text-[1.65rem] font-bold uppercase leading-[1.15] tracking-tight md:-tracking-[3%] md:text-4xl md:leading-[1.1] lg:text-5xl lg:leading-[72px] xl:text-[64px]"
               >
                 Gift Cards for the people that matter most in your life
               </animated.p>
               <animated.p
                 style={subtitleSpring}
-                className="text-sm leading-snug md:text-xl lg:text-2xl xl:text-[28px] font-light md:leading-[1.4] lg:leading-[39px] max-w-full lg:max-w-[548px] w-full"
+                className="w-full max-w-full text-sm font-light leading-snug md:text-xl md:leading-[1.4] lg:max-w-[548px] lg:text-2xl lg:leading-[39px] xl:text-[28px]"
               >
                 Welcome to DashQard!{' '}
-                <span className="text-yellow-500 font-bold">Create, Connect. Celebrate.</span>
+                <span className="font-bold text-yellow-500">Create, Connect. Celebrate.</span>
               </animated.p>
-              <section className="flex justify-between gap-2 md:flex-wrap md:justify-start md:gap-6 lg:gap-8 max-w-sm md:max-w-none">
-                {statsTrail.map((style, index) => (
-                  <animated.div key={index} style={style} className="flex flex-col gap-0.5 min-w-0">
-                    <p className="text-xl md:text-3xl lg:text-[32px] font-bold leading-tight text-yellow-500">
-                      {stats[index].value}
-                    </p>
-                    <p className="text-[10px] md:text-sm font-light leading-tight">
-                      {stats[index].label}
-                    </p>
-                  </animated.div>
-                ))}
-              </section>
               <animated.div
                 style={buttonsSpring}
-                className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto pt-1"
+                className="flex w-full flex-col gap-3 pt-1 sm:w-auto sm:flex-row"
               >
                 <Button
                   variant="primary"
                   size="medium"
-                  className="rounded-full! w-full sm:w-auto sm:min-w-[210px] min-h-12 px-6 text-sm! md:text-base! font-semibold! shadow-[0_8px_24px_rgba(0,0,0,0.18)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)] hover:-translate-y-0.5 transition-all duration-200"
+                  className="min-h-12 w-full rounded-full! px-6 text-sm! font-semibold! shadow-[0_8px_24px_rgba(0,0,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)] sm:w-auto sm:min-w-[210px] md:text-base!"
                   icon="mdi:arrow-right"
                   iconPosition="right"
                   onClick={() => navigate(ROUTES.IN_APP.AUTH.REGISTER)}
@@ -148,7 +120,7 @@ export default function Hero() {
                   icon="bi:gift"
                   iconPosition="left"
                   onClick={() => navigate(ROUTES.IN_APP.DASHQARDS)}
-                  className="rounded-full! w-full sm:w-auto sm:min-w-[210px] min-h-12 px-6 text-sm! md:text-base! font-semibold! !border-2 !border-white/80 !text-white !bg-white/10 hover:!bg-white hover:!text-primary-500 hover:!border-white hover:-translate-y-0.5 transition-all duration-200 backdrop-blur-sm"
+                  className="min-h-12 w-full rounded-full! border-2! border-white/80! bg-white/10! px-6 text-sm! font-semibold! text-white! backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-white! hover:bg-white! hover:text-primary-500! sm:w-auto sm:min-w-[210px] md:text-base!"
                   iconProps={{ className: 'size-4' }}
                 >
                   Get a Card
@@ -158,19 +130,16 @@ export default function Hero() {
           </div>
         </div>
         <animated.div
-          className="hidden lg:block shrink-0 w-full lg:w-auto mt-8 lg:mt-0 relative z-10"
+          className="relative z-10 mt-8 hidden w-full shrink-0 self-end lg:mt-0 lg:block lg:w-[min(48%,42rem)] xl:w-[min(50%,48rem)]"
           style={{
             opacity: imageSpring.opacity,
-            transform:
-              imageSpring.scale.to((s) => `scale(${s})`) +
-              ' ' +
-              imageSpring.x.to((x) => `translateX(${x}px)`),
+            transform: imageSpring.x.to((x) => `translateX(${x}px)`),
           }}
         >
           <img
-            src={DashCardsBg}
-            alt="DashCardsBg"
-            className="w-full max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl mx-auto lg:mx-0 h-auto object-contain"
+            src={HeroImage}
+            alt="Man holding a DashPro gift card on a phone"
+            className="mx-auto block h-auto w-full max-h-[min(72vh,640px)] object-contain object-bottom lg:mx-0 lg:max-h-[min(78vh,720px)] xl:max-h-[min(82vh,800px)]"
           />
         </animated.div>
       </section>

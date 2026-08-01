@@ -6,6 +6,7 @@ import { Icon } from '@/libs'
 import { EmptyStateImage } from '@/assets/images'
 import { vendorHasCatalogCards } from '../../utils/vendorCatalogStats'
 import { buildVendorProfilePath } from '../../utils/vendorProfilePath'
+import { isHiddenHomepageVendor } from '../../utils/hiddenHomepageVendors'
 
 type VendorWithCards = NonNullable<ReturnType<typeof useHomePageCatalog>['vendors']>[number]
 
@@ -14,7 +15,11 @@ export const PartnerVendors = () => {
   const { vendors, isLoadingVendors: isLoading } = useHomePageCatalog()
 
   const vendorsWithCards =
-    vendors?.filter((vendor) => vendorHasCatalogCards(vendor.branches_with_cards || [])) ?? []
+    vendors?.filter((vendor) => {
+      const name = vendor.business_name || vendor.vendor_name || vendor.branch_name
+      if (isHiddenHomepageVendor(name)) return false
+      return vendorHasCatalogCards(vendor.branches_with_cards || [])
+    }) ?? []
 
   const openVendor = (vendor: VendorWithCards) => {
     navigate(buildVendorProfilePath(vendor))

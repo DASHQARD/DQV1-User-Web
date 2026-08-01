@@ -40,7 +40,6 @@ describe('Footer', () => {
     expect(screen.getByText('support@dashqard.com')).toBeInTheDocument()
     expect(screen.getByText('Support Line')).toBeInTheDocument()
     expect(screen.getByText('+233 54 202 2245')).toBeInTheDocument()
-    expect(screen.getByText('Purchase Line (WhatsApp)')).toBeInTheDocument()
   })
 
   it('renders copyright and Terms of Service', () => {

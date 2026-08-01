@@ -122,14 +122,7 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
     }
     if (isBranchManager) return getBranchUserAvatarUrl(userProfileData)
     return null
-  }, [
-    isAuthenticated,
-    isRegularUser,
-    isCorporateUser,
-    isVendor,
-    isBranchManager,
-    userProfileData,
-  ])
+  }, [isAuthenticated, isRegularUser, isCorporateUser, isVendor, isBranchManager, userProfileData])
 
   const { url: avatarUrl } = usePresignedMediaUrl(avatarFileKey)
 
@@ -357,62 +350,62 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
               <VendorPendingApprovalsBell className="bg-gray-50 rounded-full" />
             )}
 
-          {/* Desktop Navigation */}
-          <section className="hidden lg:flex items-center gap-3">
-            {/* Navigation Items */}
-            {!isDashboardVariant ? (
-            <ul className="hidden xl:flex items-center gap-2 bg-gray-50 py-2.5 px-5 rounded-full text-sm">
-              {navItems.map((item) => {
-                const isActive = isWebsiteNavItemActive(pathname, item.path)
-                return (
-                  <li key={item.label}>
-                    <Link
-                      to={item.path}
-                      aria-current={isActive ? 'page' : undefined}
-                      className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 font-medium rounded-lg transition-colors',
-                        isActive
-                          ? 'text-primary-600 bg-white shadow-sm font-semibold'
-                          : 'text-gray-700 hover:text-primary-600 hover:bg-white',
-                      )}
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-            ) : null}
+            {/* Desktop Navigation */}
+            <section className="hidden lg:flex items-center gap-3">
+              {/* Navigation Items */}
+              {!isDashboardVariant ? (
+                <ul className="hidden lg:flex items-center gap-2 bg-gray-50 py-2.5 px-5 rounded-full text-sm">
+                  {navItems.map((item) => {
+                    const isActive = isWebsiteNavItemActive(pathname, item.path)
+                    return (
+                      <li key={item.label}>
+                        <Link
+                          to={item.path}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={cn(
+                            'flex items-center gap-1.5 px-3 py-1.5 font-medium rounded-lg transition-colors',
+                            isActive
+                              ? 'text-primary-600 bg-white shadow-sm font-semibold'
+                              : 'text-gray-700 hover:text-primary-600 hover:bg-white',
+                          )}
+                        >
+                          {item.label}
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              ) : null}
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              {/* Cart Button */}
-              <button
-                type="button"
-                onClick={() => openCart()}
-                className="bg-gray-50 p-2.5 flex items-center justify-center rounded-full relative hover:bg-gray-100 transition-colors"
-                aria-label="Cart"
-              >
-                <Icon icon="bi:bag" className="size-5 text-gray-700" />
-                {/* {cartItemCount > 0 && (
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                {/* Cart Button */}
+                <button
+                  type="button"
+                  onClick={() => openCart()}
+                  className="bg-gray-50 p-2.5 flex items-center justify-center rounded-full relative hover:bg-gray-100 transition-colors"
+                  aria-label="Cart"
+                >
+                  <Icon icon="bi:bag" className="size-5 text-gray-700" />
+                  {/* {cartItemCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-primary-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {cartItemCount > 9 ? '9+' : cartItemCount}
                   </span>
                 )} */}
-              </button>
-              <Modal
-                position="side"
-                isOpen={isCartOpen}
-                setIsOpen={(open) => (open ? openCart() : closeCart())}
-                panelClass="!w-[393px] max-w-[90vw] p-0"
-                overflowHidden
-              >
-                <CartPopoverContent />
-              </Modal>
-              <GuestAddToCartModal />
+                </button>
+                <Modal
+                  position="side"
+                  isOpen={isCartOpen}
+                  setIsOpen={(open) => (open ? openCart() : closeCart())}
+                  panelClass="!w-[393px] max-w-[90vw] p-0"
+                  overflowHidden
+                >
+                  <CartPopoverContent />
+                </Modal>
+                <GuestAddToCartModal />
 
-              {/* Account Button */}
-              {isAuthenticated && !isGuestAuth ? (
+                {/* Account Button */}
+                {isAuthenticated && !isGuestAuth ? (
                   <Popover open={accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
                     <PopoverTrigger asChild>
                       <button
@@ -421,12 +414,7 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
                         aria-label="Account"
                       >
                         {showNavProfileImage ? (
-                          <Avatar
-                            size="sm"
-                            src={avatarUrl}
-                            name={displayName}
-                            alt={displayName}
-                          />
+                          <Avatar size="sm" src={avatarUrl} name={displayName} alt={displayName} />
                         ) : (
                           <Icon icon="bi:person-circle" className="size-10 text-primary-600" />
                         )}
@@ -473,58 +461,58 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
                       </div>
                     </PopoverContent>
                   </Popover>
-              ) : (
-                <div className="flex items-center gap-2 bg-gray-50 py-2 px-4 rounded-full">
-                  <Link
-                    to={ROUTES.IN_APP.AUTH.LOGIN}
-                    className="text-sm text-gray-700 font-medium hover:text-primary-600 transition-colors"
-                  >
-                    Login
-                  </Link>
-                  <span className="text-gray-300">|</span>
-                  <Link
-                    to={ROUTES.IN_APP.AUTH.REGISTER}
-                    className="text-sm text-primary-600 font-semibold hover:text-primary-700 transition-colors"
-                  >
-                    Register
-                  </Link>
-                </div>
-              )}
-            </div>
-          </section>
+                ) : (
+                  <div className="flex items-center gap-2 bg-gray-50 py-2 px-4 rounded-full">
+                    <Link
+                      to={ROUTES.IN_APP.AUTH.LOGIN}
+                      className="text-sm text-gray-700 font-medium hover:text-primary-600 transition-colors"
+                    >
+                      Login
+                    </Link>
+                    <span className="text-gray-300">|</span>
+                    <Link
+                      to={ROUTES.IN_APP.AUTH.REGISTER}
+                      className="text-sm text-primary-600 font-semibold hover:text-primary-700 transition-colors"
+                    >
+                      Register
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </section>
 
-          {/* Mobile Menu Button */}
-          <div className="flex lg:hidden items-center gap-2">
-            <button
-              type="button"
-              onClick={() => openCart()}
-              className="bg-gray-50 p-2.5 flex items-center justify-center rounded-full relative hover:bg-gray-100 transition-colors"
-              aria-label="Cart"
-            >
-              <Icon icon="bi:bag" className="size-5 text-gray-700" />
-            </button>
-            <Modal
-              position="side"
-              isOpen={isCartOpen}
-              setIsOpen={(open) => (open ? openCart() : closeCart())}
-              panelClass="!w-[393px] max-w-[90vw] p-0"
-              overflowHidden
-            >
-              <CartPopoverContent />
-            </Modal>
-            <GuestAddToCartModal />
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="bg-gray-50 p-2.5 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-              aria-label="Menu"
-            >
-              <Icon
-                icon={mobileMenuOpen ? 'bi:x-lg' : 'bi:list'}
-                className="size-5 text-gray-700"
-              />
-            </button>
-          </div>
+            {/* Mobile Menu Button */}
+            <div className="flex lg:hidden items-center gap-2">
+              <button
+                type="button"
+                onClick={() => openCart()}
+                className="bg-gray-50 p-2.5 flex items-center justify-center rounded-full relative hover:bg-gray-100 transition-colors"
+                aria-label="Cart"
+              >
+                <Icon icon="bi:bag" className="size-5 text-gray-700" />
+              </button>
+              <Modal
+                position="side"
+                isOpen={isCartOpen}
+                setIsOpen={(open) => (open ? openCart() : closeCart())}
+                panelClass="!w-[393px] max-w-[90vw] p-0"
+                overflowHidden
+              >
+                <CartPopoverContent />
+              </Modal>
+              <GuestAddToCartModal />
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="bg-gray-50 p-2.5 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                aria-label="Menu"
+              >
+                <Icon
+                  icon={mobileMenuOpen ? 'bi:x-lg' : 'bi:list'}
+                  className="size-5 text-gray-700"
+                />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -533,43 +521,43 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
           <div className="lg:hidden border-t border-gray-200 bg-white flex flex-col max-h-[calc(100dvh-4.5rem)]">
             <div className="flex-1 overflow-y-auto">
               <div className={cn('px-4 py-4 space-y-3', !isDashboardVariant && 'wrapper')}>
-              {!isDashboardVariant ? (
-                <>
-                  <div className="flex flex-col gap-1">
-                    {navItems.map((item) => {
-                      const isActive = isWebsiteNavItemActive(pathname, item.path)
-                      return (
-                        <Link
-                          key={item.label}
-                          to={item.path}
-                          aria-current={isActive ? 'page' : undefined}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className={cn(
-                            'flex items-center gap-3 px-2 py-3 font-medium rounded-lg transition-colors',
-                            isActive
-                              ? 'bg-primary-50 text-primary-600 font-semibold'
-                              : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600',
-                          )}
-                        >
-                          <Icon
-                            icon={item.icon}
+                {!isDashboardVariant ? (
+                  <>
+                    <div className="flex flex-col gap-1">
+                      {navItems.map((item) => {
+                        const isActive = isWebsiteNavItemActive(pathname, item.path)
+                        return (
+                          <Link
+                            key={item.label}
+                            to={item.path}
+                            aria-current={isActive ? 'page' : undefined}
+                            onClick={() => setMobileMenuOpen(false)}
                             className={cn(
-                              'text-lg shrink-0',
-                              isActive ? 'text-primary-500' : 'text-gray-400',
+                              'flex items-center gap-3 px-2 py-3 font-medium rounded-lg transition-colors',
+                              isActive
+                                ? 'bg-primary-50 text-primary-600 font-semibold'
+                                : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600',
                             )}
-                          />
-                          <span>{item.label}</span>
-                        </Link>
-                      )
-                    })}
-                  </div>
-                </>
-              ) : null}
+                          >
+                            <Icon
+                              icon={item.icon}
+                              className={cn(
+                                'text-lg shrink-0',
+                                isActive ? 'text-primary-500' : 'text-gray-400',
+                              )}
+                            />
+                            <span>{item.label}</span>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </>
+                ) : null}
 
-              {/* Mobile Auth Section */}
-              {isAuthenticated && !isGuestAuth ? (
-                <>
-                  <div className="border-t border-gray-200 pt-3 mt-3">
+                {/* Mobile Auth Section */}
+                {isAuthenticated && !isGuestAuth ? (
+                  <>
+                    <div className="border-t border-gray-200 pt-3 mt-3">
                       <>
                         <div className="flex items-center gap-3 px-4 py-3 mb-2">
                           {showNavProfileImage ? (
@@ -618,9 +606,9 @@ export default function Navbar({ variant = 'website' }: NavbarProps) {
                           <span>Sign Out</span>
                         </button>
                       </>
-                  </div>
-                </>
-              ) : null}
+                    </div>
+                  </>
+                ) : null}
               </div>
             </div>
             {(!isAuthenticated || isGuestAuth) && (

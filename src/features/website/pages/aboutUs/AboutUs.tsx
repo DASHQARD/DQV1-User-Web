@@ -31,26 +31,6 @@ export default function AboutUs() {
                 We're on a mission to revolutionize how people connect, celebrate, and share value
                 through innovative digital gifting solutions that bring communities together.
               </p>
-              <div className="flex flex-col sm:flex-row gap-8">
-                <div className="text-center">
-                  <div className="text-4xl font-extrabold text-[#402D87] leading-none mb-2">
-                    1K+
-                  </div>
-                  <div className="text-sm text-gray-600">Happy Customers</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-extrabold text-[#402D87] leading-none mb-2">
-                    2.6K+
-                  </div>
-                  <div className="text-sm text-gray-600">Gift Cards Sent</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-extrabold text-[#402D87] leading-none mb-2">
-                    99.9%
-                  </div>
-                  <div className="text-sm text-gray-600">Uptime</div>
-                </div>
-              </div>
             </div>
             <div className="w-full lg:w-1/2 relative">
               <div className="bg-white rounded-3xl overflow-hidden shadow-2xl relative">
@@ -82,110 +62,6 @@ export default function AboutUs() {
                 >
                   <Icon icon="bi:heart" className="text-[#402D87]" />
                   <span>Personal</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Our Story Section */}
-      <section className="bg-[#f8f9ff] py-12 lg:py-16">
-        <div className="wrapper">
-          <div className="flex flex-col lg:flex-row items-center gap-12">
-            <div className="w-full lg:w-1/2">
-              <div className="mb-6">
-                <span className="bg-gradient-to-br from-[#402D87] to-[#2d2060] text-white rounded-full px-6 py-2 text-sm font-semibold inline-block shadow-lg">
-                  Our Story
-                </span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-[#2d2060] mb-6">
-                How DashQard Began
-              </h2>
-              <div className="space-y-6 mb-8">
-                <p className="text-lg leading-relaxed text-gray-700">
-                  DashQard was born from a simple observation: gifting in Ghana needed to evolve.
-                  Traditional gift-giving, while meaningful, often faced challenges of distance,
-                  timing, and accessibility. We saw an opportunity to bridge these gaps with
-                  technology.
-                </p>
-                <p className="text-lg leading-relaxed text-gray-700">
-                  Founded in 2024, our journey started with a vision to create Ghana's most trusted
-                  digital gifting platform. We wanted to preserve the emotional connection of
-                  gift-giving while making it more convenient, secure, and accessible to everyone.
-                </p>
-                <p className="text-lg leading-relaxed text-gray-700">
-                  Today, we're proud to serve over 1,000 customers across Ghana, helping them
-                  celebrate life's special moments, express gratitude, and strengthen relationships
-                  through the power of digital gifting.
-                </p>
-              </div>
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-4">
-                  <Icon icon="bi:calendar-event" className="text-2xl text-[#402D87]" />
-                  <div className="flex flex-col">
-                    <strong className="text-[#2d2060] font-semibold">Founded in 2024</strong>
-                    <span className="text-sm text-gray-600">
-                      With a vision to transform gifting
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Icon icon="bi:people" className="text-2xl text-[#402D87]" />
-                  <div className="flex flex-col">
-                    <strong className="text-[#2d2060] font-semibold">Community-Focused</strong>
-                    <span className="text-sm text-gray-600">
-                      Built to connect communities through gifting
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="w-full lg:w-1/2 relative pl-8">
-              <div className="relative">
-                <div className="absolute left-[-20px] top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-[#402D87] to-[#5bd7dc]"></div>
-                <div className="space-y-8">
-                  <div className="relative">
-                    <div className="absolute -left-[28px] top-0 w-4 h-4 bg-white border-2 border-[#402D87] rounded-full flex items-center justify-center z-10">
-                      <div className="w-1.5 h-1.5 bg-[#402D87] rounded-full"></div>
-                    </div>
-                    <div>
-                      <h4 className="text-[#2d2060] font-semibold mb-2">2024 - The Beginning</h4>
-                      <p className="text-gray-600">
-                        DashQard was founded with a mission to revolutionize digital gifting in
-                        Ghana
-                      </p>
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <div className="absolute -left-[28px] top-0 w-4 h-4 bg-white border-2 border-[#402D87] rounded-full flex items-center justify-center z-10">
-                      <div className="w-1.5 h-1.5 bg-[#402D87] rounded-full"></div>
-                    </div>
-                    <div>
-                      <h4 className="text-[#2d2060] font-semibold mb-2">Platform Launch</h4>
-                      <p className="text-gray-600">Launched our first digital gift card in 2025,</p>
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <div className="absolute -left-[28px] top-0 w-4 h-4 bg-white border-2 border-[#402D87] rounded-full flex items-center justify-center z-10">
-                      <div className="w-1.5 h-1.5 bg-[#402D87] rounded-full"></div>
-                    </div>
-                    <div>
-                      <h4 className="text-[#2d2060] font-semibold mb-2">Growing Community</h4>
-                      <p className="text-gray-600">
-                        Reached 1,000+ satisfied customers and 2,600+ gift cards delivered
-                      </p>
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <div className="absolute -left-[28px] top-0 w-4 h-4 bg-[#402D87] rounded-full z-10"></div>
-                    <div>
-                      <h4 className="text-[#2d2060] font-semibold mb-2">Today & Beyond</h4>
-                      <p className="text-gray-600">
-                        Continuing to innovate and expand our services across Ghana
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -227,24 +103,10 @@ export default function AboutUs() {
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-[#2d2060] mb-4 text-center">Our Mission</h3>
-                <p className="text-lg leading-relaxed text-gray-700 text-center mb-8">
+                <p className="text-lg leading-relaxed text-gray-700 text-center">
                   To redefine how people exchange value everyday through meaningful and impactful
                   digital gifting solutions that strengthen relationships and build communities.
                 </p>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <Icon icon="bi:check-circle-fill" className="text-[#402D87] text-xl shrink-0" />
-                    <span className="text-gray-600">Make gifting accessible to everyone</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Icon icon="bi:check-circle-fill" className="text-[#402D87] text-xl shrink-0" />
-                    <span className="text-gray-600">Preserve the emotional value of gifts</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Icon icon="bi:check-circle-fill" className="text-[#402D87] text-xl shrink-0" />
-                    <span className="text-gray-600">Leverage technology for good</span>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -257,24 +119,10 @@ export default function AboutUs() {
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-[#2d2060] mb-4 text-center">Our Vision</h3>
-                <p className="text-lg leading-relaxed text-gray-700 text-center mb-8">
+                <p className="text-lg leading-relaxed text-gray-700 text-center">
                   To become Africa's leading digital gifting ecosystem, connecting people and
                   communities through the universal language of giving and sharing.
                 </p>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <Icon icon="bi:star-fill" className="text-[#402D87] text-xl shrink-0" />
-                    <span className="text-gray-600">Leading platform in Ghana</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Icon icon="bi:star-fill" className="text-[#402D87] text-xl shrink-0" />
-                    <span className="text-gray-600">Expanding across Africa</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Icon icon="bi:star-fill" className="text-[#402D87] text-xl shrink-0" />
-                    <span className="text-gray-600">Innovating gifting experiences globally</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -404,17 +252,6 @@ export default function AboutUs() {
 
             <div className="text-center p-8 bg-white rounded-2xl border border-[rgba(64,45,135,0.1)] transition-all hover:-translate-y-1 hover:shadow-lg">
               <div className="w-14 h-14 bg-gradient-to-br from-[#402D87] to-[#2d2060] rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl shadow-lg">
-                <Icon icon="bi:shield-fill-check" />
-              </div>
-              <h5 className="text-lg font-semibold text-[#2d2060] mb-3">Bank-Level Security</h5>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Your transactions are protected with enterprise-grade encryption and security
-                protocols.
-              </p>
-            </div>
-
-            <div className="text-center p-8 bg-white rounded-2xl border border-[rgba(64,45,135,0.1)] transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#402D87] to-[#2d2060] rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl shadow-lg">
                 <Icon icon="bi:phone-fill" />
               </div>
               <h5 className="text-lg font-semibold text-[#2d2060] mb-3">Mobile-First Design</h5>
@@ -425,41 +262,11 @@ export default function AboutUs() {
 
             <div className="text-center p-8 bg-white rounded-2xl border border-[rgba(64,45,135,0.1)] transition-all hover:-translate-y-1 hover:shadow-lg">
               <div className="w-14 h-14 bg-gradient-to-br from-[#402D87] to-[#2d2060] rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl shadow-lg">
-                <Icon icon="bi:headset" />
-              </div>
-              <h5 className="text-lg font-semibold text-[#2d2060] mb-3">24/7 Support</h5>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Our dedicated support team is always ready to help you with any questions or issues.
-              </p>
-            </div>
-
-            <div className="text-center p-8 bg-white rounded-2xl border border-[rgba(64,45,135,0.1)] transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#402D87] to-[#2d2060] rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl shadow-lg">
                 <Icon icon="bi:cash-coin" />
               </div>
               <h5 className="text-lg font-semibold text-[#2d2060] mb-3">Flexible Amounts</h5>
               <p className="text-gray-600 text-sm leading-relaxed">
                 Choose any amount from GHS 1 to GHS 10,000 for registered users.
-              </p>
-            </div>
-
-            <div className="text-center p-8 bg-white rounded-2xl border border-[rgba(64,45,135,0.1)] transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#402D87] to-[#2d2060] rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl shadow-lg">
-                <Icon icon="bi:qr-code" />
-              </div>
-              <h5 className="text-lg font-semibold text-[#2d2060] mb-3">Easy Redemption</h5>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Multiple redemption options including USSD codes and WhatsApp integration.
-              </p>
-            </div>
-
-            <div className="text-center p-8 bg-white rounded-2xl border border-[rgba(64,45,135,0.1)] transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#402D87] to-[#2d2060] rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl shadow-lg">
-                <Icon icon="bi:building" />
-              </div>
-              <h5 className="text-lg font-semibold text-[#2d2060] mb-3">Bulk Solutions</h5>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Special packages for businesses, organizations, and corporate gifting needs.
               </p>
             </div>
 

@@ -1,10 +1,4 @@
-import {
-  PURCHASE_WHATSAPP_DISPLAY,
-  PURCHASE_WHATSAPP_HREF,
-  ROUTES,
-  SUPPORT_PHONE_DISPLAY,
-  SUPPORT_PHONE_TEL_HREF,
-} from '@/utils/constants'
+import { ROUTES, SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL_HREF } from '@/utils/constants'
 import LogoWhite from '../../assets/images/logo-white.png'
 import { Text } from '../Text'
 import { Icon } from '@/libs'
@@ -176,22 +170,6 @@ export default function Footer() {
                   className="text-xs md:text-sm font-medium text-white hover:text-yellow-500 transition-colors hover:underline"
                 >
                   {SUPPORT_PHONE_DISPLAY}
-                </a>
-              </div>
-            </li>
-            <li className="flex items-start gap-2 md:items-center">
-              <div className="bg-[#25d36633] p-2 rounded-full shrink-0">
-                <Icon icon="mdi:whatsapp" className="size-4 md:size-5 text-[#25d366]" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-white/60">Purchase Line (WhatsApp)</p>
-                <a
-                  href={PURCHASE_WHATSAPP_HREF}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs md:text-sm font-medium text-white hover:text-yellow-500 transition-colors hover:underline break-all"
-                >
-                  {PURCHASE_WHATSAPP_DISPLAY}
                 </a>
               </div>
             </li>

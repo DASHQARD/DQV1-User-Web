@@ -31,8 +31,8 @@ export default function DashProPurchase() {
   } = useDashProPurchase()
 
   return (
-    <div>
-      <div className="max-w-[900px] w-full">
+    <div className="w-full">
+      <div className="w-full max-w-4xl">
         <GiftCardRecipientFormHeader
           title="Create DashPro gift card"
           subtitle="Set the amount, assign a recipient, and add a personal message"

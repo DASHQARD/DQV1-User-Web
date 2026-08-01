@@ -25,14 +25,4 @@ describe('Hero', () => {
     expect(screen.getByRole('button', { name: /get started/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /get a card/i })).toBeInTheDocument()
   })
-
-  it('renders stats', () => {
-    renderWithProviders(<Hero />)
-    expect(screen.getByText('1k+')).toBeInTheDocument()
-    expect(screen.getByText('Happy Users')).toBeInTheDocument()
-    expect(screen.getByText('10+')).toBeInTheDocument()
-    expect(screen.getByText('Partners')).toBeInTheDocument()
-    expect(screen.getByText('2.6k+')).toBeInTheDocument()
-    expect(screen.getByText('Gift Cards Sent')).toBeInTheDocument()
-  })
 })

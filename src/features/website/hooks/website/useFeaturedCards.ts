@@ -3,6 +3,7 @@ import {
   enrichCardsWithVendorLogos,
   type CardWithVendorId,
 } from '@/features/website/utils/enrichCardsWithVendorLogos'
+import { isHiddenHomepageVendor } from '@/features/website/utils/hiddenHomepageVendors'
 import { isCatalogCardPurchasable } from '@/utils/cardExpiry'
 import { useHomePageCatalog } from './useHomePageCatalog'
 
@@ -42,6 +43,10 @@ export function useFeaturedCards() {
           .toLowerCase()
           .trim()
         if (cardType !== id) return false
+        const vendorLabel =
+          (card as { vendor_name?: string; branch_name?: string }).vendor_name ||
+          (card as { branch_name?: string }).branch_name
+        if (isHiddenHomepageVendor(vendorLabel)) return false
         return isCatalogCardPurchasable({
           status: (card as { status?: string }).status,
           expiry_date: (card as { expiry_date?: string }).expiry_date,

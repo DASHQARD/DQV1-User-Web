@@ -17,7 +17,7 @@ export default function AuthLayout() {
         >
           <img src={Logo} alt="DashQard" className="h-10 w-auto object-contain" />
         </Link>
-        <div className="flex min-h-0 w-full min-w-0 flex-1 items-stretch">
+        <div className="flex min-h-0 w-full min-w-0 flex-1 items-stretch pt-16 lg:pt-20">
           <Outlet />
         </div>
       </div>

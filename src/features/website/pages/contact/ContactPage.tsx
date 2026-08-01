@@ -9,8 +9,6 @@ import { useCountriesData, useToast } from '@/hooks'
 import { createTicket } from '@/services'
 import {
   EXAMPLE_PHONE_PLACEHOLDER,
-  PURCHASE_WHATSAPP_DISPLAY,
-  PURCHASE_WHATSAPP_WA_ME,
   SUPPORT_PHONE_DISPLAY,
   SUPPORT_PHONE_E164,
 } from '@/utils/constants'
@@ -113,7 +111,7 @@ export default function ContactPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Support Line */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-primary-500/10 hover:shadow-xl transition-all hover:-translate-y-1">
               <div className="w-20 h-20 bg-linear-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -152,48 +150,6 @@ export default function ContactPage() {
               </a>
             </div>
 
-            {/* Purchase WhatsApp */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-primary-500/10 hover:shadow-xl transition-all hover:-translate-y-1">
-              <div className="w-20 h-20 bg-linear-to-br from-[#25D366] to-[#128C7E] rounded-full flex items-center justify-center mx-auto mb-6">
-                <Icon icon="bi:whatsapp" className="size-10 text-white" />
-              </div>
-              <h4 className="text-xl font-bold text-primary-500 mb-4 text-center">
-                Purchase Line (WhatsApp)
-              </h4>
-              <p className="text-grey-600 mb-6 text-center">
-                WhatsApp us for purchases and bulk gifting. Perfect for quick quotes and instant
-                communication.
-              </p>
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between items-center pb-3 border-b border-primary-500/10">
-                  <strong className="text-primary-500">WhatsApp:</strong>
-                  <a
-                    href={`https://wa.me/${PURCHASE_WHATSAPP_WA_ME}`}
-                    className="text-primary-500 font-semibold hover:underline"
-                  >
-                    {PURCHASE_WHATSAPP_DISPLAY}
-                  </a>
-                </div>
-                <div className="flex justify-between items-center pb-3 border-b border-primary-500/10">
-                  <strong className="text-primary-500">Hours:</strong>
-                  <span className="text-grey-600">Monday - Friday, 9:00 AM - 5:00 PM</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <strong className="text-primary-500">Response Time:</strong>
-                  <span className="text-grey-600">Within 30 minutes</span>
-                </div>
-              </div>
-              <a
-                href={`https://wa.me/${PURCHASE_WHATSAPP_WA_ME}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold py-3 px-6 rounded-full text-center transition-all hover:shadow-lg"
-              >
-                <Icon icon="bi:whatsapp" className="size-5 inline mr-2" />
-                WhatsApp Now
-              </a>
-            </div>
-
             {/* Email Support */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-primary-500/10 hover:shadow-xl transition-all hover:-translate-y-1">
               <div className="w-20 h-20 bg-linear-to-br from-[#EA4335] to-[#D33B2C] rounded-full flex items-center justify-center mx-auto mb-6">
@@ -216,7 +172,7 @@ export default function ContactPage() {
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-primary-500/10">
                   <strong className="text-primary-500">Hours:</strong>
-                  <span className="text-grey-600">24/7 Monitoring</span>
+                  <span className="text-grey-600">Monday - Friday, 9:00 AM - 5:00 PM</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <strong className="text-primary-500">Response Time:</strong>
@@ -249,7 +205,7 @@ export default function ContactPage() {
                   <h3 className="text-2xl font-bold text-primary-500 mb-2">Send us a Message</h3>
                   <p className="text-grey-600">
                     Fill out the form below and we'll get back to you within 24 hours. For urgent
-                    matters, please call or WhatsApp us directly.
+                    matters, please call us directly.
                   </p>
                 </div>
 
@@ -430,17 +386,6 @@ export default function ContactPage() {
                       Support Line: {SUPPORT_PHONE_DISPLAY}
                     </span>
                   </a>
-                  <a
-                    href={`https://wa.me/${PURCHASE_WHATSAPP_WA_ME}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-[#25D366]/5 rounded-lg hover:bg-[#25D366]/10 transition-colors"
-                  >
-                    <Icon icon="bi:whatsapp" className="size-5 text-[#25D366]" />
-                    <span className="text-[#25D366] font-semibold">
-                      Purchase WhatsApp: {PURCHASE_WHATSAPP_DISPLAY}
-                    </span>
-                  </a>
                 </div>
               </div>
 
@@ -454,10 +399,6 @@ export default function ContactPage() {
                   <div className="flex justify-between items-center pb-3 border-b border-primary-500/10">
                     <span className="font-semibold text-primary-500">Monday - Friday</span>
                     <span className="text-grey-600">9:00 AM - 5:00 PM</span>
-                  </div>
-                  <div className="flex justify-between items-center pb-3 border-b border-primary-500/10">
-                    <span className="font-semibold text-primary-500">Saturday</span>
-                    <span className="text-grey-600">9:00 AM - 4:00 PM</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-primary-500">Sunday</span>
@@ -504,26 +445,10 @@ export default function ContactPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {[
-                'Custom bulk pricing',
-                'Dedicated account manager',
-                'Custom branding options',
-                'Flexible payment terms',
-                'API integration available',
-                'Detailed reporting & analytics',
-              ].map((feature) => (
-                <div key={feature} className="flex items-center gap-2">
-                  <Icon icon="bi:check-circle-fill" className="size-5 text-yellow-500" />
-                  <span className="font-medium">{feature}</span>
-                </div>
-              ))}
-            </div>
-
             <div className="bg-white/10 rounded-lg p-6 mb-6">
               <p className="mb-4">
                 <strong className="text-yellow-500">Interested in bulk gifting solutions?</strong>{' '}
-                Contact our corporate team for a customized quote and consultation.{' '}
+                Contact our corporate team for a quote and consultation.{' '}
                 <Link
                   to="/#bulk-gifting"
                   className="text-yellow-500 hover:text-yellow-400 underline"
@@ -537,7 +462,7 @@ export default function ContactPage() {
                   className="bg-white text-primary-500 hover:bg-primary-50 font-semibold py-2 px-6 rounded-full transition-all inline-flex items-center"
                 >
                   <Icon icon="bi:telephone" className="size-4 mr-2" />
-                  Call for Quote
+                  Call Us
                 </a>
                 <a
                   href="mailto:support@dashqard.com"
@@ -563,11 +488,7 @@ export default function ContactPage() {
                 Our Location
               </h3>
               <div>
-                <p className="text-lg">
-                  <strong>DashQard Ghana</strong>
-                  <br />
-                  Accra, Ghana
-                </p>
+                <p className="text-lg">Accra, Ghana</p>
               </div>
             </div>
 

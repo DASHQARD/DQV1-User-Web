@@ -14,14 +14,4 @@ describe('AboutUs (website)', () => {
     renderWithProviders(<AboutUs />)
     expect(screen.getByText('Transforming Digital Gifting in Ghana')).toBeInTheDocument()
   })
-
-  it('renders stats: Happy Customers, Gift Cards Sent, Uptime', () => {
-    renderWithProviders(<AboutUs />)
-    expect(screen.getByText('1K+')).toBeInTheDocument()
-    expect(screen.getByText('2.6K+')).toBeInTheDocument()
-    expect(screen.getByText('99.9%')).toBeInTheDocument()
-    expect(screen.getByText('Happy Customers')).toBeInTheDocument()
-    expect(screen.getByText('Gift Cards Sent')).toBeInTheDocument()
-    expect(screen.getByText('Uptime')).toBeInTheDocument()
-  })
 })

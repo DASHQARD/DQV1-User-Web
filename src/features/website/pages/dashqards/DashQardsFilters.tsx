@@ -41,6 +41,8 @@ export interface DashQardsFiltersProps {
   clearAllFilters: () => void
   /** Sidebar on desktop; full-width when opened in the filters modal. */
   layout?: 'sidebar' | 'modal'
+  /** When true, only show card type selection (used for DashPro/DashGo purchase flows). */
+  cardSelectionOnly?: boolean
 }
 
 const SECTION_KEYS = ['cardSelection', 'vendors', 'priceRange'] as const
@@ -60,6 +62,7 @@ export function DashQardsFilters({
   isPriceRangeActive,
   clearAllFilters,
   layout = 'sidebar',
+  cardSelectionOnly = false,
 }: DashQardsFiltersProps) {
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>(
     () => Object.fromEntries(SECTION_KEYS.map((k) => [k, true])) as Record<SectionKey, boolean>,
@@ -172,231 +175,235 @@ export function DashQardsFilters({
       </div>
 
       {/* Filter Options */}
-      <div className="border-b border-[#f0f0f0] last:border-b-0">
-        <div>
-          {/* Vendors Filter */}
-          <div className={`${openSections.vendors ? 'px-6 pb-5' : ''}`}>
-            <button
-              type="button"
-              onClick={() => toggleSection('vendors')}
-              className={`flex justify-between items-center w-full py-4 px-5 cursor-pointer transition-colors text-left -mx-0.5 rounded-md ${
-                openSections.vendors
-                  ? 'mb-3 hover:bg-primary-500/5'
-                  : 'bg-[#f8f9fa] hover:bg-[#f0f1f3]'
-              }`}
-            >
-              <h5 className="text-[15px] font-semibold text-[#212529]">Vendors</h5>
-              <div className="flex items-center gap-2">
-                {query.vendor_ids && (
-                  <span className="text-xs text-[#28a745] font-semibold bg-[#d4edda] px-2 py-0.5 rounded-xl">
-                    Active
-                  </span>
-                )}
-                <span className="w-6 h-6 flex items-center justify-center text-grey-500 rounded-full transition-all duration-300 ease-in-out hover:bg-primary-500/10 hover:text-primary-500">
-                  <Icon
-                    icon="bi:chevron-down"
-                    className={`size-3 transition-transform duration-300 ease-in-out ${openSections.vendors ? '' : '-rotate-180'}`}
-                  />
-                </span>
-              </div>
-            </button>
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${openSections.vendors ? 'max-h-[280px] opacity-100' : 'max-h-0 opacity-0'}`}
-            >
-              <div>
-                <div className="max-h-[200px] overflow-y-auto space-y-2">
-                  {vendors.length === 0 ? (
-                    <p className="text-sm text-grey-500 text-center py-4">No vendors available</p>
-                  ) : (
-                    vendors.map((vendor) => {
-                      const vendorIdStr = vendor.vendor_id?.toString() || ''
-                      const currentIds =
-                        query.vendor_ids
-                          ?.split(',')
-                          ?.map((id: string) => id.trim())
-                          ?.filter(Boolean) || []
-                      const isSelected = currentIds.includes(vendorIdStr)
-                      return (
-                        <label
-                          key={vendor.id ?? vendor.vendor_id}
-                          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${
-                            isSelected
-                              ? 'bg-primary-500/10 border-2 border-primary-500'
-                              : 'bg-white border-2 border-[#e6e6e6] hover:border-primary-500/30 hover:bg-primary-500/5'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setQuery({
-                                  ...query,
-                                  vendor_ids: [...currentIds, vendorIdStr].join(','),
-                                })
-                              } else {
-                                const newIds = currentIds.filter((id) => id !== vendorIdStr)
-                                setQuery({
-                                  ...query,
-                                  vendor_ids: newIds.length > 0 ? newIds.join(',') : undefined,
-                                })
-                              }
-                            }}
-                            className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500 cursor-pointer"
-                          />
-                          <span className="text-sm font-medium text-[#212529] flex-1 truncate">
-                            {vendor.name}
-                          </span>
-                        </label>
-                      )
-                    })
+      {!cardSelectionOnly && (
+        <div className="border-b border-[#f0f0f0] last:border-b-0">
+          <div>
+            {/* Vendors Filter */}
+            <div className={`${openSections.vendors ? 'px-6 pb-5' : ''}`}>
+              <button
+                type="button"
+                onClick={() => toggleSection('vendors')}
+                className={`flex justify-between items-center w-full py-4 px-5 cursor-pointer transition-colors text-left -mx-0.5 rounded-md ${
+                  openSections.vendors
+                    ? 'mb-3 hover:bg-primary-500/5'
+                    : 'bg-[#f8f9fa] hover:bg-[#f0f1f3]'
+                }`}
+              >
+                <h5 className="text-[15px] font-semibold text-[#212529]">Vendors</h5>
+                <div className="flex items-center gap-2">
+                  {query.vendor_ids && (
+                    <span className="text-xs text-[#28a745] font-semibold bg-[#d4edda] px-2 py-0.5 rounded-xl">
+                      Active
+                    </span>
                   )}
+                  <span className="w-6 h-6 flex items-center justify-center text-grey-500 rounded-full transition-all duration-300 ease-in-out hover:bg-primary-500/10 hover:text-primary-500">
+                    <Icon
+                      icon="bi:chevron-down"
+                      className={`size-3 transition-transform duration-300 ease-in-out ${openSections.vendors ? '' : '-rotate-180'}`}
+                    />
+                  </span>
+                </div>
+              </button>
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${openSections.vendors ? 'max-h-[280px] opacity-100' : 'max-h-0 opacity-0'}`}
+              >
+                <div>
+                  <div className="max-h-[200px] overflow-y-auto space-y-2">
+                    {vendors.length === 0 ? (
+                      <p className="text-sm text-grey-500 text-center py-4">No vendors available</p>
+                    ) : (
+                      vendors.map((vendor) => {
+                        const vendorIdStr = vendor.vendor_id?.toString() || ''
+                        const currentIds =
+                          query.vendor_ids
+                            ?.split(',')
+                            ?.map((id: string) => id.trim())
+                            ?.filter(Boolean) || []
+                        const isSelected = currentIds.includes(vendorIdStr)
+                        return (
+                          <label
+                            key={vendor.id ?? vendor.vendor_id}
+                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${
+                              isSelected
+                                ? 'bg-primary-500/10 border-2 border-primary-500'
+                                : 'bg-white border-2 border-[#e6e6e6] hover:border-primary-500/30 hover:bg-primary-500/5'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setQuery({
+                                    ...query,
+                                    vendor_ids: [...currentIds, vendorIdStr].join(','),
+                                  })
+                                } else {
+                                  const newIds = currentIds.filter((id) => id !== vendorIdStr)
+                                  setQuery({
+                                    ...query,
+                                    vendor_ids: newIds.length > 0 ? newIds.join(',') : undefined,
+                                  })
+                                }
+                              }}
+                              className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500 cursor-pointer"
+                            />
+                            <span className="text-sm font-medium text-[#212529] flex-1 truncate">
+                              {vendor.name}
+                            </span>
+                          </label>
+                        )
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Price Range Filter */}
-          <div
-            className={`border-t border-[#e8e8e8] ${openSections.priceRange ? 'px-6 pb-5' : ''}`}
-          >
-            <button
-              type="button"
-              onClick={() => toggleSection('priceRange')}
-              className={`flex justify-between items-center w-full py-4 px-5 cursor-pointer transition-colors text-left -mx-0.5 rounded-md ${
-                openSections.priceRange
-                  ? 'mb-3 hover:bg-primary-500/5'
-                  : 'bg-[#f8f9fa] hover:bg-[#f0f1f3]'
-              }`}
-            >
-              <h5 className="text-[15px] font-semibold text-[#212529]">Price Range</h5>
-              <div className="flex items-center gap-2">
-                {(query.min_price || query.max_price) && (
-                  <span className="text-xs text-[#28a745] font-semibold bg-[#d4edda] px-2 py-0.5 rounded-xl">
-                    Active
-                  </span>
-                )}
-                <span className="w-6 h-6 flex items-center justify-center text-grey-500 rounded-full transition-all duration-300 ease-in-out hover:bg-primary-500/10 hover:text-primary-500">
-                  <Icon
-                    icon="bi:chevron-down"
-                    className={`size-3 transition-transform duration-300 ease-in-out ${openSections.priceRange ? '' : '-rotate-180'}`}
-                  />
-                </span>
-              </div>
-            </button>
+            {/* Price Range Filter */}
             <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${openSections.priceRange ? 'max-h-[480px] opacity-100' : 'max-h-0 opacity-0'}`}
+              className={`border-t border-[#e8e8e8] ${openSections.priceRange ? 'px-6 pb-5' : ''}`}
             >
-              <div>
-                <div className="mb-4 flex flex-col gap-3">
-                  <div className="min-w-0 w-full">
-                    <label className="block text-xs font-semibold text-grey-500 mb-1 uppercase tracking-wider">
-                      Minimum
-                    </label>
-                    <div
-                      className={`flex items-center gap-2 rounded-md border-2 bg-white px-3 py-2.5 transition-colors focus-within:border-primary-500 ${
-                        priceRangeError ? 'border-red-400' : 'border-[#e6e6e6]'
-                      }`}
-                    >
-                      <span className="shrink-0 text-sm font-semibold text-grey-500">GHS</span>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        step={1}
-                        value={query.min_price || ''}
-                        onChange={(e) => {
-                          setQuery({
-                            ...query,
-                            min_price: normalizePriceInput(e.target.value),
-                          })
-                        }}
-                        onBlur={clearInvalidMaxIfNeeded}
-                        placeholder="0"
-                        min={0}
-                        aria-invalid={!!priceRangeError}
-                        className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium outline-none placeholder:text-[#aaa]"
-                      />
-                    </div>
-                  </div>
-                  <div className="min-w-0 w-full">
-                    <label className="block text-xs font-semibold text-grey-500 mb-1 uppercase tracking-wider">
-                      Maximum
-                    </label>
-                    <div
-                      className={`flex items-center gap-2 rounded-md border-2 bg-white px-3 py-2.5 transition-colors focus-within:border-primary-500 ${
-                        priceRangeError ? 'border-red-400' : 'border-[#e6e6e6]'
-                      }`}
-                    >
-                      <span className="shrink-0 text-sm font-semibold text-grey-500">GHS</span>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        step={1}
-                        value={query.max_price || ''}
-                        onChange={(e) => {
-                          setQuery({
-                            ...query,
-                            max_price: normalizePriceInput(e.target.value),
-                          })
-                        }}
-                        onBlur={clearInvalidMaxIfNeeded}
-                        placeholder="1000"
-                        min={0}
-                        aria-invalid={!!priceRangeError}
-                        aria-describedby={priceRangeError ? 'price-range-error' : undefined}
-                        className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium outline-none placeholder:text-[#aaa]"
-                      />
-                    </div>
-                  </div>
-                  {priceRangeError ? (
-                    <p id="price-range-error" className="text-xs font-medium text-red-600 -mt-1">
-                      {priceRangeError}
-                    </p>
-                  ) : null}
+              <button
+                type="button"
+                onClick={() => toggleSection('priceRange')}
+                className={`flex justify-between items-center w-full py-4 px-5 cursor-pointer transition-colors text-left -mx-0.5 rounded-md ${
+                  openSections.priceRange
+                    ? 'mb-3 hover:bg-primary-500/5'
+                    : 'bg-[#f8f9fa] hover:bg-[#f0f1f3]'
+                }`}
+              >
+                <h5 className="text-[15px] font-semibold text-[#212529]">Price Range</h5>
+                <div className="flex items-center gap-2">
+                  {(query.min_price || query.max_price) && (
+                    <span className="text-xs text-[#28a745] font-semibold bg-[#d4edda] px-2 py-0.5 rounded-xl">
+                      Active
+                    </span>
+                  )}
+                  <span className="w-6 h-6 flex items-center justify-center text-grey-500 rounded-full transition-all duration-300 ease-in-out hover:bg-primary-500/10 hover:text-primary-500">
+                    <Icon
+                      icon="bi:chevron-down"
+                      className={`size-3 transition-transform duration-300 ease-in-out ${openSections.priceRange ? '' : '-rotate-180'}`}
+                    />
+                  </span>
                 </div>
+              </button>
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${openSections.priceRange ? 'max-h-[480px] opacity-100' : 'max-h-0 opacity-0'}`}
+              >
                 <div>
-                  <div className="text-xs font-semibold text-grey-500 mb-2 uppercase tracking-wider">
-                    Quick Select:
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {priceRanges.map((range) => (
-                      <button
-                        key={range.label}
-                        type="button"
-                        onClick={() => setPriceRange(range.min, range.max)}
-                        className={`px-3 py-1.5 border rounded-2xl text-xs font-semibold cursor-pointer transition-all ${
-                          isPriceRangeActive(range.min, range.max)
-                            ? 'bg-primary-500 text-white border-primary-500 -translate-y-px'
-                            : 'bg-white text-grey-500 border-[#e6e6e6] hover:bg-primary-500 hover:text-white hover:border-primary-500 hover:-translate-y-px'
+                  <div className="mb-4 flex flex-col gap-3">
+                    <div className="min-w-0 w-full">
+                      <label className="block text-xs font-semibold text-grey-500 mb-1 uppercase tracking-wider">
+                        Minimum
+                      </label>
+                      <div
+                        className={`flex items-center gap-2 rounded-md border-2 bg-white px-3 py-2.5 transition-colors focus-within:border-primary-500 ${
+                          priceRangeError ? 'border-red-400' : 'border-[#e6e6e6]'
                         }`}
                       >
-                        {range.label}
-                      </button>
-                    ))}
+                        <span className="shrink-0 text-sm font-semibold text-grey-500">GHS</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          step={1}
+                          value={query.min_price || ''}
+                          onChange={(e) => {
+                            setQuery({
+                              ...query,
+                              min_price: normalizePriceInput(e.target.value),
+                            })
+                          }}
+                          onBlur={clearInvalidMaxIfNeeded}
+                          placeholder="0"
+                          min={0}
+                          aria-invalid={!!priceRangeError}
+                          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium outline-none placeholder:text-[#aaa]"
+                        />
+                      </div>
+                    </div>
+                    <div className="min-w-0 w-full">
+                      <label className="block text-xs font-semibold text-grey-500 mb-1 uppercase tracking-wider">
+                        Maximum
+                      </label>
+                      <div
+                        className={`flex items-center gap-2 rounded-md border-2 bg-white px-3 py-2.5 transition-colors focus-within:border-primary-500 ${
+                          priceRangeError ? 'border-red-400' : 'border-[#e6e6e6]'
+                        }`}
+                      >
+                        <span className="shrink-0 text-sm font-semibold text-grey-500">GHS</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          step={1}
+                          value={query.max_price || ''}
+                          onChange={(e) => {
+                            setQuery({
+                              ...query,
+                              max_price: normalizePriceInput(e.target.value),
+                            })
+                          }}
+                          onBlur={clearInvalidMaxIfNeeded}
+                          placeholder="1000"
+                          min={0}
+                          aria-invalid={!!priceRangeError}
+                          aria-describedby={priceRangeError ? 'price-range-error' : undefined}
+                          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium outline-none placeholder:text-[#aaa]"
+                        />
+                      </div>
+                    </div>
+                    {priceRangeError ? (
+                      <p id="price-range-error" className="text-xs font-medium text-red-600 -mt-1">
+                        {priceRangeError}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-grey-500 mb-2 uppercase tracking-wider">
+                      Quick Select:
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {priceRanges.map((range) => (
+                        <button
+                          key={range.label}
+                          type="button"
+                          onClick={() => setPriceRange(range.min, range.max)}
+                          className={`px-3 py-1.5 border rounded-2xl text-xs font-semibold cursor-pointer transition-all ${
+                            isPriceRangeActive(range.min, range.max)
+                              ? 'bg-primary-500 text-white border-primary-500 -translate-y-px'
+                              : 'bg-white text-grey-500 border-[#e6e6e6] hover:bg-primary-500 hover:text-white hover:border-primary-500 hover:-translate-y-px'
+                          }`}
+                        >
+                          {range.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Filter Footer */}
-      <div className="p-4 border-t border-[#e6e6e6] bg-[#f8f9fa]">
-        <div className="flex items-center justify-between">
-          <span className="text-[13px] text-grey-500 font-medium">
-            {activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''} active
-          </span>
-          <button
-            type="button"
-            onClick={clearAllFilters}
-            className="flex items-center gap-1.5 text-xs text-grey-500 bg-white border border-[#ddd] cursor-pointer font-semibold px-3 py-1.5 rounded-2xl transition-all hover:bg-grey-500 hover:text-white hover:border-grey-500"
-          >
-            <Icon icon="bi:arrow-counterclockwise" className="size-3" />
-            Reset All
-          </button>
+      {!cardSelectionOnly && (
+        <div className="p-4 border-t border-[#e6e6e6] bg-[#f8f9fa]">
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] text-grey-500 font-medium">
+              {activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''} active
+            </span>
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="flex items-center gap-1.5 text-xs text-grey-500 bg-white border border-[#ddd] cursor-pointer font-semibold px-3 py-1.5 rounded-2xl transition-all hover:bg-grey-500 hover:text-white hover:border-grey-500"
+            >
+              <Icon icon="bi:arrow-counterclockwise" className="size-3" />
+              Reset All
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </aside>
   )
 }

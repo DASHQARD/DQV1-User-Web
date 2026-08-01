@@ -3,11 +3,8 @@ import { renderWithProviders, screen } from '@/test/test-utils'
 import Vendors from '../vendors/Vendors'
 
 vi.mock('@/features/website/hooks/website', () => ({
-  usePublicCatalog: () => ({
-    vendors: [],
-    vendorsLoading: false,
-    query: { search: '' },
-    setQuery: vi.fn(),
+  usePublicCatalogQueries: () => ({
+    usePublicVendors: () => ({ data: [], isLoading: false }),
   }),
 }))
 vi.mock('../../components/VendorItems', () => ({
@@ -15,15 +12,14 @@ vi.mock('../../components/VendorItems', () => ({
 }))
 
 describe('Vendors (website)', () => {
-  it('renders hero heading', () => {
+  it('renders partner vendor network heading', () => {
     renderWithProviders(<Vendors />)
-    expect(screen.getByText('Discover Our Partner Vendors')).toBeInTheDocument()
+    expect(screen.getAllByText('Partner Vendor Network').length).toBeGreaterThan(0)
   })
 
-  it('shows loading or empty state when no vendors with cards', () => {
+  it('shows search and filter controls when no vendors with cards', () => {
     renderWithProviders(<Vendors />)
     expect(screen.getByPlaceholderText('Search vendors by name...')).toBeInTheDocument()
-    // With mocked usePublicCatalog returning empty vendors, we see empty state
     expect(screen.getByText('No vendors available')).toBeInTheDocument()
   })
 })

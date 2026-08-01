@@ -1,9 +1,4 @@
-import {
-  PURCHASE_WHATSAPP_DISPLAY,
-  PURCHASE_WHATSAPP_HREF,
-  SUPPORT_PHONE_DISPLAY,
-  SUPPORT_PHONE_TEL_HREF,
-} from '@/utils/constants'
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL_HREF } from '@/utils/constants'
 
 export type FaqItem = { q: string; a: string }
 export type FaqCategory = { title: string; items: FaqItem[] }
@@ -18,7 +13,7 @@ export const FAQ_DATA: FaqCategory[] = [
       },
       {
         q: 'What products does DashQard offer?',
-        a: `DashQard currently offers DashPro; a Multi-vendor gift card, with additional product offerings to come.`,
+        a: `DashPro, DashGo, DashX & DashPass`,
       },
     ],
   },
@@ -48,7 +43,7 @@ Get personalized notifications.`,
       },
       {
         q: 'Can I buy or redeem a gift card without signing up?',
-        a: `Yes. You can purchase or redeem a gift card without signing up but with some limitations. As a guest, you are limited to one recipient per transaction and a purchase amount of GHS1000 per day.
+        a: `Yes. You can purchase or redeem a gift card without signing up but with some limitations. As a guest, you are limited to one recipient per transaction and a purchase amount of GHS 1,000 per card.
 Signing up provides access to the full DashQard experience with special features and benefits without these limitations.`,
       },
     ],
@@ -61,27 +56,11 @@ Signing up provides access to the full DashQard experience with special features
         a: `Via Website
 
 Browse as a Guest or Login to your DashQard account (Signing Up gives you more).
-Select DashPro
-Enter your desired amount and recipient details.
+Select a Gift card
+Enter the transaction details.
 Proceed to checkout.
 Make payment using the preferred payment method.
-Send or receive your gift card.
-
-Via Whatsapp
-Send "Hi" or "Hello" to the DashQard Purchase whatsapp number, ${PURCHASE_WHATSAPP_DISPLAY}
-Follow the message prompt.
-Enter the recipient phone Number
-Enter the Card Value
-Select the Payment Method
-Confirm your purchase
-
-Via USSD
-Dial *800*0000#
-Follow the message prompt.
-Enter the recipient phone Number
-Enter the Card Value
-Select the Payment Method
-Confirm your purchase`,
+Send your gift card.`,
       },
       {
         q: 'Can I customize a gift card?',
@@ -91,17 +70,13 @@ Confirm your purchase`,
         q: 'What payment methods are accepted?',
         a: `Mobile money (MTN, Vodafone, AirtelTigo).
 Bank transfers for bulk purchasing.
-QR code payments.
 Debit/Credit Card`,
       },
       {
         q: 'How do recipients redeem gift cards?',
-        a: `Recipients can:
-
-Redeem via the website by selecting the Redeem option.
-Redeem via Whatsapp using the DashQard Whatsapp number: ${PURCHASE_WHATSAPP_DISPLAY}
-Redeem via USSD by dialing *800*0000#
-Scan QR code and redeem cards at vendor locations.`,
+        a: `Redeem via the website by selecting the redeem option
+Enter the receiving vendor details
+Follow the prompts`,
       },
     ],
   },
@@ -110,7 +85,8 @@ Scan QR code and redeem cards at vendor locations.`,
     items: [
       {
         q: 'How much does it cost to use DashQard?',
-        a: `DashQard is free to use for browsing, redeeming, and managing your account. However, a 5% service fee is applied at checkout when purchasing a gift card. This helps us maintain secure payment systems, provide customer support, and ensure fast delivery of your digital card.`,
+        a: `DashQard is free to use for browsing, redeeming, and managing your account.
+However, a 5% service fee capped at GHS 50 on mobile money payments is applied at checkout`,
       },
       {
         q: 'Why does DashQard charge a 5% fee?',
@@ -128,10 +104,6 @@ This allows DashQard to give you a personalized and secure gifting experience.`,
 For example:
 A GHS 500 gift card will cost you GHS 525 total.
 DashQard ensures that the full GHS 500 is received by the recipient or vendor.`,
-      },
-      {
-        q: 'Are there any hidden fees?',
-        a: `No. DashQard charges no hidden fees. You only pay the 5% fee once at the time of purchasing a gift card.`,
       },
       {
         q: 'Do I get a receipt that shows the fee breakdown?',
@@ -182,48 +154,10 @@ Using the chat reporting feature.`,
       },
     ],
   },
-  {
-    title: '0.7 Additional Features',
-    items: [
-      {
-        q: 'What are chatbot integrations?',
-        a: `DashQard's chatbots on WhatsApp and the Web platform assists with:
-
-Gift card purchases.
-Gift card Redemptions
-Corporate/ Vendor inquiries.
-Customer support.`,
-      },
-      {
-        q: 'What is Bulk Gifting?',
-        a: `DashQard offers a bulk Gifting feature to help our customers give more. This enables our clients to add up to ten (10) recipients per transaction.`,
-      },
-      {
-        q: 'How Does Bulk Gifting work?',
-        a: `Select the bulk gifting option
-Download CSV template
-Upload recipient details in CSV document.
-Choose a gift amount for each recipient.
-Proceed to check out.`,
-      },
-      {
-        q: 'Are there any promotions or discounts?',
-        a: `DashQard frequently offers promotions on gift cards; subject to terms and conditions. Follow our social media handles for updates.
-
-X (Twitter): @dashqard
-Instagram: @dashqard
-TikTok: @dashqard
-LinkedIn: @dashqard
-YouTube: @Dashqard`,
-      },
-    ],
-  },
 ]
 
 export const FAQ_SUPPORT_LINKS = {
   phoneDisplay: SUPPORT_PHONE_DISPLAY,
   phoneHref: SUPPORT_PHONE_TEL_HREF,
-  whatsappDisplay: PURCHASE_WHATSAPP_DISPLAY,
-  whatsappHref: PURCHASE_WHATSAPP_HREF,
   email: 'support@dashqard.com',
 } as const

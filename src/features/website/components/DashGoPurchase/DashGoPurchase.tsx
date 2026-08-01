@@ -111,11 +111,7 @@ export default function DashGoPurchase() {
     [deleteCartItemAsync],
   )
 
-  const {
-    assignToSelf,
-    handleAssignToSelf,
-    applyContactPrefill,
-  } = useAssignToSelfToggle({
+  const { assignToSelf, handleAssignToSelf, applyContactPrefill } = useAssignToSelfToggle({
     setValue,
     isGuestAuth,
     user,
@@ -231,7 +227,10 @@ export default function DashGoPurchase() {
           try {
             await deleteGuestCartItem({ cart_item_id: cartItemId })
           } catch (rollbackError) {
-            console.error('Failed to roll back guest cart item after assign failure:', rollbackError)
+            console.error(
+              'Failed to roll back guest cart item after assign failure:',
+              rollbackError,
+            )
           }
           throw assignError
         }
@@ -317,7 +316,10 @@ export default function DashGoPurchase() {
       openCart()
     } catch (error: unknown) {
       console.error('Failed to create DashGo card:', error)
-      const message = getApiErrorMessage(error, 'Could not add DashGo to your bag. Please try again.')
+      const message = getApiErrorMessage(
+        error,
+        'Could not add DashGo to your bag. Please try again.',
+      )
       if (
         error instanceof GuestCartAmountLimitError ||
         isGuestAmountThresholdMessage(message) ||
@@ -332,8 +334,8 @@ export default function DashGoPurchase() {
   }
 
   return (
-    <div>
-      <div className="max-w-[900px] w-full">
+    <div className="w-full">
+      <div className="w-full max-w-4xl">
         <GiftCardRecipientFormHeader
           title="Create DashGo gift card"
           subtitle="Choose a vendor, set the amount, and personalize your gift"
@@ -416,11 +418,7 @@ export default function DashGoPurchase() {
               variant="secondary"
               className="md:w-auto"
               loading={isSubmitting}
-              disabled={
-                isSubmitting ||
-                !watch('vendor_id') ||
-                watch('vendor_id') === ''
-              }
+              disabled={isSubmitting || !watch('vendor_id') || watch('vendor_id') === ''}
             >
               Create Customized DashGo Gift Card
             </Button>

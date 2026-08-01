@@ -103,14 +103,20 @@ export default function DashQards() {
                 setPriceRange={setPriceRange}
                 isPriceRangeActive={isPriceRangeActive}
                 clearAllFilters={clearAllFilters}
+                cardSelectionOnly={activeTab === 'dashpro' || activeTab === 'dashgo'}
               />
             </div>
 
             {/* Products Main */}
-            <main className="relative z-0 flex w-full min-w-0 flex-1 flex-col gap-4">
+            <main
+              className={`relative z-0 flex w-full min-w-0 flex-1 flex-col gap-4 ${
+                activeTab === 'dashpro' || activeTab === 'dashgo' ? 'max-w-none' : ''
+              }`}
+            >
               <section className="flex w-full flex-col gap-4 border-b border-[#e6e6e6] pb-4">
                 <Text variant="h2" weight="medium" className="text-[#212529] pt-2">
-                  Results for &quot;{cardTabs.find((t) => t.id === activeTab)?.label ?? 'Gift Cards'}&quot;{' '}
+                  Results for &quot;
+                  {cardTabs.find((t) => t.id === activeTab)?.label ?? 'Gift Cards'}&quot;{' '}
                   <span className="font-normal">({activeResultsCount})</span>
                 </Text>
 
@@ -331,6 +337,7 @@ export default function DashQards() {
             setPriceRange={setPriceRange}
             isPriceRangeActive={isPriceRangeActive}
             clearAllFilters={clearAllFilters}
+            cardSelectionOnly={activeTab === 'dashpro' || activeTab === 'dashgo'}
           />
           <div className="pt-3">
             <Button

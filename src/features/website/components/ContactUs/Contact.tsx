@@ -8,12 +8,7 @@ import { cn, Icon } from '@/libs'
 import { createTicket } from '@/services'
 import { useToast } from '@/hooks'
 
-import {
-  PURCHASE_WHATSAPP_DISPLAY,
-  PURCHASE_WHATSAPP_WA_ME,
-  SUPPORT_PHONE_DISPLAY_SHORT,
-  SUPPORT_PHONE_E164,
-} from '@/utils/constants'
+import { SUPPORT_PHONE_DISPLAY_SHORT, SUPPORT_PHONE_E164 } from '@/utils/constants'
 import { CONTACT_SUBJECT_OPTIONS, getContactSubjectLabel } from '@/utils/constants/contact'
 import { ContactUsSchema } from '@/utils/schemas'
 import { z } from 'zod'
@@ -25,14 +20,6 @@ const QUICK_CONTACT_LINKS = [
     href: `tel:${SUPPORT_PHONE_E164}`,
     icon: 'mdi:phone',
     iconClass: 'bg-primary-500',
-  },
-  {
-    label: 'WhatsApp',
-    value: 'Chat',
-    href: `https://wa.me/${PURCHASE_WHATSAPP_WA_ME}`,
-    icon: 'mdi:whatsapp',
-    iconClass: 'bg-[#25d366]',
-    external: true,
   },
   {
     label: 'Email',
@@ -224,22 +211,6 @@ export default function Contact() {
                       className="text-primary-500 font-bold hover:underline"
                     >
                       {SUPPORT_PHONE_DISPLAY_SHORT}
-                    </a>
-                  </div>
-                </section>
-                <section className="flex gap-4 p-4 bg-[#402d8708] rounded-[12px]">
-                  <div className="w-10 h-10 flex items-center justify-center rounded-full bg-[#25d366]">
-                    <Icon icon="mdi:whatsapp" className="size-6 text-white" />
-                  </div>
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <p className="text-grey-500 text-xs">Purchase Line (WhatsApp)</p>
-                    <a
-                      href={`https://wa.me/${PURCHASE_WHATSAPP_WA_ME}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-500 font-bold hover:underline truncate"
-                    >
-                      {PURCHASE_WHATSAPP_DISPLAY}
                     </a>
                   </div>
                 </section>
